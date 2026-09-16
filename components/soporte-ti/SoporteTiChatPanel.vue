@@ -347,14 +347,21 @@
                   </p>
 
                   <div v-if="m.imagenes?.length" class="flex flex-col gap-1.5 p-2 pt-0">
-                    <SoporteTiChatAdjuntoMensaje
-                      v-for="(img, idx) in m.imagenes"
-                      :key="idx"
-                      :url="img.url"
-                      :nombre="img.nombre"
-                      :tamano="img.tamano"
-                      @abrir="abrirPreview"
-                    />
+                    <template v-for="(img, idx) in m.imagenes" :key="idx">
+                      <SoporteTiChatAudioBubble
+                        v-if="esAudioAdjuntoNombre(img.nombre)"
+                        :url="img.url"
+                        :inverted="m.esPropio"
+                        :time-label="m.marcaTiempo"
+                      />
+                      <SoporteTiChatAdjuntoMensaje
+                        v-else
+                        :url="img.url"
+                        :nombre="img.nombre"
+                        :tamano="img.tamano"
+                        @abrir="abrirPreview"
+                      />
+                    </template>
                     <div
                       v-if="esMensajeMaquetaPendiente(m)"
                       class="flex flex-wrap items-center gap-2 pt-1"
@@ -549,9 +556,16 @@
             :accept="SOPORTE_TI_CHAT_ACCEPT_DOCUMENTOS"
             @change="onPickDocumento"
           >
+          <input
+            ref="fileInputAudioRef"
+            type="file"
+            class="hidden"
+            :accept="SOPORTE_TI_CHAT_ACCEPT_AUDIO"
+            @change="onPickAudio"
+          >
 
           <UPopover
-            v-if="!modoVistaAdjunto"
+            v-if="!modoVistaAdjunto && !grabandoAudio"
             v-model:open="menuAdjuntosAbierto"
             :content="{ side: 'top', align: 'start' }"
           >
@@ -586,11 +600,41 @@
                   class="justify-start"
                   @click="abrirSelectorDocumento"
                 />
+                <UButton
+                  type="button"
+                  color="neutral"
+                  variant="ghost"
+                  size="sm"
+                  icon="i-heroicons-musical-note"
+                  label="Audio"
+                  class="justify-start"
+                  @click="abrirSelectorAudio"
+                />
               </div>
             </template>
           </UPopover>
 
-          <div class="relative min-w-0 flex-1">
+          <div
+            v-if="grabandoAudio"
+            class="flex min-w-0 flex-1 items-center gap-3 rounded-2xl bg-error/10 px-3 py-2 ring-1 ring-error/20"
+          >
+            <span class="relative flex size-3 shrink-0">
+              <span class="absolute inline-flex size-full animate-ping rounded-full bg-error opacity-60" />
+              <span class="relative inline-flex size-3 rounded-full bg-error" />
+            </span>
+            <div class="flex h-6 min-w-0 flex-1 items-end gap-[2px]">
+              <span
+                v-for="(h, i) in barrasGrabacion"
+                :key="i"
+                class="w-[3px] shrink-0 rounded-full bg-error/80 transition-all duration-100"
+                :style="{ height: `${h}%` }"
+              />
+            </div>
+            <span class="shrink-0 font-mono text-xs tabular-nums text-error">{{ etiquetaTiempoGrabacion }}</span>
+            <span class="hidden text-[11px] text-muted sm:inline">Suelta para enviar · desliza ← cancelar</span>
+          </div>
+
+          <div v-else class="relative min-w-0 flex-1">
             <UCard
               class="min-w-0"
               :color="modoVistaAdjunto ? undefined : 'neutral'"
@@ -620,6 +664,23 @@
           </div>
 
           <UButton
+            v-if="mostrarBotonMic"
+            color="primary"
+            size="md"
+            icon="i-heroicons-microphone"
+            class="shrink-0 select-none touch-none"
+            :class="grabandoAudio ? 'scale-110 ring-2 ring-error/40' : ''"
+            title="Mantén pulsado para grabar"
+            aria-label="Grabar nota de voz"
+            @pointerdown.prevent="onMicPointerDown"
+            @pointermove="onMicPointerMove"
+            @pointerup.prevent="onMicPointerUp"
+            @pointercancel.prevent="onMicPointerCancel"
+            @pointerleave="onMicPointerLeave"
+            @contextmenu.prevent
+          />
+          <UButton
+            v-else
             color="primary"
             size="md"
             icon="i-heroicons-paper-airplane"
@@ -657,14 +718,20 @@ import SoporteTiChatDocumentoPreview from '~/components/soporte-ti/SoporteTiChat
 import SoporteTiChatEmojiPicker from '~/components/soporte-ti/SoporteTiChatEmojiPicker.vue'
 import SoporteTiChatEstadoEnvio from '~/components/soporte-ti/SoporteTiChatEstadoEnvio.vue'
 import SoporteTiChatAdjuntoMensaje from '~/components/soporte-ti/SoporteTiChatAdjuntoMensaje.vue'
+import SoporteTiChatAudioBubble from '~/components/soporte-ti/SoporteTiChatAudioBubble.vue'
 import SoporteTiChatMensajeInfoModal from '~/components/soporte-ti/SoporteTiChatMensajeInfoModal.vue'
 import SoporteTiChatPanelSkeleton from '~/components/soporte-ti/SoporteTiChatPanelSkeleton.vue'
 import SoporteTiFasesProyectoBar from '~/components/soporte-ti/SoporteTiFasesProyectoBar.vue'
 import SoporteTiCreadorConfirmacionEstado from '~/components/soporte-ti/SoporteTiCreadorConfirmacionEstado.vue'
 import SoporteTiChatAvatar from '~/components/soporte-ti/SoporteTiChatAvatar.vue'
 import ChatMessagesScroll from '~/components/chat/ChatMessagesScroll.vue'
-import { SOPORTE_TI_CHAT_ACCEPT_DOCUMENTOS } from '~/constants/soporteTiChat'
-import { archivosDesdePortapapeles, esImagenAdjunto } from '~/utils/soporteTiChatAdjunto'
+import { SOPORTE_TI_CHAT_ACCEPT_AUDIO, SOPORTE_TI_CHAT_ACCEPT_DOCUMENTOS } from '~/constants/soporteTiChat'
+import {
+  archivosDesdePortapapeles,
+  esAudioAdjuntoFile,
+  esAudioAdjuntoNombre,
+  esImagenAdjunto
+} from '~/utils/soporteTiChatAdjunto'
 import type { SoporteTiSolicitud } from '~/types/soporteTi'
 
 const overlay = useOverlay()
@@ -803,10 +870,32 @@ function getScrollEl(): HTMLElement | null {
 }
 const fileInputImagenRef = ref<HTMLInputElement | null>(null)
 const fileInputDocumentoRef = ref<HTMLInputElement | null>(null)
+const fileInputAudioRef = ref<HTMLInputElement | null>(null)
 const editorAdjuntoRef = ref<InstanceType<typeof SoporteTiChatImagenEditor> | null>(null)
 const replyTarget = ref<SoporteTiMensaje | null>(null)
 const infoMensajeAbierto = ref(false)
 const infoMensajeId = ref<number | null>(null)
+
+const grabandoAudio = ref(false)
+const segundosGrabacion = ref(0)
+const barrasGrabacion = ref<number[]>(Array.from({ length: 24 }, () => 30))
+let mediaRecorder: MediaRecorder | null = null
+let mediaStream: MediaStream | null = null
+let audioChunks: Blob[] = []
+let grabacionTimer: ReturnType<typeof setInterval> | null = null
+let barrasTimer: ReturnType<typeof setInterval> | null = null
+let micPointerId: number | null = null
+let micStartX = 0
+let cancelarPorDeslizamiento = false
+const MIN_MS_GRABACION = 400
+let grabacionStartedAt = 0
+
+const etiquetaTiempoGrabacion = computed(() => {
+  const total = segundosGrabacion.value
+  const m = Math.floor(total / 60)
+  const s = total % 60
+  return `${m}:${String(s).padStart(2, '0')}`
+})
 
 function abrirInfoMensaje(m: SoporteTiMensaje) {
   if (!m.esPropio || m.id <= 0) return
@@ -823,6 +912,14 @@ const indiceAdjunto = ref(0)
 
 const modoVistaAdjunto = computed(
   () => imagenesPendientes.value.length > 0 || documentoPendiente.value !== null
+)
+
+const mostrarBotonMic = computed(
+  () =>
+    !modoVistaAdjunto.value
+    && !texto.value.trim()
+    && !documentoPendiente.value
+    && imagenesPendientes.value.length === 0
 )
 
 const tituloVistaAdjunto = computed(() => {
@@ -1011,6 +1108,179 @@ function abrirSelectorDocumento() {
   fileInputDocumentoRef.value?.click()
 }
 
+function abrirSelectorAudio() {
+  menuAdjuntosAbierto.value = false
+  fileInputAudioRef.value?.click()
+}
+
+function pickMimeGrabacion(): { mime: string; ext: string } {
+  const candidates = [
+    { mime: 'audio/webm;codecs=opus', ext: 'webm' },
+    { mime: 'audio/webm', ext: 'webm' },
+    { mime: 'audio/ogg;codecs=opus', ext: 'ogg' },
+    { mime: 'audio/mp4', ext: 'm4a' }
+  ]
+  for (const c of candidates) {
+    if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(c.mime)) {
+      return c
+    }
+  }
+  return { mime: '', ext: 'webm' }
+}
+
+function detenerTracks() {
+  mediaStream?.getTracks().forEach((t) => t.stop())
+  mediaStream = null
+}
+
+function limpiarTimersGrabacion() {
+  if (grabacionTimer) {
+    clearInterval(grabacionTimer)
+    grabacionTimer = null
+  }
+  if (barrasTimer) {
+    clearInterval(barrasTimer)
+    barrasTimer = null
+  }
+}
+
+async function iniciarGrabacion() {
+  if (grabandoAudio.value || typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+    void showError({
+      title: 'Micrófono no disponible',
+      message: 'Tu navegador no permite grabar audio.'
+    })
+    return
+  }
+
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+  } catch {
+    void showError({
+      title: 'Permiso denegado',
+      message: 'Habilita el micrófono para enviar notas de voz.'
+    })
+    return
+  }
+
+  const picked = pickMimeGrabacion()
+  audioChunks = []
+  cancelarPorDeslizamiento = false
+  grabacionStartedAt = Date.now()
+  segundosGrabacion.value = 0
+
+  try {
+    mediaRecorder = picked.mime
+      ? new MediaRecorder(mediaStream, { mimeType: picked.mime })
+      : new MediaRecorder(mediaStream)
+  } catch {
+    detenerTracks()
+    void showError({
+      title: 'No se pudo grabar',
+      message: 'Error al iniciar la grabación de audio.'
+    })
+    return
+  }
+
+  mediaRecorder.ondataavailable = (e) => {
+    if (e.data && e.data.size > 0) audioChunks.push(e.data)
+  }
+
+  mediaRecorder.onstop = () => {
+    const mime = mediaRecorder?.mimeType || picked.mime || 'audio/webm'
+    const blob = new Blob(audioChunks, { type: mime })
+    const elapsed = Date.now() - grabacionStartedAt
+    const cancelar = cancelarPorDeslizamiento || elapsed < MIN_MS_GRABACION || blob.size < 200
+    detenerTracks()
+    mediaRecorder = null
+    audioChunks = []
+    grabandoAudio.value = false
+    limpiarTimersGrabacion()
+
+    if (cancelar) return
+
+    const ext = mime.includes('ogg') ? 'ogg' : mime.includes('mp4') ? 'm4a' : 'webm'
+    const file = new File([blob], `nota_voz_${Date.now()}.${ext}`, { type: mime })
+    emit('send', {
+      texto: '',
+      replyToId: replyTarget.value?.id ?? null,
+      imagenes: [file]
+    })
+    replyTarget.value = null
+  }
+
+  mediaRecorder.start(200)
+  grabandoAudio.value = true
+  grabacionTimer = setInterval(() => {
+    segundosGrabacion.value += 1
+  }, 1000)
+  barrasTimer = setInterval(() => {
+    barrasGrabacion.value = barrasGrabacion.value.map(() => 20 + Math.random() * 80)
+  }, 120)
+}
+
+function finalizarGrabacion(enviar: boolean) {
+  if (!grabandoAudio.value || !mediaRecorder) return
+  cancelarPorDeslizamiento = !enviar
+  if (mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop()
+  } else {
+    detenerTracks()
+    grabandoAudio.value = false
+    limpiarTimersGrabacion()
+  }
+}
+
+function onMicPointerDown(e: PointerEvent) {
+  if (e.button !== 0 || grabandoAudio.value) return
+  micPointerId = e.pointerId
+  micStartX = e.clientX
+  cancelarPorDeslizamiento = false
+  ;(e.currentTarget as HTMLElement | null)?.setPointerCapture?.(e.pointerId)
+  void iniciarGrabacion()
+}
+
+function onMicPointerMove(e: PointerEvent) {
+  if (!grabandoAudio.value || micPointerId === null || e.pointerId !== micPointerId) return
+  cancelarPorDeslizamiento = e.clientX - micStartX < -60
+}
+
+function onMicPointerUp(e: PointerEvent) {
+  if (micPointerId !== null && e.pointerId !== micPointerId) return
+  if (e.clientX - micStartX < -60) cancelarPorDeslizamiento = true
+  micPointerId = null
+  finalizarGrabacion(!cancelarPorDeslizamiento)
+}
+
+function onMicPointerCancel() {
+  micPointerId = null
+  finalizarGrabacion(false)
+}
+
+function onMicPointerLeave(e: PointerEvent) {
+  if (!grabandoAudio.value || micPointerId === null) return
+  if (e.pointerId !== micPointerId) return
+  // Mantener grabación si el pointer sigue capturado; cancelar solo si se fue lejos a la izquierda.
+  if (e.clientX - micStartX < -60) {
+    cancelarPorDeslizamiento = true
+  }
+}
+
+function onPickAudio(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  if (!esAudioAdjuntoFile(file)) {
+    void showError({
+      title: 'Archivo no válido',
+      message: 'Selecciona un archivo de audio.'
+    })
+    return
+  }
+  adjuntarDocumentoPendiente(file)
+}
+
 function limpiarImagenesPendientes() {
   imagenesPendientes.value.forEach((i) => URL.revokeObjectURL(i.preview))
   imagenesPendientes.value = []
@@ -1020,7 +1290,13 @@ function limpiarImagenesPendientes() {
 const maxBytesAdjunto = SOPORTE_TI_MAX_IMAGEN_MB * 1048576
 
 function adjuntarDocumentoPendiente(file: File) {
-  if (file.size > maxBytesAdjunto) return
+  if (file.size > maxBytesAdjunto) {
+    void showError({
+      title: 'Archivo demasiado grande',
+      message: `El máximo es ${SOPORTE_TI_MAX_IMAGEN_MB} MB.`
+    })
+    return
+  }
   if (esImagenAdjunto(file)) {
     limpiarImagenesPendientes()
     documentoPendiente.value = null
@@ -1170,6 +1446,9 @@ function abrirPreview(url: string, nombre?: string) {
 
 onUnmounted(() => {
   if (highlightTimer) clearTimeout(highlightTimer)
+  finalizarGrabacion(false)
+  detenerTracks()
+  limpiarTimersGrabacion()
   descartarAdjuntos()
 })
 </script>
