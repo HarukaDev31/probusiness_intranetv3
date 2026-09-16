@@ -1825,7 +1825,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.code_supplier,
-                    class: 'w-full w-25',
+                    class: 'w-full min-w-40 w-40',
                     disabled: (currentRole.value !== ROLES.COORDINACION && !roleEsComoJefeImportacion(currentRole.value)) && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.code_supplier = value
@@ -2280,7 +2280,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.code_supplier,
-                    class: 'w-full w-25',
+                    class: 'w-full min-w-40 w-40',
                     disabled: (currentRole.value !== ROLES.COORDINACION && !roleEsComoJefeImportacion(currentRole.value)) && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.code_supplier = value
@@ -2643,7 +2643,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
             const div = h('div', {
-                class: 'flex flex-col gap-2 w-25'
+                class: 'flex flex-col gap-2 min-w-40 w-40'
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.code_supplier,
@@ -3502,7 +3502,7 @@ const getEmbarqueSocioColumns = (): TableColumn<any>[] => {
             accessorKey: 'code_supplier',
             header: 'Code supplier',
             cell: ({ row }: { row: any }) => h('div', { class: 'flex flex-col gap-2' }, (row.original.proveedores || []).map((proveedor: any) =>
-                socioProveedorInput(proveedor, 'code_supplier', { class: 'w-full w-25', disabled: true })
+                socioProveedorInput(proveedor, 'code_supplier', { class: 'w-full min-w-40 w-40', disabled: true })
             )),
         },
         {
