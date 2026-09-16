@@ -4,6 +4,8 @@ import type { HeaderResponse } from "~/types/data-table"
 export interface ProveedorItem {
     id: number
     code_supplier: string
+    products?: string | null
+    modo_cotizacion?: string | null
     items: {
         id: number
         initial_name: string

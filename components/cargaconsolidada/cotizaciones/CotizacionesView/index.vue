@@ -3284,6 +3284,7 @@ const openSocioModalAcciones = (row: any, action: 'pedir_documentos' | 'recordat
         initialAction: action,
         onSelected: () => {},
         validateMaxDate: false,
+        modoPorProveedor: true,
     })
 }
 

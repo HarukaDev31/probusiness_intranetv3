@@ -167,7 +167,6 @@
                   v-if="f.key === 'whatsapp'"
                   v-model="whatsappMenu"
                   :items="clientesOptions"
-                  :loading="buscandoClientes"
                   :disabled="scanState !== 'done'"
                   :placeholder="whatsappPlaceholder"
                   :color="camposEscaneados.whatsapp ? 'success' : necesitaRevision('whatsapp') ? 'warning' : 'neutral'"
@@ -207,11 +206,13 @@
                   </label>
                 </div>
                 <UInput
-                  v-model.number="qtyProveedores"
+                  :model-value="qtyProveedores ?? undefined"
                   type="number"
                   min="0"
+                  placeholder="0"
                   :disabled="scanState === 'scanning'"
                   class="w-full"
+                  @update:model-value="onQtyProveedores"
                 />
               </div>
             </div>
@@ -288,7 +289,14 @@
           <h2 class="text-xl font-semibold mb-6">Terminar</h2>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <UFormField label="Cantidad proveedores" required hint="No cambia los campos del paso 2">
-              <UInput v-model.number="qtyProveedores" type="number" min="0" class="w-full" />
+              <UInput
+                :model-value="qtyProveedores ?? undefined"
+                type="number"
+                min="0"
+                placeholder="0"
+                class="w-full"
+                @update:model-value="onQtyProveedores"
+              />
             </UFormField>
 
             <UFormField label="Descuento (opcional)">
@@ -413,8 +421,7 @@ const {
   searchClientes,
   vendedoresOptions,
   contenedoresOptions,
-  clientesOptions,
-  buscandoClientes
+  clientesOptions
 } = useCotizacionResumen()
 
 const editId = computed(() => {
@@ -679,7 +686,7 @@ async function procesarArchivo(file: File) {
     proveedoresExtraidos.value = res.data?.proveedores ?? []
     aplicarExtraidosAProveedores()
     if (!esEdicion.value) {
-      qtyProveedores.value = 0
+      qtyProveedores.value = null
     }
 
     if (!res.extracted_by_ai) {
@@ -709,7 +716,7 @@ function reiniciarArchivo() {
     whatsappMenu.value = ''
     camposEscaneados.value = {}
     proveedoresExtraidos.value = []
-    qtyProveedores.value = 0
+    qtyProveedores.value = null
   }
 }
 
@@ -830,7 +837,16 @@ function quitarCostosDocumentoDuplicados() {
   })
 }
 
-const qtyProveedores = ref(0)
+const qtyProveedores = ref<number | null>(null)
+
+function onQtyProveedores(v: string | number | null | undefined) {
+  if (v === '' || v === null || v === undefined) {
+    qtyProveedores.value = null
+    return
+  }
+  const n = typeof v === 'number' ? v : Number(v)
+  qtyProveedores.value = Number.isFinite(n) ? n : null
+}
 
 function cbmNormalProveedor(prov: ProveedorResumen) {
   const total = Number(prov.cbmTotal) || 0

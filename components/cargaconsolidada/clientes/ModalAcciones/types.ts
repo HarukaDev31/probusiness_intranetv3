@@ -9,4 +9,6 @@ export interface ModalAccionesProps {
   onSelected?: (data: unknown) => void
   validateMaxDate?: boolean
   initialAction?: ModalAccionTipo
+  /** Flujo resumen: Excel GENERAL por proveedor, sin categorizar ítems. */
+  modoPorProveedor?: boolean
 }
