@@ -522,28 +522,79 @@ function telefonoDeOpcion(item: string | CotizacionResumenClienteOption | null |
   return String(item.telefono || item.value || item.label || '').trim()
 }
 
+function textoCampo(raw: unknown) {
+  if (raw == null || typeof raw === 'boolean') return ''
+  const s = String(raw).trim()
+  if (!s || /^(null|none|undefined|n\/a|na|-)$/i.test(s)) return ''
+  return s
+}
+
+function correoCampo(raw: unknown) {
+  const s = textoCampo(raw)
+  if (!s || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)) return ''
+  return s
+}
+
+function soloDigitos(raw: unknown) {
+  return textoCampo(raw).replace(/\D+/g, '')
+}
+
+function pareceTelefono(digitos: string, whatsappDigitos = '') {
+  if (!digitos) return false
+  if (whatsappDigitos && digitos === whatsappDigitos) return true
+  if (/^(593|591|595|598|505|506|502|504|507|51|52|54|56|57|58)\d{7,12}$/.test(digitos)) return true
+  if (/^9\d{8}$/.test(digitos)) return true
+  if (/^09\d{8}$/.test(digitos)) return true
+  return false
+}
+
 const RUCS_EMISOR = ['20612452432', '206124524321']
 
-function documentoIdentidadCliente(raw: string | null | undefined) {
-  const texto = String(raw || '').trim()
+function documentoIdentidadCliente(raw: unknown, whatsapp?: unknown) {
+  const texto = textoCampo(raw)
   if (!texto) return ''
   if (/cotiz|boleta|factura|proforma|n[uú]mero\s*de\s*doc/i.test(texto)) return ''
-  const digitos = texto.replace(/\D+/g, '')
+  const digitos = soloDigitos(texto)
   if (!digitos) return ''
   if (RUCS_EMISOR.includes(digitos)) return ''
+  if (pareceTelefono(digitos, soloDigitos(whatsapp))) return ''
   if (digitos.length < 6 || digitos.length > 13) return ''
   return digitos
+}
+
+function aplicarCamposCliente(raw: {
+  nombre?: unknown
+  documento?: unknown
+  whatsapp?: unknown
+  correo?: unknown
+  tipo_documento?: unknown
+}) {
+  let whatsapp = textoCampo(raw.whatsapp)
+  const docDigitos = soloDigitos(raw.documento)
+  if (!whatsapp && pareceTelefono(docDigitos)) {
+    whatsapp = textoCampo(raw.documento)
+  }
+  const documento = documentoIdentidadCliente(raw.documento, whatsapp)
+  clienteInfo.nombre = textoCampo(raw.nombre)
+  clienteInfo.documento = documento
+  clienteInfo.tipoDocumento = raw.tipo_documento === 'RUC' || documento.replace(/\D/g, '').length >= 11
+    ? 'RUC'
+    : 'ID'
+  clienteInfo.whatsapp = whatsapp
+  clienteInfo.correo = correoCampo(raw.correo)
 }
 
 function aplicarClienteExistente(cliente: CotizacionResumenClienteOption) {
   clienteBdId.value = cliente.id
   clienteInfo.whatsapp = telefonoDeOpcion(cliente)
-  if (cliente.nombre) clienteInfo.nombre = cliente.nombre
-  if (cliente.documento) {
-    clienteInfo.documento = cliente.documento
-    clienteInfo.tipoDocumento = cliente.documento.replace(/\D/g, '').length >= 11 ? 'RUC' : 'ID'
+  if (cliente.nombre) clienteInfo.nombre = textoCampo(cliente.nombre)
+  const documento = documentoIdentidadCliente(cliente.documento, clienteInfo.whatsapp)
+  if (documento) {
+    clienteInfo.documento = documento
+    clienteInfo.tipoDocumento = documento.replace(/\D/g, '').length >= 11 ? 'RUC' : 'ID'
   }
-  if (cliente.correo) clienteInfo.correo = cliente.correo
+  const correo = correoCampo(cliente.correo)
+  if (correo) clienteInfo.correo = correo
   onClienteCampoEditado('whatsapp')
   onClienteCampoEditado('nombre')
   onClienteCampoEditado('documento')
@@ -671,20 +722,15 @@ async function procesarArchivo(file: File) {
 
     const cliente = res.data?.cliente
     if (cliente) {
-      const documento = documentoIdentidadCliente(cliente.documento)
       clienteBdId.value = null
-      clienteInfo.nombre = cliente.nombre ?? ''
-      clienteInfo.documento = documento
-      clienteInfo.tipoDocumento = documento.replace(/\D/g, '').length >= 11 ? 'RUC' : 'ID'
-      clienteInfo.whatsapp = cliente.whatsapp ?? ''
-      clienteInfo.correo = cliente.correo ?? ''
+      aplicarCamposCliente(cliente)
       sincronizarWhatsappMenu(clienteInfo.whatsapp)
       if (clienteInfo.whatsapp) searchClientes(clienteInfo.whatsapp)
       camposEscaneados.value = {
-        nombre: cliente.nombre != null,
-        documento: documento !== '',
-        whatsapp: cliente.whatsapp != null,
-        correo: cliente.correo != null
+        nombre: clienteInfo.nombre !== '',
+        documento: clienteInfo.documento !== '',
+        whatsapp: clienteInfo.whatsapp !== '',
+        correo: clienteInfo.correo !== ''
       }
     } else {
       camposEscaneados.value = {}
@@ -930,11 +976,7 @@ async function cargarEdicion(id: number) {
       return
     }
     const d = res.data
-    clienteInfo.nombre = d.cliente.nombre || ''
-    clienteInfo.tipoDocumento = d.cliente.tipo_documento === 'RUC' ? 'RUC' : 'ID'
-    clienteInfo.documento = d.cliente.documento || ''
-    clienteInfo.whatsapp = d.cliente.whatsapp || ''
-    clienteInfo.correo = d.cliente.correo || ''
+    aplicarCamposCliente(d.cliente)
     await searchClientes(clienteInfo.whatsapp)
     sincronizarWhatsappMenu(clienteInfo.whatsapp, d.cliente.id)
     descuento.value = Number(d.descuento) > 0 ? Number(d.descuento) : 0
@@ -1019,11 +1061,11 @@ function payloadWizard() {
     id_usuario: selectedVendedor.value!,
     cliente: {
       id: clienteBdId.value || undefined,
-      nombre: clienteInfo.nombre.trim(),
+      nombre: textoCampo(clienteInfo.nombre),
       tipo_documento: clienteInfo.tipoDocumento,
-      documento: clienteInfo.documento || undefined,
+      documento: documentoIdentidadCliente(clienteInfo.documento, clienteInfo.whatsapp) || undefined,
       whatsapp: telefonoDeOpcion(whatsappMenu.value) || clienteInfo.whatsapp || undefined,
-      correo: clienteInfo.correo || undefined
+      correo: correoCampo(clienteInfo.correo) || undefined
     },
     proveedores: providers.value.map((p) => ({
       ...(p.idProveedor ? { id: p.idProveedor } : {}),
