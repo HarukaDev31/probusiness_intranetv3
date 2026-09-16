@@ -436,11 +436,13 @@
             root: 'relative overflow-visible',
             th: 'sticky top-0 z-30 font-normal text-xs lg:text-sm px-2 py-1 md:px-4 md:py-3.5 bg-[#f0f4f9] dark:bg-gray-900',
             thead: 'z-20 bg-[#f0f4f9] dark:bg-gray-900 h-10 md:h-15 border-b border-slate-300/50 dark:border-slate-600/50',
+            td: 'bg-white dark:bg-gray-800 dark:text-gray-100 p-2 lg:p-4 text-xs lg:text-sm',
+            tr: 'border-[#f0f4f9] dark:border-gray-900',
           }:{
             root: 'relative overflow-visible',
             base: 'min-w-full',
             tbody: 'border-separate border-spacing-y-6',
-            td: 'bg-gray-100 dark:bg-gray-800 dark:text-gray-100 p-2 lg:p-4 text-xs lg:text-sm',
+            td: 'bg-white dark:bg-gray-800 dark:text-gray-100 p-2 lg:p-4 text-xs lg:text-sm',
             th: 'sticky top-0 z-30 font-medium text-xs lg:text-sm font-normal px-2 py-1 md:px-4 md:py-3.5 bg-[#f0f4f9] dark:bg-gray-900',
             thead: 'z-20 bg-[#f0f4f9] dark:bg-gray-900 h-10 md:h-15 border-b border-slate-300/50 dark:border-slate-600/50',
             tr: 'border-[#f0f4f9] dark:border-gray-900',
@@ -1213,7 +1215,7 @@ const uiForTable = computed(() => ({
   root: 'relative overflow-visible',
   base: isTableNarrow.value ? 'min-w-[80%]' : 'min-w-full',
   tbody: 'border-separate border-spacing-y-6',
-  td: 'bg-gray-100 dark:bg-gray-800 dark:text-gray-100 p-2 lg:p-4 text-xs lg:text-sm',
+  td: 'bg-white dark:bg-gray-800 dark:text-gray-100 p-2 lg:p-4 text-xs lg:text-sm',
   th: 'font-medium text-xs lg:text-sm font-normal px-2 py-1 md:px-4 md:py-3.5',
   // Nuxt UI aplica automáticamente: thead: 'sticky top-0 inset-x-0 bg-default/75 z-[1] backdrop-blur'
   // Make the thead have a thicker bottom border colored like the header background
@@ -1639,8 +1641,13 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
 /* Create vertical space between body rows (without affecting thead sticky) */
 .utable-narrow :deep(tbody tr + tr td),
 .min-w-full :deep(tbody tr + tr td) {
-  border-top: 0.5rem solid transparent !important;
+  border-top: 0.5rem solid #f0f4f9 !important;
   background-clip: padding-box;
+}
+
+html.dark .utable-narrow :deep(tbody tr + tr td),
+html.dark .min-w-full :deep(tbody tr + tr td) {
+  border-top-color: #111827 !important;
 }
 
 
