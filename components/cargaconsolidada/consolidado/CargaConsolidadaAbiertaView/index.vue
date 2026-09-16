@@ -53,7 +53,7 @@
         @filter-change="handleFilterChange"
       >
         <template #actions>
-          <template v-if="puedeCrearConsolidado">
+          <template v-if="puedeGestionarConsolidado">
             <CreateConsolidadoModal @submit="handleCreateConsolidado" :id="currentConsolidado" />
           </template>
         </template>
@@ -135,7 +135,7 @@ import type { TableColumn, TableRow } from '@nuxt/ui'
 import type { FilterConfig } from '~/types/data-table'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
 import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
-import { ID_ORGANIZACION_ADMIN, ROLES, roleEsComoJefeImportacion } from '~/constants/roles'
+import { ID_ORGANIZACION_ADMIN, ROLES, esRolSocio, roleEsComoJefeImportacion } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
@@ -166,9 +166,8 @@ const { showSuccess, showConfirmation, showError } = useModal()
 const isCoordinacion = computed(() => props.role === ROLES.COORDINACION)
 const isAlmacen = computed(() => props.role === ROLES.CONTENEDOR_ALMACEN)
 const isFinanzas = computed(() => props.role === ROLES.FINANZAS)
-// Socio tambien puede crear un consolidado, pero queda fijo a su propia
-// organizacion (el backend lo fuerza al crear, ignorando lo que mande el front).
-const puedeCrearConsolidado = computed(() => isCoordinacion.value || props.role === ROLES.SOCIO)
+// Socio (org ≠ 1) gestiona sus consolidados igual que Coordinación: crear, editar, partir y eliminar.
+const puedeGestionarConsolidado = computed(() => isCoordinacion.value || esRolSocio(props.role))
 const isOrgAdmin = computed(() => {
   const user = getUserData()
   return Number(user?.raw?.organizacion?.id || user?.organizacion?.id || 0) === ID_ORGANIZACION_ADMIN
@@ -414,7 +413,7 @@ const columns: TableColumn<any>[] = [
           onClick: () => handleViewSteps(original.id),
         }),
       ]
-      if (isCoordinacion.value) {
+      if (puedeGestionarConsolidado.value) {
         actions.push(
           h(UButton, {
             size: 'xs',
