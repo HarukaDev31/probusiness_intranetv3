@@ -1523,7 +1523,7 @@ const getPagosColumns = () => {
     return columns
 }
 
-const buildEmbarqueContactoColumn = (cellClass = 'w-70 whitespace-normal'): TableColumn<any> => ({
+const buildEmbarqueContactoColumn = (cellClass = 'w-70 whitespace-normal', label = 'Contacto'): TableColumn<any> => ({
     accessorKey: 'contacto',
     header: () => {
         const isActive = embarqueSortBy.value === 'nombre'
@@ -1531,7 +1531,7 @@ const buildEmbarqueContactoColumn = (cellClass = 'w-70 whitespace-normal'): Tabl
         return h(UButton, {
             color: 'neutral',
             variant: 'ghost',
-            label: 'Contacto',
+            label,
             icon: isActive
                 ? (isAsc ? 'i-lucide-arrow-up-narrow-wide' : 'i-lucide-arrow-down-wide-narrow')
                 : 'i-lucide-arrow-up-down',
@@ -2522,7 +2522,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
             return row.index + 1
         }
     },
-    buildEmbarqueContactoColumn('w-40 whitespace-normal'),
+    buildEmbarqueContactoColumn('w-40 whitespace-normal', 'Customer'),
     {
         accessorKey: 'productos',
         header: 'Productos',

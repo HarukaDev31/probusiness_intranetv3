@@ -14,6 +14,8 @@ export const TABLE_TITLES_EN: Record<string, string> = {
   'Carga Consolidada Abierta': 'Open Consolidated Cargo',
   'Carga Consolidada Completada': 'Completed Consolidated Cargo',
   Clientes: 'Customers',
+  'Manual de usuario': 'User Manual',
+  'Manual de Usuario': 'User Manual',
 }
 
 /** Headers de columna y labels de filtro (español → inglés). */
@@ -92,6 +94,9 @@ export const MENU_LABELS_EN: Record<string, string> = {
   Inicio: 'Home',
   Perfil: 'Profile',
   Calendario: 'Calendar',
+  'Manual de usuario': 'User Manual',
+  'Manual de Usuario': 'User Manual',
+  'Manual usuario': 'User Manual',
 }
 
 export function usesEnglishTableHeaders(role?: string | null): boolean {

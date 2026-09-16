@@ -184,6 +184,10 @@ const pageTitle = computed(() => {
     return 'Base de Datos'
   }
 
+  if (route.path === '/customers' || route.path.startsWith('/customers/')) {
+    return 'Customers'
+  }
+
   // Carga Consolidada
   if (route.path.includes('/cargaconsolidada')) {
     if (route.path.includes('/abiertos')) {
@@ -191,7 +195,6 @@ const pageTitle = computed(() => {
       return 'Carga Abiertos'
     }
     if (route.path.includes('/embarcados')) return 'Carga Embarcados'
-    if (route.path.includes('/customers')) return 'Customers'
     return 'Carga Consolidada'
   }
 
