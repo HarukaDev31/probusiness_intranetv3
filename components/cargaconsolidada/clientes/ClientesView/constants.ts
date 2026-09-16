@@ -1,3 +1,4 @@
+import { ROLES } from '~/constants/roles'
 import type { ProveedorManualStatus } from './types'
 
 export const BACKEND_FILES_BASE_URL = 'https://intranetback.probusiness.pe/files/'
@@ -75,4 +76,10 @@ export function isCoord3DocsEmail(emailOrUser: string | null | undefined | unkno
   }
   const email = String(emailOrUser || '').trim().toLowerCase()
   return email === COORD3_DOCS_EMAIL || email.startsWith('coordinacion3@')
+}
+
+/** Coord 2 y Jefe Importación ven/editan invoice/packing/excel_conf_status (no el VB de Coord 3). */
+export function usaEstadosCoord2(user: unknown, role?: string | null): boolean {
+  if (isCoord2DocsEmail(user)) return true
+  return String(role || '').trim().toLowerCase() === ROLES.JEFE_IMPORTACIONES.toLowerCase()
 }

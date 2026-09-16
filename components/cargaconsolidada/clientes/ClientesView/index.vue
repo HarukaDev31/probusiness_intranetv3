@@ -158,8 +158,7 @@ import {
     DOC_STATUS_COLORS,
     CANAL_OPTIONS,
     CANAL_COLORS,
-    isCoord2DocsEmail,
-    isCoord3DocsEmail,
+    usaEstadosCoord2,
     type CanalSeguimiento,
 } from './constants'
 
@@ -193,8 +192,6 @@ function renderEstadoPermisoPorTipo(list: Array<{ id_tipo_permiso?: number; nomb
 const { withSpinner } = useSpinner()
 const { showConfirmation, showSuccess, showError, showInfo } = useModal()
 const { currentRole: authCurrentRole, currentId, isCoordinacion, isCotizador, userEmail, fetchCurrentUser, getUserData } = useUserRole()
-const isCoord2Docs = computed(() => isCoord2DocsEmail(getUserData() || userEmail.value))
-const isCoord3Docs = computed(() => isCoord3DocsEmail(getUserData() || userEmail.value))
 fetchCurrentUser()
 
 const docStatusSelectStyle = (status: string) => {
@@ -301,6 +298,11 @@ const props = withDefaults(defineProps<ClientesViewProps>(), {
 })
 
 const currentRole = computed(() => props.role || authCurrentRole.value)
+const usaEstadosCoord2Docs = computed(() =>
+    usaEstadosCoord2(getUserData() || userEmail.value, currentRole.value)
+)
+const docStatusField = (base: 'invoice_status' | 'packing_status' | 'excel_conf_status') =>
+    usaEstadosCoord2Docs.value ? base : `${base}_final`
 const isSocio = computed(() => esRolSocio(currentRole.value))
 const isOrgNoAdmin = computed(() => {
     const orgId = getUserData()?.raw?.organizacion?.id
@@ -1158,17 +1160,17 @@ const getColumnsDocumentacionSocio = (): TableColumn<any>[] => [
     {
         accessorKey: 'invoice_status',
         header: 'Invoice',
-        cell: ({ row }: { row: any }) => renderDocStatusSelects(row, 'invoice_status_final', true),
+        cell: ({ row }: { row: any }) => renderDocStatusSelects(row, docStatusField('invoice_status'), true),
     },
     {
         accessorKey: 'packing_status',
         header: 'Packing list',
-        cell: ({ row }: { row: any }) => renderDocStatusSelects(row, 'packing_status_final', true),
+        cell: ({ row }: { row: any }) => renderDocStatusSelects(row, docStatusField('packing_status'), true),
     },
     {
         accessorKey: 'excel_conf_status',
         header: 'Excel Conf.',
-        cell: ({ row }: { row: any }) => renderDocStatusSelects(row, 'excel_conf_status_final', true),
+        cell: ({ row }: { row: any }) => renderDocStatusSelects(row, docStatusField('excel_conf_status'), true),
     },
     {
         accessorKey: 'acciones',
@@ -1644,7 +1646,7 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
         header: 'Invoice',
         cell: ({ row }: { row: any }) => renderDocStatusSelects(
             row,
-            isCoord2Docs.value ? 'invoice_status' : 'invoice_status_final',
+            docStatusField('invoice_status'),
             true
         )
     },
@@ -1653,7 +1655,7 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
         header: 'Packing list',
         cell: ({ row }: { row: any }) => renderDocStatusSelects(
             row,
-            isCoord2Docs.value ? 'packing_status' : 'packing_status_final',
+            docStatusField('packing_status'),
             true
         )
     },
@@ -1662,7 +1664,7 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
         header: 'Excel Conf.',
         cell: ({ row }: { row: any }) => renderDocStatusSelects(
             row,
-            isCoord2Docs.value ? 'excel_conf_status' : 'excel_conf_status_final',
+            docStatusField('excel_conf_status'),
             true
         )
     },

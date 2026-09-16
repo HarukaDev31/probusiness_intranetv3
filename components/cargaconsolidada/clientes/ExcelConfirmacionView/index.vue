@@ -12,7 +12,7 @@ import { STATUS_BG_CLASSES } from '~/constants/ui'
 import {
   MANUAL_STATUS_TO_STATUS_BG_KEY,
   PROVIDER_MANUAL_STATUSES,
-  isCoord2DocsEmail
+  usaEstadosCoord2,
 } from '~/components/cargaconsolidada/clientes/ClientesView/constants'
 import type { ProveedorManualStatus } from '~/components/cargaconsolidada/clientes/ClientesView/types'
 import { useUserRole } from '~/composables/auth/useUserRole'
@@ -55,8 +55,10 @@ const clienteQueryName = computed(() =>
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
 const { updateProveedor } = useCotizacionProveedor()
-const { userEmail, fetchCurrentUser, getUserData } = useUserRole()
-const isCoord2Docs = computed(() => isCoord2DocsEmail(getUserData() || userEmail.value))
+const { currentRole, userEmail, fetchCurrentUser, getUserData } = useUserRole()
+const usaEstadosCoord2Docs = computed(() =>
+  usaEstadosCoord2(getUserData() || userEmail.value, currentRole.value)
+)
 
 fetchCurrentUser()
 
@@ -95,20 +97,20 @@ const statusSelectClass = (status: string | null | undefined) => {
 
 const excelConfStatusClass = computed(() =>
   statusSelectClass(
-    isCoord2Docs.value
+    usaEstadosCoord2Docs.value
       ? activeProveedor.value?.excel_conf_status
       : activeProveedor.value?.excel_conf_status_final
   )
 )
 
 const excelConfStatusField = computed(() =>
-  isCoord2Docs.value ? 'excel_conf_status' : 'excel_conf_status_final'
+  usaEstadosCoord2Docs.value ? 'excel_conf_status' : 'excel_conf_status_final'
 )
 
 const excelConfStatusModel = computed(() => {
   const proveedor = activeProveedor.value
   if (!proveedor) return 'Pendiente' as ProveedorManualStatus
-  const value = isCoord2Docs.value
+  const value = usaEstadosCoord2Docs.value
     ? proveedor.excel_conf_status
     : proveedor.excel_conf_status_final
   return (value || 'Pendiente') as ProveedorManualStatus
@@ -226,7 +228,7 @@ const updateExcelConfStatusField = async (
 
 const updateExcelConfStatus = async (value: string | ProveedorManualStatus) => {
   await updateExcelConfStatusField(
-    isCoord2Docs.value ? 'excel_conf_status' : 'excel_conf_status_final',
+    usaEstadosCoord2Docs.value ? 'excel_conf_status' : 'excel_conf_status_final',
     value
   )
 }
