@@ -238,6 +238,7 @@ export interface SoporteTiChatPaginacion {
   loading: boolean
   loadingOlder: boolean
   initialized: boolean
+  revisadosCount: number
 }
 
 export interface SoporteTiLecturaUsuario {

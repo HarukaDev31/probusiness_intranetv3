@@ -9,7 +9,8 @@ const META_VACIA: SoporteTiChatPaginacion = {
   oldestId: null,
   loading: false,
   loadingOlder: false,
-  initialized: false
+  initialized: false,
+  revisadosCount: 0
 }
 
 export function useSoporteTiChat() {
@@ -123,6 +124,7 @@ export function useSoporteTiChat() {
       patchMeta(chatUuid, {
         hasMoreOlder: res.pagination.hasMore,
         oldestId: res.pagination.oldestId,
+        revisadosCount: res.pagination.revisadosCount,
         initialized: true,
         loading: false,
         loadingOlder: false
@@ -149,6 +151,7 @@ export function useSoporteTiChat() {
       patchMeta(chatUuid, {
         hasMoreOlder: res.pagination.hasMore,
         oldestId: res.pagination.oldestId ?? meta.oldestId,
+        revisadosCount: res.pagination.revisadosCount,
         loadingOlder: false
       })
     } catch {
@@ -173,6 +176,11 @@ export function useSoporteTiChat() {
     )
   }
 
+  function setRevisadosCount(chatUuid: string, count: number) {
+    const n = Number.isFinite(count) ? Math.max(0, Math.trunc(count)) : 0
+    patchMeta(chatUuid, { revisadosCount: n })
+  }
+
   return {
     chats,
     mensajesDe,
@@ -187,6 +195,7 @@ export function useSoporteTiChat() {
     resetChats,
     cargarChatInicial,
     cargarMensajesAnteriores,
-    aplicarMensajesLeidosWs
+    aplicarMensajesLeidosWs,
+    setRevisadosCount
   }
 }

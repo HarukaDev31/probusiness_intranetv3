@@ -7,6 +7,7 @@
     :codigo-ticket="codigoTicket"
     :sala-uuid="chatUuid"
     :mensajes="mensajes"
+    :revisados-count="chatMeta.revisadosCount || 0"
     :has-more-older="chatMeta.hasMoreOlder"
     :loading-chat="chatMeta.loading"
     :loading-older="chatMeta.loadingOlder"

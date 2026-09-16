@@ -114,6 +114,7 @@ export type SoporteTiMensajesResult = {
     oldestId: number | null
     newestId: number | null
     perPage: number
+    revisadosCount: number
   }
   message?: string
 }
@@ -310,10 +311,11 @@ export class SoporteTiService extends BaseService {
     chatUuid: string,
     mensajeId: number,
     revisado: boolean
-  ): Promise<{ success: boolean; data?: SoporteTiMensaje; message?: string }> {
+  ): Promise<{ success: boolean; data?: SoporteTiMensaje; revisadosCount?: number; message?: string }> {
     const raw = await this.apiCall<{
       success: boolean
       data?: SoporteTiMensajeApi
+      revisados_count?: number
       message?: string
     }>(`/api/soporte-ti/chats/${chatUuid}/mensajes/${mensajeId}/revisado`, {
       method: 'PATCH',
@@ -322,6 +324,7 @@ export class SoporteTiService extends BaseService {
     return {
       success: raw.success,
       data: raw.data ? adaptMensaje(raw.data) : undefined,
+      revisadosCount: typeof raw.revisados_count === 'number' ? raw.revisados_count : undefined,
       message: raw.message
     }
   }
@@ -380,7 +383,8 @@ export class SoporteTiService extends BaseService {
         hasMore: raw.pagination?.has_more ?? false,
         oldestId: raw.pagination?.oldest_id ?? null,
         newestId: raw.pagination?.newest_id ?? null,
-        perPage: raw.pagination?.per_page ?? SOPORTE_TI_CHAT_PAGE_SIZE
+        perPage: raw.pagination?.per_page ?? SOPORTE_TI_CHAT_PAGE_SIZE,
+        revisadosCount: Number(raw.pagination?.revisados_count ?? 0)
       },
       message: raw.message
     }

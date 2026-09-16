@@ -139,6 +139,7 @@ export interface SoporteTiChatPaginacionApi {
   newest_id: number | null
   per_page: number
   total?: number | null
+  revisados_count?: number
 }
 
 export interface SoporteTiListStatsApi {
@@ -251,6 +252,7 @@ export interface SoporteTiWsMensajePayload {
   chat_uuid: string
   codigo: string
   mensaje: SoporteTiMensajeApi
+  revisados_count?: number
 }
 
 export interface SoporteTiWsMensajesLeidosPayload {

@@ -57,7 +57,8 @@ export function useSoporteTi() {
     cargarChatInicial,
     cargarMensajesAnteriores,
     aplicarMensajesLeidosWs,
-    resetSala
+    resetSala,
+    setRevisadosCount
   } = useSoporteTiChat()
 
   const rolActivo = computed<SoporteTiRol>(() => {
@@ -206,20 +207,29 @@ export function useSoporteTi() {
 
     const ui = adapted.mensaje
     const lista = mensajesDe(chatUuidEsperado)
+    const existente = lista.find((m) => m.id === ui.id && m.id > 0)
 
-    let idxOptimista = -1
-    for (let i = lista.length - 1; i >= 0; i--) {
-      const m = lista[i]!
-      if (
-        m.esPropio &&
-        ui.esPropio &&
-        (m.estadoEnvio === 'pendiente' || m.estadoEnvio === 'enviando') &&
-        (m.clientId || m.id < 0)
-      ) {
-        idxOptimista = i
-        break
-      }
+    if (typeof adapted.revisadosCount === 'number') {
+      setRevisadosCount(chatUuidEsperado, adapted.revisadosCount)
+    } else if (existente && existente.revisado !== ui.revisado) {
+      const actual = metaDe(chatUuidEsperado).revisadosCount || 0
+      setRevisadosCount(chatUuidEsperado, actual + (ui.revisado ? 1 : -1))
     }
+
+    const idxOptimista = (() => {
+      for (let i = lista.length - 1; i >= 0; i--) {
+        const m = lista[i]!
+        if (
+          m.esPropio &&
+          ui.esPropio &&
+          (m.estadoEnvio === 'pendiente' || m.estadoEnvio === 'enviando') &&
+          (m.clientId || m.id < 0)
+        ) {
+          return i
+        }
+      }
+      return -1
+    })()
     if (idxOptimista >= 0) {
       const prev = lista[idxOptimista]!
       reemplazarMensajeOptimista(chatUuidEsperado, prev.clientId ?? clientIdFallback(prev), {
@@ -231,7 +241,6 @@ export function useSoporteTi() {
       return
     }
 
-    const existente = lista.find((m) => m.id === ui.id && m.id > 0)
     if (esActualizacion || existente) {
       actualizarMensajeEnSala(chatUuidEsperado, {
         ...(existente ?? ui),
@@ -639,6 +648,8 @@ export function useSoporteTi() {
     }
 
     actualizarMensajeEnSala(chatUuid, { ...prev, revisado })
+    const prevCount = metaDe(chatUuid).revisadosCount || 0
+    setRevisadosCount(chatUuid, prevCount + (revisado ? 1 : -1))
     try {
       const res = await SoporteTiService.marcarMensajeRevisado(chatUuid, mensajeId, revisado)
       if (!res.success || !res.data) {
@@ -649,9 +660,13 @@ export function useSoporteTi() {
         ...actual,
         revisado: res.data.revisado === true
       })
+      if (typeof res.revisadosCount === 'number') {
+        setRevisadosCount(chatUuid, res.revisadosCount)
+      }
       return { ok: true }
     } catch (e: unknown) {
       actualizarMensajeEnSala(chatUuid, prev)
+      setRevisadosCount(chatUuid, prevCount)
       const msg = e instanceof Error ? e.message : 'No se pudo actualizar el mensaje'
       return { ok: false, error: msg }
     }

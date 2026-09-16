@@ -66,6 +66,17 @@
         </UCard>
       </div>
       <div
+        v-if="modoSolicitante"
+        class="flex items-center justify-end border-b border-default px-4 py-2"
+      >
+        <UBadge color="success" variant="soft" size="sm">
+          <span class="inline-flex items-center gap-1">
+            <UIcon name="i-heroicons-check-circle-solid" class="size-3.5" />
+            Revisados {{ revisadosCount }}
+          </span>
+        </UBadge>
+      </div>
+      <div
         v-if="!modoSolicitante"
         class="border-b border-default px-4 py-3"
         :class="mostrarFasesCabecera ? 'space-y-3' : ''"
@@ -77,6 +88,12 @@
           <div class="min-w-0 flex-1">
             <p class="text-sm font-semibold text-highlighted">Conversación</p>
           </div>
+          <UBadge color="success" variant="soft" size="sm" title="Mensajes revisados">
+            <span class="inline-flex items-center gap-1">
+              <UIcon name="i-heroicons-check-circle-solid" class="size-3.5" />
+              Revisados {{ revisadosCount }}
+            </span>
+          </UBadge>
           <UBadge v-if="mensajes.length" color="neutral" variant="soft" size="sm">
             {{ mensajes.length }}
           </UBadge>
@@ -663,6 +680,7 @@ const props = withDefaults(
     codigoTicket: string
     salaUuid: string
     mensajes: SoporteTiMensaje[]
+    revisadosCount?: number
     hasMoreOlder?: boolean
     loadingChat?: boolean
     loadingOlder?: boolean
@@ -689,6 +707,7 @@ const props = withDefaults(
     procesandoMaquetaChat?: boolean
   }>(),
   {
+    revisadosCount: 0,
     hasMoreOlder: false,
     loadingChat: false,
     loadingOlder: false,
