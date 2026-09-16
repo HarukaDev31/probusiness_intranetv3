@@ -790,7 +790,6 @@ function mergeProveedorConExtraido(
   return {
     ...actual,
     cbmTotal: extraido.cbm_total ?? actual.cbmTotal,
-    pesoTotal: extraido.peso_total ?? actual.pesoTotal,
     qtyCajas: extraido.qty_cajas ?? actual.qtyCajas,
     productos: extraido.productos ?? actual.productos,
     unidades: extraido.unidades ?? extraido.qty_cajas ?? actual.unidades,
