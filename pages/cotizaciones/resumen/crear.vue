@@ -300,7 +300,14 @@
             </UFormField>
 
             <UFormField label="Descuento (opcional)">
-              <UInput v-model.number="descuento" type="number" min="0" step="0.01" class="w-full">
+              <UInput
+                :model-value="descuento"
+                type="number"
+                min="0"
+                step="0.01"
+                class="w-full"
+                @update:model-value="onDescuento"
+              >
                 <template #leading>
                   <span class="text-gray-400">$</span>
                 </template>
@@ -880,6 +887,15 @@ function cbmImoValido(prov: ProveedorResumen) {
 
 // ─── Paso 3: terminar ───────────────────────────────────────────────────────
 const descuento = ref(0)
+
+function onDescuento(v: string | number | null | undefined) {
+  if (v === '' || v === null || v === undefined) {
+    descuento.value = 0
+    return
+  }
+  const n = typeof v === 'number' ? v : Number(v)
+  descuento.value = Number.isFinite(n) && n >= 0 ? n : 0
+}
 const selectedVendedor = ref<number | null>(null)
 const selectedContenedor = ref<number | null>(null)
 const whatsappPlaceholder = computed(() => {
@@ -922,7 +938,7 @@ async function cargarEdicion(id: number) {
     clienteInfo.correo = d.cliente.correo || ''
     await searchClientes(clienteInfo.whatsapp)
     sincronizarWhatsappMenu(clienteInfo.whatsapp, d.cliente.id)
-    descuento.value = d.descuento || 0
+    descuento.value = Number(d.descuento) > 0 ? Number(d.descuento) : 0
     selectedVendedor.value = d.id_usuario
     selectedContenedor.value = d.id_contenedor
     if (d.archivo) {
@@ -1023,7 +1039,7 @@ function payloadWizard() {
         .filter((c) => c.concepto.trim() !== '' && Number(c.valor) > 0)
         .map((c) => ({ concepto: c.concepto.trim(), valor: Number(c.valor) }))
     })),
-    descuento: descuento.value || undefined,
+    descuento: Number(descuento.value) || 0,
     qty_proveedores: Number(qtyProveedores.value) >= 1
       ? Number(qtyProveedores.value)
       : providers.value.length,
