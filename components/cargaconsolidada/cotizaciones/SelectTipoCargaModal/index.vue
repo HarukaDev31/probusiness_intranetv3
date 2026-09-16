@@ -18,24 +18,23 @@
           <div class=" p-4 rounded-lg">
             <h3 class="text-sm font-medium text-gray-700 mb-3">
               {{ usarTipoGuardado
-                ? 'Aparecen todos los proveedores de la fila. Asigna el tipo y envía si al menos uno no está en PENDIENTE.'
+                ? 'Asigna General a los que quieras enviar. Los que queden en Pendiente no se envían.'
                 : 'Selecciona los items y su tipo de rotulado' }}
             </h3>
             
-            <!-- Lista de items con checkboxes -->
             <div class="space-y-3 max-h-96 overflow-y-auto">
-              <UCheckboxGroup 
+              <UCheckboxGroup
+                v-if="!usarTipoGuardado"
                 v-model="selectedItems"
                 :items="checkboxItems"
               />
               
-              <!-- Selector de tipo de carga para items seleccionados -->
-              <div v-if="selectedItems.length > 0" class="mt-4 space-y-3">
-                <h4 class="text-sm font-medium text-gray-700">
-                  {{ usarTipoGuardado ? 'Asigna el tipo de rotulado a cada proveedor:' : 'Selecciona el tipo de rotulado para cada item:' }}
+              <div v-if="filasRotulado.length > 0" :class="usarTipoGuardado ? 'space-y-3' : 'mt-4 space-y-3'">
+                <h4 v-if="!usarTipoGuardado" class="text-sm font-medium text-gray-700">
+                  Selecciona el tipo de rotulado para cada item:
                 </h4>
                 <div
-                  v-for="itemId in selectedItems"
+                  v-for="itemId in filasRotulado"
                   :key="itemId"
                   class=" border border-gray-200 rounded-lg p-3"
                 >
@@ -205,8 +204,21 @@ const itemTipoCarga = ref<Record<string, string>>({})
 const movilidadItemsSeleccionados = ref<Record<string, string[]>>({})
 const itemForceSend = ref<Record<string, boolean>>({})
 
+const filasRotulado = computed(() => {
+  if (usarTipoGuardado.value) {
+    return availableItems.value.map(item => item.id.toString())
+  }
+  return selectedItems.value
+})
+
 const selectedListos = computed(() => {
-  return selectedItems.value.filter(itemId => !esTipoPendiente(itemTipoCarga.value[itemId]))
+  return filasRotulado.value.filter((itemId) => {
+    const tipo = itemTipoCarga.value[itemId]
+    if (soloPendienteGeneral.value) {
+      return String(tipo || '').trim().toLowerCase() === 'rotulado'
+    }
+    return !esTipoPendiente(tipo)
+  })
 })
 
 const checkboxItems = computed(() => {
@@ -258,7 +270,9 @@ const canSave = computed(() => {
 const mensajeValidacion = computed(() => {
   if (usarTipoGuardado.value) {
     if (selectedListos.value.length === 0) {
-      return 'Asigna un tipo distinto de PENDIENTE a al menos un proveedor para poder enviar.'
+      return soloPendienteGeneral.value
+        ? 'Marca General en al menos un proveedor para poder enviar.'
+        : 'Asigna un tipo distinto de Pendiente a al menos un proveedor para poder enviar.'
     }
     return 'Si el proveedor ya fue enviado, marca Reenviar para incluirlo.'
   }
@@ -316,9 +330,7 @@ const loadItems = async () => {
           itemForceSend.value[id] = false
         })
         if (usarTipoGuardado.value) {
-          selectedItems.value = availableItems.value
-            .filter((item: any) => !esTipoPendiente(item.tipo_rotulado))
-            .map((item: any) => item.id.toString())
+          selectedItems.value = availableItems.value.map((item: any) => item.id.toString())
         }
         const prefillId = props.prefillProveedorId ? String(props.prefillProveedorId) : ''
         if (prefillId && itemTipoCarga.value[prefillId] !== undefined) {
@@ -441,7 +453,7 @@ const getSelectedMovilidadQtySum = (itemId: string) => {
 }
 
 const totalMovilidadPersonalSeleccionada = computed(() => {
-  return selectedItems.value.reduce((total, itemId) => {
+  return filasRotulado.value.reduce((total, itemId) => {
     const tipo = itemTipoCarga.value[itemId]
     if (tipo === 'movilidad_personal') {
       return total + getSelectedMovilidadQtySum(itemId)
