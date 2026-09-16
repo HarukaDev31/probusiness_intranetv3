@@ -678,8 +678,8 @@ async function procesarArchivo(file: File) {
 
     proveedoresExtraidos.value = res.data?.proveedores ?? []
     aplicarExtraidosAProveedores()
-    if (Number(qtyProveedores.value) < 1 && proveedoresExtraidos.value.length > 0) {
-      qtyProveedores.value = proveedoresExtraidos.value.length
+    if (!esEdicion.value) {
+      qtyProveedores.value = 0
     }
 
     if (!res.extracted_by_ai) {
