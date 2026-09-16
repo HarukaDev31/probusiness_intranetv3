@@ -74,7 +74,7 @@
             <div class="flex-1">
               <div class="text-xs text-gray-500">{{ row.mes }}</div>
               <div class="font-semibold text-sm">Consolidado #{{ row.carga }}</div>
-              <div v-if="isOrgAdmin && row.organizacion?.nombre" class="text-xs text-gray-400">{{ row.organizacion.nombre }}</div>
+              <div v-if="isOrgAdmin && !isAlmacen && row.organizacion?.nombre" class="text-xs text-gray-400">{{ row.organizacion.nombre }}</div>
               <div class="text-xs text-gray-400 mt-1">{{ row.empresa }}</div>
               <div class="mt-1 text-xs text-gray-400 flex flex-col items-center gap-1">
                 <span v-if="row.f_cierre">Cierre: {{ formatDateTimeToDmy(row.f_cierre) }}</span>
@@ -625,7 +625,7 @@ const getColumns = () => {
     case ROLES.JEFE_IMPORTACIONES:
       return withOrgColumn(documentacionColumns)
     case ROLES.CONTENEDOR_ALMACEN:
-      return withOrgColumn(almacenColumns)
+      return almacenColumns
     case ROLES.FINANZAS:
       return withOrgColumn(finanzasColumns)
     default:

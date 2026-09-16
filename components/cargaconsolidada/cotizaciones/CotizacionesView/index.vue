@@ -1569,7 +1569,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
 
             const div = h('div',
                 {
-                    class: 'flex flex-col gap-2'
+                    class: 'flex flex-col gap-2 min-w-44 w-44'
                 },
                 proveedores.map((proveedor: any) => {
                     // Transformar las opciones para incluir clases de color
@@ -1584,7 +1584,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                         items: optionsWithClasses,
                         placeholder: 'Seleccionar estado',
                         value: proveedor.estados_proveedor,
-                        class: STATUS_BG_CLASSES[proveedor.estados_proveedor as keyof typeof STATUS_BG_CLASSES],
+                        class: `${STATUS_BG_CLASSES[proveedor.estados_proveedor as keyof typeof STATUS_BG_CLASSES] || ''} min-w-44 w-44`,
                         disabled: currentRole.value !== ROLES.CONTENEDOR_ALMACEN,
                         modelValue: proveedor.estados_proveedor,
                         'onUpdate:modelValue': (value: any) => {
@@ -2025,7 +2025,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
 
             const div = h('div',
                 {
-                    class: 'flex flex-col gap-2'
+                    class: 'flex flex-col gap-2 min-w-44 w-44'
                 },
                 proveedores.map((proveedor: any) => {
                     // Transformar las opciones para incluir clases de color
@@ -2040,7 +2040,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                         items: optionsWithClasses,
                         placeholder: 'Seleccionar estado',
                         value: proveedor.estados_proveedor,
-                        class: STATUS_BG_CLASSES[proveedor.estados_proveedor as keyof typeof STATUS_BG_CLASSES],
+                        class: `${STATUS_BG_CLASSES[proveedor.estados_proveedor as keyof typeof STATUS_BG_CLASSES] || ''} min-w-44 w-44`,
                         disabled: currentRole.value !== ROLES.CONTENEDOR_ALMACEN,
                         modelValue: proveedor.estados_proveedor,
                         'onUpdate:modelValue': (value: any) => {
@@ -2486,7 +2486,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
 
             const div = h('div',
                 {
-                    class: 'flex flex-col gap-2'
+                    class: 'flex flex-col gap-2 min-w-44 w-44'
                 },
                 proveedores.map((proveedor: any) => {
                     // Transformar las opciones para incluir clases de color
@@ -2501,7 +2501,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                         items: optionsWithClasses,
                         placeholder: 'Seleccionar estado',
                         value: proveedor.estados_proveedor,
-                        class: STATUS_BG_CLASSES[proveedor.estados_proveedor as keyof typeof STATUS_BG_CLASSES],
+                        class: `${STATUS_BG_CLASSES[proveedor.estados_proveedor as keyof typeof STATUS_BG_CLASSES] || ''} min-w-44 w-44`,
                         disabled: currentRole.value !== ROLES.CONTENEDOR_ALMACEN,
                         modelValue: proveedor.estados_proveedor,
                         'onUpdate:modelValue': (value: any) => {
@@ -3414,13 +3414,13 @@ const getEmbarqueSocioColumns = (): TableColumn<any>[] => {
         {
             accessorKey: 'status',
             header: 'Status China',
-            cell: ({ row }: { row: any }) => h('div', { class: 'flex flex-col gap-2' }, (row.original.proveedores || []).map((proveedor: any) => {
+            cell: ({ row }: { row: any }) => h('div', { class: 'flex flex-col gap-2 min-w-44 w-44' }, (row.original.proveedores || []).map((proveedor: any) => {
                 const estado = proveedor.estados_proveedor || '—'
                 return h(UBadge as any, {
                     label: estado,
                     color: 'neutral',
                     variant: 'soft',
-                    class: STATUS_BG_CLASSES[estado as keyof typeof STATUS_BG_CLASSES] || '',
+                    class: `${STATUS_BG_CLASSES[estado as keyof typeof STATUS_BG_CLASSES] || ''} min-w-44 w-44 justify-center`,
                 })
             })),
         },
