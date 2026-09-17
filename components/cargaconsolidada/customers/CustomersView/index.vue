@@ -1,8 +1,5 @@
 <template>
   <div>
-    <div class="px-0 md:px-4 pt-2 md:pt-4 pb-1">
-      <CustomersKpiCards class="w-full min-w-0" :headers="headers" @filter-nc="filterByNc" />
-    </div>
     <DataTable
       title="Clientes"
       icon=""
@@ -22,14 +19,23 @@
       :filters-value="filters"
       :show-export="false"
       :hide-back-button="true"
-      :show-body-top="false"
+      :show-body-top="true"
+      :fill-viewport="false"
       empty-state-message="No confirmed customers found."
       @update:primary-search="handleSearch"
       @page-change="handlePageChange"
       @items-per-page-change="handleItemsPerPageChange"
       @filter-change="handleFilterChange"
       @clear-filters="clearFilters"
-    />
+    >
+      <template #body-top>
+        <CustomersKpiCards
+          class="w-full min-w-0 shrink-0"
+          :headers="headers"
+          @filter-nc="filterByNc"
+        />
+      </template>
+    </DataTable>
   </div>
 </template>
 
@@ -38,6 +44,7 @@ import { computed, h, onMounted } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { UBadge, UButton, UIcon, UInput, USelect } from '#components'
 import { useCustomers, CUSTOMERS_PAGINATION_OPTIONS } from '~/composables/cargaconsolidada/customers'
+import CustomersKpiCards from '~/components/cargaconsolidada/customers/CustomersKpiCards.vue'
 import { useCotizacionProveedor } from '~/composables/cargaconsolidada/useCotizacionProveedor'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'

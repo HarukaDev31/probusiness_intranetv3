@@ -263,7 +263,7 @@
       -->
 
       <!-- Body Top Slot (compact on mobile) -->
-      <div class="flex flex-col sm:flex-row justify-center md:justify-between px-0 py-0 md:px-4 sm:py-4 text-xs sm:text-sm gap-2" v-if="showBodyTop">
+      <div class="flex flex-col w-full min-w-0 overflow-visible px-0 py-0 md:px-4 sm:py-4 text-xs sm:text-sm gap-2" v-if="showBodyTop">
         <slot name="body-top" />
       </div>
     </div>

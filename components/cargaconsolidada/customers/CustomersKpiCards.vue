@@ -29,19 +29,22 @@
 import { computed } from 'vue'
 import type { Header } from '~/types/data-table'
 
-const props = defineProps<{
-  headers: Record<string, Header>
-}>()
+const props = withDefaults(defineProps<{
+  headers?: Record<string, Header> | null
+}>(), {
+  headers: () => ({}),
+})
 
 const emit = defineEmits<{
   'filter-nc': []
 }>()
 
 const kpiCards = computed(() => {
-  const cbm = props.headers.cbm_warehouse
-  const customersHeader = props.headers.total_customers
-  const suppliers = props.headers.total_suppliers_code
-  const nc = props.headers.total_nc
+  const source = props.headers || {}
+  const cbm = source.cbm_warehouse
+  const customersHeader = source.total_customers
+  const suppliers = source.total_suppliers_code
+  const nc = source.total_nc
   return [
     {
       key: 'cbm_warehouse',
