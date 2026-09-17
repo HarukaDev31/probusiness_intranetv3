@@ -206,12 +206,35 @@ export function useWhatsappInbox() {
 
   function pinSelectedConversationInList() {
     const convId = selectedConversationId.value
-    if (!convId || !search.value.trim()) return
+    if (!convId) return
     if (allConversations.value.some((c) => c.id === convId)) return
     const conv = findConversationById(convId)
     if (conv) {
       allConversations.value = sortConversationsList([conv, ...allConversations.value])
     }
+  }
+
+  function mergeFirstPageConversations(
+    incoming: WaInboxConversation[],
+    previous: WaInboxConversation[],
+    selectedId: number | null
+  ) {
+    const incomingIds = new Set(incoming.map((c) => c.id))
+    const last = incoming[incoming.length - 1]
+    const lastTs = last?.last_message_at ? new Date(last.last_message_at).getTime() : 0
+    const lastId = last ? last.id : 0
+
+    const extras = previous.filter((c) => {
+      if (incomingIds.has(c.id)) return false
+      if (selectedId && c.id === selectedId) return true
+      const ts = c.last_message_at ? new Date(c.last_message_at).getTime() : 0
+      if (lastTs <= 0) return true
+      if (ts < lastTs) return true
+      if (ts === lastTs && c.id < lastId) return true
+      return false
+    })
+
+    return sortConversationsList([...incoming, ...extras])
   }
 
   function syncConversationsFromStore() {
@@ -229,14 +252,21 @@ export function useWhatsappInbox() {
       return
     }
 
-    allConversations.value = [...snap]
+    allConversations.value = mergeFirstPageConversations(
+      snap,
+      allConversations.value,
+      selectedConversationId.value
+    )
+    pinSelectedConversationInList()
   }
 
   function syncOpenMessagesFromStore(convId: number) {
     if (selectedConversationId.value !== convId) return
     const entry = cache.getMessagesEntry(convId)
     if (!entry?.messages?.length) return
-    messages.value = [...entry.messages]
+    const local =
+      messagesConversationId.value === convId ? messages.value : []
+    messages.value = mergeMessageLists(entry.messages, local)
     messagesConversationId.value = convId
   }
 
@@ -540,11 +570,6 @@ export function useWhatsappInbox() {
       && cachedMsgs.length > 0
     ) {
       applyMessagesForConversation(conversationId, cachedMsgs)
-      return
-    }
-    if (selectedConversationId.value === conversationId) {
-      messages.value = []
-      messagesConversationId.value = null
     }
   }
 
@@ -774,11 +799,16 @@ export function useWhatsappInbox() {
 
     const fetchConversations = async () => {
       try {
+        const includeId =
+          !append && page === 1 && !search.value.trim()
+            ? selectedConversationId.value || undefined
+            : undefined
         const res = await WhatsappInboxService.getConversations({
           filter: filter.value,
           search: search.value.trim() || undefined,
           per_page: CONVERSATIONS_PER_PAGE,
-          page
+          page,
+          include_id: includeId
         })
         const rows = Array.isArray(res?.data) ? res.data : []
         if (append) {
@@ -788,6 +818,12 @@ export function useWhatsappInbox() {
             if (!seen.has(row.id)) merged.push(row)
           }
           allConversations.value = sortConversationsList(merged)
+        } else if (page === 1 && !search.value.trim() && rows.length > 0) {
+          allConversations.value = mergeFirstPageConversations(
+            rows,
+            allConversations.value,
+            selectedConversationId.value
+          )
         } else {
           allConversations.value = rows
         }
@@ -803,6 +839,23 @@ export function useWhatsappInbox() {
 
         if (page === 1 && !search.value.trim()) {
           cache.setAllConversations(allConversations.value)
+        }
+        pinSelectedConversationInList()
+        const selectedId = selectedConversationId.value
+        if (
+          selectedId
+          && page === 1
+          && !search.value.trim()
+          && !allConversations.value.some((c) => c.id === selectedId)
+        ) {
+          try {
+            const extra = await WhatsappInboxService.getMessages(selectedId, { per_page: 1 })
+            if (extra?.conversation) {
+              upsertConversation(extra.conversation as WaInboxConversation)
+            }
+          } catch {
+            // El listado de página 1 no incluye hilos más antiguos; se conserva el chat abierto.
+          }
         }
         ensureSelectedConversation()
       } catch (e: any) {
