@@ -46,6 +46,7 @@ export interface ReminderPagoPreview {
     message: string
     has_excel: boolean
     excel_url?: string | null
+    fecha_maxima_pago?: string | null
 }
 
 export interface ReminderPagoPreviewResponse {

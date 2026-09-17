@@ -157,6 +157,8 @@ export interface HeaderResponse {
   lista_embarque_url?: string
   /** Fecha límite de pago (contenedor) - usado en cotización final */
   f_puerto?: string
+  /** Fecha máxima de pago definida por Coordinación (YYYY-MM-DD) */
+  fecha_maxima_pago?: string | null
   /** Fecha de cierre del contenedor (cut off) */
   f_cierre?: string
   /** Total diferencia entre lo pagado e impuestos + logística (cotización final, tab Pagos) */
