@@ -21,6 +21,12 @@ export class CustomersService extends BaseService {
     if (filters.estado_china && filters.estado_china !== 'todos') {
       params.estado_china = filters.estado_china
     }
+    if (filters.fecha_inicio) {
+      params.fecha_inicio = filters.fecha_inicio
+    }
+    if (filters.fecha_fin) {
+      params.fecha_fin = filters.fecha_fin
+    }
     return this.apiCall<CustomersResponse>(this.baseUrl, {
       method: 'GET',
       params,

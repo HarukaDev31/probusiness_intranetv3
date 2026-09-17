@@ -37,8 +37,18 @@
             :hide-back-button="false">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
-                    <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
-                        :loading="loading || loadingHeaders" />
+                    <CustomersKpiCards
+                        v-if="currentRole === ROLES.CONTENEDOR_ALMACEN"
+                        class="w-full min-w-0"
+                        :headers="headersByKey"
+                        @filter-nc="filterByNc"
+                    />
+                    <SectionHeader
+                        v-else
+                        :title="`Contenedor #${carga}`"
+                        :headers="headersCotizaciones"
+                        :loading="loading || loadingHeaders"
+                    />
                     <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-1 w-80 h-15"
                         v-if="tabs.length > 1" />
                 </div>
@@ -119,6 +129,7 @@ import CreatePagoModal from '~/components/commons/CreatePagoModal.vue'
 import ModalPreview from '~/components/commons/ModalPreview.vue'
 import AdelantoPreviewModal from '~/components/commons/AdelantoPreviewModal.vue'
 import SectionHeader from '~/components/commons/SectionHeader.vue'
+import CustomersKpiCards from '~/components/cargaconsolidada/customers/CustomersKpiCards.vue'
 import { useCotizacionPagos } from '~/composables/cargaconsolidada/useCotizacionPagos'
 import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
 import SelectTipoCargaModal from '~/components/cargaconsolidada/cotizaciones/SelectTipoCargaModal/index.vue'
@@ -166,6 +177,7 @@ const { cotizaciones,
     filters: filtersCotizaciones,
     getCotizaciones,
     headersCotizaciones,
+    headersByKey,
     getHeaders,
     carga,
     loadingHeaders,
@@ -2639,7 +2651,9 @@ const handleFilterChangeProspectos = async (filterType: string, value: string) =
     await getCotizaciones(Number(id))
 }
 
-
+const filterByNc = async () => {
+    await handleFilterChange('estado_china', 'NC')
+}
 
 // Watch inmediato para la carga inicial
 watch(() => tab.value, async (newVal) => {

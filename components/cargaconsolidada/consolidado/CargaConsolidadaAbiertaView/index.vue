@@ -184,6 +184,7 @@ const {
   filters,
   anioOptions,
   organizacionOptions,
+  empresaOptions,
   getConsolidadoData,
   handleSearch,
   handlePageChange,
@@ -272,7 +273,15 @@ const filterConfig = computed<FilterConfig[]>(() => {
       placeholder: 'Selecciona un año',
     },
   ]
-  if (isOrgAdmin.value && organizacionOptions.value.length > 1) {
+  if (isAlmacen.value) {
+    baseConfig.push({
+      label: 'Empresa',
+      key: 'empresa',
+      type: 'select',
+      options: empresaOptions.value,
+      placeholder: 'Selecciona una empresa',
+    })
+  } else if (isOrgAdmin.value && organizacionOptions.value.length > 1) {
     baseConfig.push({
       label: 'Organización',
       key: 'organizacion_id',

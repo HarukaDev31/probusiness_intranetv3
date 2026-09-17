@@ -30,6 +30,8 @@ export const useCustomers = () => {
   const filters = ref<CustomersFilters>({
     id_pais: 'todos',
     estado_china: 'todos',
+    fecha_inicio: '',
+    fecha_fin: '',
   })
   const pagination = ref<PaginationInfo>({
     current_page: 1,
@@ -47,6 +49,20 @@ export const useCustomers = () => {
   const currentPage = computed(() => pagination.value.current_page)
 
   const filterConfig = computed<FilterConfig[]>(() => [
+    {
+      key: 'fecha_inicio',
+      label: 'Fecha inicio',
+      type: 'date',
+      placeholder: 'Seleccionar fecha',
+      options: [],
+    },
+    {
+      key: 'fecha_fin',
+      label: 'Fecha fin',
+      type: 'date',
+      placeholder: 'Seleccionar fecha',
+      options: [],
+    },
     {
       key: 'id_pais',
       label: 'País',
@@ -113,10 +129,15 @@ export const useCustomers = () => {
     await getCustomers()
   }
 
+  const DATE_FILTER_KEYS = ['fecha_inicio', 'fecha_fin']
+
   const handleFilterChange = async (key: string, value: unknown) => {
+    const next = DATE_FILTER_KEYS.includes(key)
+      ? unwrapFilterValue(value)
+      : normalizeCustomersFilter(value)
     filters.value = {
       ...filters.value,
-      [key]: normalizeCustomersFilter(value),
+      [key]: next,
     }
     pagination.value.current_page = 1
     await getCustomers()
@@ -126,6 +147,8 @@ export const useCustomers = () => {
     filters.value = {
       id_pais: 'todos',
       estado_china: 'todos',
+      fecha_inicio: '',
+      fecha_fin: '',
     }
     pagination.value.current_page = 1
     await getCustomers()

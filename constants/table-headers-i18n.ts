@@ -28,6 +28,7 @@ export const TABLE_HEADERS_EN: Record<string, string> = {
   'F. Arribo': 'ETA',
   'F. Entrega': 'Delivery Date',
   Empresa: 'Company',
+  Organización: 'Organization',
   Estado: 'Status',
   'CBM Perú': 'CBM Customer',
   'CBM China': 'CBM China',
@@ -57,16 +58,25 @@ export const TABLE_HEADERS_EN: Record<string, string> = {
   Descuento: 'Discount',
   'Cargos extra': 'Extra charges',
   Todos: 'All',
+  Todas: 'All',
   'Selecciona un año': 'Select a year',
   'Selecciona un estado': 'Select a status',
+  'Selecciona una empresa': 'Select a company',
+  'Selecciona una organización': 'Select an organization',
   'Seleccionar país': 'Select country',
   'Seleccionar estado': 'Select status',
+  'Seleccionar fecha': 'Select date',
+  'Fecha inicio': 'Start date',
+  'Fecha fin': 'End date',
+  'Fecha Inicio': 'Start date',
+  'Fecha Fin': 'End date',
   Rubro: 'Category',
   'Tipo Producto': 'Product Type',
   Campaña: 'Campaign',
   'Seleccionar rubro': 'Select category',
   'Seleccionar tipo': 'Select type',
   'Seleccionar campaña': 'Select campaign',
+  
 }
 
 /** Nombres de menú (español → inglés). Fallback si no hay No_Menu_China. */

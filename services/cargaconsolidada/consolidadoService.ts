@@ -16,6 +16,8 @@ export interface ConsolidadoParams {
     role?: string
     /** Org 1: filtrar por organización. */
     organizacion_id?: string
+    /** Almacén: filtrar por empresa del consolidado. */
+    empresa?: string
 }
 
 export class ConsolidadoService extends BaseService {
@@ -73,6 +75,10 @@ export class ConsolidadoService extends BaseService {
 
             if (params.organizacion_id && params.organizacion_id.trim() && params.organizacion_id !== 'todos') {
                 cleanParams.organizacion_id = params.organizacion_id.trim()
+            }
+
+            if (params.empresa && params.empresa.trim() && params.empresa !== 'todos') {
+                cleanParams.empresa = params.empresa.trim()
             }
 
             const response = await this.apiCall<ContenedorResponse>(`${this.baseUrl}`, {

@@ -3,6 +3,8 @@ import type { Header, PaginationInfo } from '~/types/data-table'
 export interface CustomersFilters {
   id_pais?: string
   estado_china?: string
+  fecha_inicio?: string
+  fecha_fin?: string
 }
 
 export interface CustomerProveedor {

@@ -25,6 +25,7 @@ export const useCotizacion = () => {
     })
     const packingList = ref<any>(null)
     const headersCotizaciones = ref<Header[]>([])
+    const headersByKey = ref<Record<string, Header>>({})
     const headersPagos = ref<Header[]>([])
     const fCierre = ref<string | null>(null)
     const urlClientes = ref<string | null>(null)
@@ -191,9 +192,11 @@ export const useCotizacion = () => {
         loadingHeaders.value = true
         try {
             const response = await CotizacionService.getHeaders(id)
-            const headers = Array.isArray(response.data)
-                ? response.data
-                : Object.values(response.data ?? {})
+            const rawHeaders = response.data ?? {}
+            headersByKey.value = Array.isArray(rawHeaders) ? {} : (rawHeaders as Record<string, Header>)
+            const headers = Array.isArray(rawHeaders)
+                ? rawHeaders
+                : Object.values(rawHeaders)
 
             headersCotizaciones.value = headers as Header[]
 
@@ -327,6 +330,7 @@ export const useCotizacion = () => {
         currentPage,
         filters,
         headersCotizaciones,
+        headersByKey,
         headersPagos,
         getCotizaciones,
         refreshCotizacionFile,

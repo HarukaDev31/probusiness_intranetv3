@@ -1,5 +1,8 @@
 <template>
   <div>
+    <div class="px-0 md:px-4 pt-2 md:pt-4 pb-1">
+      <CustomersKpiCards class="w-full min-w-0" :headers="headers" @filter-nc="filterByNc" />
+    </div>
     <DataTable
       title="Clientes"
       icon=""
@@ -19,18 +22,14 @@
       :filters-value="filters"
       :show-export="false"
       :hide-back-button="true"
-      :show-body-top="true"
+      :show-body-top="false"
       empty-state-message="No confirmed customers found."
       @update:primary-search="handleSearch"
       @page-change="handlePageChange"
       @items-per-page-change="handleItemsPerPageChange"
       @filter-change="handleFilterChange"
       @clear-filters="clearFilters"
-    >
-      <template #body-top>
-        <CustomersKpiCards class="w-full min-w-0" :headers="headers" @filter-nc="filterByNc" />
-      </template>
-    </DataTable>
+    />
   </div>
 </template>
 

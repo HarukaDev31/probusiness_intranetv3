@@ -3,7 +3,7 @@
     <article
       v-for="card in kpiCards"
       :key="card.key"
-      class="relative flex items-center gap-4 min-h-[108px] px-5 py-[22px] rounded-xl bg-white dark:bg-gray-800 shadow-[0_6px_20px_rgba(23,35,58,0.1)]"
+      class="relative flex items-center gap-4 min-h-[108px] px-5 py-[22px] rounded-xl bg-white dark:bg-gray-800 shadow-[0_6px_20px_rgba(23,35,58,0.1)] border-l-[3px] border-[#f26522]"
       :class="card.clickable ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/60' : ''"
       @click="card.clickable ? emit('filter-nc') : undefined"
     >
@@ -45,7 +45,7 @@ const kpiCards = computed(() => {
   return [
     {
       key: 'cbm_warehouse',
-      label: cbm?.label || 'CBM warehouse',
+      label: cbm?.label || 'CBM Warehouse',
       value: cbm?.value ?? '0',
       icon: 'fluent:box-32-filled',
       clickable: false,
