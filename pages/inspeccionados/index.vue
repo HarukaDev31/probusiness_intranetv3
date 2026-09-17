@@ -94,7 +94,7 @@ const confirmReminderPago = async () => {
         }, 'Enviando recordatorio…')
     } catch (err) {
         console.error('Error send reminder:', err)
-        showError('Error', 'Error al enviar recordatorio')
+        showError('Error', err instanceof Error ? err.message : 'Error al enviar recordatorio')
     } finally {
         reminderPagoModal.loading = false
     }

@@ -3,11 +3,21 @@ import type { ReminderPagoPreview } from '~/types/cargaconsolidada/cotizacion-fi
 
 export const useReminderPago = () => {
   const previewReminderPago = async (idCotizacion: number) => {
-    return GeneralService.previewReminderPago(idCotizacion)
+    try {
+      return await GeneralService.previewReminderPago(idCotizacion)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      return { success: false, message }
+    }
   }
 
   const sendReminderPago = async (idCotizacion: number) => {
-    return GeneralService.sendReminderPago(idCotizacion)
+    try {
+      return await GeneralService.sendReminderPago(idCotizacion)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      return { success: false, message }
+    }
   }
 
   return {

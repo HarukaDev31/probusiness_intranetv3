@@ -69,7 +69,18 @@ export const useGeneral = () => {
             const response = await GeneralService.updateEstadoCotizacionFinal(idCotizacion, estado)
             return response
         } catch (err) {
-            error.value = err as string
+            const message = err instanceof Error ? err.message : String(err)
+            error.value = message
+            return { success: false, message }
+        }
+    }
+    const updateFechaMaximaPago = async (idContenedor: number, fechaMaximaPago: string) => {
+        try {
+            return await GeneralService.updateFechaMaximaPago(idContenedor, fechaMaximaPago)
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err)
+            error.value = message
+            return { success: false, message }
         }
     }
     const sendCobranzaWhatsApp = async (idCotizacion: number, templates: string[]) => {
@@ -77,8 +88,9 @@ export const useGeneral = () => {
             const response = await GeneralService.sendCobranzaWhatsApp(idCotizacion, templates)
             return response
         } catch (err) {
-            error.value = err as string
-            return { success: false, message: String(err) }
+            const message = err instanceof Error ? err.message : String(err)
+            error.value = message
+            return { success: false, message }
         }
     }
     const uploadFacturaComercial = async (data: any) => {
@@ -181,6 +193,7 @@ export const useGeneral = () => {
             headers.value = headersArray
             carga.value = response.carga
             fPuerto.value = response.f_puerto ?? null
+            fechaMaximaPago.value = response.fecha_maxima_pago ?? null
             // Tab Pagos: headers + total diferencia (desde backend) o data_pagos
             const extra: any[] = []
             if (response.data_pagos != null) {
@@ -203,6 +216,7 @@ export const useGeneral = () => {
     const headersPagos = ref<any[]>([])
     const carga = ref<string | null>(null)
     const fPuerto = ref<string | null>(null)
+    const fechaMaximaPago = ref<string | null>(null)
     const loadingHeaders = ref(false)
     return {
         general,
@@ -218,6 +232,7 @@ export const useGeneral = () => {
         getGeneral,
         totalRecordsGeneral,
         updateEstadoCotizacionFinal,
+        updateFechaMaximaPago,
         sendCobranzaWhatsApp,
         uploadFacturaComercial,
         uploadPlantillaFinal,
@@ -232,6 +247,7 @@ export const useGeneral = () => {
         headersPagos,
         carga,
         fPuerto,
+        fechaMaximaPago,
         loadingHeaders,
         handleDownloadCotizacionFinalPDF,
         handleDeleteCotizacionFinal

@@ -36,6 +36,18 @@ export class GeneralService extends BaseService {
         }
     }
 
+    static async updateFechaMaximaPago(idContenedor: number, fechaMaximaPago: string): Promise<GeneralResponse> {
+        try {
+            return await this.apiCall<GeneralResponse>(`${this.baseUrl}/${idContenedor}/fecha-maxima-pago`, {
+                method: 'PUT',
+                body: { fecha_maxima_pago: fechaMaximaPago }
+            })
+        } catch (error) {
+            console.error('Error al actualizar la fecha máxima de pago:', error)
+            throw error
+        }
+    }
+
     static async sendCobranzaWhatsApp(idCotizacion: number, templates: string[]): Promise<GeneralResponse> {
         try {
             const response = await this.apiCall<GeneralResponse>(`${this.baseUrl}/send-cobranza-whatsapp`, {
@@ -119,6 +131,7 @@ export class GeneralService extends BaseService {
             throw error
         }
     }
+
     static async previewReminderPago(idCotizacion: number): Promise<ReminderPagoPreviewResponse> {
         try {
             return await this.apiCall<ReminderPagoPreviewResponse>(`${this.baseUrl}/${idCotizacion}/preview-reminder-pago`)

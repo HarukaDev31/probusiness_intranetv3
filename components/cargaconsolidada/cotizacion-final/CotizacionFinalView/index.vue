@@ -30,7 +30,13 @@
             :loading="loadingGeneral || loadingHeaders" />
           <div class="flex items-center gap-3 flex-wrap">
             <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
-            <span v-if="fPuerto" class="text-sm text-gray-600 dark:text-gray-400">F. Límite pago: {{ fPuerto }}</span>
+            <FechaMaximaPagoField
+              v-model="fechaMaximaPagoDraft"
+              :saved-value="fechaMaximaPago"
+              :editable="canEditFechaMaximaPago"
+              :loading="savingFechaMaximaPago"
+              @save="handleSaveFechaMaximaPago"
+            />
           </div>
         </div>
       </template>
@@ -49,7 +55,13 @@
             :loading="loadingPagos || loadingHeaders" />
           <div class="flex items-center gap-3 flex-wrap">
             <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
-            <span v-if="fPuerto" class="text-sm text-gray-600 dark:text-gray-400">F. Límite pago: {{ fPuerto }}</span>
+            <FechaMaximaPagoField
+              v-model="fechaMaximaPagoDraft"
+              :saved-value="fechaMaximaPago"
+              :editable="canEditFechaMaximaPago"
+              :loading="savingFechaMaximaPago"
+              @save="handleSaveFechaMaximaPago"
+            />
           </div>
         </div>
 
@@ -71,7 +83,13 @@
             :loading="loadingCargosExtra || loadingHeaders" />
           <div class="flex items-center gap-3 flex-wrap">
             <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
-            <span v-if="fPuerto" class="text-sm text-gray-600 dark:text-gray-400">F. Límite pago: {{ fPuerto }}</span>
+            <FechaMaximaPagoField
+              v-model="fechaMaximaPagoDraft"
+              :saved-value="fechaMaximaPago"
+              :editable="canEditFechaMaximaPago"
+              :loading="savingFechaMaximaPago"
+              @save="handleSaveFechaMaximaPago"
+            />
           </div>
         </div>
       </template>
@@ -98,7 +116,7 @@
 
 <script setup lang="ts">
 import type { CotizacionFinalViewProps } from './types'
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, watch } from 'vue'
 import { useGeneral } from '~/composables/cargaconsolidada/cotizacion-final/useGeneral'
 import { usePagos } from '~/composables/cargaconsolidada/cotizacion-final/usePagos'
 import { useCargosExtra } from '~/composables/cargaconsolidada/cotizacion-final/useCargosExtra'
@@ -112,11 +130,12 @@ import type { TableColumn } from '@nuxt/ui'
 import SectionHeader from '~/components/commons/SectionHeader.vue'
 import { STATUS_BG_CLASSES, STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
 import { useUserRole } from '~/composables/auth/useUserRole'
-import { ROLES } from '~/constants/roles'
+import { ROLES, roleEsComoJefeImportacion } from '~/constants/roles'
 import { UTooltip } from '#components'
 import CargosExtraServiciosCell from '~/components/cargaconsolidada/cotizacion-final/CargosExtraServiciosCell/index.vue'
 import CobranzaWhatsappTemplatesModal from '~/components/cargaconsolidada/cotizacion-final/CobranzaWhatsappTemplatesModal/index.vue'
 import ReminderPagoModal from '~/components/cargaconsolidada/cotizacion-final/ReminderPagoModal/index.vue'
+import FechaMaximaPagoField from '~/components/cargaconsolidada/cotizacion-final/FechaMaximaPagoField/index.vue'
 import type { CobranzaWhatsappTemplate, CobranzaWhatsappPreviewMeta } from '~/types/cargaconsolidada/cotizacion-final/general'
 import { useReminderPago } from '~/composables/cargaconsolidada/cotizacion-final/useReminderPago'
 const { showSuccess, showError, showConfirmation } = useModal()
@@ -129,9 +148,19 @@ const isJefeMarketing = computed(() => currentRole.value === ROLES.JEFE_MARKETIN
 /** Solo lectura en cotización final (Finanzas / Jefe Marketing). */
 const isCotizacionFinalReadOnly = computed(() => isFinanzas.value || isJefeMarketing.value)
 const isFinanzasReadOnly = isCotizacionFinalReadOnly
+const canEditFechaMaximaPago = computed(() =>
+  currentRole.value === ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole.value)
+)
+const fechaMaximaPagoDraft = ref<string | null>(null)
+const savingFechaMaximaPago = ref(false)
+const fechaMaximaPagoRequiredMessage = 'Define y guarda la fecha máxima de pago para cambiar el estado o enviar WhatsApp.'
 const basePath = computed(() => props.basePath)
 const backBasePath = computed(() => props.backBasePath || props.basePath)
-const { general, loadingGeneral, updateEstadoCotizacionFinal, sendCobranzaWhatsApp, uploadCotizacionFinalFile, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral, handleDownloadCotizacionFinalPDF, handleDeleteCotizacionFinal, headers, headersPagos, carga, fPuerto, loadingHeaders, getHeaders, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral } = useGeneral()
+const { general, loadingGeneral, updateEstadoCotizacionFinal, updateFechaMaximaPago, sendCobranzaWhatsApp, uploadCotizacionFinalFile, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral, handleDownloadCotizacionFinalPDF, handleDeleteCotizacionFinal, headers, headersPagos, carga, fechaMaximaPago, loadingHeaders, getHeaders, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral } = useGeneral()
+const hasFechaMaximaPago = computed(() => !!fechaMaximaPago.value)
+watch(fechaMaximaPago, (value) => {
+  fechaMaximaPagoDraft.value = value
+}, { immediate: true })
 const { pagos, loadingPagos, getPagos, currentPagePagos, totalPagesPagos, totalRecordsPagos, itemsPerPagePagos, searchPagos, filterConfigPagos, handleSearchPagos, handlePageChangePagos, handleItemsPerPageChangePagos, handleFilterChangePagos, exportContabilidadPagos } = usePagos()
 const { cargosExtra, loadingCargosExtra, getCargosExtra, currentPageCargosExtra, totalPagesCargosExtra, totalRecordsCargosExtra, itemsPerPageCargosExtra, searchCargosExtra, handleSearchCargosExtra, handlePageChangeCargosExtra, handleItemsPerPageChangeCargosExtra } = useCargosExtra()
 import { usePagos as usePagosClientes } from '~/composables/cargaconsolidada/clientes/usePagos'
@@ -383,7 +412,7 @@ const generalColumns = ref<TableColumn<any>[]>([
         items: filterConfigGeneral.value.find((filter: any) => filter.key === 'estado_cotizacion_final')?.options || [],
         class: [className],
         modelValue: initialValue,
-        disabled: isFinanzasReadOnly.value,
+        disabled: isFinanzasReadOnly.value || !hasFechaMaximaPago.value,
         'onUpdate:modelValue': async (value: any) => {
           if (isFinanzasReadOnly.value) return
           if (value && value !== initialValue) {
@@ -408,6 +437,7 @@ const generalColumns = ref<TableColumn<any>[]>([
             icon: 'material-symbols:send-outline',
             color: 'primary',
             variant: 'ghost',
+            disabled: !hasFechaMaximaPago.value,
             onClick: () => openReminderPago(row.original.id_cotizacion)
           }) : null,
           h(UButton, {
@@ -550,6 +580,7 @@ const generalColumnsAdministrador = ref<TableColumn<any>[]>([
         items: filterConfigGeneral.value.find((filter: any) => filter.key === 'estado_cotizacion_final')?.options || [],
         class: [className],
         modelValue: initialValue,
+        disabled: !hasFechaMaximaPago.value,
         'onUpdate:modelValue': async (value: any) => {
           if (value && value !== initialValue) {
             await handleUpdateEstadoCotizacionFinal(row.original.id_cotizacion, value)
@@ -607,6 +638,7 @@ const generalColumnsAdministrador = ref<TableColumn<any>[]>([
           icon: 'material-symbols:send-outline',
           color: 'primary',
           variant: 'ghost',
+          disabled: !hasFechaMaximaPago.value,
           onClick: () => openReminderPago(row.original.id_cotizacion)
           }
           )}) : null,
@@ -662,6 +694,7 @@ const getPagosColumns = (): TableColumn<any>[] => {
             icon: 'material-symbols:send-outline',
             color: 'primary',
             variant: 'ghost',
+            disabled: !hasFechaMaximaPago.value,
             onClick: () => openReminderPago(row.original.id_cotizacion)
           })
         })
@@ -900,11 +933,41 @@ const reminderPagoModal = reactive({
 const { sendReminderPago } = useReminderPago()
 
 const openReminderPago = (idCotizacion: number) => {
+  if (!hasFechaMaximaPago.value) {
+    showError('Fecha requerida', fechaMaximaPagoRequiredMessage)
+    return
+  }
   reminderPagoModal.idCotizacion = idCotizacion
   reminderPagoModal.open = true
 }
 
+const handleSaveFechaMaximaPago = async () => {
+  if (!fechaMaximaPagoDraft.value) {
+    showError('Fecha requerida', 'Selecciona una fecha máxima de pago')
+    return
+  }
+  savingFechaMaximaPago.value = true
+  try {
+    await withSpinner(async () => {
+      const result = await updateFechaMaximaPago(Number(id), fechaMaximaPagoDraft.value as string)
+      if (result && (result as any).success) {
+        await getHeaders(Number(id))
+        fechaMaximaPagoDraft.value = fechaMaximaPago.value
+        showSuccess('Fecha guardada', 'Quedó registrada para cobranza y recordatorios.')
+      } else {
+        showError('Error', (result as any)?.message || 'No se pudo guardar la fecha')
+      }
+    }, 'Guardando fecha…')
+  } finally {
+    savingFechaMaximaPago.value = false
+  }
+}
+
 const confirmReminderPago = async () => {
+  if (!hasFechaMaximaPago.value) {
+    showError('Fecha requerida', fechaMaximaPagoRequiredMessage)
+    return
+  }
   if (!reminderPagoModal.idCotizacion) return
   reminderPagoModal.loading = true
   try {
@@ -924,13 +987,17 @@ const confirmReminderPago = async () => {
     }, 'Enviando recordatorio…')
   } catch (err) {
     console.error('Error send reminder:', err)
-    showError('Error', 'Error al enviar recordatorio')
+    showError('Error', err instanceof Error ? err.message : 'Error al enviar recordatorio')
   } finally {
     reminderPagoModal.loading = false
   }
 }
 
 const handleUpdateEstadoCotizacionFinal = async (idCotizacion: number, estado: string) => {
+  if (!hasFechaMaximaPago.value) {
+    showError('Fecha requerida', fechaMaximaPagoRequiredMessage)
+    return
+  }
   withSpinner(async () => {
     const result = await updateEstadoCotizacionFinal(idCotizacion, estado)
     if (result && (result as any).success) {
@@ -945,12 +1012,17 @@ const handleUpdateEstadoCotizacionFinal = async (idCotizacion: number, estado: s
       }
       showSuccess('Éxito', 'Estado actualizado correctamente')
     } else {
-      showError('Error', 'Error al actualizar el estado')
+      await getGeneral(Number(id))
+      showError('Error', (result as any)?.message || 'Error al actualizar el estado')
     }
   })
 }
 
 const confirmCobranzaWhatsapp = async (templates: string[]) => {
+  if (!hasFechaMaximaPago.value) {
+    showError('Fecha requerida', fechaMaximaPagoRequiredMessage)
+    return
+  }
   if (!cobranzaWhatsappModal.idCotizacion) return
   cobranzaWhatsappModal.loading = true
   try {
@@ -995,6 +1067,10 @@ watch(activeTab, async (newVal, oldVal) => {
 })
 
 
+watch(fechaMaximaPago, (value) => {
+  fechaMaximaPagoDraft.value = value
+}, { immediate: true })
+
 onMounted(async () => {
   const tabQuery = route.query.tab
   const validTabs = tabs.value.map(t => t.value)
@@ -1019,7 +1095,6 @@ onMounted(async () => {
 })
 
 // Watch tab changes and clear searches before fetching to avoid stale query params
-import { watch } from 'vue'
 watch(() => activeTab.value, async (newVal) => {
   if (newVal && newVal !== '') {
     try {
