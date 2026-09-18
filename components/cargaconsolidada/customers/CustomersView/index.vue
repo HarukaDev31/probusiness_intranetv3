@@ -32,6 +32,7 @@
         <CustomersKpiCards
           class="w-full min-w-0 shrink-0"
           :headers="headers"
+          :loading="loading"
           @filter-nc="filterByNc"
         />
       </template>

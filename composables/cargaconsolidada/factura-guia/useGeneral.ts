@@ -35,7 +35,7 @@ export const useGeneral  = () => {
     ])
     const headers = ref<any[]>([])
     const carga = ref<string | null>(null)
-    const loadingHeaders = ref(false)
+    const loadingHeaders = ref(true)
     const route = useRoute()
     const getGeneral = async (id: number) => {
         try {

@@ -29,7 +29,7 @@ export const useCotizacion = () => {
     const headersPagos = ref<Header[]>([])
     const fCierre = ref<string | null>(null)
     const urlClientes = ref<string | null>(null)
-    const loadingHeaders = ref(false)
+    const loadingHeaders = ref(true)
     const search = ref('')
     const itemsPerPage = ref(100)
     const totalPages = computed(() => Math.ceil(pagination.value.total / itemsPerPage.value))

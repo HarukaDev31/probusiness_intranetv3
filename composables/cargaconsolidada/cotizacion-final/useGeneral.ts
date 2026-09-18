@@ -217,7 +217,7 @@ export const useGeneral = () => {
     const carga = ref<string | null>(null)
     const fPuerto = ref<string | null>(null)
     const fechaMaximaPago = ref<string | null>(null)
-    const loadingHeaders = ref(false)
+    const loadingHeaders = ref(true)
     return {
         general,
         loadingGeneral,

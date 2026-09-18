@@ -2,6 +2,8 @@
   <SectionHeader
     :title="title"
     :headers="kpiHeaders"
+    :loading="loading"
+    :skeleton-count="skeletonCount"
     @click-header="onClickHeader"
   />
 </template>
@@ -14,9 +16,13 @@ import type { Header, HeaderSubline } from '~/types/data-table'
 const props = withDefaults(defineProps<{
   headers?: Record<string, Header> | null
   title?: string | null
+  loading?: boolean
+  skeletonCount?: number
 }>(), {
   headers: () => ({}),
   title: null,
+  loading: false,
+  skeletonCount: 8,
 })
 
 const emit = defineEmits<{

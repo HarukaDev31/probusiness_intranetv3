@@ -24,7 +24,7 @@ export const useGeneral = () => {
         from: 0,
         to: 0
     })
-    const loadingHeaders = ref(false)
+    const loadingHeaders = ref(true)
     const fecha_documentacion_max = ref<string | null>(null)
     const searchGeneral = ref('')
     const itemsPerPageGeneral = ref(100)

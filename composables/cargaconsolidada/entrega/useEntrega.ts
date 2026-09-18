@@ -163,7 +163,7 @@ export const useEntrega = () => {
   const headersEntregas = ref<any[]>([])
   const headersDelivery = ref<any[]>([])
   const carga = ref<string | null>(null)
-  const loadingHeaders = ref(false)
+  const loadingHeaders = ref(true)
   const contenedorId = ref<number | null>(null)
 
   const getEntregas = async (id: number) => {
