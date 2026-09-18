@@ -1834,6 +1834,37 @@ html.dark .min-w-full :deep(tbody tr + tr td) {
   background: #111827 !important;
 }
 
+.table-scroll-container thead th.china-group-head {
+  background: #fef2f2 !important;
+  border: 2px solid #f87171 !important;
+  border-bottom: 0 !important;
+}
+.table-scroll-container thead th.china-group-th {
+  background: #fef2f2 !important;
+  border-bottom: 2px solid #f87171 !important;
+}
+.table-scroll-container thead th.china-group-start,
+.table-scroll-container tbody td.china-group-start {
+  border-left: 2px solid #f87171 !important;
+}
+.table-scroll-container thead th.china-group-end,
+.table-scroll-container tbody td.china-group-end {
+  border-right: 2px solid #f87171 !important;
+}
+.table-scroll-container tbody td.china-group-td {
+  background-color: #fff7f7;
+}
+.table-scroll-container tbody tr:last-child td.china-group-td {
+  border-bottom: 2px solid #f87171 !important;
+}
+.dark .table-scroll-container thead th.china-group-head,
+.dark .table-scroll-container thead th.china-group-th {
+  background: rgb(127 29 29 / 0.35) !important;
+}
+.dark .table-scroll-container tbody td.china-group-td {
+  background-color: rgb(127 29 29 / 0.18);
+}
+
 /* Sombras laterales para indicar scroll horizontal */
 .scroll-shadow {
   position: absolute;

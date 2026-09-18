@@ -40,6 +40,7 @@
                     <CustomersKpiCards
                         v-if="currentRole === ROLES.CONTENEDOR_ALMACEN"
                         class="w-full min-w-0"
+                        :title="`Contenedor #${carga}`"
                         :headers="headersByKey"
                         @filter-nc="filterByNc"
                     />

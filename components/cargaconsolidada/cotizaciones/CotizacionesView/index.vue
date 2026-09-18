@@ -62,6 +62,7 @@
                     <CustomersKpiCards
                         v-if="currentRole === ROLES.CONTENEDOR_ALMACEN"
                         class="w-full min-w-0"
+                        :title="`Contenedor #${carga}`"
                         :headers="headersByKey"
                         @filter-nc="filterByNc"
                     />
@@ -176,6 +177,7 @@ import CreatePagoModal from '~/components/commons/CreatePagoModal.vue'
 import ModalPreview from '~/components/commons/ModalPreview.vue'
 import AdelantoPreviewModal from '~/components/commons/AdelantoPreviewModal.vue'
 import SectionHeader from '~/components/commons/SectionHeader.vue'
+import { wrapChinaColumnGroup } from '~/utils/cargaconsolidada/chinaColumnGroup'
 import CustomersKpiCards from '~/components/cargaconsolidada/customers/CustomersKpiCards.vue'
 import { useCotizacionPagos } from '~/composables/cargaconsolidada/useCotizacionPagos'
 import { useReminderInicial } from '~/composables/cargaconsolidada/commons/useReminderInicial'
@@ -1869,7 +1871,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
             return div
         }
     },
-    {
+    wrapChinaColumnGroup({
         id: 'china_supplier_group_default',
         header: () => h('div', { class: 'flex items-center justify-center gap-2 px-2 py-1 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/40 text-red-700 dark:text-red-200' }, [
             h(UIcon as any, {
@@ -1967,7 +1969,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 }
             }
         ]
-    },
+    }),
     {
         accessorKey: 'actions',
         header: 'Actions',
@@ -2324,7 +2326,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
             return div
         }
     },
-    {
+    wrapChinaColumnGroup({
         id: 'china_supplier_group_coord',
         header: () => h('div', { class: 'flex items-center justify-center gap-2 px-2 py-1 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/40 text-red-700 dark:text-red-200' }, [
             h(UIcon as any, {
@@ -2422,7 +2424,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                 }
             }
         ]
-    },
+    }),
     {
         accessorKey: 'actions',
         header: 'Actions',
@@ -2693,7 +2695,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
             return div
         }
     },
-    {
+    wrapChinaColumnGroup({
         id: 'china_supplier_group',
         header: () => h('div', { class: 'flex items-center justify-center gap-2 px-2 py-1 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/40 text-red-700 dark:text-red-200' }, [
             h(UIcon as any, {
@@ -2816,7 +2818,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 }
             }
         ]
-    },
+    }),
     {
         accessorKey: 'actions',
         header: 'Actions',
@@ -3386,7 +3388,7 @@ const socioChinaDateSpan = (value: unknown) => {
     return socioChinaSpan(formatted || value)
 }
 
-const getEmbarqueSocioChinaGroup = (): TableColumn<any> => ({
+const getEmbarqueSocioChinaGroup = (): TableColumn<any> => wrapChinaColumnGroup({
     id: 'china_supplier_group_socio',
     header: () => h('div', { class: 'flex items-center justify-center gap-2 px-2 py-1 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/40 text-red-700 dark:text-red-200' }, [
         h(UIcon as any, { name: 'flagpack:cn', class: 'w-5 h-4' }),

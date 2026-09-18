@@ -45,6 +45,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { UBadge, UButton, UIcon, UInput, USelect } from '#components'
 import { useCustomers, CUSTOMERS_PAGINATION_OPTIONS } from '~/composables/cargaconsolidada/customers'
 import CustomersKpiCards from '~/components/cargaconsolidada/customers/CustomersKpiCards.vue'
+import { wrapChinaColumnGroup } from '~/utils/cargaconsolidada/chinaColumnGroup'
 import { useCotizacionProveedor } from '~/composables/cargaconsolidada/useCotizacionProveedor'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
@@ -247,7 +248,7 @@ const columns: TableColumn<CustomerRow>[] = [
       disabled: true,
     })),
   },
-  {
+  wrapChinaColumnGroup({
     id: 'china_qty_group',
     header: () => h('div', { class: 'flex items-center justify-center gap-2 px-2 py-1 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/40 text-red-700 dark:text-red-200' }, [
       h(UIcon, { name: 'flagpack:cn', class: 'w-5 h-4' }),
@@ -323,7 +324,7 @@ const columns: TableColumn<CustomerRow>[] = [
         })),
       },
     ],
-  },
+  }),
   {
     accessorKey: 'actions',
     header: 'Acciones',
