@@ -99,11 +99,11 @@
               </div>
               <div class="mt-2 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-300">
                 <div class="flex items-center gap-2">
-                  <img data-v-f8957c9e="" src="https://upload.wikimedia.org/wikipedia/commons/c/cf/Flag_of_Peru.svg" alt="icon" class="w-4 h-2.5">
+                  <img :src="flagUrlFromPais(row.pais)" alt="" class="w-4 h-2.5 object-contain">
                   <span class="whitespace-nowrap">{{ safeCbm(row, 'cbm_total_peru') }}</span>
                 </div>
                 <div class="flex items-center gap-2">
-                  <img data-v-f8957c9e="" src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Flag_of_the_People%27s_Republic_of_China.svg" alt="icon" class="w-4 h-2.5">
+                  <img :src="CUSTOMIZED_ICONS_URL.CHINA" alt="" class="w-4 h-2.5 object-contain">
                   <span class="whitespace-nowrap">{{ safeCbm(row, 'cbm_total_china') }}</span>
                 </div>
               </div>
@@ -142,7 +142,7 @@ import { useModal } from '~/composables/commons/useModal'
 import CreateConsolidadoModal from '~/components/cargaconsolidada/consolidado/CreateConsolidadoModal/index.vue'
 import PartirConsolidadoModal from '~/components/cargaconsolidada/consolidado/PartirConsolidadoModal/index.vue'
 import { USelect } from '#components'
-import { STATUS_BG_CLASSES } from '~/constants/ui'
+import { CUSTOMIZED_ICONS_URL, STATUS_BG_CLASSES } from '~/constants/ui'
 import type { CargaConsolidadaAbiertaProps, ConsolidadoFormData } from './types'
 import {
   ABIERTOS_PAGINATION_OPTIONS,
@@ -196,6 +196,27 @@ const {
   updateEstadoDocumentacion,
   updateEstadoFinanzas,
 } = useConsolidado(toRef(props, 'role'))
+
+const flagUrlFromPais = (pais?: { Nu_Codigo_Sunat_ISO?: string, No_Pais?: string } | null) => {
+  const iso = String(pais?.Nu_Codigo_Sunat_ISO || '').trim().toLowerCase()
+  if (iso.length === 2) return `https://flagcdn.com/w40/${iso}.png`
+  const iso3: Record<string, string> = { per: 'pe', ecu: 'ec', chl: 'cl', col: 'co', bol: 'bo', arg: 'ar', mex: 'mx' }
+  if (iso.length === 3 && iso3[iso]) return `https://flagcdn.com/w40/${iso3[iso]}.png`
+  const name = String(pais?.No_Pais || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  if (name.includes('ecuador')) return 'https://flagcdn.com/w40/ec.png'
+  return CUSTOMIZED_ICONS_URL.PERU
+}
+
+const destinoCbmFlag = computed(() => flagUrlFromPais(consolidadoData.value?.[0]?.pais))
+
+const cbmFlagHeader = (flagSrc: { value: string } | string) => () => h('div', { class: 'inline-flex items-center gap-1.5' }, [
+  h('img', {
+    src: typeof flagSrc === 'string' ? flagSrc : flagSrc.value,
+    alt: '',
+    class: 'w-5 h-3.5 object-contain shrink-0',
+  }),
+  h('span', 'CBM'),
+])
 
 const overlay = useOverlay()
 const modal = overlay.create(CreateConsolidadoModal)
@@ -392,8 +413,8 @@ const columns: TableColumn<any>[] = [
       return selectNode
     },
   },
-  { accessorKey: 'cbm_total_peru', header: 'CBM Perú', cell: ({ row }) => formatNumber(row.getValue('cbm_total_peru'), 2) },
-  { accessorKey: 'cbm_total_china', header: 'CBM China', cell: ({ row }) => formatNumber(row.getValue('cbm_total_china'), 2) },
+  { accessorKey: 'cbm_total_peru', header: cbmFlagHeader(destinoCbmFlag), cell: ({ row }) => formatNumber(row.getValue('cbm_total_peru'), 2) },
+  { accessorKey: 'cbm_total_china', header: cbmFlagHeader(CUSTOMIZED_ICONS_URL.CHINA), cell: ({ row }) => formatNumber(row.getValue('cbm_total_china'), 2) },
   {
     accessorKey: 'limite_cbm_imo',
     header: 'Límite CBM IMO',
@@ -516,8 +537,8 @@ const finanzasColumns: TableColumn<any>[] = [
       })
     },
   },
-  { accessorKey: 'cbm_total_peru', header: 'CBM Perú', cell: ({ row }) => formatNumber(row.getValue('cbm_total_peru'), 2) },
-  { accessorKey: 'cbm_total_china', header: 'CBM China', cell: ({ row }) => formatNumber(row.getValue('cbm_total_china'), 2) },
+  { accessorKey: 'cbm_total_peru', header: cbmFlagHeader(destinoCbmFlag), cell: ({ row }) => formatNumber(row.getValue('cbm_total_peru'), 2) },
+  { accessorKey: 'cbm_total_china', header: cbmFlagHeader(CUSTOMIZED_ICONS_URL.CHINA), cell: ({ row }) => formatNumber(row.getValue('cbm_total_china'), 2) },
   {
     id: 'actions',
     header: 'Acciones',
@@ -576,8 +597,8 @@ const documentacionColumns: TableColumn<any>[] = [
       return selectNode
     },
   },
-  { accessorKey: 'cbm_total_peru', header: 'CBM Perú', cell: ({ row }) => formatNumber(row.getValue('cbm_total_peru'), 2) },
-  { accessorKey: 'cbm_total_china', header: 'CBM China', cell: ({ row }) => formatNumber(row.getValue('cbm_total_china'), 2) },
+  { accessorKey: 'cbm_total_peru', header: cbmFlagHeader(destinoCbmFlag), cell: ({ row }) => formatNumber(row.getValue('cbm_total_peru'), 2) },
+  { accessorKey: 'cbm_total_china', header: cbmFlagHeader(CUSTOMIZED_ICONS_URL.CHINA), cell: ({ row }) => formatNumber(row.getValue('cbm_total_china'), 2) },
   {
     accessorKey: 'actions',
     header: 'Acciones',

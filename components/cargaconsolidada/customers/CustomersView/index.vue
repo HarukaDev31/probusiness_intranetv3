@@ -49,6 +49,7 @@ import { useCotizacionProveedor } from '~/composables/cargaconsolidada/useCotiza
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
 import { STATUS_BG_CLASSES } from '~/constants/ui'
+import { cbmTotalConImo } from '~/utils/cargaconsolidada/cbm'
 import type { CustomerProveedor, CustomerRow } from '~/types/cargaconsolidada/customers'
 import type { CustomersViewProps } from './types'
 
@@ -205,7 +206,7 @@ const columns: TableColumn<CustomerRow>[] = [
     accessorKey: 'cbm_total',
     header: 'CBM',
     cell: ({ row }) => providerStack(row.original, (proveedor) => h(UInput as any, {
-      modelValue: proveedor.cbm_total,
+      modelValue: cbmTotalConImo(proveedor),
       class: 'w-20',
       disabled: true,
     })),

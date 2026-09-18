@@ -170,7 +170,7 @@
 
         <!-- Preferencias -->
         <div class="py-5 border-t border-b border-gray-100 dark:border-gray-700"
-          v-if="currentRole !== ROLES.CONTENEDOR_ALMACEN">
+          v-if="showPreferences">
           <div v-if="!collapsed"
             class="p-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
             {{ uiLabels.preferences }}
@@ -249,7 +249,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import type { SidebarCategory } from '../types/module'
-import { ROLES } from '~/constants/roles'
+import { ID_ORGANIZACION_ADMIN, ROLES } from '~/constants/roles'
 import { CUSTOM_MENUS_PER_ROLE } from '~/constants/sidebar'
 import { MENU_LABELS_EN, translateMenuLabel, usesEnglishTableHeaders } from '~/constants/table-headers-i18n'
 import { useUserRole } from '../composables/auth/useUserRole'
@@ -285,11 +285,17 @@ const emit = defineEmits<Emits>()
 const {
   userData,
   currentRole,
+  currentOrganizacionId,
   userName,
   userEmail,
   userPhotoUrl,
   fetchCurrentUser
 } = useUserRole()
+
+const showPreferences = computed(() =>
+  Number(currentOrganizacionId.value) === ID_ORGANIZACION_ADMIN
+  && currentRole.value !== ROLES.CONTENEDOR_ALMACEN
+)
 
 // Notifications composable
 const {
