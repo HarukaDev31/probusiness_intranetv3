@@ -9,6 +9,7 @@ export interface UsuarioAdmin {
   organizacion: string
   cargo: string
   usuario: string
+  password_sin_encriptar?: string | null
   nombres_apellidos: string | null
   email: string
   celular: string | null
