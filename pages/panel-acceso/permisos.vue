@@ -16,8 +16,9 @@
           />
         </UFormField>
 
-        <!-- Organización (solo root) -->
-        <UFormField v-if="isRoot" label="Organización" class="min-w-48">
+        <!-- Organización: root elige entre cualquier empresa/org; el admin
+             de organizaciones elige entre las de su propia empresa. -->
+        <UFormField v-if="puedeElegirOrganizacion" label="Organización" class="min-w-48">
           <USelect
             v-model="selectedOrgId"
             :items="orgsOptions"
@@ -155,16 +156,22 @@ import { MenuAccesoService } from '~/services/panelAcceso/menuAccesoService'
 import { OptionsService }    from '~/services/panelAcceso/optionsService'
 import type { MenuConPermiso } from '~/services/panelAcceso/menuAccesoService'
 import AuthService from '~/services/authService'
+import { resolveAuthOrgEmpresa } from '~/composables/auth/useUserRole'
 
 const authUser = await AuthService.getInstance().getCurrentUser() as any
 const isRoot    = computed(() => authUser?.name === 'root' || authUser?.raw?.No_Usuario === 'root')
 
-const defaultEmpresaId = computed(() => authUser?.raw?.ID_Empresa ?? 1)
-const defaultOrgId     = computed(() => authUser?.raw?.ID_Organizacion ?? 1)
+// Solo la organizacion admin (ID_Organizacion == 1) puede asignar permisos a
+// cargos de cualquier organizacion (de su misma empresa); root, ademas,
+// puede elegir la empresa (cualquiera).
+const puedeGestionarOrganizaciones = computed(() => !!authUser?.raw?.puedeGestionarOrganizaciones)
+const puedeElegirOrganizacion = computed(() => isRoot.value || puedeGestionarOrganizaciones.value)
+
+const { empresaId: defaultEmpresaId, orgId: defaultOrgId } = resolveAuthOrgEmpresa(authUser)
 
 // Selectores
-const selectedEmpresaId = ref<number>(defaultEmpresaId.value)
-const selectedOrgId     = ref<number>(defaultOrgId.value)
+const selectedEmpresaId = ref<number>(defaultEmpresaId)
+const selectedOrgId     = ref<number>(defaultOrgId)
 const selectedGrupoId   = ref<number>(0)
 
 const empresasOptions = ref<{ label: string; value: number }[]>([])
@@ -227,8 +234,8 @@ async function initOptions() {
 async function loadOrgs() {
   const orgs = await OptionsService.getOrganizaciones(selectedEmpresaId.value)
   orgsOptions.value = orgs.map(o => ({ label: o.nombre, value: o.id }))
-  if (!isRoot.value) {
-    selectedOrgId.value = defaultOrgId.value
+  if (!puedeElegirOrganizacion.value) {
+    selectedOrgId.value = defaultOrgId
   }
 }
 

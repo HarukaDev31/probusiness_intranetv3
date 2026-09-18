@@ -26,6 +26,8 @@ export const useDocumentacion = () => {
   const filters = ref({})
   const hasData = ref(false)
   const foldersByCategoria = ref<any[]>([])
+  const esContenedorSocio = ref(false)
+  const puedeEditar = ref(false)
 
   const getFolders = async (idContenedor: string) => {
     loading.value = true
@@ -37,6 +39,8 @@ export const useDocumentacion = () => {
         folders.value = normalized
         hasData.value = normalized.length > 0
         foldersByCategoria.value = normalized
+        esContenedorSocio.value = !!response.es_contenedor_socio
+        puedeEditar.value = !!response.puede_editar
       } else {
         error.value = response.error || 'Error al obtener los folders'
       }
@@ -160,6 +164,8 @@ export const useDocumentacion = () => {
     filters,
     hasData,
     foldersByCategoria,
+    esContenedorSocio,
+    puedeEditar,
     getFolders,
     uploadFileDocumentation,
     deleteFile,

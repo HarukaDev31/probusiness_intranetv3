@@ -25,8 +25,10 @@ export const useCotizacion = () => {
     })
     const packingList = ref<any>(null)
     const headersCotizaciones = ref<Header[]>([])
+    const headersByKey = ref<Record<string, Header>>({})
     const headersPagos = ref<Header[]>([])
     const fCierre = ref<string | null>(null)
+    const urlClientes = ref<string | null>(null)
     const loadingHeaders = ref(false)
     const search = ref('')
     const itemsPerPage = ref(100)
@@ -190,9 +192,11 @@ export const useCotizacion = () => {
         loadingHeaders.value = true
         try {
             const response = await CotizacionService.getHeaders(id)
-            const headers = Array.isArray(response.data)
-                ? response.data
-                : Object.values(response.data ?? {})
+            const rawHeaders = response.data ?? {}
+            headersByKey.value = Array.isArray(rawHeaders) ? {} : (rawHeaders as Record<string, Header>)
+            const headers = Array.isArray(rawHeaders)
+                ? rawHeaders
+                : Object.values(rawHeaders)
 
             headersCotizaciones.value = headers as Header[]
 
@@ -204,6 +208,7 @@ export const useCotizacion = () => {
             carga.value = response.carga
             packingList.value = response.lista_embarque_url
             fCierre.value = response.f_cierre ?? null
+            urlClientes.value = response.url_clientes ?? null
             return response
         } catch (error) {
             console.error('Error en getHeaders:', error)
@@ -325,6 +330,7 @@ export const useCotizacion = () => {
         currentPage,
         filters,
         headersCotizaciones,
+        headersByKey,
         headersPagos,
         getCotizaciones,
         refreshCotizacionFile,
@@ -345,6 +351,7 @@ export const useCotizacion = () => {
         resetFiltersCotizacion,
         packingList,
         exportData,
-        fCierre
+        fCierre,
+        urlClientes
     }
 }

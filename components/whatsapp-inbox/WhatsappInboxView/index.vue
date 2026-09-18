@@ -11,10 +11,19 @@
             class="size-2 rounded-full"
             :class="refreshing ? 'animate-pulse bg-warning' : 'bg-success'"
           />
-          PROBUSINESS
+          {{ session?.organizacion_nombre || 'WhatsApp' }}
         </span>
-        <span class="hidden text-sm text-muted sm:inline">/ WhatsApp Inbox</span>
+        <span class="hidden text-sm text-muted sm:inline">/ Inbox</span>
         <div class="flex-1" />
+        <UButton
+          v-if="session?.can_configure"
+          icon="i-heroicons-cog-6-tooth"
+          color="neutral"
+          variant="ghost"
+          size="xs"
+          aria-label="Configurar WhatsApp"
+          to="/admin/whatsapp"
+        />
         <UCard
           v-if="session"
           variant="subtle"
@@ -852,16 +861,32 @@ function onConversationsScroll(e: Event) {
   if (nearBottom) loadMoreConversations()
 }
 
-onMounted(async () => {
-  try {
-    const { waInboxTrace } = await import('~/composables/whatsapp-inbox/waInboxWsLog')
-    waInboxTrace('view.mounted')
-    await init()
-    waInboxTrace('view.init.done')
-  } catch (err) {
-    const { waInboxTrace } = await import('~/composables/whatsapp-inbox/waInboxWsLog')
-    waInboxTrace('view.init.error', { err: String(err) }, 'warn')
-  }
+let bootPromise: Promise<void> | null = null
+
+async function bootInbox() {
+  if (bootPromise) return bootPromise
+  bootPromise = (async () => {
+    try {
+      const { waInboxTrace } = await import('~/composables/whatsapp-inbox/waInboxWsLog')
+      waInboxTrace('view.boot')
+      await init()
+      waInboxTrace('view.init.done')
+    } catch (err) {
+      const { waInboxTrace } = await import('~/composables/whatsapp-inbox/waInboxWsLog')
+      waInboxTrace('view.init.error', { err: String(err) }, 'warn')
+    }
+  })().finally(() => {
+    bootPromise = null
+  })
+  return bootPromise
+}
+
+onMounted(() => {
+  void bootInbox()
+})
+
+onActivated(() => {
+  void bootInbox()
 })
 </script>
 

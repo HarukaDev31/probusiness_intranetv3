@@ -8,6 +8,12 @@ export interface ClienteInfo {
   tipoDocumento?: string
   empresa?: string
   ruc?: string
+  /** Solo RUC: domicilio fiscal para contrato */
+  domicilioFiscal?: string
+  /** Solo RUC: nombre del coordinador operativo */
+  coordinadorOperativoNombre?: string
+  /** Solo RUC: DNI del coordinador operativo */
+  coordinadorOperativoDni?: string
   /** Nullable: filas antiguas no lo tienen */
   origen_marketing?: string | null
 }

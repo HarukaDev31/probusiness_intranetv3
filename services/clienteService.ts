@@ -15,6 +15,8 @@ export interface Cliente {
   id_user?: number | null
   primer_servicio: {
     servicio: string
+    detalle?: string | null
+    carga?: string | null
     fecha: string
     categoria: string
   }
@@ -23,13 +25,15 @@ export interface Cliente {
     servicio: string
     fecha: string
     categoria: string
-    detalle: string
+    detalle?: string | null
+    carga?: string | null
   }>
   pais?: string
   ciudad?: string
   capacidad_comercial?: string
   rubro?: string
   red_social?: string
+  organizacion_id?: number | null
 }
 
 export interface PaginationInfo {

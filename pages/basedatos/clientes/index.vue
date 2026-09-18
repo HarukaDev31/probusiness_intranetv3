@@ -188,7 +188,10 @@ const columns: TableColumn<any>[] = [
     header: 'Servicio',
     cell: ({ row }) => {
       const primerServicio = row.getValue('primer_servicio') as any
-      return h('div', { class: 'font-medium text-gray-700 py-3 dark:text-gray-300' }, primerServicio?.servicio || '-')
+      const nombre = primerServicio?.servicio || '-'
+      const numero = primerServicio?.detalle || primerServicio?.carga
+      const label = nombre === 'Consolidado' && numero ? `${nombre} ${numero}` : nombre
+      return h('div', { class: 'font-medium text-gray-700 py-3 dark:text-gray-300' }, label)
     }
   },
   {

@@ -112,8 +112,39 @@
           </div>
         </div>
 
-        <!-- Paso 2: Tipo de producto por item (si seleccionó Recordatorio) -->
-        <div v-if="currentStep === 2 && selectedAction === 'pedir_documentos'" class="space-y-4">
+        <!-- Paso 2: proveedores (flujo resumen: Excel GENERAL, sin categoría por ítem) -->
+        <div v-if="currentStep === 2 && selectedAction === 'pedir_documentos' && usarFlujoPorProveedor" class="space-y-4">
+          <div class="text-sm font-medium text-gray-700">
+            Elige los proveedores a los que se les solicitarán los documentos.
+          </div>
+          <p class="text-xs text-gray-500">
+            Se enviará el Excel de confirmación general por cada proveedor seleccionado.
+          </p>
+          <div class="border border-gray-200 rounded-lg p-4 space-y-3">
+            <div
+              v-for="prov in proveedores"
+              :key="prov.id"
+              class="flex items-start justify-between gap-3 border-b border-gray-100 pb-3 last:border-0 last:pb-0"
+            >
+              <label class="flex items-start gap-3 min-w-0">
+                <UCheckbox
+                  :model-value="selectedProveedorIds.includes(prov.id)"
+                  @update:model-value="(v: boolean) => toggleProveedorSolicitud(prov.id, v)"
+                />
+                <span class="min-w-0">
+                  <span class="font-medium block truncate">{{ prov.code_supplier || `Proveedor #${prov.id}` }}</span>
+                  <span v-if="prov.products" class="text-xs text-gray-500 block truncate">{{ prov.products }}</span>
+                </span>
+              </label>
+            </div>
+            <p v-if="proveedores.length === 0" class="text-sm text-gray-500">
+              Esta cotización no tiene proveedores.
+            </p>
+          </div>
+        </div>
+
+        <!-- Paso 2: Tipo de producto por item (flujo org 1 / calculadora) -->
+        <div v-if="currentStep === 2 && selectedAction === 'pedir_documentos' && !usarFlujoPorProveedor" class="space-y-4">
           <div class="text-sm font-medium text-gray-700 mb-3">
             Categoriza el tipo de producto x item:
           </div>
@@ -193,15 +224,16 @@ const emit = defineEmits<{
 }>()
 
 // Estado del modal
-const currentStep = ref(1)
-const selectedAction = ref('')
+const currentStep = ref(props.initialAction ? 2 : 1)
+const selectedAction = ref(props.initialAction || '')
 
 // Opciones del select principal
 const actionOptions = ACTION_OPTIONS
 
 // Estado para "Pedir documentos"
-const proveedores = ref<{ id: number; code_supplier: string; items: { id: number; initial_name: string; tipo_producto: string }[] }[]>([])
+const proveedores = ref<{ id: number; code_supplier: string; products?: string | null; modo_cotizacion?: string | null; items: { id: number; initial_name: string; tipo_producto: string }[] }[]>([])
 const selectedProveedor = ref<number | null>(null)
+const selectedProveedorIds = ref<number[]>([])
 const proveedoresPendingDocuments = ref<{ packing_list: string | null; factura_comercial: string | null; excel_confirmacion: string | null; id: number; code_supplier: string }[]>([])
 const documentos = ref([...DOCUMENTOS_OPTIONS])
 // Selección de documentos por proveedor (independiente)
@@ -269,6 +301,18 @@ const onProviderDocToggle = (doc: DocumentoTipo, checked: boolean) => {
 // Mapa para persistir la categoría seleccionada por proveedor e ítem
 // Estructura: { [proveedorId]: { [initial_name]: categoria } }
 const tipoSeleccionadoPorProveedor = ref<Record<number, Record<string, string>>>({})
+const usarFlujoPorProveedor = computed(() => {
+  if (props.modoPorProveedor) return true
+  return proveedores.value.some((p) => p.modo_cotizacion === 'resumen')
+})
+
+const toggleProveedorSolicitud = (id: number, checked: boolean) => {
+  const set = new Set(selectedProveedorIds.value)
+  if (checked) set.add(id)
+  else set.delete(id)
+  selectedProveedorIds.value = [...set]
+}
+
 const categorias = CATEGORIAS_OPTIONS
 
 // Computed
@@ -282,6 +326,9 @@ const canSave = computed(() => {
   }
   
   if (selectedAction.value === 'pedir_documentos') {
+    if (usarFlujoPorProveedor.value) {
+      return selectedProveedorIds.value.length > 0
+    }
     return productosPorItem.value.every(p => p.tipo_producto_seleccionado !== '')
   }
   
@@ -306,6 +353,7 @@ const closeModal = () => {
   currentStep.value = 1
   selectedAction.value = ''
   selectedProveedor.value = null
+  selectedProveedorIds.value = []
   selectedDocsByProveedor.value = {}
   selectedDocsGeneral.value = []
   selectedItem.value = null
@@ -321,15 +369,20 @@ const handleSave = async () => {
   let result: any
   
   if (selectedAction.value === 'pedir_documentos') {
-    // Construir payload con TODOS los proveedores y sus items con tipo seleccionado
-    const proveedoresPayload = proveedores.value.map(prov => {
+    const origen = usarFlujoPorProveedor.value
+      ? proveedores.value.filter((p) => selectedProveedorIds.value.includes(p.id))
+      : proveedores.value
+    const proveedoresPayload = origen.map(prov => {
       const saved = tipoSeleccionadoPorProveedor.value[prov.id] || {}
+      const items = prov.items.length
+        ? prov.items
+        : [{ id: 0, initial_name: prov.products || '', tipo_producto: 'GENERAL' }]
       return {
         id: prov.id,
-        items: prov.items.map(it => ({
+        items: items.map(it => ({
             id: it.id,
           initial_name: it.initial_name,
-          tipo_producto: saved[it.initial_name] || ''
+          tipo_producto: usarFlujoPorProveedor.value ? 'GENERAL' : (saved[it.initial_name] || '')
         }))
       }
     })
@@ -392,12 +445,21 @@ watch(selectedAction, async (newVal) => {
         proveedores.value = res.data.map(p => ({
           id: p.id,
           code_supplier: p.code_supplier,
+          products: p.products,
+          modo_cotizacion: p.modo_cotizacion,
           items: p.items.map(it => ({
             id: it.id,
             initial_name: it.initial_name,
             tipo_producto: it.tipo_producto
           }))
         }))
+        selectedProveedorIds.value = res.data.map((p) => p.id)
+        const esPorProveedor = props.modoPorProveedor
+          || res.data.some((p) => p.modo_cotizacion === 'resumen')
+        if (esPorProveedor) {
+          currentStep.value = 2
+          return
+        }
         // Inicializar mapa de tipos por proveedor con valores del backend
         tipoSeleccionadoPorProveedor.value = {}
         for (const prov of res.data) {
@@ -444,7 +506,7 @@ watch(selectedAction, async (newVal) => {
       }
     }, 'Cargando proveedores pendientes de documentos...')
   }
-})
+}, { immediate: true })
 
 // Actualizar productos al cambiar de pestaña (proveedor seleccionado)
 watch(selectedItem, (newId) => {

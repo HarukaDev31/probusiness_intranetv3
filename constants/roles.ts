@@ -17,9 +17,21 @@ export const ROLES = {
     PM: 'PM',
     FINANZAS: 'Finanzas',
     RRHH: 'RRHH',
+    SOCIO: 'Socio',
+    GERENCIA: 'GERENCIA',
+    GERENTE_GENERAL: 'GERENTE GENERAL',
 } as const
 export const ID_JEFEVENTAS = 28791
 export const COTIZADORES_WITH_PRIVILEGES = [28911]
+export const ID_ORGANIZACION_ADMIN = 1
+
+export function esRolSocio(role: string | null | undefined): boolean {
+    return (role ?? '').trim() === ROLES.SOCIO
+}
+
+export function esOrganizacionSocio(orgId: number | string | null | undefined): boolean {
+    return !!orgId && Number(orgId) !== ID_ORGANIZACION_ADMIN
+}
 
 // Tipos de roles
 export type UserRole = typeof ROLES[keyof typeof ROLES]

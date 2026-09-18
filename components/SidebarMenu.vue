@@ -19,8 +19,8 @@
         <button type="button"
           class="p-1 rounded-md text-gray-500 bg-white dark:bg-gray-800 shadow hover:bg-gray-100 dark:hover:bg-gray-700"
           @click="toggleCollapsed" 
-          :aria-label="collapsed ? 'Expandir menú' : 'Minimizar menú'"
-          :title="collapsed ? 'Expandir menú' : 'Minimizar menú'">
+          :aria-label="collapsed ? uiLabels.expand : uiLabels.collapse"
+          :title="collapsed ? uiLabels.expand : uiLabels.collapse">
           <UIcon :name="collapsed ? 'i-heroicons-chevron-right' : 'i-heroicons-chevron-left'" class="w-5 h-5" />
         </button>
       </div>
@@ -29,7 +29,7 @@
           <div class="text-center py-6">
             <UIcon name="i-heroicons-arrow-path"
               class="animate-spin w-6 h-6 mx-auto mb-2 text-gray-500 dark:text-gray-400" />
-            <p class="text-sm text-gray-500 dark:text-gray-400">Cargando menú...</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">{{ uiLabels.loading }}</p>
           </div>
         </template>
 
@@ -37,7 +37,7 @@
           <template v-for="category in menuCategories" :key="category.id">
             <div v-if="!collapsed"
               class="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              {{ category.name }}
+              {{ displayMenuName(category.name) }}
             </div>
 
             <div class="space-y-1 px-1">
@@ -49,16 +49,16 @@
                     <button type="button" class="flex-1 flex items-center gap-3 rounded-md text-sm focus:outline-none"
                       :class="[isParentActive(item) ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/10 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700', collapsed ? 'justify-center px-2' : 'text-left px-3 py-2']"
                       @click="navigateOrToggle(item)"
-                      :aria-label="collapsed ? item.name : undefined">
+                      :aria-label="collapsed ? displayMenuName(item.name, undefined, item.nameEn) : undefined">
                       <UIcon :name="item.icon || 'i-heroicons-archive-box'" class="w-5 h-5 text-gray-400" />
-                      <span v-if="!collapsed" class="truncate">{{ item.name }} </span>
+                      <span v-if="!collapsed" class="truncate">{{ displayMenuName(item.name, undefined, item.nameEn) }} </span>
                     </button>
 
                     <!-- Right: chevron toggle (stop propagation para no navegar) -->
                     <button type="button"
                       class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                       @click.stop="toggleParent(item.id)"
-                      :aria-label="expanded[String(item.id)] ? `Colapsar ${item.name}` : `Expandir ${item.name}`"
+                      :aria-label="expanded[String(item.id)] ? `${uiLabels.collapse} ${displayMenuName(item.name, undefined, item.nameEn)}` : `${uiLabels.expand} ${displayMenuName(item.name, undefined, item.nameEn)}`"
                       :aria-expanded="expanded[String(item.id)]">
                       <UIcon name="i-heroicons-chevron-down" class="w-4 h-4 transform"
                         :class="expanded[String(item.id)] ? 'rotate-180' : ''" />
@@ -78,7 +78,7 @@
                               class="flex-1 flex items-center gap-2 rounded-md text-sm focus:outline-none"
                               :class="[isParentActive(child) ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700', collapsed ? 'justify-center px-2' : 'text-left px-2']"
                               @click="navigateOrToggle(child)"
-                              :aria-label="collapsed ? child.name : undefined">
+                              :aria-label="collapsed ? displayMenuName(child.name, item.name, child.nameEn) : undefined">
                               <template v-if="child.icon">
                                 <UIcon :name="child.icon" class="w-4 h-4 text-gray-400" />
                               </template>
@@ -88,13 +88,13 @@
                                   {{ initialLetter(item.name, child.name) }}
                                 </span>
                               </template>
-                              <span v-if="!collapsed" class="truncate">{{ child.name }}</span>
+                              <span v-if="!collapsed" class="truncate">{{ displayMenuName(child.name, item.name, child.nameEn) }}</span>
                             </button>
 
                             <button type="button"
                               class="ml-2 p-2 rounded-full text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                               @click.stop="toggleParent(child.id)"
-                              :aria-label="expanded[String(child.id)] ? `Colapsar ${child.name}` : `Expandir ${child.name}`"
+                              :aria-label="expanded[String(child.id)] ? `${uiLabels.collapse} ${displayMenuName(child.name, item.name, child.nameEn)}` : `${uiLabels.expand} ${displayMenuName(child.name, item.name, child.nameEn)}`"
                               :aria-expanded="expanded[String(child.id)]">
                               <UIcon name="i-heroicons-chevron-down" class="w-3 h-3 transform"
                                 :class="expanded[String(child.id)] ? 'rotate-180' : ''" />
@@ -108,7 +108,7 @@
                                 :class="[isActiveRoute(sub.route) ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700', collapsed ? 'justify-center px-0' : 'justify-start px-2']"
                               @mouseenter="onMenuHover(sub.route)"
                                 @click="handleNavigation(sub.route)"
-                                :aria-label="collapsed ? sub.name : undefined">
+                                :aria-label="collapsed ? displayMenuName(sub.name, child.name, sub.nameEn) : undefined">
                                 <template #default>
                                   <span v-if="sub.icon">
                                     <UIcon :name="sub.icon" class="w-4 h-4 text-gray-400 mr-2" />
@@ -119,7 +119,7 @@
                                       {{ initialLetter(child.name, sub.name) }}
                                     </span>
                                   </span>
-                                  <span v-if="!collapsed">{{ sub.name }}</span>
+                                  <span v-if="!collapsed">{{ displayMenuName(sub.name, child.name, sub.nameEn) }}</span>
                                 </template>
                               </UButton>
                             </template>
@@ -133,7 +133,7 @@
                             :class="[isActiveRoute(child.route) ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700', collapsed ? 'justify-center px-2' : 'justify-start px-2']"
                             @mouseenter="onMenuHover(child.route)"
                             @click="handleNavigation(child.route)"
-                            :aria-label="collapsed ? getCustomMenuName(item.name, child.name) : undefined">
+                            :aria-label="collapsed ? displayMenuName(child.name, item.name, child.nameEn) : undefined">
                             <template #default>
                               <span v-if="child.icon">
                                 <UIcon :name="child.icon" class="w-4 h-4 text-gray-400 mr-2" />
@@ -144,7 +144,7 @@
                                   {{ initialLetter(item.name, child.name) }}
                                 </span>
                               </span>
-                              <span v-if="!collapsed">{{ getCustomMenuName(item.name, child.name) }}</span>
+                              <span v-if="!collapsed">{{ displayMenuName(child.name, item.name, child.nameEn) }}</span>
                             </template>
                           </UButton>
                         </div>
@@ -155,10 +155,10 @@
 
                 <!-- Item simple (sin hijos) -->
                 <div v-else>
-                  <UButton :label="collapsed ? '' : item.name" :icon="item.icon || 'i-heroicons-home'" variant="ghost"
+                  <UButton :label="collapsed ? '' : displayMenuName(item.name, undefined, item.nameEn)" :icon="item.icon || 'i-heroicons-home'" variant="ghost"
                     class="w-full text-sm gap-3 py-2 rounded-md"
                     :class="[isActiveRoute(item.route) ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/10 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700', collapsed ? 'justify-center px-0 gap-0' : 'justify-start px-3']"
-                    :aria-label="collapsed ? item.name : undefined"
+                    :aria-label="collapsed ? displayMenuName(item.name, undefined, item.nameEn) : undefined"
                     @mouseenter="onMenuHover(item.route)"
                     @click="handleNavigation(item.route)" />
                 </div>
@@ -173,7 +173,7 @@
           v-if="currentRole !== ROLES.CONTENEDOR_ALMACEN">
           <div v-if="!collapsed"
             class="p-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-            Preferencias
+            {{ uiLabels.preferences }}
           </div>
           <WhatsappNumbersStatus :instances="[{ instanceName: 'ADMINISTRACION','key':'Administracion' }]"
               :auto-refresh="true"
@@ -188,7 +188,7 @@
                 icon="i-heroicons-bell" @click="openNotifications"
                 :class="collapsed ? 'justify-center' : 'justify-start'">
                 <template #default>
-                  <span v-if="!collapsed">Notificaciones</span>
+                  <span v-if="!collapsed">{{ uiLabels.notifications }}</span>
                   <UBadge v-if="showNotificationsBadge"
                     :label="unreadCount > 99 ? '99+' : unreadCount.toString()" color="error" variant="solid" size="xs"
                     :class="collapsed ? '' : 'ml-auto'" />
@@ -201,7 +201,7 @@
                 icon="i-heroicons-adjustments-horizontal" @click="openWsNotificationPreferences"
                 :class="collapsed ? 'justify-center' : 'justify-start'">
                 <template #default>
-                  <span v-if="!collapsed">Preferencias de avisos</span>
+                  <span v-if="!collapsed">{{ uiLabels.alertPrefs }}</span>
                 </template>
               </UButton>
             </div>
@@ -209,7 +209,7 @@
             <div class="flex items-center justify-between py-4">
               <div v-if="!collapsed" class="flex items-center gap-3">
                 <UIcon name="i-heroicons-moon" class="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                <div class="text-sm text-gray-700 dark:text-gray-300">Modo oscuro</div>
+                <div class="text-sm text-gray-700 dark:text-gray-300">{{ uiLabels.darkMode }}</div>
               </div>
               <label class="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" class="sr-only peer" :checked="isDark" @change="toggleDarkMode" />
@@ -228,16 +228,16 @@
     <!-- Bottom: user info + logout -->
     <div class="border-b border-gray-100 dark:border-gray-700 px-4 py-4">
       <NuxtLink to="/perfil" class="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer" no-prefetch>
-        <UAvatar :src="userPhotoUrl || undefined" :alt="userName || 'Usuario'" :size="collapsed ? 'md' : 'sm'"
+        <UAvatar :src="userPhotoUrl || undefined" :alt="userName || uiLabels.user" :size="collapsed ? 'md' : 'sm'"
           :class="['w-10 h-10']" />
         <div class="flex-1 min-w-0" v-if="!collapsed">
-          <div class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ userName || 'Usuario' }}</div>
-          <div class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ currentRole || 'Sin rol' }}</div>
+          <div class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ userName || uiLabels.user }}</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ currentRole || uiLabels.noRole }}</div>
         </div>
       </NuxtLink>
     </div>
     <div class="mt-3 p-4">
-      <UButton :label="collapsed ? '' : 'Cerrar sesión'" icon="i-heroicons-arrow-right-on-rectangle" variant="ghost"
+      <UButton :label="collapsed ? '' : uiLabels.logout" icon="i-heroicons-arrow-right-on-rectangle" variant="ghost"
         color="error" class="w-full text-sm" :class="collapsed ? 'justify-center' : ''" @click="logout" />
     </div>
   </div>
@@ -251,6 +251,7 @@ import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import type { SidebarCategory } from '../types/module'
 import { ROLES } from '~/constants/roles'
 import { CUSTOM_MENUS_PER_ROLE } from '~/constants/sidebar'
+import { MENU_LABELS_EN, translateMenuLabel, usesEnglishTableHeaders } from '~/constants/table-headers-i18n'
 import { useUserRole } from '../composables/auth/useUserRole'
 import { useAuth } from '../composables/auth/useAuth'
 import { useNotifications } from '../composables/useNotifications'
@@ -547,10 +548,34 @@ const getCustomMenuName = (itemName: string, childName: string) => {
   return childName
 }
 
+const displayMenuName = (name: string, parentName?: string, nameEn?: string) => {
+  const custom = parentName ? getCustomMenuName(parentName, name) : name
+  if (!usesEnglishTableHeaders(currentRole.value)) return custom
+  if (parentName && custom !== name) return custom
+  return translateMenuLabel(name, currentRole.value, nameEn)
+}
+
+const uiLabels = computed(() => {
+  const en = usesEnglishTableHeaders(currentRole.value)
+  const pick = (es: string) => (en ? (MENU_LABELS_EN[es] || es) : es)
+  return {
+    loading: pick('Cargando menú...'),
+    expand: pick('Expandir menú'),
+    collapse: pick('Minimizar menú'),
+    logout: pick('Cerrar sesión'),
+    notifications: pick('Notificaciones'),
+    preferences: pick('Preferencias'),
+    alertPrefs: pick('Preferencias de avisos'),
+    darkMode: pick('Modo oscuro'),
+    user: pick('Usuario'),
+    noRole: pick('Sin rol'),
+  }
+})
+
 // helper to compute the initial letter for a menu entry using custom name mapping
 const initialLetter = (parentName: string, name: string) => {
   try {
-    const label = getCustomMenuName(parentName, name) || name || ''
+    const label = displayMenuName(name, parentName) || name || ''
     if (typeof label === 'string' && label.length) return label.charAt(0)
     return String(label)[0] || '?'
   } catch (e) {

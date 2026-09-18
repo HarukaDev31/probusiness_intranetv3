@@ -9,11 +9,15 @@ export interface DocumentacionFolder {
   file_url: string | null
   type: string | null
   lista_embarque_url: string | null
+  es_packing_list_china?: boolean
 }
 
 export interface DocumentacionResponse {
   success: boolean
   data: DocumentacionFolder[]
+  es_contenedor_socio?: boolean
+  puede_editar?: boolean
+  organizacion_id?: number | null
 }
 
 export interface DocumentacionFilters {

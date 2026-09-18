@@ -13,6 +13,7 @@ export class WhatsappInboxService extends BaseService {
     filter?: WaInboxFilter
     per_page?: number
     page?: number
+    include_id?: number
   } = {}) {
     return await this.apiCall<any>(`${this.baseUrl}/conversations`, {
       method: 'GET',

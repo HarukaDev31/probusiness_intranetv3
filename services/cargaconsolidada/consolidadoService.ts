@@ -14,6 +14,10 @@ export interface ConsolidadoParams {
     estado_documentacion?: string
     /** Rol de vista (ej. Coordinación, Documentacion). Si el token es Jefe Importación, el backend usará este rol. */
     role?: string
+    /** Org 1: filtrar por organización. */
+    organizacion_id?: string
+    /** Almacén: filtrar por empresa del consolidado. */
+    empresa?: string
 }
 
 export class ConsolidadoService extends BaseService {
@@ -69,6 +73,14 @@ export class ConsolidadoService extends BaseService {
                 cleanParams.role = params.role.trim()
             }
 
+            if (params.organizacion_id && params.organizacion_id.trim() && params.organizacion_id !== 'todos') {
+                cleanParams.organizacion_id = params.organizacion_id.trim()
+            }
+
+            if (params.empresa && params.empresa.trim() && params.empresa !== 'todos') {
+                cleanParams.empresa = params.empresa.trim()
+            }
+
             const response = await this.apiCall<ContenedorResponse>(`${this.baseUrl}`, {
                 method: 'GET',
                 params: cleanParams
@@ -93,10 +105,11 @@ export class ConsolidadoService extends BaseService {
         }
     }
 
-    static async getConsolidadoPasos(id: number, role?: string): Promise<ContenedorPasosResponse> {
+    static async getConsolidadoPasos(id: number, role?: string, completado?: boolean): Promise<ContenedorPasosResponse> {
         try {
             const params: Record<string, string> = {}
             if (role && role.trim()) params.role = role.trim()
+            if (completado) params.completado = '1'
             const qs = Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : ''
             const response = await this.apiCall<ContenedorPasosResponse>(`${this.baseUrl}/pasos/${id}${qs}`, {
                 method: 'GET'
@@ -154,9 +167,24 @@ export class ConsolidadoService extends BaseService {
         return response
     }
 
-    static async getContenedoresDisponibles(): Promise<any> {
+    static async getPaisesHabilitados(): Promise<{ success: boolean; data: { value: number; label: string }[] }> {
         try {
-            const response = await this.apiCall<any>(`${this.baseUrl}/cargas-disponibles`, {
+            return await this.apiCall<{ success: boolean; data: { value: number; label: string }[] }>(`${this.baseUrl}/paises`, {
+                method: 'GET'
+            })
+        } catch (error) {
+            console.error('Error en ConsolidadoService.getPaisesHabilitados:', error)
+            throw error
+        }
+    }
+
+    static async getContenedoresDisponibles(params?: { id_pais?: number; id_contenedor_origen?: number }): Promise<any> {
+        try {
+            const query: Record<string, string> = {}
+            if (params?.id_pais) query.id_pais = String(params.id_pais)
+            if (params?.id_contenedor_origen) query.id_contenedor_origen = String(params.id_contenedor_origen)
+            const qs = Object.keys(query).length ? '?' + new URLSearchParams(query).toString() : ''
+            const response = await this.apiCall<any>(`${this.baseUrl}/cargas-disponibles${qs}`, {
                 method: 'GET'
             })
             return response

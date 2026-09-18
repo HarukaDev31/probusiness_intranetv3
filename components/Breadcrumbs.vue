@@ -87,6 +87,7 @@ function getBreadcrumbLabel(segment: string, index: number, allSegments: string[
     'cargaconsolidada': 'Carga Consolidada',
     'abiertos': 'Abiertos',
     'embarcados': 'Embarcados',
+    'customers': 'Customers',
     'pasos': 'Pasos',
     'verificacion': 'Verificación',
     'consolidado': 'Consolidado',

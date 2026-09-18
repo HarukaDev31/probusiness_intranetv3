@@ -24,14 +24,23 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
         estado_china: 'todos',
         anio: 'todos',
         estado_finanzas: 'todos',
+        organizacion_id: 'todos',
+        empresa: 'todos',
         completado: false
     })
     const anioOptions = ref<{ label: string; value: string }[]>([
         { label: 'Todos', value: 'todos' },
     ])
+    const organizacionOptions = ref<{ label: string; value: string }[]>([
+        { label: 'Todas', value: 'todos' },
+    ])
+    const empresaOptions = ref<{ label: string; value: string }[]>([
+        { label: 'Todas', value: 'todos' },
+    ])
     const pasos=ref<ContenedorPasos[]>([])
     const validContainers=ref<any[]>([])
     const empresasCreadas = ref<{ label: string; value: string }[]>([])
+    const paisesHabilitados = ref<{ label: string; value: number }[]>([])
     const getConsolidadoData = async (roleOverride?: string) => {
         try {
             loading.value = true
@@ -61,6 +70,12 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
             if (filters.value.completado) {
                 params.completado = filters.value.completado
             }
+            if (filters.value.organizacion_id && filters.value.organizacion_id !== 'todos') {
+                params.organizacion_id = filters.value.organizacion_id
+            }
+            if (filters.value.empresa && filters.value.empresa !== 'todos') {
+                params.empresa = filters.value.empresa
+            }
 
             const response = await ConsolidadoService.getConsolidadoData(params)
             consolidadoData.value = response.data
@@ -72,6 +87,22 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
                 ...anios.map((year) => ({
                     label: String(year),
                     value: String(year),
+                })),
+            ]
+            const organizaciones = response.filters?.organizaciones ?? []
+            organizacionOptions.value = [
+                { label: 'Todas', value: 'todos' },
+                ...organizaciones.map((org) => ({
+                    label: org.nombre,
+                    value: String(org.id),
+                })),
+            ]
+            const empresas = response.filters?.empresas ?? []
+            empresaOptions.value = [
+                { label: 'Todas', value: 'todos' },
+                ...empresas.map((nombre) => ({
+                    label: String(nombre),
+                    value: String(nombre),
                 })),
             ]
         } catch (err: any) {
@@ -104,7 +135,7 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
         
         
         if (value === 'todos') {
-            if (filterKey === 'estado_china' || filterKey === 'anio' || filterKey === 'estado_finanzas') {
+            if (filterKey === 'estado_china' || filterKey === 'anio' || filterKey === 'estado_finanzas' || filterKey === 'organizacion_id' || filterKey === 'empresa') {
                 filters.value[filterKey] = 'todos'
             } else {
                 delete filters.value[filterKey]
@@ -123,7 +154,10 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
         filters.value = {
             estado_china: 'todos',
             anio: 'todos',
-            estado_finanzas: 'todos'
+            estado_finanzas: 'todos',
+            organizacion_id: 'todos',
+            empresa: 'todos',
+            completado: filters.value.completado,
         }
         pagination.value.current_page = 1
         getConsolidadoData()
@@ -135,7 +169,10 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
             filters.value = {
                 estado_china: 'todos',
                 anio: 'todos',
-                estado_finanzas: 'todos'
+                estado_finanzas: 'todos',
+                organizacion_id: 'todos',
+                empresa: 'todos',
+                completado: filters.value.completado,
             }
             pagination.value.current_page = 1
             getConsolidadoData()
@@ -152,11 +189,11 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
     const setCompletado = (completado: boolean) => {
         filters.value.completado = completado
     }
-    const getConsolidadoPasos = async (id: number, roleOverride?: string) => {
+    const getConsolidadoPasos = async (id: number, roleOverride?: string, completado?: boolean) => {
         try {
             loading.value = true
             const role = roleOverride ?? (roleRef && 'value' in roleRef ? roleRef.value : undefined)
-            const response = await ConsolidadoService.getConsolidadoPasos(id, role)
+            const response = await ConsolidadoService.getConsolidadoPasos(id, role, completado)
             pasos.value = response.data
             loading.value = false
         } catch (error) {
@@ -172,6 +209,16 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
             console.error('Error en getValidContainers:', error)
         }
     }
+    const getPaisesHabilitados = async () => {
+        try {
+            const response = await ConsolidadoService.getPaisesHabilitados()
+            paisesHabilitados.value = Array.isArray(response?.data) ? response.data : []
+            return response
+        } catch (error) {
+            console.error('Error en getPaisesHabilitados:', error)
+            paisesHabilitados.value = []
+        }
+    }
     const getEmpresasCreadas = async () => {
         try {
             const response = await ConsolidadoService.getEmpresasCreadas()
@@ -182,21 +229,19 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
             empresasCreadas.value = []
         }
     }
-    const getContenedoresDisponibles = async () => {
+    const getContenedoresDisponibles = async (params?: { id_pais?: number; id_contenedor_origen?: number }) => {
         try {
-            const response = await ConsolidadoService.getContenedoresDisponibles()
+            const response = await ConsolidadoService.getContenedoresDisponibles(params)
             return response
         } catch (error) {
             console.error('Error en getContenedoresDisponibles:', error)
         }
     }
+    const moveCotizacion = async (payload: any) => {
+        return ConsolidadoService.moveCotizacion(payload)
+    }
     const createConsolidado = async (payload: any) => {
-        try {
-            const response = await ConsolidadoService.createConsolidado(payload)
-            
-        } catch (error) {
-            console.error('Error en createConsolidado:', error)
-        }
+        return await ConsolidadoService.createConsolidado(payload)
     }
     const getConsolidadoById = async (id: number) => {
         try {
@@ -248,6 +293,8 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
         currentPage,
         filters,
         anioOptions,
+        organizacionOptions,
+        empresaOptions,
         getConsolidadoData,
         handleSearch,
         handlePageChange,
@@ -262,12 +309,15 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
         validContainers,
         getEmpresasCreadas,
         empresasCreadas,
+        getPaisesHabilitados,
+        paisesHabilitados,
         createConsolidado,
         getConsolidadoById,
         deleteConsolidado,
         partirConsolidado,
         updateEstadoDocumentacion,
         updateEstadoFinanzas,
-        getContenedoresDisponibles
+        getContenedoresDisponibles,
+        moveCotizacion
     }
 }

@@ -49,6 +49,9 @@
                 <UFormField label="País" required :error="errors.pais">
                     <USelect class="w-full" v-model="pais" :items="paises" @update:model-value="setEmpresa"
                         placeholder="Seleccione un país" />
+                    <p v-if="!isOrgAdmin && paises.length === 0" class="mt-1 text-xs text-gray-500">
+                        No hay países habilitados para crear consolidado.
+                    </p>
                 </UFormField>
                 <UFormField label="Fecha Entrega" required :error="errors.fechaEntrega">
                     <UPopover>
@@ -75,7 +78,7 @@
                         @create="onEmpresaCreate"
                     />
                 </UFormField>
-                <UFormField label="Límite CBM IMO (opcional)" :error="errors.limiteCbmImo">
+                <UFormField v-if="isOrgAdmin" label="Límite CBM IMO (opcional)" :error="errors.limiteCbmImo">
                     <UInput
                         v-model="limiteCbmImo"
                         type="number"
@@ -119,7 +122,6 @@ import { ref, computed, defineEmits, defineProps } from 'vue'
 import { CalendarDate } from '@internationalized/date'
 import { getLocalTimeZone, DateFormatter, } from '@internationalized/date'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
-import { useOptions } from '~/composables/commons/useOptions'
 import { useUserRole } from '~/composables/auth/useUserRole'
 //const modelValue = shallowRef(new CalendarDate(2022, 1, 10))
 const id = ref<number | null>(null)
@@ -127,7 +129,7 @@ const carga = ref<number>()
 const mes = ref<string>()
 const pais = ref<number>()
 const empresa = ref<string>('')
-const empresaMenu = ref<string | { label: string; value: string } | null>('')
+const empresaMenu = ref<string | { label: string; value: string } | null>(null)
 const empresaSearchTerm = ref('')
 let empresaUltimoFueEscritura = false
 const limiteCbmImo = ref<number | null>(null)
@@ -136,9 +138,9 @@ const hoy = new Date();
 const fechaCierre = shallowRef(new CalendarDate(hoy.getFullYear(), hoy.getMonth() + 1, hoy.getDate()))
 const fechaArribo = shallowRef(new CalendarDate(hoy.getFullYear(), hoy.getMonth() + 1, hoy.getDate()))
 const fechaEntrega = shallowRef(new CalendarDate(hoy.getFullYear(), hoy.getMonth() + 1, hoy.getDate()))
-const { getValidContainers, validContainers, getConsolidadoById, getEmpresasCreadas, empresasCreadas } = useConsolidado()
-const { paises, getPaises } = useOptions()
+const { getValidContainers, validContainers, getConsolidadoById, getEmpresasCreadas, empresasCreadas, getPaisesHabilitados, paisesHabilitados } = useConsolidado()
 const { currentOrganizacionId, fetchCurrentUser } = useUserRole()
+const paises = computed(() => paisesHabilitados.value)
 const isOrgAdmin = computed(() => currentOrganizacionId.value === 1)
 const df = new DateFormatter('en-US', {
     dateStyle: 'medium'
@@ -205,37 +207,42 @@ function onEmpresaSearch(term: string) {
     if (term !== '') {
         empresaUltimoFueEscritura = true
         empresa.value = term
-    } else if (empresaUltimoFueEscritura) {
-        empresa.value = ''
     }
 }
 
 function onEmpresaMenuChange(value: string | { label?: string; value?: string } | null) {
-    if (!value) {
-        if (empresaUltimoFueEscritura) {
-            commitEmpresaPendiente()
-        } else if (empresa.value.trim()) {
-            const actual = nombreDeEmpresa(empresaMenu.value)
-            if (!actual) empresaMenu.value = empresa.value.trim()
-        }
+    const nombre = nombreDeEmpresa(value)
+    if (nombre) {
+        aplicarEmpresa(nombre)
         return
     }
-    aplicarEmpresa(nombreDeEmpresa(value))
+    restaurarEmpresaEnMenu()
 }
 
 function onEmpresaCreate(item: string | { label?: string; value?: string }) {
     aplicarEmpresa(nombreDeEmpresa(item))
 }
 
+function restaurarEmpresaEnMenu() {
+    if (empresa.value.trim() && !nombreDeEmpresa(empresaMenu.value)) {
+        empresaMenu.value = empresa.value.trim()
+    }
+}
+
 function commitEmpresaPendiente() {
-    if (!empresaUltimoFueEscritura) return
-    empresaUltimoFueEscritura = false
-    const term = (empresaSearchTerm.value || empresa.value || '').trim()
-    if (!term) {
-        aplicarEmpresa('')
+    const seleccionado = nombreDeEmpresa(empresaMenu.value)
+    if (seleccionado) {
+        aplicarEmpresa(seleccionado)
         return
     }
-    const match = empresasOptions.value.find((n) => n.toLowerCase() === term.toLowerCase())
+    const term = (empresaSearchTerm.value || empresa.value || '').trim()
+    if (!term) {
+        restaurarEmpresaEnMenu()
+        return
+    }
+    const lower = term.toLowerCase()
+    const match = empresasOptions.value.find((n) => n.toLowerCase() === lower)
+        || empresasOptions.value.find((n) => n.toLowerCase().startsWith(lower))
     aplicarEmpresa(match || term)
 }
 
@@ -257,11 +264,13 @@ const validateForm = () => {
     }
     if (!pais.value) {
         errors.value.pais = 'El país es requerido'
+    } else if (!paises.value.some((p: { value: number }) => Number(p.value) === Number(pais.value))) {
+        errors.value.pais = 'El país no está habilitado para tu organización'
     }
     if (!empresa.value?.trim()) {
         errors.value.empresa = 'La empresa es requerida'
     }
-    if (limiteCbmImo.value !== null && limiteCbmImo.value !== ('' as any)) {
+    if (isOrgAdmin.value && limiteCbmImo.value !== null && limiteCbmImo.value !== ('' as any)) {
         const numeric = Number(limiteCbmImo.value)
         if (Number.isNaN(numeric) || numeric < 0) {
             errors.value.limiteCbmImo = 'El límite CBM IMO debe ser un número mayor o igual a 0'
@@ -314,7 +323,7 @@ const handleSubmit = async () => {
             fechaCierre: fechaCierre.value,
             fechaArribo: fechaArribo.value,
             fechaEntrega: fechaEntrega.value,
-            limiteCbmImo: limiteCbmImo.value !== null && limiteCbmImo.value !== ('' as any)
+            limiteCbmImo: isOrgAdmin.value && limiteCbmImo.value !== null && limiteCbmImo.value !== ('' as any)
                 ? Number(limiteCbmImo.value)
                 : null,
             tcYuan: resolverTcYuanSubmit(),
@@ -328,7 +337,7 @@ const handleSubmit = async () => {
 }
 onMounted(async () => {
     fetchCurrentUser()
-    await getPaises()
+    await getPaisesHabilitados()
     await Promise.all([getValidContainers(), getEmpresasCreadas()])
     if (!props.id && !isOrgAdmin.value) {
         tcYuan.value = TC_YUAN_DEFAULT_NO_ADMIN
@@ -344,6 +353,11 @@ onMounted(async () => {
             mes.value = response.mes?.toString()
             // Asegurarse de que el país sea un string
             pais.value = response.id_pais
+            const idPaisActual = Number(response.id_pais)
+            if (idPaisActual && !paisesHabilitados.value.some((p) => Number(p.value) === idPaisActual)) {
+                const nombrePais = (response as { pais?: { No_Pais?: string } }).pais?.No_Pais || `País #${idPaisActual}`
+                paisesHabilitados.value = [...paisesHabilitados.value, { value: idPaisActual, label: nombrePais }]
+            }
             aplicarEmpresa(response.empresa || '')
             fechaCierre.value = new CalendarDate(getDateParts(response.f_cierre).year, getDateParts(response.f_cierre).month, getDateParts(response.f_cierre).day)
             fechaArribo.value = new CalendarDate(getDateParts(response.f_puerto).year, getDateParts(response.f_puerto).month, getDateParts(response.f_puerto).day)
@@ -355,6 +369,9 @@ onMounted(async () => {
                 ? Number(response.tc_yuan)
                 : (!isOrgAdmin.value ? TC_YUAN_DEFAULT_NO_ADMIN : null)
         }
+    } else if (paisesHabilitados.value.length === 1) {
+        pais.value = paisesHabilitados.value[0].value
+        setEmpresa(pais.value)
     }
 
 })

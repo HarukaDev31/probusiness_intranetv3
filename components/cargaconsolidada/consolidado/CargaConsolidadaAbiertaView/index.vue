@@ -53,7 +53,7 @@
         @filter-change="handleFilterChange"
       >
         <template #actions>
-          <template v-if="role === ROLES.COORDINACION">
+          <template v-if="puedeGestionarConsolidado">
             <CreateConsolidadoModal @submit="handleCreateConsolidado" :id="currentConsolidado" />
           </template>
         </template>
@@ -75,6 +75,7 @@
             <div class="flex-1">
               <div class="text-xs text-gray-500">{{ row.mes }}</div>
               <div class="font-semibold text-sm">Consolidado #{{ row.carga }}</div>
+              <div v-if="isOrgAdmin && !isAlmacen && row.organizacion?.nombre" class="text-xs text-gray-400">{{ row.organizacion.nombre }}</div>
               <div class="text-xs text-gray-400 mt-1">{{ row.empresa }}</div>
               <div class="mt-1 text-xs text-gray-400 flex flex-col items-center gap-1">
                 <span v-if="row.f_cierre">Cierre: {{ formatDateTimeToDmy(row.f_cierre) }}</span>
@@ -134,7 +135,7 @@ import type { TableColumn, TableRow } from '@nuxt/ui'
 import type { FilterConfig } from '~/types/data-table'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
 import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
-import { ROLES, roleEsComoJefeImportacion } from '~/constants/roles'
+import { ID_ORGANIZACION_ADMIN, ROLES, esRolSocio, roleEsComoJefeImportacion } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
@@ -165,6 +166,12 @@ const { showSuccess, showConfirmation, showError } = useModal()
 const isCoordinacion = computed(() => props.role === ROLES.COORDINACION)
 const isAlmacen = computed(() => props.role === ROLES.CONTENEDOR_ALMACEN)
 const isFinanzas = computed(() => props.role === ROLES.FINANZAS)
+// Socio (org ≠ 1) gestiona sus consolidados igual que Coordinación: crear, editar, partir y eliminar.
+const puedeGestionarConsolidado = computed(() => isCoordinacion.value || esRolSocio(props.role))
+const isOrgAdmin = computed(() => {
+  const user = getUserData()
+  return Number(user?.raw?.organizacion?.id || user?.organizacion?.id || 0) === ID_ORGANIZACION_ADMIN
+})
 
 const {
   consolidadoData,
@@ -176,6 +183,8 @@ const {
   currentPage,
   filters,
   anioOptions,
+  organizacionOptions,
+  empresaOptions,
   getConsolidadoData,
   handleSearch,
   handlePageChange,
@@ -266,6 +275,23 @@ const filterConfig = computed<FilterConfig[]>(() => {
   ]
   if (isAlmacen.value) {
     baseConfig.push({
+      label: 'Empresa',
+      key: 'empresa',
+      type: 'select',
+      options: empresaOptions.value,
+      placeholder: 'Selecciona una empresa',
+    })
+  } else if (isOrgAdmin.value && organizacionOptions.value.length > 1) {
+    baseConfig.push({
+      label: 'Organización',
+      key: 'organizacion_id',
+      type: 'select',
+      options: organizacionOptions.value,
+      placeholder: 'Selecciona una organización',
+    })
+  }
+  if (isAlmacen.value) {
+    baseConfig.push({
       label: 'Estado',
       key: 'estado_china',
       type: 'select',
@@ -318,7 +344,7 @@ const handleCreateConsolidado = async (data: ConsolidadoFormData) => {
     showSuccess('Carga consolidada creada correctamente', 'La carga consolidada se ha creado correctamente y ya está disponible en el sistema.')
     await getConsolidadoData()
   } catch (error) {
-    showError('Error al crear carga consolidada', error as string)
+    showError('Error al crear carga consolidada', error instanceof Error ? error.message : 'No se pudo guardar el consolidado.')
   }
 }
 
@@ -386,8 +412,7 @@ const columns: TableColumn<any>[] = [
       const estadoChina = String(original.estado_china || '').toUpperCase()
       const canDelete = estadoChina === 'PENDIENTE'
       const estaRecibiendo = estadoChina === 'RECIBIENDO' || estadoChina === 'RECEIVING'
-      const esOrg1 = Number(getUserData()?.raw?.organizacion?.id || getUserData()?.organizacion?.id || 0) === 1
-      const puedePartir = !original.parte && (canDelete || (esOrg1 && estaRecibiendo))
+      const puedePartir = !original.parte && (canDelete || (isOrgAdmin.value && estaRecibiendo))
       const actions = [
         h(UButton, {
           size: 'xs',
@@ -397,7 +422,7 @@ const columns: TableColumn<any>[] = [
           onClick: () => handleViewSteps(original.id),
         }),
       ]
-      if (isCoordinacion.value) {
+      if (puedeGestionarConsolidado.value) {
         actions.push(
           h(UButton, {
             size: 'xs',
@@ -570,17 +595,40 @@ const documentacionColumns: TableColumn<any>[] = [
   },
 ]
 
+const cbmImoColumn: TableColumn<any> = {
+  accessorKey: 'cbm_total_imo',
+  header: 'CBM IMO',
+  cell: ({ row }) => formatNumber(row.original.cbm_total_imo ?? 0, 2),
+}
+
+const organizacionColumn: TableColumn<any> = {
+  accessorKey: 'organizacion',
+  header: 'Organización',
+  cell: ({ row }) => row.original.organizacion?.nombre || '—',
+}
+
+const withOrgColumn = (cols: TableColumn<any>[]) => {
+  if (!isOrgAdmin.value) return cols
+  const idx = cols.findIndex((col) => (col as { accessorKey?: string }).accessorKey === 'carga')
+  const insertAt = idx >= 0 ? idx + 1 : 1
+  return [...cols.slice(0, insertAt), organizacionColumn, ...cols.slice(insertAt)]
+}
+
 const getColumns = () => {
   switch (props.role) {
     case ROLES.DOCUMENTACION:
-      return documentacionColumns
+      return withOrgColumn(documentacionColumns)
     case ROLES.COORDINADOR_GENERAL:
     case ROLES.JEFE_IMPORTACIONES:
-      return documentacionColumns
+      return withOrgColumn(documentacionColumns)
     case ROLES.FINANZAS:
-      return finanzasColumns
+      return withOrgColumn(finanzasColumns)
+    case ROLES.CONTENEDOR_ALMACEN:
+      return columns.map((col) => (
+        (col as { accessorKey?: string }).accessorKey === 'limite_cbm_imo' ? cbmImoColumn : col
+      ))
     default:
-      return columns
+      return withOrgColumn(columns)
   }
 }
 
@@ -605,20 +653,24 @@ const handleViewSteps = (id: number) => {
 
 const handleDeleteCarga = async (id: number) => {
   try {
-    showConfirmation('¿Estás seguro de querer eliminar esta carga consolidada?', 'Esta acción no se puede deshacer.', async () => {
-      await withSpinner(async () => {
-        const response = await deleteConsolidado(id)
-        if (response?.success) {
-          showSuccess('Carga consolidada eliminada correctamente', 'La carga consolidada se ha eliminado correctamente.')
-          await getConsolidadoData()
-        } else {
-          showError(
-            'No se pudo eliminar',
-            (response as any)?.message || 'Solo se puede eliminar un consolidado en estado PENDIENTE.',
-          )
-        }
-      }, 'Eliminando carga consolidada…')
-    })
+    showConfirmation(
+      '¿Eliminar esta carga consolidada?',
+      'Se dará de baja el contenedor. Si queda un solo subconsolidado del grupo, vuelve a la normalidad.',
+      async () => {
+        await withSpinner(async () => {
+          const response = await deleteConsolidado(id)
+          if (response?.success) {
+            showSuccess('Carga consolidada eliminada', 'El contenedor se dio de baja correctamente.')
+            await getConsolidadoData()
+          } else {
+            showError(
+              'No se pudo eliminar',
+              (response as any)?.message || 'Solo se puede eliminar un consolidado en estado PENDIENTE.',
+            )
+          }
+        }, 'Eliminando carga consolidada…')
+      }
+    )
   } catch (error: any) {
     showError(
       'Error al eliminar carga consolidada',

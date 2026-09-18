@@ -13,7 +13,11 @@
       :show-pagination="false"
       :show-export="false"
       empty-state-message="No hay menús registrados"
+      :show-filters="puedeGestionarOrganizaciones"
+      :filter-config="filterConfig"
+      :filters-value="filtersValue"
       @update:primary-search="search = $event"
+      @filter-change="onFilterOrgChange"
     >
       <template #actions>
         <UButton icon="i-heroicons-plus" label="Agregar Menú" @click="openModal()" />
@@ -34,6 +38,20 @@
           </template>
 
           <form @submit.prevent="submitForm" class="space-y-4">
+
+            <!-- Organización: solo el admin de organizaciones puede elegir en
+                 cuál crea el menú; el resto siempre crea en la suya. -->
+            <UFormField v-if="puedeGestionarOrganizaciones" label="Organización" required>
+              <USelectMenu
+                v-model="selectedOrganizacion"
+                :items="organizacionesOptions"
+                placeholder="Seleccionar organización"
+                class="w-full"
+                :loading="loadingOrganizaciones"
+                :disabled="!!editingMenu"
+                @update:model-value="onModalOrganizacionChange"
+              />
+            </UFormField>
 
             <!-- Tipo de menú: Principal vs Submenú -->
             <UFormField label="Tipo de menú" required>
@@ -240,6 +258,23 @@
 import { h } from 'vue'
 import { MenuCatalogoService } from '~/services/panelAcceso/menuCatalogoService'
 import type { MenuCatalogo, GrupoConAcceso } from '~/services/panelAcceso/menuCatalogoService'
+import type { FilterConfig } from '~/types/data-table'
+import { OptionsService } from '~/services/panelAcceso/optionsService'
+import AuthService from '~/services/authService'
+import { resolveAuthOrgEmpresa } from '~/composables/auth/useUserRole'
+
+const authUser  = AuthService.getInstance().currentUser as any
+const authOrgEmpresa = resolveAuthOrgEmpresa(authUser)
+const empresaId = computed(() => authOrgEmpresa.empresaId)
+const orgId     = computed(() => authOrgEmpresa.orgId)
+
+// Solo la organizacion admin (ID_Organizacion == 1) puede crear/editar menus
+// en cualquier organizacion; el resto siempre crea en la suya.
+const puedeGestionarOrganizaciones = computed(() => !!authUser?.raw?.puedeGestionarOrganizaciones)
+
+const organizacionesOptions = ref<{ label: string; value: number }[]>([])
+const selectedOrganizacion  = ref<{ label: string; value: number } | null>(null)
+const loadingOrganizaciones = ref(false)
 
 // ─── Data ──────────────────────────────────────────────────────────────────
 const menus   = ref<MenuCatalogo[]>([])
@@ -280,8 +315,30 @@ function buildSortedTree(list: MenuCatalogo[]): MenuWithLevel[] {
   return result
 }
 
+// ─── Filtro por organización (solo admin de organizaciones) ────────────────
+const filtroOrgId = ref<string>('')
+
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: 'organizacion',
+    label: 'Organización',
+    placeholder: 'Todas las organizaciones',
+    options: organizacionesOptions.value.map(o => ({ label: o.label, value: String(o.value) })),
+  },
+])
+
+const filtersValue = computed(() => ({ organizacion: filtroOrgId.value }))
+
+function onFilterOrgChange(key: string, value: string) {
+  if (key !== 'organizacion') return
+  filtroOrgId.value = value || ''
+}
+
 const sortedMenus = computed(() => {
-  const tree = buildSortedTree(menus.value)
+  const menusFiltrados = filtroOrgId.value
+    ? menus.value.filter(m => String(m.id_org) === filtroOrgId.value)
+    : menus.value
+  const tree = buildSortedTree(menusFiltrados)
   if (!search.value) return tree
   const q = search.value.toLowerCase()
   return tree.filter(m =>
@@ -293,6 +350,13 @@ const sortedMenus = computed(() => {
 
 // ─── Columnas DataTable ───────────────────────────────────────────────────
 const columns = computed(() => [
+  ...(puedeGestionarOrganizaciones.value
+    ? [{
+        header: 'Organización',
+        accessorKey: 'organizacion',
+        cell: ({ row }: any) => h('span', { class: 'text-gray-500 text-xs' }, row.original.organizacion || '—')
+      }]
+    : []),
   {
     header: 'Nombre',
     accessorKey: 'nombre',
@@ -368,11 +432,21 @@ const columns = computed(() => [
   },
 ])
 
-// ─── Options para select de padre (excluye el menú que se edita) ──────────
+// Organizacion efectiva para crear el menu y para filtrar el select de
+// padre: la elegida por el admin, o siempre la propia si no puede elegir.
+const orgIdActual = computed(() => {
+  if (puedeGestionarOrganizaciones.value && selectedOrganizacion.value) {
+    return selectedOrganizacion.value.value
+  }
+  return orgId.value
+})
+
+// ─── Options para select de padre (excluye el menú que se edita; solo
+//      menús de la misma organización donde se está creando/editando) ─────
 const padreOptions = computed(() => {
   const exclude = editingMenu.value?.id
   return menus.value
-    .filter(m => m.id !== exclude)
+    .filter(m => m.id !== exclude && m.id_org === orgIdActual.value)
     .map(m => ({ label: m.nombre, value: m.id }))
 })
 
@@ -395,8 +469,25 @@ const form = reactive({
   show_father: false,
 })
 
-function openModal(menu?: MenuWithLevel) {
+async function loadOrganizaciones() {
+  loadingOrganizaciones.value = true
+  const orgs = await OptionsService.getOrganizaciones(empresaId.value)
+  organizacionesOptions.value = orgs.map(o => ({ label: o.nombre, value: o.id }))
+  loadingOrganizaciones.value = false
+}
+
+function onModalOrganizacionChange() {
+  // Cambiar de organización invalida el padre elegido (pertenecía a la otra org).
+  form.id_padre = 0
+}
+
+async function openModal(menu?: MenuWithLevel) {
   formError.value = ''
+
+  if (puedeGestionarOrganizaciones.value && organizacionesOptions.value.length === 0) {
+    await loadOrganizaciones()
+  }
+
   if (menu) {
     editingMenu.value = menu
     form.tipo        = menu.id_padre === 0 ? 'principal' : 'sub'
@@ -408,6 +499,9 @@ function openModal(menu?: MenuWithLevel) {
     form.activo      = menu.activo === 1
     form.url_video   = menu.url_video ?? ''
     form.show_father = menu.show_father === 1
+    if (puedeGestionarOrganizaciones.value) {
+      selectedOrganizacion.value = organizacionesOptions.value.find(o => o.value === menu.id_org) ?? null
+    }
   } else {
     editingMenu.value = null
     form.tipo        = 'principal'
@@ -419,6 +513,11 @@ function openModal(menu?: MenuWithLevel) {
     form.activo      = true
     form.url_video   = ''
     form.show_father = false
+    if (puedeGestionarOrganizaciones.value) {
+      selectedOrganizacion.value = organizacionesOptions.value.find(o => o.value === orgId.value)
+        ?? organizacionesOptions.value[0]
+        ?? null
+    }
   }
   showModal.value = true
 }
@@ -426,6 +525,10 @@ function openModal(menu?: MenuWithLevel) {
 async function submitForm() {
   if (!form.nombre.trim()) { formError.value = 'El nombre es requerido'; return }
   if (form.tipo === 'sub' && !form.id_padre) { formError.value = 'Selecciona el menú padre'; return }
+  if (puedeGestionarOrganizaciones.value && !selectedOrganizacion.value) {
+    formError.value = 'Debes seleccionar una organización'
+    return
+  }
   formError.value = ''
   saving.value = true
 
@@ -438,6 +541,7 @@ async function submitForm() {
     activo:      form.activo,
     url_video:   form.url_video || undefined,
     show_father: form.show_father,
+    id_org:      orgIdActual.value,
   }
 
   const res = editingMenu.value
@@ -549,5 +653,10 @@ async function loadMenus() {
   loading.value = false
 }
 
-onMounted(loadMenus)
+onMounted(async () => {
+  if (puedeGestionarOrganizaciones.value) {
+    await loadOrganizaciones()
+  }
+  await loadMenus()
+})
 </script>

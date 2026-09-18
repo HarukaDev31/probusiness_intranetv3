@@ -1,6 +1,6 @@
 import type { WaInboxWsMessageCreatedPayload } from '~/types/whatsapp-inbox-ws'
 import type { WaInboxMessage } from '~/types/whatsapp-inbox'
-import { WA_INBOX_ALLOWED_ROLES } from '~/constants/whatsappInboxAccess'
+import { hasWhatsappInboxMenuFromStorage } from '~/constants/whatsappInboxAccess'
 import { getWaInboxViewingConversationId } from '~/composables/whatsapp-inbox/waInboxRealtimeSync'
 import { isWaInboxReactionNoise } from '~/composables/whatsapp-inbox/waInboxMessageUtils'
 import {
@@ -12,24 +12,7 @@ import { reproducirSonidoWaInbox } from '~/utils/waInboxNotificationSound'
 import { canShowWsNotification, WS_NOTIFICATION_KEYS } from '~/composables/notifications/preferences'
 
 function usuarioTieneAccesoWaInbox(): boolean {
-  if (typeof localStorage === 'undefined') return false
-  try {
-    const authUser = localStorage.getItem('auth_user')
-    if (!authUser) return false
-    const user = JSON.parse(authUser) as {
-      raw?: { grupo?: { nombre?: string } }
-      grupo?: { nombre?: string }
-      role?: string
-    }
-    const role = String(
-      user?.raw?.grupo?.nombre || user?.grupo?.nombre || user?.role || ''
-    ).trim()
-    if (!role) return false
-    const lower = role.toLowerCase()
-    return WA_INBOX_ALLOWED_ROLES.some((r) => r.toLowerCase() === lower)
-  } catch {
-    return false
-  }
+  return hasWhatsappInboxMenuFromStorage()
 }
 
 function previewMensajeEntrante(

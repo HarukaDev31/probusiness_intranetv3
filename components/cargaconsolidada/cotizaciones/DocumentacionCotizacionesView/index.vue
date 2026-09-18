@@ -22,7 +22,7 @@
             </template>
             <template #actions>
 
-                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" class="py-3 md:flex hidden"
+                <UButton v-if="currentRole === ROLES.COTIZADOR || currentRole === ROLES.SOCIO" icon="i-heroicons-plus" class="py-3 md:flex hidden"
                     label="Crear Prospecto" @click="handleAddProspecto" />
             </template>
         </DataTable>
@@ -37,8 +37,18 @@
             :hide-back-button="false">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
-                    <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
-                        :loading="loading || loadingHeaders" />
+                    <CustomersKpiCards
+                        v-if="currentRole === ROLES.CONTENEDOR_ALMACEN"
+                        class="w-full min-w-0"
+                        :headers="headersByKey"
+                        @filter-nc="filterByNc"
+                    />
+                    <SectionHeader
+                        v-else
+                        :title="`Contenedor #${carga}`"
+                        :headers="headersCotizaciones"
+                        :loading="loading || loadingHeaders"
+                    />
                     <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-1 w-80 h-15"
                         v-if="tabs.length > 1" />
                 </div>
@@ -69,7 +79,7 @@
 
                     </div>
                 </div>
-                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" label="Crear Prospecto"
+                <UButton v-if="currentRole === ROLES.COTIZADOR || currentRole === ROLES.SOCIO" icon="i-heroicons-plus" label="Crear Prospecto"
                     @click="handleAddProspecto" class="py-3 md:flex hidden" />
                 <UButton v-if="(currentRole === ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole))" icon="i-heroicons-arrow-down-tray" color="success"
                     label="Descargar Embarque" @click="handleDownloadEmbarque" class="py-3 hidden md:flex" />
@@ -93,7 +103,7 @@
                 </div>
             </template>
             <template #actions>
-                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" label="Crear Prospecto"
+                <UButton v-if="currentRole === ROLES.COTIZADOR || currentRole === ROLES.SOCIO" icon="i-heroicons-plus" label="Crear Prospecto"
                     @click="handleAddProspecto" class="py-3" />
             </template>
         </DataTable>
@@ -119,12 +129,14 @@ import CreatePagoModal from '~/components/commons/CreatePagoModal.vue'
 import ModalPreview from '~/components/commons/ModalPreview.vue'
 import AdelantoPreviewModal from '~/components/commons/AdelantoPreviewModal.vue'
 import SectionHeader from '~/components/commons/SectionHeader.vue'
+import CustomersKpiCards from '~/components/cargaconsolidada/customers/CustomersKpiCards.vue'
 import { useCotizacionPagos } from '~/composables/cargaconsolidada/useCotizacionPagos'
 import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
 import SelectTipoCargaModal from '~/components/cargaconsolidada/cotizaciones/SelectTipoCargaModal/index.vue'
 import PagoGrid from '~/components/PagoGrid.vue'
 import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
 import ModalAcciones from '~/components/cargaconsolidada/clientes/ModalAcciones/index.vue'
+import { useOrganizacionPortal } from '~/composables/organizacion/useOrganizacionPortal'
 
 const { getCotizacionProveedor,
     updateProveedorEstado,
@@ -165,12 +177,14 @@ const { cotizaciones,
     filters: filtersCotizaciones,
     getCotizaciones,
     headersCotizaciones,
+    headersByKey,
     getHeaders,
     carga,
     loadingHeaders,
     resetFiltersCotizacion,
     packingList,
     exportData: exportProspectosData,
+    urlClientes,
 } = useCotizacion()
 const {
     cotizacionPagos,
@@ -210,9 +224,9 @@ const copyToClipboard = async (text: string, successMessage: string = 'Copiado a
 }
 
 // Función para construir el URL de firma usando el UUID
+const { urlFirmaAcuerdo } = useOrganizacionPortal()
 const getSignUrl = (uuid: string): string => {
-    if (!uuid) return ''
-    return 'https://clientes.probusiness.pe/firma-acuerdo-servicio/' + uuid
+    return urlFirmaAcuerdo(uuid, urlClientes.value)
 }
 
 const tab = ref('')
@@ -249,6 +263,7 @@ const loadTabs = () => {
             ]
             break
         case ROLES.COTIZADOR:
+        case ROLES.SOCIO:
             tabs.value = [
                 {
                     label: 'Prospectos',
@@ -2354,6 +2369,10 @@ const handleRefreshRotuladoStatus = async (proveedor: any) => {
     }
 }
 const handleAddProspecto = async () => {
+    if (currentRole.value === ROLES.SOCIO) {
+        await navigateTo(`/cotizaciones/resumen/crear?contenedor=${id}`)
+        return
+    }
     const modal = overlay.create(CreateProspectoModal)
     modal.open({
         idConsolidado: Number(id),
@@ -2632,26 +2651,29 @@ const handleFilterChangeProspectos = async (filterType: string, value: string) =
     await getCotizaciones(Number(id))
 }
 
-
+const filterByNc = async () => {
+    await handleFilterChange('estado_china', 'NC')
+}
 
 // Watch inmediato para la carga inicial
 watch(() => tab.value, async (newVal) => {
     if (newVal && newVal !== '') {
         try {
             resetFilters()
-            // Preservar idCotizacion de la query string si existe
-            const idCotizacionQuery = route.query.idCotizacion ? `&idCotizacion=${route.query.idCotizacion}` : ''
+            const currentTab = typeof route.query.tab === 'string' ? route.query.tab : ''
+            const keepId = !currentTab || currentTab === newVal
+            const idCotizacionQuery = keepId && route.query.idCotizacion ? `&idCotizacion=${route.query.idCotizacion}` : ''
             if (newVal === 'prospectos') {
-                navigateTo(`${basePath}/cotizaciones/${id}?tab=prospectos${idCotizacionQuery}`)
+                await navigateTo(`${basePath}/cotizaciones/${id}?tab=prospectos${idCotizacionQuery}`)
                 // reset search to avoid sending stale query param to backend
                 try { searchCotizaciones.value = '' } catch (e) { /* ignore */ }
                 await getCotizaciones(Number(id))
             } else if (newVal === 'embarque') {
-                navigateTo(`${basePath}/cotizaciones/${id}?tab=embarque${idCotizacionQuery}`)
+                await navigateTo(`${basePath}/cotizaciones/${id}?tab=embarque${idCotizacionQuery}`)
                 try { search.value = '' } catch (e) { /* ignore */ }
                 await getCotizacionProveedor(Number(id))
             } else if (newVal === 'pagos') {
-                navigateTo(`${basePath}/cotizaciones/${id}?tab=pagos${idCotizacionQuery}`)
+                await navigateTo(`${basePath}/cotizaciones/${id}?tab=pagos${idCotizacionQuery}`)
                 try { searchPagos.value = '' } catch (e) { /* ignore */ }
                 await getCotizacionPagos(Number(id))
             }

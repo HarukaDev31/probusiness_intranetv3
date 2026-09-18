@@ -15,11 +15,12 @@
           <USelect
             v-model="selectedConsolidado"
             :items="consolidados"
-            item-value="id"
-            item-title="code"
             placeholder="Selecciona una carga consolidada"
             class="w-full"
           />
+          <p v-if="!loadingList && consolidados.length === 0" class="text-xs text-gray-500 mt-2">
+            No hay consolidados del mismo país.
+          </p>
         </div>
       </div>
     </template>
@@ -48,14 +49,13 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
+import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
+import { useModal } from '~/composables/commons/useModal'
 import type { MoveCotizacionModalProps } from './types'
-//set defaults values
+
 const props = withDefaults(defineProps<MoveCotizacionModalProps>(), {
   isFromCalculadora: false,
   show: true,
-
-
 })
 
 const emit = defineEmits<{
@@ -63,8 +63,12 @@ const emit = defineEmits<{
   (e: 'moved'): void
 }>()
 
+const { getContenedoresDisponibles, getConsolidadoById, moveCotizacion } = useConsolidado()
+const { showError, showSuccess } = useModal()
+
 const loading = ref(false)
-const consolidados = ref<any[]>([])
+const loadingList = ref(false)
+const consolidados = ref<{ value: number; label: string }[]>([])
 const selectedConsolidado = ref('')
 
 const closeModal = () => {
@@ -72,16 +76,39 @@ const closeModal = () => {
   emit('close')
 }
 
+const listFromResponse = (response: any): any[] => {
+  if (Array.isArray(response)) return response
+  if (Array.isArray(response?.data)) return response.data
+  return []
+}
+
 const loadConsolidados = async () => {
+  loadingList.value = true
   try {
-    const response = await ConsolidadoService.getContenedoresDisponibles()
-    
-    consolidados.value = response.map((item: any) => ({
-      value: item.id,
-      label: `Contenedor #${item.carga}`
-    }))
+    const origenId = props.idConsolidado ? Number(props.idConsolidado) : 0
+    let idPais: number | undefined
+    if (origenId > 0) {
+      const origen = await getConsolidadoById(origenId)
+      const pais = Number(origen?.id_pais)
+      if (pais > 0) idPais = pais
+    }
+
+    const response = await getContenedoresDisponibles({
+      id_pais: idPais,
+      id_contenedor_origen: origenId > 0 ? origenId : undefined
+    })
+
+    consolidados.value = listFromResponse(response)
+      .filter((item: any) => Number(item.id) !== origenId)
+      .filter((item: any) => !idPais || Number(item.id_pais) === idPais)
+      .map((item: any) => ({
+        value: item.id,
+        label: `Contenedor #${item.carga}`
+      }))
   } catch (error) {
-    console.error('Error cargando consolidados:', error)
+    showError('No se pudieron cargar los consolidados', 'Intenta nuevamente.')
+  } finally {
+    loadingList.value = false
   }
 }
 
@@ -90,16 +117,22 @@ const handleMove = async () => {
 
   loading.value = true
   try {
-    await ConsolidadoService.moveCotizacion({
+    const res = await moveCotizacion({
       idCotizacion: props.cotizacionId,
       idContenedorDestino: selectedConsolidado.value,
       isFromCalculadora: props.isFromCalculadora
     })
-    
+    if (res?.success === false) {
+      throw new Error(res.message || 'No se pudo mover la cotización')
+    }
+    showSuccess('Cotización movida', 'La cotización se movió al consolidado seleccionado.')
     emit('moved')
     closeModal()
   } catch (error) {
-    console.error('Error moviendo cotización:', error)
+    showError(
+      'No se pudo mover la cotización',
+      error instanceof Error ? error.message : 'Solo puedes moverla a un consolidado del mismo país.'
+    )
   } finally {
     loading.value = false
   }

@@ -16,20 +16,25 @@
         <!-- Items disponibles con checkboxes -->
         <div v-if="!loadingItems" class="space-y-4">
           <div class=" p-4 rounded-lg">
-            <h3 class="text-sm font-medium text-gray-700 mb-3">Selecciona los items y su tipo de rotulado</h3>
+            <h3 class="text-sm font-medium text-gray-700 mb-3">
+              {{ usarTipoGuardado
+                ? 'Asigna General a los que quieras enviar. Los que queden en Pendiente no se envían.'
+                : 'Selecciona los items y su tipo de rotulado' }}
+            </h3>
             
-            <!-- Lista de items con checkboxes -->
             <div class="space-y-3 max-h-96 overflow-y-auto">
-              <UCheckboxGroup 
+              <UCheckboxGroup
+                v-if="!usarTipoGuardado"
                 v-model="selectedItems"
                 :items="checkboxItems"
               />
               
-              <!-- Selector de tipo de carga para items seleccionados -->
-              <div v-if="selectedItems.length > 0" class="mt-4 space-y-3">
-                <h4 class="text-sm font-medium text-gray-700">Selecciona el tipo de rotulado para cada item:</h4>
+              <div v-if="filasRotulado.length > 0" :class="usarTipoGuardado ? 'space-y-3' : 'mt-4 space-y-3'">
+                <h4 v-if="!usarTipoGuardado" class="text-sm font-medium text-gray-700">
+                  Selecciona el tipo de rotulado para cada item:
+                </h4>
                 <div
-                  v-for="itemId in selectedItems"
+                  v-for="itemId in filasRotulado"
                   :key="itemId"
                   class=" border border-gray-200 rounded-lg p-3"
                 >
@@ -50,8 +55,8 @@
                       <USelect
                         v-model="itemTipoCarga[itemId]"
                         :items="tiposCarga"
-                        item-value="value"
-                        item-title="label"
+                        value-key="value"
+                        label-key="label"
                         placeholder="Seleccionar tipo"
                         size="sm"
                         class="min-w-40"
@@ -64,20 +69,21 @@
                       class="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-md p-2"
                     >
                       <UCheckbox
-                        v-model="itemForceSend[itemId]"
+                        :model-value="Boolean(itemForceSend[itemId])"
                         :id="`force-send-${itemId}`"
                         size="sm"
+                        @update:model-value="(value: boolean) => { itemForceSend[itemId] = Boolean(value) }"
                       />
                       <label 
                         :for="`force-send-${itemId}`" 
                         class="text-sm text-yellow-800 cursor-pointer select-none"
                       >
-                        Forzar reenvío (Ya se ha enviado el rotulado a este proveedor)
+                        {{ usarTipoGuardado ? 'Reenviar' : 'Forzar reenvío (Ya se ha enviado el rotulado a este proveedor)' }}
                       </label>
                     </div>
                   </div>
                   <div
-                    v-if="itemTipoCarga[itemId] === 'movilidad_personal' && getMovilidadItems(itemId).length"
+                    v-if="normalizeTipoRotulado(itemTipoCarga[itemId]) === 'movilidad_personal' && getMovilidadItems(itemId).length"
                     class="mt-3 space-y-2 rounded-lg border border-dashed border-gray-200  p-3 text-sm "
                   >
                     <div class="font-medium ">
@@ -120,11 +126,11 @@
           </div>
 
           <!-- Mensaje de validación -->
-          <div v-if="selectedItems.length > 0 && !canSave" class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+          <div v-if="!canSave && (usarTipoGuardado || selectedItems.length > 0)" class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
             <div class="flex items-center gap-2">
               <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-yellow-600" />
               <span class="text-sm text-yellow-800">
-                Todos los items seleccionados deben tener un tipo de carga asignado para poder guardar.
+                {{ mensajeValidacion }}
               </span>
             </div>
           </div>
@@ -162,6 +168,10 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 interface Props {
   show: boolean
   cotizacionId?: number
+  usarTipoGuardado?: boolean
+  /** Socios (org ≠ 1): solo Pendiente y Rotulado, este último se muestra como General. */
+  soloPendienteGeneral?: boolean
+  prefillProveedorId?: number
   onSelected?: (categorizacion: any, extras?: any) => void
 }
 
@@ -174,48 +184,117 @@ const emit = defineEmits<{
 
 const { getProveedoresByCotizacion } = useCotizacionProveedor()
 const { withSpinner } = useSpinner()
+const usarTipoGuardado = computed(() => Boolean(props.usarTipoGuardado))
+const soloPendienteGeneral = computed(() => Boolean(props.soloPendienteGeneral))
+
+const normalizeTipoRotulado = (tipo?: unknown): string => {
+  if (tipo && typeof tipo === 'object' && 'value' in (tipo as Record<string, unknown>)) {
+    return String((tipo as { value: unknown }).value || '').trim().toLowerCase()
+  }
+  const raw = String(tipo || '').trim().toLowerCase().replace(/\s+/g, '_')
+  if (raw === 'general') return 'rotulado'
+  return raw
+}
+
+const esTipoPendiente = (tipo?: unknown) => {
+  const normalized = normalizeTipoRotulado(tipo)
+  return normalized === 'pendiente' || normalized === ''
+}
+
+const labelTipoGuardado = (tipo?: unknown) => {
+  const t = normalizeTipoRotulado(tipo)
+  if (t === 'rotulado') return 'GENERAL'
+  return t.replace(/_/g, ' ') || '—'
+}
 
 const loading = ref(false)
 const loadingItems = ref(false)
 const availableItems = ref<any[]>([])
 const selectedItems = ref<string[]>([])
-const itemTipoCarga = ref<Record<string, string>>({})
+const itemTipoCarga = ref<Record<string, any>>({})
 const movilidadItemsSeleccionados = ref<Record<string, string[]>>({})
 const itemForceSend = ref<Record<string, boolean>>({})
 
-// Computed para crear los items del checkbox en el formato correcto
-const checkboxItems = computed(() => {
-  return availableItems.value.map(item => ({
-    label: item.code_supplier,
-    value: item.id.toString()
-  }))
+const filasRotulado = computed(() => {
+  if (usarTipoGuardado.value) {
+    return availableItems.value.map(item => item.id.toString())
+  }
+  return selectedItems.value
 })
 
-// Computed para validar si se puede guardar
+const selectedListos = computed(() => {
+  return filasRotulado.value.filter((itemId) => {
+    const tipo = normalizeTipoRotulado(itemTipoCarga.value[itemId])
+    if (soloPendienteGeneral.value) {
+      return tipo === 'rotulado'
+    }
+    return tipo !== '' && tipo !== 'pendiente'
+  })
+})
+
+const checkboxItems = computed(() => {
+  return availableItems.value.map(item => {
+    const id = item.id.toString()
+    const tipoActual = itemTipoCarga.value[id] || item.tipo_rotulado
+    return {
+      label: usarTipoGuardado.value
+        ? `${item.code_supplier || 'Sin código'} · ${labelTipoGuardado(tipoActual)}`
+        : item.code_supplier,
+      value: id
+    }
+  })
+})
+
+const itemListoParaEnviar = (itemId: string) => {
+  const tipo = normalizeTipoRotulado(itemTipoCarga.value[itemId])
+  if (!tipo || tipo === 'pendiente') {
+    return false
+  }
+  if (usarTipoGuardado.value && getItemSendStatus(itemId) === 'SENDED' && !itemForceSend.value[itemId]) {
+    return false
+  }
+  if (tipo === 'movilidad_personal') {
+    return (movilidadItemsSeleccionados.value[itemId] ?? []).length > 0
+  }
+  return true
+}
+
+const idsListosParaEnviar = computed(() => {
+  return selectedListos.value.filter(itemListoParaEnviar)
+})
+
 const canSave = computed(() => {
-  // Debe tener al menos un item seleccionado
+  if (usarTipoGuardado.value) {
+    return idsListosParaEnviar.value.length > 0
+  }
   if (selectedItems.value.length === 0) {
     return false
   }
-
-  // Todos los items seleccionados deben tener un tipo de carga asignado
-  return selectedItems.value.every(itemId => {
-    const tipo = itemTipoCarga.value[itemId]?.trim()
+  return selectedItems.value.every((itemId) => {
+    const tipo = normalizeTipoRotulado(itemTipoCarga.value[itemId])
     if (!tipo) {
       return false
     }
-
     if (tipo === 'movilidad_personal') {
-      const movilidadSeleccionada = movilidadItemsSeleccionados.value[itemId] ?? []
-      return movilidadSeleccionada.length > 0
+      return (movilidadItemsSeleccionados.value[itemId] ?? []).length > 0
     }
-
     return true
   })
 })
 
-// Opciones de tipos de carga con iconos
-const tiposCarga = [
+const mensajeValidacion = computed(() => {
+  if (usarTipoGuardado.value) {
+    if (selectedListos.value.length === 0) {
+      return soloPendienteGeneral.value
+        ? 'Marca General en al menos un proveedor para poder enviar.'
+        : 'Asigna un tipo distinto de Pendiente a al menos un proveedor para poder enviar.'
+    }
+    return 'Si el proveedor ya fue enviado, marca Reenviar para incluirlo.'
+  }
+  return 'Todos los items seleccionados deben tener un tipo de carga asignado para poder guardar.'
+})
+
+const tiposCargaBase = [
   { value: 'rotulado', label: 'Rotulado', icon: 'i-heroicons-tag' },
   { value: 'calzado', label: 'Calzado', icon: 'i-heroicons-shoe-prints' },
   { value: 'ropa', label: 'Ropa', icon: 'i-heroicons-clothing' },
@@ -223,6 +302,22 @@ const tiposCarga = [
   { value: 'maquinaria', label: 'Maquinaria', icon: 'i-heroicons-wrench-screwdriver' },
   { value: 'movilidad_personal', label: 'Movilidad personal', icon: 'i-heroicons-truck' }
 ]
+
+const tiposCarga = computed(() => {
+  if (soloPendienteGeneral.value) {
+    return [
+      { value: 'pendiente', label: 'Pendiente', icon: 'i-heroicons-clock' },
+      { value: 'rotulado', label: 'General', icon: 'i-heroicons-tag' },
+    ]
+  }
+  if (!usarTipoGuardado.value) {
+    return tiposCargaBase
+  }
+  return [
+    { value: 'pendiente', label: 'Pendiente', icon: 'i-heroicons-clock' },
+    ...tiposCargaBase
+  ]
+})
 
 // Cargar items por cotización - igual que en StatusOptionsModal
 const loadItems = async () => {
@@ -239,14 +334,26 @@ const loadItems = async () => {
       const response = await getProveedoresByCotizacion(props.cotizacionId)
       console.log('Response from getProveedoresByCotizacion:', response)
       if (response?.success) {
-        availableItems.value = response.data || []
-        console.log('Available items loaded:', availableItems.value.length)
-        // Inicializar el objeto de tipos de carga
+        const rows = response.data || []
+        availableItems.value = rows
         availableItems.value.forEach(item => {
-          itemTipoCarga.value[item.id.toString()] = ''
-          movilidadItemsSeleccionados.value[item.id.toString()] = []
-          itemForceSend.value[item.id.toString()] = false
+          const id = item.id.toString()
+          itemTipoCarga.value[id] = usarTipoGuardado.value
+            ? (item.tipo_rotulado || 'pendiente')
+            : ''
+          movilidadItemsSeleccionados.value[id] = []
+          itemForceSend.value[id] = false
         })
+        if (usarTipoGuardado.value) {
+          selectedItems.value = availableItems.value.map((item: any) => item.id.toString())
+        }
+        const prefillId = props.prefillProveedorId ? String(props.prefillProveedorId) : ''
+        if (prefillId && itemTipoCarga.value[prefillId] !== undefined) {
+          itemTipoCarga.value[prefillId] = 'rotulado'
+          if (!selectedItems.value.includes(prefillId)) {
+            selectedItems.value = [...selectedItems.value, prefillId]
+          }
+        }
       }
     }, 'Cargando items...')
   } catch (error) {
@@ -258,11 +365,12 @@ const loadItems = async () => {
 
 // Watch para detectar cambios en selectedItems
 watch(selectedItems, (newValue, oldValue) => {
-  // Limpiar tipos de carga para items que ya no están seleccionados
   if (oldValue) {
     oldValue.forEach(itemId => {
       if (!newValue.includes(itemId)) {
-        itemTipoCarga.value[itemId] = ''
+        if (!usarTipoGuardado.value) {
+          itemTipoCarga.value[itemId] = ''
+        }
         movilidadItemsSeleccionados.value[itemId] = []
         itemForceSend.value[itemId] = false
       }
@@ -272,7 +380,7 @@ watch(selectedItems, (newValue, oldValue) => {
 
 watch(itemTipoCarga, newValue => {
   Object.entries(newValue).forEach(([itemId, tipo]) => {
-    if (tipo !== 'movilidad_personal') {
+    if (normalizeTipoRotulado(tipo) !== 'movilidad_personal') {
       movilidadItemsSeleccionados.value[itemId] = []
     }
   })
@@ -360,9 +468,8 @@ const getSelectedMovilidadQtySum = (itemId: string) => {
 }
 
 const totalMovilidadPersonalSeleccionada = computed(() => {
-  return selectedItems.value.reduce((total, itemId) => {
-    const tipo = itemTipoCarga.value[itemId]
-    if (tipo === 'movilidad_personal') {
+  return filasRotulado.value.reduce((total, itemId) => {
+    if (normalizeTipoRotulado(itemTipoCarga.value[itemId]) === 'movilidad_personal') {
       return total + getSelectedMovilidadQtySum(itemId)
     }
     return total
@@ -385,14 +492,14 @@ const closeModal = () => {
   emit('close')
 }
 
-const handleSelect = () => {
-  if (selectedItems.value.length === 0) return
+const handleSelect = async () => {
+  const idsParaEnviar = usarTipoGuardado.value ? idsListosParaEnviar.value : selectedItems.value
+  if (idsParaEnviar.length === 0) return
 
   loading.value = true
   try {
-    // Crear array de proveedores con id, tipo de rotulado y force_send
-    const proveedores = selectedItems.value.map(itemId => {
-      const tipoRotulado = itemTipoCarga.value[itemId]
+    const proveedores = idsParaEnviar.map(itemId => {
+      const tipoRotulado = normalizeTipoRotulado(itemTipoCarga.value[itemId])
       const totalMovilidadQty = tipoRotulado === 'movilidad_personal'
         ? getSelectedMovilidadQtySum(itemId)
         : 0
@@ -413,9 +520,8 @@ const handleSelect = () => {
       proveedores
     }
     
-    // Llamar al callback si está disponible (el overlay maneja los eventos)
     if (props.onSelected) {
-      props.onSelected(result, { total_movilidad_personal: totalMovilidadPersonal })
+      await props.onSelected(result, { total_movilidad_personal: totalMovilidadPersonal })
     }
     closeModal()
   } catch (error) {

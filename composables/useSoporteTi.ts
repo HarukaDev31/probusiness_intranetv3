@@ -284,10 +284,8 @@ export function useSoporteTi() {
   }
 
   let cargarEnCurso: Promise<void> | null = null
-  let ultimosFiltrosListado: SoporteTiListFilters | undefined
 
   async function cargar(filters?: SoporteTiListFilters) {
-    ultimosFiltrosListado = filters
     if (cargarEnCurso) return cargarEnCurso
 
     cargarEnCurso = (async () => {

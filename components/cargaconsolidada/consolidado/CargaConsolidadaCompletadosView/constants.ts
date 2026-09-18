@@ -1,6 +1,10 @@
 export const DEFAULT_BASE_PATH = '/cargaconsolidada/completados'
 export const GINO_USER_ID = 28791
 
+/** Paginación de Completados para Almacén consolidado. */
+export const ALMACEN_PAGINATION_OPTIONS = [10] as const
+export const ALMACEN_ITEMS_PER_PAGE = 10
+
 export const ALMACEN_STATUS_OPTIONS = [
   { label: 'Todos', value: 'todos' },
   { label: 'WAITING', value: 'WAITING' },

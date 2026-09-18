@@ -50,6 +50,8 @@ export interface ModuleStats {
 export interface SidebarModule {
   id: string
   name: string
+  /** Nombre en inglés desde backend (No_Menu_China). */
+  nameEn?: string
   icon: string
   route: string
   category: string

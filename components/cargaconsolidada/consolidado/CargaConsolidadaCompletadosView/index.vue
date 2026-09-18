@@ -37,6 +37,7 @@
         :total-pages="totalPages"
         :total-records="totalRecords"
         :items-per-page="itemsPerPage"
+        :pagination-options="isAlmacen ? [...ALMACEN_PAGINATION_OPTIONS] : undefined"
         :search-query-value="search"
         :show-secondary-search="false"
         :show-filters="true"
@@ -73,6 +74,7 @@
             <div class="flex-1">
               <div class="text-xs text-gray-500">{{ row.mes }}</div>
               <div class="font-semibold text-sm">Consolidado #{{ row.carga }}</div>
+              <div v-if="isOrgAdmin && !isAlmacen && row.organizacion?.nombre" class="text-xs text-gray-400">{{ row.organizacion.nombre }}</div>
               <div class="text-xs text-gray-400 mt-1">{{ row.empresa }}</div>
               <div class="mt-1 text-xs text-gray-400 flex flex-col items-center gap-1">
                 <span v-if="row.f_cierre">Cierre: {{ formatDateTimeToDmy(row.f_cierre) }}</span>
@@ -118,7 +120,7 @@ import type { TableColumn } from '@nuxt/ui'
 import type { FilterConfig } from '~/types/data-table'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
 import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
-import { ROLES, roleEsComoJefeImportacion } from '~/constants/roles'
+import { ID_ORGANIZACION_ADMIN, ROLES, roleEsComoJefeImportacion } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
@@ -128,6 +130,8 @@ import { USelect } from '#components'
 import { STATUS_BG_CLASSES } from '~/constants/ui'
 import type { CargaConsolidadaCompletadosProps, ConsolidadoFormData } from './types'
 import {
+  ALMACEN_ITEMS_PER_PAGE,
+  ALMACEN_PAGINATION_OPTIONS,
   ALMACEN_STATUS_OPTIONS,
   CHINA_STATUS_OPTIONS,
   DEFAULT_BASE_PATH,
@@ -143,12 +147,16 @@ const props = withDefaults(
 )
 
 const { withSpinner } = useSpinner()
-const { hasRole, currentId } = useUserRole()
+const { hasRole, currentId, getUserData } = useUserRole()
 const { showSuccess, showConfirmation, showError } = useModal()
 
 const isCoordinacion = computed(() => props.role === ROLES.COORDINACION)
 const isAlmacen = computed(() => props.role === ROLES.CONTENEDOR_ALMACEN)
 const isFinanzas = computed(() => props.role === ROLES.FINANZAS)
+const isOrgAdmin = computed(() => {
+  const user = getUserData()
+  return Number(user?.raw?.organizacion?.id || user?.organizacion?.id || 0) === ID_ORGANIZACION_ADMIN
+})
 
 const {
   consolidadoData,
@@ -160,6 +168,8 @@ const {
   currentPage,
   filters,
   anioOptions,
+  organizacionOptions,
+  empresaOptions,
   getConsolidadoData,
   handleSearch,
   handlePageChange,
@@ -242,6 +252,23 @@ const filterConfig = computed<FilterConfig[]>(() => {
   ]
   if (isAlmacen.value) {
     baseConfig.push({
+      label: 'Empresa',
+      key: 'empresa',
+      type: 'select',
+      options: empresaOptions.value,
+      placeholder: 'Selecciona una empresa',
+    })
+  } else if (isOrgAdmin.value && organizacionOptions.value.length > 1) {
+    baseConfig.push({
+      label: 'Organización',
+      key: 'organizacion_id',
+      type: 'select',
+      options: organizacionOptions.value,
+      placeholder: 'Selecciona una organización',
+    })
+  }
+  if (isAlmacen.value) {
+    baseConfig.push({
       label: 'Estado',
       key: 'estado_china',
       type: 'select',
@@ -294,7 +321,7 @@ const handleCreateConsolidado = async (data: ConsolidadoFormData) => {
     showSuccess('Carga consolidada creada correctamente', 'La carga consolidada se ha creado correctamente y ya está disponible en el sistema.')
     await getConsolidadoData()
   } catch (error) {
-    showError(error as string)
+    showError('Error al crear carga consolidada', error instanceof Error ? error.message : 'No se pudo guardar el consolidado.')
   }
 }
 
@@ -551,14 +578,14 @@ const documentacionColumns: TableColumn<any>[] = [
 ]
 
 const almacenColumns: TableColumn<any>[] = [
-  { accessorKey: 'carga', header: 'Burden', cell: ({ row }) => `CARGA CONSOLIDADA #${row.getValue('carga')}` },
-  { accessorKey: 'mes', header: 'Month', cell: ({ row }) => row.getValue('mes') },
-  { accessorKey: 'pais', header: 'Country', cell: ({ row }) => row.original.pais?.No_Pais || 'N/A' },
-  { accessorKey: 'f_cierre', header: 'Cut off', cell: ({ row }) => formatDateTimeToDmy(row.getValue('f_cierre')) },
-  { accessorKey: 'empresa', header: 'Company', cell: ({ row }) => row.getValue('empresa') },
+  { accessorKey: 'carga', header: 'Carga', cell: ({ row }) => `CARGA CONSOLIDADA #${row.getValue('carga')}` },
+  { accessorKey: 'mes', header: 'Mes', cell: ({ row }) => row.getValue('mes') },
+  { accessorKey: 'pais', header: 'País', cell: ({ row }) => row.original.pais?.No_Pais || 'N/A' },
+  { accessorKey: 'f_cierre', header: 'F. Cierre', cell: ({ row }) => formatDateTimeToDmy(row.getValue('f_cierre')) },
+  { accessorKey: 'empresa', header: 'Empresa', cell: ({ row }) => row.getValue('empresa') },
   {
     accessorKey: 'estado_china',
-    header: 'Status',
+    header: 'Estado',
     cell: ({ row }) => {
       const estado = row.getValue('estado_china') as string
       const color = getColorByEstado(estado)
@@ -572,7 +599,7 @@ const almacenColumns: TableColumn<any>[] = [
   },
   {
     id: 'actions',
-    header: 'Check',
+    header: 'Acciones',
     cell: ({ row }) => {
       return h('div', { class: 'flex space-x-2' }, [
         h(UButton, {
@@ -587,18 +614,31 @@ const almacenColumns: TableColumn<any>[] = [
   },
 ]
 
+const organizacionColumn: TableColumn<any> = {
+  accessorKey: 'organizacion',
+  header: 'Organización',
+  cell: ({ row }) => row.original.organizacion?.nombre || '—',
+}
+
+const withOrgColumn = (cols: TableColumn<any>[]) => {
+  if (!isOrgAdmin.value) return cols
+  const idx = cols.findIndex((col) => (col as { accessorKey?: string }).accessorKey === 'carga')
+  const insertAt = idx >= 0 ? idx + 1 : 1
+  return [...cols.slice(0, insertAt), organizacionColumn, ...cols.slice(insertAt)]
+}
+
 const getColumns = () => {
   switch (props.role) {
     case ROLES.DOCUMENTACION:
     case ROLES.COORDINADOR_GENERAL:
     case ROLES.JEFE_IMPORTACIONES:
-      return documentacionColumns
+      return withOrgColumn(documentacionColumns)
     case ROLES.CONTENEDOR_ALMACEN:
       return almacenColumns
     case ROLES.FINANZAS:
-      return finanzasColumns
+      return withOrgColumn(finanzasColumns)
     default:
-      return columns
+      return withOrgColumn(columns)
   }
 }
 
@@ -664,6 +704,9 @@ const exportClientes = async () => {
 onMounted(async () => {
   try {
     filters.value.completado = true
+    if (isAlmacen.value) {
+      itemsPerPage.value = ALMACEN_ITEMS_PER_PAGE
+    }
     await getConsolidadoData()
   } catch (error) {
     console.error('Error al cargar datos:', error)

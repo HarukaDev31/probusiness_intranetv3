@@ -7,7 +7,7 @@
   <template v-if="!$slots.filters">
     <div class="flex flex-col md:flex-row flex-wrap gap-4 p-0 md:p-4 " data-manual-capture="data-table-toolbar">
       <div class="w-full lg:w-full flex flex-col md:flex-row items-start md:items-center md:justify-between gap-1 md:gap-3 items-center">
-        <PageHeader :title="title" :subtitle="subtitle" :icon="icon" :hide-back-button="hideBackButton" @back="goBack">
+        <PageHeader :title="displayedTitle" :subtitle="subtitle" :icon="icon" :hide-back-button="hideBackButton" @back="goBack">
           <template v-if="$slots['back-extra']" #back-extra>
             <slot name="back-extra" />
           </template>
@@ -63,10 +63,10 @@
               <!-- Desktop: keep inline absolute panel to preserve original behavior on large screens -->
               <div v-if="showFiltersPanel && showFilters && typeof isMobile !== 'undefined' && !isMobile"
                 ref="filtersPanelRef"
-                class="filters-panel absolute top-full right-0 mt-2 w-full lg:w-96 max-w-[90vw] lg:max-w-none bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4 max-h-[80vh] overflow-y-auto"
+                class="filters-panel absolute top-full right-0 mt-2 w-full lg:w-[38rem] max-w-[90vw] lg:max-w-none bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4 max-h-[90vh] overflow-visible"
                 @click.stop>
                 <div class="grid grid-cols-1 lg:grid-cols-1 gap-4 p-2">
-                  <div v-for="filter in displayedFilterConfig" :key="filter.key" class="field grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div v-for="filter in displayedFilterConfig" :key="filter.key" class="field grid grid-cols-1 lg:grid-cols-[8rem_minmax(14rem,1fr)] gap-x-4 gap-y-1 items-center">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       {{ filter.label }}
                     </label>
@@ -99,15 +99,27 @@
                       multiple
                       :placeholder="filter.placeholder"
                       class="w-full"
+                      :ui="filterSelectUi"
                       @update:model-value="(value) => handleFilterChange(filter.key, value)"
                       @click.stop
                       @focus="handleSelectOpen"
                       @blur="handleSelectClose"
                     />
                     <!-- Filtro de tipo select: model-value no vacío (fallback primera opción) para cumplir SelectItem -->
-                    <USelect v-else :model-value="(filtersValue && filtersValue[filter.key]) ?? (filter.options?.[0]?.value) ?? ''" :items="filter.options" value-attribute="value" :placeholder="filter.placeholder" class="w-full"
-                        @update:model-value="(value) => handleFilterChange(filter.key, value)"
-                        @click.stop @focus="handleSelectOpen" @blur="handleSelectClose" />
+                    <USelect
+                      v-else
+                      :model-value="(filtersValue && filtersValue[filter.key]) ?? (filter.options?.[0]?.value) ?? ''"
+                      :items="filter.options"
+                      value-key="value"
+                      label-key="label"
+                      :placeholder="filter.placeholder"
+                      class="w-full min-w-0"
+                      :ui="filterSelectUi"
+                      @update:model-value="(value) => handleFilterChange(filter.key, value)"
+                      @click.stop
+                      @focus="handleSelectOpen"
+                      @blur="handleSelectClose"
+                    />
                   </div>
                 </div>
 
@@ -144,7 +156,7 @@
                   </div>
 
                   <div class="grid grid-cols-1 lg:grid-cols-1 gap-4 p-2">
-                    <div v-for="filter in displayedFilterConfig" :key="filter.key" class="field grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div v-for="filter in displayedFilterConfig" :key="filter.key" class="field grid grid-cols-1 lg:grid-cols-[8rem_minmax(14rem,1fr)] gap-x-4 gap-y-1 items-center">
                       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         {{ filter.label }}
                       </label>
@@ -175,14 +187,26 @@
                         multiple
                         :placeholder="filter.placeholder"
                         class="w-full"
+                        :ui="filterSelectUi"
                         @update:model-value="(value) => handleFilterChange(filter.key, value)"
                         @click.stop
                         @focus="handleSelectOpen"
                         @blur="handleSelectClose"
                       />
-                      <USelect v-else :model-value="(filtersValue && filtersValue[filter.key]) ?? (filter.options?.[0]?.value) ?? ''" :items="filter.options" value-attribute="value" :placeholder="filter.placeholder" class="w-full"
-                          @update:model-value="(value) => handleFilterChange(filter.key, value)"
-                          @click.stop @focus="handleSelectOpen" @blur="handleSelectClose" />
+                      <USelect
+                        v-else
+                        :model-value="(filtersValue && filtersValue[filter.key]) ?? (filter.options?.[0]?.value) ?? ''"
+                        :items="filter.options"
+                        value-key="value"
+                        label-key="label"
+                        :placeholder="filter.placeholder"
+                        class="w-full min-w-0"
+                        :ui="filterSelectUi"
+                        @update:model-value="(value) => handleFilterChange(filter.key, value)"
+                        @click.stop
+                        @focus="handleSelectOpen"
+                        @blur="handleSelectClose"
+                      />
                     </div>
                   </div>
 
@@ -239,7 +263,7 @@
       -->
 
       <!-- Body Top Slot (compact on mobile) -->
-      <div class="flex flex-col sm:flex-row justify-center md:justify-between px-0 py-0 md:px-4 sm:py-4 text-xs sm:text-sm gap-2" v-if="showBodyTop">
+      <div class="flex flex-col w-full min-w-0 overflow-visible px-0 py-0 md:px-4 sm:py-4 text-xs sm:text-sm gap-2" v-if="showBodyTop">
         <slot name="body-top" />
       </div>
     </div>
@@ -404,7 +428,7 @@
         @mouseleave="onTableMouseLeave"
         @scroll="onTableScroll"
       >
-        <UTable ref="utableRef" :data="filteredData" sticky :columns="columns" :loading="isTableLoading"
+        <UTable ref="utableRef" :data="filteredData" sticky :columns="displayedColumns" :loading="isTableLoading"
           :class="['', isTableNarrow ? 'utable-narrow' : 'min-w-full']"   :meta="tableMeta"
           :ui="Object.keys(tableMeta).length>0?{
             // Importante: quitar overflow del root interno de UTable.
@@ -412,11 +436,13 @@
             root: 'relative overflow-visible',
             th: 'sticky top-0 z-30 font-normal text-xs lg:text-sm px-2 py-1 md:px-4 md:py-3.5 bg-[#f0f4f9] dark:bg-gray-900',
             thead: 'z-20 bg-[#f0f4f9] dark:bg-gray-900 h-10 md:h-15 border-b border-slate-300/50 dark:border-slate-600/50',
+            td: 'bg-white dark:bg-gray-800 dark:text-gray-100 p-2 lg:p-4 text-xs lg:text-sm',
+            tr: 'border-[#f0f4f9] dark:border-gray-900',
           }:{
             root: 'relative overflow-visible',
             base: 'min-w-full',
             tbody: 'border-separate border-spacing-y-6',
-            td: 'bg-gray-100 dark:bg-gray-800 dark:text-gray-100 p-2 lg:p-4 text-xs lg:text-sm',
+            td: 'bg-white dark:bg-gray-800 dark:text-gray-100 p-2 lg:p-4 text-xs lg:text-sm',
             th: 'sticky top-0 z-30 font-medium text-xs lg:text-sm font-normal px-2 py-1 md:px-4 md:py-3.5 bg-[#f0f4f9] dark:bg-gray-900',
             thead: 'z-20 bg-[#f0f4f9] dark:bg-gray-900 h-10 md:h-15 border-b border-slate-300/50 dark:border-slate-600/50',
             tr: 'border-[#f0f4f9] dark:border-gray-900',
@@ -428,12 +454,12 @@
             <slot name="skeleton">
               <div class="mb-4">
                 <div class="flex items-center gap-3 mb-2">
-                  <USkeleton v-for="c in (props.skeletonCols || Math.max(1, columns.length))" :key="`h-${c}`" class="h-4 w-full rounded bg-gray-200 dark:bg-gray-700" />
+                  <USkeleton v-for="c in (props.skeletonCols || Math.max(1, displayedColumns.length))" :key="`h-${c}`" class="h-4 w-full rounded bg-gray-200 dark:bg-gray-700" />
                 </div>
               </div>
               <div class="space-y-3">
-                <div v-for="r in (props.skeletonRows || 6)" :key="`row-${r}`" class="grid gap-3" :style="{ gridTemplateColumns: `repeat(${props.skeletonCols || Math.max(1, columns.length)}, minmax(0, 1fr))` }">
-                  <USkeleton v-for="c in (props.skeletonCols || Math.max(1, columns.length))" :key="`c-${r}-${c}`" class="h-8 w-full rounded bg-gray-200 dark:bg-gray-700" />
+                <div v-for="r in (props.skeletonRows || 6)" :key="`row-${r}`" class="grid gap-3" :style="{ gridTemplateColumns: `repeat(${props.skeletonCols || Math.max(1, displayedColumns.length)}, minmax(0, 1fr))` }">
+                  <USkeleton v-for="c in (props.skeletonCols || Math.max(1, displayedColumns.length))" :key="`c-${r}-${c}`" class="h-8 w-full rounded bg-gray-200 dark:bg-gray-700" />
                 </div>
               </div>
             </slot>
@@ -494,10 +520,14 @@ import { h, resolveComponent, computed, ref, onMounted, onUnmounted, watch, next
 import type { DataTableProps, DataTableEmits } from '../types/data-table'
 import { useDataTable } from '../composables/useDataTable'
 import { DATA_TABLE_DEFAULTS, PAGINATION_OPTIONS } from '../constants/data-table'
-import { ROLES } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
-const { hasRole, isCoordinacion,currentRole } = useUserRole()
-const isAlmacen = computed(() => hasRole(ROLES.CONTENEDOR_ALMACEN))
+import {
+  applyEnglishTableHeaders,
+  TABLE_HEADERS_EN,
+  translateTableText,
+  usesEnglishTableHeaders,
+} from '~/constants/table-headers-i18n'
+const { currentRole } = useUserRole()
 import { formatDateForInput, formatDateForDisplay } from '../utils/data-table'
 import { parseDate } from '@internationalized/date'
 import type { CalendarDate } from '@internationalized/date'
@@ -518,6 +548,10 @@ const props = withDefaults(defineProps<DataTableProps>(), {
   kanbanDraggable: false
 })
 
+const useEnglishHeaders = computed(() => usesEnglishTableHeaders(currentRole.value))
+const displayedTitle = computed(() => translateTableText(props.title || '', currentRole.value) || props.title)
+const displayedColumns = computed(() => applyEnglishTableHeaders(props.columns || [], currentRole.value))
+
 /** Evita ambigüedad con otros `loading` en plantilla; fuerza booleano para UTable */
 const isTableLoading = computed(() => Boolean(props.loading))
 
@@ -534,6 +568,16 @@ const tableScrollStyle = computed(() => {
 
 // Emits
 const emit = defineEmits(['update:primarySearch', 'filter-change', 'update:filters', 'clear-filters', 'items-per-page-change', 'page-change', 'row-click', 'kanban-move'] )
+
+const filterSelectUi = {
+  base: 'w-full text-left',
+  value: 'text-left',
+  placeholder: 'text-left',
+  content: 'min-w-[var(--reka-select-trigger-width)] w-max max-w-[min(92vw,40rem)]',
+  viewport: 'max-h-80',
+  item: 'whitespace-nowrap',
+  itemLabel: 'whitespace-nowrap'
+}
 
 // Computed writable para v-model:page
 const currentPageModel = computed({
@@ -1171,7 +1215,7 @@ const uiForTable = computed(() => ({
   root: 'relative overflow-visible',
   base: isTableNarrow.value ? 'min-w-[80%]' : 'min-w-full',
   tbody: 'border-separate border-spacing-y-6',
-  td: 'bg-gray-100 dark:bg-gray-800 dark:text-gray-100 p-2 lg:p-4 text-xs lg:text-sm',
+  td: 'bg-white dark:bg-gray-800 dark:text-gray-100 p-2 lg:p-4 text-xs lg:text-sm',
   th: 'font-medium text-xs lg:text-sm font-normal px-2 py-1 md:px-4 md:py-3.5',
   // Nuxt UI aplica automáticamente: thead: 'sticky top-0 inset-x-0 bg-default/75 z-[1] backdrop-blur'
   // Make the thead have a thicker bottom border colored like the header background
@@ -1256,9 +1300,9 @@ const goBack = () => {
   }
 }
 
-// Simple translations for 'almacen' role
+// Simple translations for roles listed in TABLE_ENGLISH_ROLES
 const translations = computed(() => {
-  if (isAlmacen.value) {
+  if (useEnglishHeaders.value) {
     return {
       export: 'Export',
       filters: 'Filters',
@@ -1298,26 +1342,15 @@ const translations = computed(() => {
   }
 })
 
-// Translate filter labels/options for almacen role
 const displayedFilterConfig = computed(() => {
-  const dict: Record<string, string> = {
-    'Rubro': 'Category',
-    'Tipo Producto': 'Product Type',
-    'Campaña': 'Campaign',
-    'Todos': 'All',
-    'Seleccionar rubro': 'Select category',
-    'Seleccionar tipo': 'Select type',
-    'Seleccionar campaña': 'Select campaign'
-  }
-
   const raw = props.filterConfig || []
-  if (!isAlmacen.value) return raw
+  if (!useEnglishHeaders.value) return raw
 
-  return raw.map(f => ({
+  return raw.map((f) => ({
     ...f,
-    label: dict[f.label] || f.label,
-    placeholder: dict[f.placeholder] || f.placeholder,
-    options: (f.options || []).map(o => ({ ...o, label: (dict[o.label] || o.label) }))
+    label: TABLE_HEADERS_EN[f.label] || f.label,
+    placeholder: TABLE_HEADERS_EN[f.placeholder] || f.placeholder,
+    options: (f.options || []).map((o) => ({ ...o, label: TABLE_HEADERS_EN[o.label] || o.label })),
   }))
 })
 
@@ -1452,8 +1485,8 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
     left: 50%;
     transform: translate(-50%, -50%);
     width: 90vw;
-    max-width: 400px;
-    max-height: 80vh;
+    max-width: 38rem;
+    max-height: 90vh;
     overflow-y: auto;
   }
 }
@@ -1513,7 +1546,7 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
 @media (max-width: 640px) {
   .filters-panel {
     padding: 0.5rem !important;
-    max-height: 70vh !important;
+    max-height: 90vh !important;
     border-radius: 0.5rem !important;
     width: calc(100% - 1rem) !important;
     right: 0.5rem !important;
@@ -1608,8 +1641,13 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
 /* Create vertical space between body rows (without affecting thead sticky) */
 .utable-narrow :deep(tbody tr + tr td),
 .min-w-full :deep(tbody tr + tr td) {
-  border-top: 0.5rem solid transparent !important;
+  border-top: 0.5rem solid #f0f4f9 !important;
   background-clip: padding-box;
+}
+
+html.dark .utable-narrow :deep(tbody tr + tr td),
+html.dark .min-w-full :deep(tbody tr + tr td) {
+  border-top-color: #111827 !important;
 }
 
 

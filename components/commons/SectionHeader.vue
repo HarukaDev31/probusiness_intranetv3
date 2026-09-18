@@ -25,12 +25,12 @@
                     <div v-for="header in headers" :key="header.value" class="flex items-center px-1 py-2 md:py-3 md:px-2 gap-1 mt-1"
                         style="border-bottom: 1px solid #e0e0e0;">
                         <div v-if="isUrl(header.icon)" class="flex items-center justify-center align-middle gap-2 ">
-                            <img :src="header.icon" alt="icon" class="w-5 h-4" />
+                            <img :src="header.icon" alt="" class="w-5 h-4 object-contain" />
                         </div>
                         <div v-else>
                             <UIcon :name="header.icon" class="w-5 h-4" />
                         </div>
-                        <span class="text-xs lg:text-sm text-gray-600 dark:text-gray-400">
+                        <span v-if="header.label" class="text-xs lg:text-sm text-gray-600 dark:text-gray-400">
                             {{ header.label }}:
                         </span>
                         <template v-if="header.por_usuario">
@@ -66,7 +66,8 @@ const props = withDefaults(defineProps<{
     skeletonCount: 3,
     showTitleSkeleton: true
 })
-const isUrl = (url: string) => {
+const isUrl = (url?: string) => {
+    if (!url) return false
     return url.includes('http') || url.includes('https')
 }
 

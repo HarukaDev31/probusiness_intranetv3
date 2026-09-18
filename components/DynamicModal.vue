@@ -67,8 +67,9 @@
                 {{ modal.cancelLabel || 'Cancelar' }}
               </button>
               <button
-                @click="$emit('confirm')"
-                class="rounded-lg px-4 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                :disabled="confirming"
+                @click="emitConfirm"
+                class="rounded-lg px-4 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-60 disabled:pointer-events-none"
                 :class="buttonClasses"
               >
                 {{ modal.confirmLabel || 'Confirmar' }}
@@ -114,6 +115,18 @@ const emit = defineEmits<{
   confirm: []
   cancel: []
 }>()
+
+const confirming = ref(false)
+
+watch(() => props.modal.id, () => {
+  confirming.value = false
+})
+
+function emitConfirm() {
+  if (confirming.value) return
+  confirming.value = true
+  emit('confirm')
+}
 
 const iconComponents = {
   success: 'i-heroicons-check-circle',

@@ -13,12 +13,13 @@ export interface ModalData {
 
 // Singleton instance
 let modalInstance: ReturnType<typeof createModalInstance> | null = null
+let modalSeq = 0
 
 function createModalInstance() {
   const modals = ref<ModalData[]>([])
 
   const showModal = (data: Omit<ModalData, 'id'>) => {
-    const id = Date.now().toString()
+    const id = `${Date.now()}-${++modalSeq}`
     const modal: ModalData = {
       id,
       duration: 500000,
@@ -73,8 +74,11 @@ function createModalInstance() {
     onCancel?: () => void,
     options?: Partial<ModalData>
   ) => {
+    // Un solo diálogo de confirmación: un segundo clic en Eliminar no apila otro.
+    modals.value = modals.value.filter(modal => modal.type !== 'confirmation')
     return showModal({ 
-      type: 'confirmation', 
+      type: 'confirmation',
+      persistent: true,
       title, 
       message, 
       onConfirm,

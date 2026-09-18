@@ -524,6 +524,43 @@ function celdaTituloTabla(titulo: string | undefined | null, url?: string | null
   )
 }
 
+function celdaLinkTabla(url: string | undefined | null) {
+  const raw = (url ?? '').trim()
+  if (!raw) {
+    return h('span', { class: 'text-xs text-muted' }, '—')
+  }
+  const href = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`
+  return h(
+    'a',
+    {
+      href,
+      target: '_blank',
+      rel: 'noopener noreferrer',
+      class:
+        'block max-w-[14rem] truncate text-xs text-primary-600 hover:underline dark:text-primary-400',
+      title: raw,
+      onClick: stopRowNav
+    },
+    raw
+  )
+}
+
+function columnaLink(): TableColumn<SoporteTiTablaFila> {
+  const cap = 'min-w-0 max-w-[14rem] sm:max-w-[16rem] align-top'
+  return {
+    id: 'link',
+    accessorKey: 'seccionRuta',
+    header: 'Link',
+    meta: {
+      class: {
+        th: cap,
+        td: cap
+      }
+    },
+    cell: ({ row }) => celdaLinkTabla(row.original.seccionRuta)
+  }
+}
+
 function columnaCreador(): TableColumn<SoporteTiTablaFila> {
   const cap = 'min-w-0 max-w-[12rem] sm:max-w-[14rem] align-top'
   return {
@@ -622,6 +659,7 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
       { accessorKey: 'codigo', header: sortableHeader('Código') },
       { accessorKey: 'tipoSolicitud', header: sortableHeader('Tipo solicitud') },
       columnaTitulo('Nombre'),
+      columnaLink(),
       { accessorKey: 'fechaRegistroCompleta', header: sortableHeader('Fecha de registro') },
       { accessorKey: 'fechaFinEstimadoFmt', header: sortableHeader('Término estimado') },
       colEstado,
@@ -799,6 +837,7 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
     columnaCreador(),
     columnaRol(),
     columnaTitulo('Título'),
+    columnaLink(),
     colArea,
     { accessorKey: 'fechaRegistroCompleta', header: sortableHeader('Fecha de registro') },
     ...(rolActivo.value === 'PM' || rolActivo.value === 'Analista'

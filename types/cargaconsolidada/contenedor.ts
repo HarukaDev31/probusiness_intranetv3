@@ -37,9 +37,16 @@ export interface Contenedor {
     multa: string
     observaciones: string
     limite_cbm_imo?: number
+    /** CBM IMO calculado (org 1: calculadora; socios: proveedores resumen). */
+    cbm_total_imo?: number | string
     /** TC Yuan vigente del consolidado (Coordinación). */
     tc_yuan?: number | null
     pais: Pais
+    organizacion_id?: number
+    organizacion?: {
+        id: number
+        nombre: string
+    } | null
     /** Estado del permiso por tipo (backend puede enviar cuando role=Coordinación/Documentación). */
     estado_permiso_por_tipo?: Array<{ id_tipo_permiso?: number; nombre_permiso: string; estado: string }>
 }
@@ -49,6 +56,8 @@ export interface ContenedorResponse {
     pagination: PaginationInfo
     filters?: {
         anios?: number[]
+        organizaciones?: Array<{ id: number; nombre: string }>
+        empresas?: string[]
     }
 }
 
@@ -70,6 +79,10 @@ export interface ContenedorFilters {
    anio?: string
    /** Estado finanzas (`todos` = sin filtro). */
    estado_finanzas?: string
+   /** Org 1: filtrar consolidados por organización (`todos` = sin filtro). */
+   organizacion_id?: string
+   /** Almacén: filtrar por empresa del consolidado (`todos` = sin filtro). */
+   empresa?: string
    search?: string
    completado?: boolean|false
 }
