@@ -42,6 +42,7 @@
                         class="w-full min-w-0"
                         :title="`Contenedor #${carga}`"
                         :headers="headersByKey"
+                        :loading="loading || loadingHeaders"
                         @filter-nc="filterByNc"
                     />
                     <SectionHeader

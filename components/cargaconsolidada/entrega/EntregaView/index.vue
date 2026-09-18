@@ -24,7 +24,7 @@
       <template #body-top>
         <div class="flex flex-col gap-2">
           <div class="flex md:items-center items-start gap-3 ">
-            <SectionHeader :title="`Entregas #${carga}`" :headers="headers" :loading="loadingHeaders" />
+            <SectionHeader :title="`Entregas #${carga}`" :headers="headers" :loading="loading || loadingHeaders" />
             <div v-if="!isJefeMarketingReadOnly" class="flex gap-2 items-center">
               <UButton
                 icon="i-heroicons-paper-airplane"
@@ -78,7 +78,7 @@
       <template #body-top>
         <div class="flex flex-col gap-2">
           <div class="flex md:items-center items-start gap-3 flex-col md:flex-row">
-            <SectionHeader :title="`Entregas #${carga}`" :headers="headersEntregas" :loading="loadingHeaders" />
+            <SectionHeader :title="`Entregas #${carga}`" :headers="headersEntregas" :loading="loading || loadingHeaders" />
             <div v-if="!isJefeMarketingReadOnly" class="flex gap-2 items-center">
               <UButton
                 icon="i-heroicons-paper-airplane"
@@ -101,7 +101,7 @@
       <template #body-top>
         <div class="flex flex-col gap-2">
           <div class="flex md:items-center items-start gap-3 flex-col md:flex-row">
-            <SectionHeader :title="`Delivery #${carga}`" :headers="headersDelivery" :loading="loadingHeaders" />
+            <SectionHeader :title="`Delivery #${carga}`" :headers="headersDelivery" :loading="loading || loadingHeaders" />
             <div v-if="!isJefeMarketingReadOnly" class="flex gap-2 items-center">
               <UButton
                 icon="i-heroicons-paper-airplane"

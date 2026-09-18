@@ -23,7 +23,7 @@ const normalizeCustomersFilter = (value: unknown): string => {
 
 export const useCustomers = () => {
   const customers = ref<CustomerRow[]>([])
-  const loading = ref(false)
+  const loading = ref(true)
   const error = ref<string | null>(null)
   const search = ref('')
   const itemsPerPage = ref(CUSTOMERS_ITEMS_PER_PAGE)

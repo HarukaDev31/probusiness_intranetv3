@@ -81,7 +81,7 @@ export const useCalculadoraImportacion = () => {
   const clientes = ref<any[]>([])
   const tarifas = ref<Tarifa[]>([])
   const cotizaciones = ref<any[]>([])
-  const loading = ref(false)
+  const loading = ref(true)
   const vendedores = ref<any[]>([])
   const contenedores = ref<any[]>([])
   const tarifaDescuento = ref(0)
@@ -734,6 +734,7 @@ export const useCalculadoraImportacion = () => {
    * @param options.id_calculadora Si se envía, el backend puede filtrar por PK de la fila (p. ej. al volver desde documentación con ?idCalculadora=).
    */
   const getCotizaciones = async (options?: { id_calculadora?: number }) => {
+    loading.value = true
     try {
       const params: any = {
         page: pagination.value.current_page,
@@ -782,6 +783,8 @@ export const useCalculadoraImportacion = () => {
     } catch (error) {
       console.error('Error al obtener cotizaciones:', error)
       throw new Error('No se pudieron obtener las cotizaciones')
+    } finally {
+      loading.value = false
     }
   }
   const handleSearch = async (value: string) => {

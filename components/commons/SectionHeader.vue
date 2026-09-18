@@ -117,7 +117,7 @@ const props = withDefaults(defineProps<{
 }>(), {
     title: null,
     loading: false,
-    skeletonCount: 3,
+    skeletonCount: 8,
     showTitleSkeleton: true,
 })
 

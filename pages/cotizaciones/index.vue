@@ -14,7 +14,7 @@
       @export="handleExport">
 
       <template #body-top>
-        <SectionHeader :headers="kpiHeaders" :loading="loading && !kpiHeaders.length" />
+        <SectionHeader :headers="kpiHeaders" :loading="loading" :skeleton-count="7" />
       </template>
 
       <template #actions>
@@ -50,7 +50,8 @@ import { useModal } from '~/composables/commons/useModal';
 import { useSpinner } from '~/composables/commons/useSpinner';
 import type { FilterConfig } from '~/types/data-table'
 import { useIsDesktop } from '~/composables/useResponsive'
-import { STATUS_BG_CLASSES } from '~/constants/ui'
+import { STATUS_BG_CLASSES, CUSTOMIZED_ICONS_URL } from '~/constants/ui'
+import { formatCurrency } from '~/utils/formatters'
 const { isDesktop } = useIsDesktop()
 const route = useRoute()
 const { showSuccess, showConfirmation, showError } = useModal()
@@ -62,10 +63,16 @@ const handleNewButtonClick = () => {
 }
 
 const CALCULADORA_HEADER_ICONS: Record<string, string> = {
-  cotizaciones_pendientes: 'heroicons:clock',
-  cotizaciones_realizadas: 'heroicons:document-text',
-  cotizaciones_vendidas: 'heroicons:check-badge',
+  cbm_total_china: CUSTOMIZED_ICONS_URL.CHINA,
+  cbm_total_peru: CUSTOMIZED_ICONS_URL.PERU,
+  cbm_pendiente: 'mage:box-3d',
+  cbm_total_imo: 'mdi:biohazard',
+  total_fob: 'cryptocurrency-color:soc',
+  total_logistica: 'cryptocurrency-color:soc',
+  total_impuestos: 'cryptocurrency-color:soc',
 }
+
+const MONEY_HEADER_KEYS = new Set(['total_fob', 'total_logistica', 'total_impuestos'])
 
 const kpiHeaders = computed<Header[]>(() => {
   const raw = headers.value as Header[] | Record<string, Header> | null
@@ -73,11 +80,17 @@ const kpiHeaders = computed<Header[]>(() => {
   const entries = Array.isArray(raw)
     ? raw.map((header, index) => [header.key || String(index), header] as const)
     : Object.entries(raw)
-  return entries.map(([key, header]) => ({
-    ...header,
-    key,
-    icon: header.icon || CALCULADORA_HEADER_ICONS[key] || 'fluent:box-32-filled',
-  }))
+  return entries.map(([key, header]) => {
+    const numericValue = Number(header.value)
+    return {
+      ...header,
+      key,
+      icon: header.icon || CALCULADORA_HEADER_ICONS[key] || 'fluent:box-32-filled',
+      value: MONEY_HEADER_KEYS.has(key) && Number.isFinite(numericValue)
+        ? formatCurrency(numericValue)
+        : header.value,
+    }
+  })
 })
 const columns: TableColumn<any>[] = [
   {

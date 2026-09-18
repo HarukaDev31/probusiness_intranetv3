@@ -1,6 +1,6 @@
 <template>
   <div class="md:p-6">
-    <CustomersKpiCards class="mb-4" :headers="headers" @filter-nc="filterByNc" />
+    <CustomersKpiCards class="mb-4" :headers="headers" :loading="loading" @filter-nc="filterByNc" />
     <DataTable
       title="Cotizaciones"
       icon="i-heroicons-document-text"
@@ -92,7 +92,7 @@ const CHINA_OPTIONS = [
 
 const cotizaciones = ref<CotizacionResumenRow[]>([])
 const headers = ref<Record<string, Header>>({})
-const loading = ref(false)
+const loading = ref(true)
 const search = ref('')
 const pagination = ref({ current_page: 1, last_page: 1, per_page: 10, total: 0 })
 const filters = reactive<Record<string, string>>({
