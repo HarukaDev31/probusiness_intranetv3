@@ -20,6 +20,10 @@ export interface CotizacionResumenProveedorExtraido {
   unidades: number | null
   incoterm: string | null
   productos: string | null
+  logistica?: number | null
+  fob?: number | null
+  impuesto?: number | null
+  isd?: number | null
   costos: CotizacionResumenCosto[]
 }
 
