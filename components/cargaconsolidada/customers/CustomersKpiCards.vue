@@ -1,7 +1,7 @@
 <template>
   <div
     class="grid grid-cols-1 sm:grid-cols-2 gap-[18px] w-full min-w-0"
-    :class="kpiCards.length >= 7 ? 'xl:grid-cols-4' : kpiCards.length >= 6 ? 'xl:grid-cols-6' : kpiCards.length >= 5 ? 'xl:grid-cols-5' : 'xl:grid-cols-4'"
+    :class="kpiCards.length >= 6 ? 'xl:grid-cols-6' : kpiCards.length >= 5 ? 'xl:grid-cols-5' : 'xl:grid-cols-4'"
   >
     <article
       v-for="card in kpiCards"
@@ -19,13 +19,23 @@
         >
         <UIcon v-else :name="card.icon" class="w-9 h-9" />
       </div>
-      <div class="min-w-0">
+      <div class="min-w-0 flex-1">
         <p class="m-0 text-[11px] tracking-[0.8px] uppercase text-[#8494b0]">
           {{ card.label }}
         </p>
         <p class="mt-1 mb-0 font-bold leading-none text-[#17233a] dark:text-white" :class="String(card.value).length > 8 ? 'text-[1.35rem]' : 'text-[2rem]'">
           {{ card.value }}
         </p>
+        <div v-if="card.sublines.length" class="mt-2 flex flex-col gap-0.5">
+          <p
+            v-for="line in card.sublines"
+            :key="line.label"
+            class="m-0 flex items-baseline justify-between gap-2 text-[11px] text-[#8494b0]"
+          >
+            <span>{{ line.label }}</span>
+            <strong class="font-semibold text-[#17233a] dark:text-white">{{ line.value }}</strong>
+          </p>
+        </div>
         <p v-if="card.hint" class="mt-1 text-[11px] text-gray-400">
           {{ card.hint }}
         </p>
@@ -98,6 +108,7 @@ const kpiCards = computed(() => {
     clickable: boolean
     hint?: string
     byCountry: HeaderCountryRow[]
+    sublines: { label: string, value: string }[]
   }[] = []
 
   if (pais) {
@@ -108,6 +119,7 @@ const kpiCards = computed(() => {
       icon: pais.icon || 'fluent:box-32-filled',
       clickable: false,
       byCountry: countryRows(pais),
+      sublines: [],
     })
   }
 
@@ -119,6 +131,7 @@ const kpiCards = computed(() => {
       icon: vendido.icon || 'fluent:box-32-filled',
       clickable: false,
       byCountry: countryRows(vendido),
+      sublines: [],
     })
   }
 
@@ -130,6 +143,21 @@ const kpiCards = computed(() => {
       icon: pendiente.icon || 'heroicons:clock',
       clickable: false,
       byCountry: countryRows(pendiente),
+      sublines: [],
+    })
+  }
+
+  const warehouseSublines: { label: string, value: string }[] = []
+  if (fecha60) {
+    warehouseSublines.push({
+      label: '60 CBM',
+      value: String(fecha60.value ?? '—'),
+    })
+  }
+  if (fecha65) {
+    warehouseSublines.push({
+      label: '65 CBM',
+      value: String(fecha65.value ?? '—'),
     })
   }
 
@@ -140,30 +168,8 @@ const kpiCards = computed(() => {
     icon: 'fluent:box-32-filled',
     clickable: false,
     byCountry: countryRows(cbm),
+    sublines: warehouseSublines,
   })
-
-  if (fecha60) {
-    cards.push({
-      key: 'fecha_cbm_60',
-      label: fecha60.label || '60 CBM date',
-      value: fecha60.value ?? '—',
-      icon: fecha60.icon || 'heroicons:calendar-days',
-      clickable: false,
-      hint: fecha60.hint,
-      byCountry: [],
-    })
-  }
-  if (fecha65) {
-    cards.push({
-      key: 'fecha_cbm_65',
-      label: fecha65.label || '65 CBM date',
-      value: fecha65.value ?? '—',
-      icon: fecha65.icon || 'heroicons:calendar-days',
-      clickable: false,
-      hint: fecha65.hint,
-      byCountry: [],
-    })
-  }
 
   cards.push(
     {
@@ -173,6 +179,7 @@ const kpiCards = computed(() => {
       icon: 'flowbite:users-group-solid',
       clickable: false,
       byCountry: [],
+      sublines: [],
     },
     {
       key: 'total_suppliers_code',
@@ -181,6 +188,7 @@ const kpiCards = computed(() => {
       icon: 'heroicons:arrows-up-down',
       clickable: false,
       byCountry: [],
+      sublines: [],
     },
     {
       key: 'total_nc',
@@ -190,6 +198,7 @@ const kpiCards = computed(() => {
       hint: 'Click to filter NC',
       clickable: true,
       byCountry: [],
+      sublines: [],
     },
   )
 
