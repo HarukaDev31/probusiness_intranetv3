@@ -1827,7 +1827,7 @@ const columnsVariacion = ref<TableColumn<any>[]>([
     },
     {
         accessorKey: 'variacion',
-        header: 'VariaciÃ³n',
+        header: 'Variaci\u00f3n',
         cell: ({ row }: { row: any }) => {
             const volCot = Number(row.getValue('volumen') ?? 0)
             const volChina = Number(row.getValue('volumen_china') ?? 0)
@@ -1846,7 +1846,7 @@ const columnsVariacion = ref<TableColumn<any>[]>([
                     onClick: () => {
                         const diff = (volCot - volChina).toFixed(2)
                         showInfo(
-                            'Variación',
+                            'Variaci\u00f3n',
                             `Solo Vol. Cotizado vs Vol. China.\nVol. Cot: ${volCot} · Vol. China: ${volChina} · Diferencia: ${diff}`
                         )
                     },
@@ -1967,7 +1967,7 @@ const configureTabsForRole = () => {
     if (isOrgNoAdmin.value) {
         tabs.value = [
             { label: 'Documentación', value: 'general' },
-            { label: 'Variación', value: 'variacion' },
+            { label: 'Variaci\u00f3n', value: 'variacion' },
         ]
         if (tab.value === 'embarcados' || tab.value === 'pagos') {
             tab.value = 'general'
@@ -1980,20 +1980,20 @@ const configureTabsForRole = () => {
         tabs.value = [
             { label: 'Seguimiento', value: 'embarcados' },
             { label: 'Documentacion', value: 'general' },
-            { label: 'VariaciÃ³n', value: 'variacion' },
+            { label: 'Variaci\u00f3n', value: 'variacion' },
         ]
     } else if ((isCotizador.value && Number(currentId.value) === ID_JEFEVENTAS) || currentRole.value === ROLES.RRHH) {
         tabs.value = [
             { label: 'Seguimiento', value: 'embarcados' },
             { label: 'Documentacion', value: 'general' },
-            { label: 'VariaciÃ³n', value: 'variacion' },
+            { label: 'Variaci\u00f3n', value: 'variacion' },
         ]
     } else if (currentRole.value === ROLES.JEFE_MARKETING) {
         tabs.value = [{ label: 'Documentacion', value: 'general' }]
     } else {
         tabs.value = [
             { label: 'Documentacion', value: 'general' },
-            { label: 'VariaciÃ³n', value: 'variacion' },
+            { label: 'Variaci\u00f3n', value: 'variacion' },
         ]
     }
 }

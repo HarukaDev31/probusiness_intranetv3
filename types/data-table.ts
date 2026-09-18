@@ -38,6 +38,7 @@ export interface Header {
   label: string
   value: string
   icon?: string
+  hint?: string
   by_country?: HeaderCountryRow[]
 }
 export interface DataTableKanbanColumn {
