@@ -29,10 +29,16 @@ export interface FilterConfig {
   /** Si true, permite seleccionar varias opciones (USelect multiple). */
   multiple?: boolean
 }
+export interface HeaderCountryRow {
+  country: string
+  value: string | number
+}
+
 export interface Header {
   label: string
   value: string
   icon?: string
+  by_country?: HeaderCountryRow[]
 }
 export interface DataTableKanbanColumn {
   /** Valor del campo en la fila (p. ej. `estadoCodigo`) */

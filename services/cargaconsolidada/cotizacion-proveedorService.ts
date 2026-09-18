@@ -280,6 +280,18 @@ export class CotizacionProveedorService extends BaseService {
         }
     }
 
+    static async validarRotulado(idCotizacion: number): Promise<any> {
+        try {
+            return await this.apiCall<any>(
+                `${this.baseUrl}/proveedor/validar-rotulado`,
+                { method: 'POST', body: { idCotizacion } }
+            )
+        } catch (error: any) {
+            const message = error?.data?.message || error?.message || 'No se puede cambiar a rotulado.'
+            return { success: false, message }
+        }
+    }
+
     static async sendRotulado(data: { idCotizacion: number, proveedores: Array<{ id: number, tipo_rotulado: string, force_send: number }> }): Promise<any> {
         try {
             const response = await this.apiCall<any>(
@@ -287,9 +299,9 @@ export class CotizacionProveedorService extends BaseService {
                 { method: 'POST', body: data }
             )
             return response
-        } catch (error) {
-            console.error('Error al enviar rotulado:', error)
-            throw new Error('No se pudo enviar el rotulado')
+        } catch (error: any) {
+            const message = error?.data?.message || error?.message || 'No se pudo enviar el rotulado'
+            return { success: false, message }
         }
     }
 }

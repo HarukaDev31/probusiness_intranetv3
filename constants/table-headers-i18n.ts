@@ -32,6 +32,8 @@ export const TABLE_HEADERS_EN: Record<string, string> = {
   Estado: 'Status',
   'CBM Perú': 'CBM Customer',
   'CBM China': 'CBM China',
+  'CBM Vendido': 'CBM Sold',
+  'CBM Pendiente': 'CBM Pending',
   'Límite CBM IMO': 'IMO CBM Limit',
   'CBM IMO': 'CBM IMO',
   Acciones: 'Actions',
