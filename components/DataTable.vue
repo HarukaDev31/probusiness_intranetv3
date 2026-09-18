@@ -1,5 +1,5 @@
 <template>
-  <div ref="componentRootRef" class="" data-manual-capture="data-table">
+  <div ref="componentRootRef" class="w-full min-w-0 max-w-full" data-manual-capture="data-table">
 
     <!-- Sticky Top Section -->
     <div v-if="!showTopSection" class="sticky top-0 z-40 bg-[#f0f4f9] dark:bg-gray-900">
@@ -404,7 +404,7 @@
     <!-- Table Section (sin overflow-hidden en el wrapper para que position:sticky del thead funcione) -->
     <div
       v-else
-      class="relative"
+      class="relative w-full min-w-0 max-w-full"
       ref="tableWrapperRef"
       style="width: 100%;"
     >
@@ -423,6 +423,7 @@
         data-manual-capture="data-table-grid"
         ref="tableContainerRef"
         class="table-scroll-container"
+        :class="{ 'is-h-scroll': !isTableNarrow }"
         :style="tableScrollStyle"
         @mousemove="onTableMouseMove"
         @mouseleave="onTableMouseLeave"
@@ -1726,64 +1727,39 @@ html.dark .min-w-full :deep(tbody tr + tr td) {
 /* Contenedor principal de scroll */
 .table-scroll-container {
   position: relative;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow-x: auto !important;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: auto;
+  scrollbar-color: #9ca3af #e5e7eb;
+  -ms-overflow-style: scrollbar;
 }
 
-/* Móvil: scroll nativo sin barras ni sombras estilo desktop */
-@media (max-width: 767px) {
-  .table-scroll-container {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  .table-scroll-container::-webkit-scrollbar {
-    display: none;
-    width: 0;
-    height: 0;
-  }
-
-  .scroll-shadow {
-    display: none !important;
-  }
+.table-scroll-container.is-h-scroll {
+  overflow-x: scroll !important;
 }
 
-/* Desktop: scrollbar personalizada */
-@media (min-width: 768px) {
-  .table-scroll-container {
-    scrollbar-width: thin;
-    scrollbar-color: #9ca3af #e5e7eb;
-  }
+.dark .table-scroll-container {
+  scrollbar-color: #6b7280 #1f2937;
 }
 
-/* Evitar que wrappers internos (Nuxt UI) creen un scroll-container extra.
-   Si hay un overflow-* interno, sticky header no se activa porque el scroll real ocurre en .table-scroll-container. */
-.table-scroll-container .overflow-x-auto,
-.table-scroll-container .overflow-auto {
-  overflow: visible !important;
-}
-
-/* Forzar que la tabla tenga ancho mínimo para scroll */
-.table-scroll-container table {
-  min-width: 800px;
-}
-
-/* Webkit scrollbar (Chrome, Safari, Edge) — solo desktop */
-@media (min-width: 768px) {
 .table-scroll-container::-webkit-scrollbar {
-  width: 10px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
+  display: block;
 }
 
 .table-scroll-container::-webkit-scrollbar-track {
   background: #e5e7eb;
-  border-radius: 7px;
+  border-radius: 6px;
 }
 
 .table-scroll-container::-webkit-scrollbar-thumb {
   background: #9ca3af;
-  border-radius: 7px;
+  border-radius: 6px;
   border: 2px solid #e5e7eb;
 }
 
@@ -1793,11 +1769,6 @@ html.dark .min-w-full :deep(tbody tr + tr td) {
 
 .table-scroll-container::-webkit-scrollbar-corner {
   background: #e5e7eb;
-}
-
-/* Dark mode */
-.dark .table-scroll-container {
-  scrollbar-color: #6b7280 #1f2937;
 }
 
 .dark .table-scroll-container::-webkit-scrollbar-track {
@@ -1816,9 +1787,26 @@ html.dark .min-w-full :deep(tbody tr + tr td) {
 .dark .table-scroll-container::-webkit-scrollbar-corner {
   background: #1f2937;
 }
+
+@media (max-width: 767px) {
+  .scroll-shadow {
+    display: none !important;
+  }
 }
 
-/* Headers sticky - el contenedor tiene height fijo para que el scroll sea interno y el thead se quede fijo */
+/* Evitar que wrappers internos (Nuxt UI) creen un scroll-container extra.
+   Si hay un overflow-* interno, sticky header no se activa porque el scroll real ocurre en .table-scroll-container. */
+.table-scroll-container .overflow-x-auto,
+.table-scroll-container .overflow-auto {
+  overflow: visible !important;
+}
+
+/* Forzar que la tabla tenga ancho mínimo para scroll */
+.table-scroll-container table {
+  min-width: 800px;
+}
+
+/* Forzar que la tabla tenga ancho mínimo para scroll */
 .table-scroll-container table thead {
   position: sticky !important;
   top: 0 !important;

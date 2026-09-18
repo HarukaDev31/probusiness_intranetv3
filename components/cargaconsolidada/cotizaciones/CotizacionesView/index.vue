@@ -259,7 +259,8 @@ const { getCotizacionProveedor,
     exportData: exportEmbarqueData,
     refreshRotuladoStatus,
     downloadEmbarque,
-    sendRotulado
+    sendRotulado,
+    validarRotulado
 } = useCotizacionProveedor()
 const { cotizaciones,
     refreshCotizacionFile,
@@ -2971,8 +2972,8 @@ const handleUpdateProveedorEstado = async (idProveedor: number, estado: string, 
                                     showError('Error al enviar el rotulado', response?.message)
                                 }
                                 return;
-                            } catch (error) {
-                                showError('Error al enviar el rotulado', error)
+                            } catch (error: any) {
+                                showError('Error al enviar el rotulado', error?.data?.message || error?.message || error)
                                 return;
                             }
                         }, 'Enviando rotulado...')
@@ -3244,7 +3245,18 @@ const socioRotuladoValue = (proveedor: any) => {
     return 'PENDIENTE'
 }
 
-const openSocioEnviarRotulado = (idCotizacion: number, proveedorId?: number) => {
+const openSocioEnviarRotulado = async (idCotizacion: number, proveedorId?: number) => {
+    try {
+        const check = await validarRotulado(idCotizacion)
+        if (!check?.success) {
+            showError('No se puede cambiar a rotulado', check?.message || 'La cotización debe estar confirmada para cambiar a rotulado.')
+            return
+        }
+    } catch (error: any) {
+        showError('No se puede cambiar a rotulado', error?.data?.message || error?.message || 'La cotización debe estar confirmada para cambiar a rotulado.')
+        return
+    }
+
     const modal = overlay.create(SelectTipoCargaModal)
     modal.open({
         show: true,
@@ -3263,8 +3275,8 @@ const openSocioEnviarRotulado = (idCotizacion: number, proveedorId?: number) => 
                         showError('Error al enviar el rotulado', response?.message || 'Intenta nuevamente.')
                     }
                 }, 'Enviando rotulado…')
-            } catch (error) {
-                showError('Error al enviar el rotulado', error)
+            } catch (error: any) {
+                showError('Error al enviar el rotulado', error?.data?.message || error?.message || error)
             }
         },
     })
@@ -3289,8 +3301,8 @@ const handleSocioTipoRotulado = async (idCotizacion: number, proveedor: any, val
             showSuccess('Rotulado actualizado', 'El proveedor quedó en PENDIENTE.')
             await getCotizacionProveedor(Number(id))
         }, 'Guardando rotulado…')
-    } catch (error) {
-        showError('Error al actualizar el rotulado', error)
+    } catch (error: any) {
+        showError('Error al actualizar el rotulado', error?.data?.message || error?.message || error)
     }
 }
 

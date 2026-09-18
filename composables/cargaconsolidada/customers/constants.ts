@@ -1,5 +1,5 @@
-export const CUSTOMERS_ITEMS_PER_PAGE = 10
-export const CUSTOMERS_PAGINATION_OPTIONS = [10] as const
+export const CUSTOMERS_ITEMS_PER_PAGE = 20
+export const CUSTOMERS_PAGINATION_OPTIONS = [20] as const
 
 export const CUSTOMERS_STATUS_OPTIONS = [
   { label: 'Todos', value: 'todos' },

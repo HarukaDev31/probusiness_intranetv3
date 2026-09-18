@@ -528,11 +528,22 @@ export const    useCotizacionProveedor = () => {
             const response = await CotizacionProveedorService.sendRotulado(data)
             return response
         }
-        catch (error) {
-            error.value = error.message || 'Error al enviar rotulado'
-            console.error('Error en sendRotulado:', error)
+        catch (error: any) {
+            const message = error?.data?.message || error?.message || 'Error al enviar rotulado'
+            error.value = message
+            return { success: false, message }
         } finally {
             loading.value = false
+        }
+    }
+
+    const validarRotulado = async (idCotizacion: number) => {
+        if (!idCotizacion) return { success: false, message: 'Cotización no encontrada' }
+        try {
+            return await CotizacionProveedorService.validarRotulado(idCotizacion)
+        } catch (error: any) {
+            const message = error?.data?.message || error?.message || 'No se puede cambiar a rotulado.'
+            return { success: false, message }
         }
     }
 
@@ -595,6 +606,7 @@ export const    useCotizacionProveedor = () => {
         refreshRotuladoStatus,
         getProveedoresByCotizacion,
         downloadEmbarque,
-        sendRotulado
+        sendRotulado,
+        validarRotulado
     }
 }

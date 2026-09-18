@@ -44,18 +44,18 @@
               <template v-for="item in category.modules" :key="item.id">
                 <!-- Item padre con hijos: izquierda = navegación/opcional toggle, derecha = chevron que controla expand -->
                 <div v-if="item.children && item.children.length" class="w-full">
-                  <div class="flex items-center justify-between">
+                  <div class="flex items-center" :class="collapsed ? 'justify-center' : 'justify-between'">
                     <!-- Left: clickable area (navega si tiene route, sino actúa como toggle) -->
-                    <button type="button" class="flex-1 flex items-center gap-3 rounded-md text-sm focus:outline-none"
-                      :class="[isParentActive(item) ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/10 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700', collapsed ? 'justify-center px-2' : 'text-left px-3 py-2']"
+                    <button type="button" class="flex items-center gap-3 rounded-md text-sm focus:outline-none"
+                      :class="[isParentActive(item) ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/10 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700', collapsed ? 'w-full justify-center px-0 py-2' : 'flex-1 text-left px-3 py-2']"
                       @click="navigateOrToggle(item)"
                       :aria-label="collapsed ? displayMenuName(item.name, undefined, item.nameEn) : undefined">
                       <UIcon :name="item.icon || 'i-heroicons-archive-box'" class="w-5 h-5 text-gray-400" />
                       <span v-if="!collapsed" class="truncate">{{ displayMenuName(item.name, undefined, item.nameEn) }} </span>
                     </button>
 
-                    <!-- Right: chevron toggle (stop propagation para no navegar) -->
-                    <button type="button"
+                    <!-- Right: chevron toggle (oculto al colapsar para no descentrar el icono) -->
+                    <button v-if="!collapsed" type="button"
                       class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                       @click.stop="toggleParent(item.id)"
                       :aria-label="expanded[String(item.id)] ? `${uiLabels.collapse} ${displayMenuName(item.name, undefined, item.nameEn)}` : `${uiLabels.expand} ${displayMenuName(item.name, undefined, item.nameEn)}`"
@@ -72,11 +72,11 @@
                       <template v-for="child in item.children" :key="child.id">
                         <!-- Child con sub-hijos -->
                         <div v-if="child.children && child.children.length">
-                          <div class="flex items-center justify-between">
+                          <div class="flex items-center" :class="collapsed ? 'justify-center' : 'justify-between'">
 
                             <button type="button"
-                              class="flex-1 flex items-center gap-2 rounded-md text-sm focus:outline-none"
-                              :class="[isParentActive(child) ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700', collapsed ? 'justify-center px-2' : 'text-left px-2']"
+                              class="flex items-center gap-2 rounded-md text-sm focus:outline-none"
+                              :class="[isParentActive(child) ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700', collapsed ? 'w-full justify-center px-0' : 'flex-1 text-left px-2']"
                               @click="navigateOrToggle(child)"
                               :aria-label="collapsed ? displayMenuName(child.name, item.name, child.nameEn) : undefined">
                               <template v-if="child.icon">
@@ -84,14 +84,14 @@
                               </template>
                               <template v-else>
                                 <span v-if="collapsed"
-                                  :class="['w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-900 text-xs text-gray-400 font-medium', collapsed ? '-ml-2 mr-0' : 'mr-2']">
+                                  class="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-900 text-xs text-gray-400 font-medium">
                                   {{ initialLetter(item.name, child.name) }}
                                 </span>
                               </template>
                               <span v-if="!collapsed" class="truncate">{{ displayMenuName(child.name, item.name, child.nameEn) }}</span>
                             </button>
 
-                            <button type="button"
+                            <button v-if="!collapsed" type="button"
                               class="ml-2 p-2 rounded-full text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                               @click.stop="toggleParent(child.id)"
                               :aria-label="expanded[String(child.id)] ? `${uiLabels.collapse} ${displayMenuName(child.name, item.name, child.nameEn)}` : `${uiLabels.expand} ${displayMenuName(child.name, item.name, child.nameEn)}`"
@@ -328,8 +328,13 @@ const visible = computed({
 const collapsed = ref(false)
 const toggleCollapsed = () => {
   collapsed.value = !collapsed.value
-  // emit collapsed state so parent (layout) can adapt margins
   emit('collapsed-change', collapsed.value)
+}
+
+const expandSidebar = () => {
+  if (!collapsed.value) return
+  collapsed.value = false
+  emit('collapsed-change', false)
 }
 
 // When the sidebar is minimized (icons-only), collapse any expanded menu groups
@@ -378,12 +383,21 @@ const onMenuHover = (route: string) => {
 }
 
 const handleNavigation = async (route: string) => {
+  if (collapsed.value) {
+    expandSidebar()
+  }
   if (!route) return
   await navigateTo(route)
   hideSidebarOnMobile()
 }
 
 const navigateOrToggle = async (item: any) => {
+  if (collapsed.value) {
+    expandSidebar()
+    if (item?.id && item.children?.length) {
+      expanded[String(item.id)] = true
+    }
+  }
   const route = item?.route
   if (route && route !== '' && route !== '#') {
     await navigateTo(route)
@@ -417,6 +431,9 @@ const openWsNotificationPreferences = async () => {
 const expanded = reactive<Record<string, boolean>>({})
 
 const toggleParent = (key: string | number | undefined) => {
+  if (collapsed.value) {
+    expandSidebar()
+  }
   if (!key) return
   const k = String(key)
   expanded[k] = !expanded[k]

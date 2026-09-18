@@ -14,7 +14,12 @@
 
     <div class="home-op__grid">
       <template v-if="loading">
-        <div v-for="n in cardCount" :key="n" class="home-op__card">
+        <div
+          v-for="n in cardCount"
+          :key="n"
+          class="home-op__card"
+          :style="{ '--home-op-delay': `${(n - 1) * 70}ms` }"
+        >
           <USkeleton class="h-11 w-11 rounded-lg" />
           <div class="flex-1 space-y-2">
             <USkeleton class="h-3 w-28" />
@@ -24,12 +29,11 @@
       </template>
 
       <article
-        v-for="card in visibleCards"
+        v-for="(card, index) in visibleCards"
         v-else
         :key="card.key"
         class="home-op__card"
-        @mouseenter="hoverKey = card.key"
-        @mouseleave="hoverKey = null"
+        :style="{ '--home-op-delay': `${index * 70}ms` }"
       >
         <div class="home-op__icon" aria-hidden="true">
           <UIcon :name="iconFor(card.key)" class="w-9 h-9" />
@@ -40,7 +44,7 @@
         </div>
 
         <div
-          v-if="showBreakdown(card) && hoverKey === card.key"
+          v-if="showBreakdown(card)"
           class="home-op__breakdown"
         >
           <p class="home-op__breakdown-title">{{ labelFor(card.key) }}</p>
@@ -59,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import type { HomeStatsCard, HomeStatsCardKey } from '~/types/cargaconsolidada/home-stats'
 
 const props = defineProps<{
@@ -67,8 +71,6 @@ const props = defineProps<{
   loading?: boolean
   variant: 'almacen' | 'socio'
 }>()
-
-const hoverKey = ref<HomeStatsCardKey | null>(null)
 
 const copy = computed(() => props.variant === 'almacen'
   ? { hello: 'Hello,', welcome: 'welcome!' }
@@ -120,17 +122,11 @@ function showBreakdown(card: HomeStatsCard) {
   return props.variant === 'almacen' && card.by_country.length > 0
 }
 
-function formatCompact(value: number, decimals = 1) {
-  if (value >= 1000) {
-    const k = value / 1000
-    const text = k >= 10 ? k.toFixed(0) : k.toFixed(decimals)
-    return `${text.replace(/\.0$/, '')}K`
-  }
-  return value.toLocaleString('en-US', { maximumFractionDigits: decimals })
-}
-
 function formatValue(key: HomeStatsCardKey, value: number) {
-  return formatCompact(value, key === 'cbm' || key === 'warehouse' ? 1 : 0)
+  if (key === 'cbm' || key === 'warehouse') {
+    return value.toLocaleString('en-US', { maximumFractionDigits: 1 })
+  }
+  return value.toLocaleString('en-US', { maximumFractionDigits: 0 })
 }
 
 function formatBreakdown(key: HomeStatsCardKey, value: number) {
@@ -196,6 +192,7 @@ function formatBreakdown(key: HomeStatsCardKey, value: number) {
 .home-op__card {
   position: relative;
   background: #fff;
+  border: 1px solid rgba(23, 35, 58, 0.06);
   border-radius: 12px;
   box-shadow: 0 6px 20px rgba(23, 35, 58, 0.1);
   padding: 22px 20px;
@@ -203,10 +200,26 @@ function formatBreakdown(key: HomeStatsCardKey, value: number) {
   align-items: center;
   gap: 16px;
   min-height: 108px;
+  overflow: hidden;
+  animation: home-op-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: var(--home-op-delay, 0ms);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.28s ease, border-color 0.28s ease;
+}
+
+.home-op__card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(242, 101, 34, 0.28);
+  box-shadow: 0 16px 34px rgba(23, 35, 58, 0.12);
 }
 
 .dark .home-op__card {
   background: #1f2937;
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.dark .home-op__card:hover {
+  border-color: rgba(242, 101, 34, 0.4);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.38);
 }
 
 .home-op__icon {
@@ -216,6 +229,11 @@ function formatBreakdown(key: HomeStatsCardKey, value: number) {
   display: grid;
   place-items: center;
   color: #f26522;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.home-op__card:hover .home-op__icon {
+  transform: scale(1.08);
 }
 
 .home-op__label {
@@ -242,12 +260,24 @@ function formatBreakdown(key: HomeStatsCardKey, value: number) {
   position: absolute;
   inset: 0;
   border-radius: 12px;
-  background: #12213d;
+  background: #fff;
   padding: 18px 20px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   z-index: 6;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition: opacity 0.22s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.22s ease;
+}
+
+.home-op__card:hover .home-op__breakdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
 }
 
 .home-op__breakdown-title {
@@ -255,7 +285,7 @@ function formatBreakdown(key: HomeStatsCardKey, value: number) {
   font-size: 11px;
   letter-spacing: 0.8px;
   text-transform: uppercase;
-  color: #93a3c0;
+  color: #8494b0;
 }
 
 .home-op__breakdown-row {
@@ -264,12 +294,53 @@ function formatBreakdown(key: HomeStatsCardKey, value: number) {
   justify-content: space-between;
   gap: 12px;
   font-size: 12.5px;
-  color: #d5deee;
+  color: #3d4d66;
 }
 
 .home-op__breakdown-row strong {
-  color: #fff;
+  color: #17233a;
   font-weight: 700;
+}
+
+.dark .home-op__breakdown {
+  background: #1f2937;
+}
+
+.dark .home-op__breakdown-title {
+  color: #93a3c0;
+}
+
+.dark .home-op__breakdown-row {
+  color: #d5deee;
+}
+
+.dark .home-op__breakdown-row strong {
+  color: #fff;
+}
+
+@keyframes home-op-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-op__card,
+  .home-op__icon,
+  .home-op__breakdown {
+    animation: none;
+    transition: none;
+  }
+
+  .home-op__card:hover,
+  .home-op__card:hover .home-op__icon {
+    transform: none;
+  }
 }
 
 @media (max-width: 640px) {
