@@ -18,6 +18,7 @@ export interface CustomerProveedor {
   qty_box_china?: number | string
   qty_pallet_china?: number | string
   cbm_total?: number | string
+  cbm_imo?: number | string
   cbm_total_china?: number | string
   peso?: number | string
   peso_china?: number | string

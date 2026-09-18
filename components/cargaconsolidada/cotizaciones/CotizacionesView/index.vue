@@ -162,6 +162,7 @@ import { useCotizacion } from '~/composables/cargaconsolidada/useCotizacion'
 import { useCotizacionResumen } from '~/composables/cargaconsolidada/cotizacion-resumen'
 import { formatDate, formatCurrency, formatDateTimeToDmy } from '~/utils/formatters'
 import { formatDateForInput } from '~/utils/data-table'
+import { cbmNormalDesdeTotal, cbmTotalConImo } from '~/utils/cargaconsolidada/cbm'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { ROLES, roleEsComoJefeImportacion, ID_JEFEVENTAS, COTIZADORES_WITH_PRIVILEGES, esRolSocio, esOrganizacionSocio } from '~/constants/roles'
 import { USelect, UInput as UInputBase, UButton, UIcon, UBadge, UTooltip, UDropdownMenu } from '#components'
@@ -1777,7 +1778,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 class: 'flex flex-col gap-2'
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
-                    modelValue: proveedor.cbm_total,
+                    modelValue: cbmTotalConImo(proveedor),
                     class: 'w-full w-12',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
@@ -2232,7 +2233,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                 class: 'flex flex-col gap-2'
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
-                    modelValue: proveedor.cbm_total,
+                    modelValue: cbmTotalConImo(proveedor),
                     class: 'w-full w-12',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
@@ -2595,7 +2596,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 class: 'flex flex-col gap-2'
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
-                    modelValue: proveedor.cbm_total,
+                    modelValue: cbmTotalConImo(proveedor),
                     class: 'w-full',
                     variant: 'none',
                     disabled: true,
@@ -3364,6 +3365,16 @@ const socioProveedorInput = (proveedor: any, field: string, extra: Record<string
     },
 })
 
+const socioProveedorCbmTotalInput = (proveedor: any, extra: Record<string, any> = {}) => h(UInput as any, {
+    modelValue: cbmTotalConImo(proveedor),
+    class: extra.class || 'w-full',
+    disabled: extra.disabled ?? false,
+    type: extra.type,
+    'onUpdate:modelValue': (value: any) => {
+        proveedor.cbm_total = cbmNormalDesdeTotal(value, proveedor.cbm_imo)
+    },
+})
+
 const socioChinaSpan = (value: unknown) => {
     const text = value === null || value === undefined || String(value).trim() === '' ? '—' : String(value)
     return h('span', { class: 'block py-1 text-sm text-gray-800 dark:text-gray-100' }, text)
@@ -3505,7 +3516,7 @@ const getEmbarqueSocioColumns = (): TableColumn<any>[] => {
             accessorKey: 'cbm_total',
             header: 'CBM total',
             cell: ({ row }: { row: any }) => h('div', { class: 'flex flex-col gap-2' }, (row.original.proveedores || []).map((proveedor: any) =>
-                socioProveedorInput(proveedor, 'cbm_total', { class: 'w-full w-16' })
+                socioProveedorCbmTotalInput(proveedor, { class: 'w-full w-16' })
             )),
         },
         {

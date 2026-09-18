@@ -12,6 +12,7 @@ export interface Proveedor {
     products: string
     supplier: string
     cbm_total: number
+    cbm_imo?: number
     estado_china: string
     id_proveedor: number
     code_supplier: string
