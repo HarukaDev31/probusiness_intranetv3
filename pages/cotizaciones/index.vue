@@ -5,12 +5,17 @@
       :loading="loading" :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
       :items-per-page="itemsPerPage" :search-query-value="search" :primary-search-value="search"
       :show-primary-search="true" :showPrimarySearchLabel="false" :primary-search-placeholder="'Buscar por'"
-      :show-filters="true" :filter-config="filterConfig" :filters-value="filters" :show-export="true" :show-headers="true" :headers="headers"
+      :show-filters="true" :filter-config="filterConfig" :filters-value="filters" :show-export="true" :show-headers="false"
+      :show-body-top="true"
       empty-state-message="No se encontraron cotizaciones que coincidan con los criterios de búsqueda."
       :show-new-button="isDesktop" new-button-label="Crear Cotización" :on-new-button-click="handleNewButtonClick"
       @update:search-query="handleSearch" @update:primary-search="handleSearch"
       @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @filter-change="handleFilterChange"
       @export="handleExport">
+
+      <template #body-top>
+        <SectionHeader :headers="kpiHeaders" :loading="loading && !kpiHeaders.length" />
+      </template>
 
       <template #actions>
         <UButton
@@ -33,6 +38,8 @@
 import { ref, watch, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCalculadoraImportacion } from '~/composables/useCalculadoraImportacion'
+import SectionHeader from '~/components/commons/SectionHeader.vue'
+import type { Header } from '~/types/data-table'
 const { cotizaciones, loading, error, pagination, headers, search, itemsPerPage, totalPages, totalRecords, currentPage, filters, filterOptions, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, getCotizaciones, estadoCotizaciones, deleteCotizacionCalculadora, duplicateCotizacionCalculadora, changeEstadoCotizacionCalculadora, vincularCotizacionCalculadora, exportCotizacionesList } = useCalculadoraImportacion()
 import type { TableColumn } from '@nuxt/ui'
 import { UButton, USelect, UBadge } from '#components'
@@ -53,6 +60,25 @@ const { withSpinner } = useSpinner()
 const handleNewButtonClick = () => {
   navigateTo('/cotizaciones/crear')
 }
+
+const CALCULADORA_HEADER_ICONS: Record<string, string> = {
+  cotizaciones_pendientes: 'heroicons:clock',
+  cotizaciones_realizadas: 'heroicons:document-text',
+  cotizaciones_vendidas: 'heroicons:check-badge',
+}
+
+const kpiHeaders = computed<Header[]>(() => {
+  const raw = headers.value as Header[] | Record<string, Header> | null
+  if (!raw) return []
+  const entries = Array.isArray(raw)
+    ? raw.map((header, index) => [header.key || String(index), header] as const)
+    : Object.entries(raw)
+  return entries.map(([key, header]) => ({
+    ...header,
+    key,
+    icon: header.icon || CALCULADORA_HEADER_ICONS[key] || 'fluent:box-32-filled',
+  }))
+})
 const columns: TableColumn<any>[] = [
   {
     accessorKey: 'id',

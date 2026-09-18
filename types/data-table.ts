@@ -34,12 +34,21 @@ export interface HeaderCountryRow {
   value: string | number
 }
 
+export interface HeaderSubline {
+  label: string
+  value: string
+}
+
 export interface Header {
+  key?: string
   label: string
   value: string
   icon?: string
   hint?: string
   by_country?: HeaderCountryRow[]
+  por_usuario?: Record<string, number | string>
+  sublines?: HeaderSubline[]
+  clickable?: boolean
 }
 export interface DataTableKanbanColumn {
   /** Valor del campo en la fila (p. ej. `estadoCodigo`) */
