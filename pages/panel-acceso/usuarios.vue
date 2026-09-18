@@ -93,7 +93,7 @@
                 :key="showPasswordInModal ? 'pwd-text' : 'pwd-hidden'"
                 v-model="form.password"
                 :type="showPasswordInModal ? 'text' : 'password'"
-                placeholder="Contraseña"
+                :placeholder="editingUsuario ? 'Dejar vacío para no cambiar' : 'Contraseña'"
                 autocomplete="new-password"
                 :ui="{ trailing: 'pe-1' }"
                 class="w-full"
@@ -229,27 +229,6 @@ const columns: TableColumn<UsuarioAdmin>[] = [
     header: 'Usuario (Email)',
   },
   {
-    accessorKey: 'password_sin_encriptar',
-    header: 'Contraseña actual',
-    cell: ({ row }) => {
-      const id = row.original.id
-      const isVisible = !!visiblePasswords.value[id]
-      const value = row.original.password_sin_encriptar || ''
-      return h('div', { class: 'flex items-center gap-2' }, [
-        h('span', { class: 'font-mono text-xs' }, value ? (isVisible ? value : '••••••••') : '—'),
-        value
-          ? h(UButton as any, {
-              size: 'xs',
-              variant: 'ghost',
-              color: 'neutral',
-              icon: isVisible ? 'i-heroicons-eye-slash' : 'i-heroicons-eye',
-              onClick: () => togglePasswordVisibility(id),
-            })
-          : null,
-      ])
-    },
-  },
-  {
     accessorKey: 'nombres_apellidos',
     header: 'Nombres y Apellidos',
     cell: ({ row }) => row.original.nombres_apellidos || '—',
@@ -332,8 +311,6 @@ const showDeleteModal = ref(false)
 const deletingUsuario = ref<UsuarioAdmin | null>(null)
 const deleting        = ref(false)
 const showPasswordInModal = ref(false)
-const visiblePasswords = ref<Record<number, boolean>>({})
-const originalPassword = ref('')
 
 const form = reactive({
   usuario:           '',
@@ -341,10 +318,6 @@ const form = reactive({
   password:          '',
   celular:           '',
 })
-
-function togglePasswordVisibility(id: number) {
-  visiblePasswords.value[id] = !visiblePasswords.value[id]
-}
 
 // ─── Data loading ─────────────────────────────────────────────────────────────
 async function loadUsuarios(params?: { search?: string; page?: number; per_page?: number }) {
@@ -439,8 +412,7 @@ async function openModal(usuario?: UsuarioAdmin) {
     editingUsuario.value   = usuario
     form.usuario           = usuario.usuario
     form.nombres_apellidos = usuario.nombres_apellidos ?? ''
-    form.password          = usuario.password_sin_encriptar ?? ''
-    originalPassword.value = usuario.password_sin_encriptar ?? ''
+    form.password          = ''
     form.celular           = usuario.celular ?? ''
     selectedEstado.value   = estadoOptions.find(e => e.value === usuario.estado) ?? estadoOptions[0]
     if (puedeGestionarOrganizaciones.value) {
@@ -451,7 +423,6 @@ async function openModal(usuario?: UsuarioAdmin) {
     form.usuario           = ''
     form.nombres_apellidos = ''
     form.password          = ''
-    originalPassword.value = ''
     form.celular           = ''
     selectedEstado.value   = estadoOptions[0]
     if (puedeGestionarOrganizaciones.value) {
@@ -516,9 +487,8 @@ async function submitForm() {
       payload.password = trimmedPassword
       payload.password_sin_encriptar = trimmedPassword
     }
-  } else if (trimmedPassword && trimmedPassword !== originalPassword.value) {
-    // En edición, cuando cambia la contraseña, enviamos ambos campos
-    // para asegurar sincronía entre texto plano y encriptado.
+  } else if (trimmedPassword) {
+    // En edición solo se envía si el admin escribe una nueva contraseña.
     payload.password = trimmedPassword
     payload.password_sin_encriptar = trimmedPassword
   }
