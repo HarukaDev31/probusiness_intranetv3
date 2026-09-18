@@ -1,7 +1,7 @@
 <template>
   <div
     class="grid grid-cols-1 sm:grid-cols-2 gap-[18px] w-full min-w-0"
-    :class="kpiCards.length >= 6 ? 'xl:grid-cols-6' : kpiCards.length >= 5 ? 'xl:grid-cols-5' : 'xl:grid-cols-4'"
+    :class="kpiCards.length >= 7 ? 'xl:grid-cols-4' : kpiCards.length >= 6 ? 'xl:grid-cols-6' : kpiCards.length >= 5 ? 'xl:grid-cols-5' : 'xl:grid-cols-4'"
   >
     <article
       v-for="card in kpiCards"
@@ -23,7 +23,7 @@
         <p class="m-0 text-[11px] tracking-[0.8px] uppercase text-[#8494b0]">
           {{ card.label }}
         </p>
-        <p class="mt-1 mb-0 text-[2rem] font-bold leading-none text-[#17233a] dark:text-white">
+        <p class="mt-1 mb-0 font-bold leading-none text-[#17233a] dark:text-white" :class="String(card.value).length > 8 ? 'text-[1.35rem]' : 'text-[2rem]'">
           {{ card.value }}
         </p>
         <p v-if="card.hint" class="mt-1 text-[11px] text-gray-400">
@@ -85,6 +85,8 @@ const kpiCards = computed(() => {
   const vendido = source.cbm_vendido
   const pendiente = source.cbm_pendiente
   const cbm = source.cbm_warehouse
+  const fecha60 = source.fecha_cbm_60
+  const fecha65 = source.fecha_cbm_65
   const customersHeader = source.total_customers
   const suppliers = source.total_suppliers_code
   const nc = source.total_nc
@@ -131,15 +133,39 @@ const kpiCards = computed(() => {
     })
   }
 
-  cards.push(
-    {
-      key: 'cbm_warehouse',
-      label: cbm?.label || 'CBM Warehouse',
-      value: cbm?.value ?? '0',
-      icon: 'fluent:box-32-filled',
+  cards.push({
+    key: 'cbm_warehouse',
+    label: cbm?.label || 'CBM Warehouse',
+    value: cbm?.value ?? '0',
+    icon: 'fluent:box-32-filled',
+    clickable: false,
+    byCountry: countryRows(cbm),
+  })
+
+  if (fecha60) {
+    cards.push({
+      key: 'fecha_cbm_60',
+      label: fecha60.label || '60 CBM date',
+      value: fecha60.value ?? '—',
+      icon: fecha60.icon || 'heroicons:calendar-days',
       clickable: false,
-      byCountry: countryRows(cbm),
-    },
+      hint: fecha60.hint,
+      byCountry: [],
+    })
+  }
+  if (fecha65) {
+    cards.push({
+      key: 'fecha_cbm_65',
+      label: fecha65.label || '65 CBM date',
+      value: fecha65.value ?? '—',
+      icon: fecha65.icon || 'heroicons:calendar-days',
+      clickable: false,
+      hint: fecha65.hint,
+      byCountry: [],
+    })
+  }
+
+  cards.push(
     {
       key: 'total_customers',
       label: customersHeader?.label || 'Total customers',

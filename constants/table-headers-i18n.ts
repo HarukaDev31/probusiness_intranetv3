@@ -36,6 +36,8 @@ export const TABLE_HEADERS_EN: Record<string, string> = {
   'CBM Pendiente': 'CBM Pending',
   'Límite CBM IMO': 'IMO CBM Limit',
   'CBM IMO': 'CBM IMO',
+  'Variación': 'Variance',
+  Variacion: 'Variance',
   Acciones: 'Actions',
   Cliente: 'Customer',
   'Tel. proveedor': 'Supplier Phone',
