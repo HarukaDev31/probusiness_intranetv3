@@ -164,9 +164,9 @@ const areasFiltro = ref<string[]>([])
 
 const filtersDraft = computed(() => ({
   tipo: filtroTipo.value,
-  estado: filtroEstados.value,
-  prioridad: filtroPrioridades.value,
-  area: filtroAreas.value,
+  estado: filtroEstados.value.length ? filtroEstados.value : ['todos'],
+  prioridad: filtroPrioridades.value.length ? filtroPrioridades.value : ['todos'],
+  area: filtroAreas.value.length ? filtroAreas.value : ['todos'],
   creador: filtroCreador.value,
   solo_mias: filtroSoloMias.value ? '1' : '0'
 }))
@@ -188,30 +188,39 @@ const filterConfig = computed<FilterConfig[]>(() => {
       label: 'Estado',
       placeholder: 'Estados',
       multiple: true,
-      options: SOPORTE_TI_KANBAN_BOARD.map((c) => ({
-        label: c.label,
-        value: c.key
-      }))
+      options: [
+        { label: 'Todos', value: 'todos' },
+        ...SOPORTE_TI_KANBAN_BOARD.map((c) => ({
+          label: c.label,
+          value: c.key
+        }))
+      ]
     },
     {
       key: 'prioridad',
       label: 'Prioridad',
       placeholder: 'Prioridades',
       multiple: true,
-      options: SOPORTE_TI_PRIORIDADES.map((p) => ({
-        label: p.label,
-        value: String(p.value)
-      }))
+      options: [
+        { label: 'Todos', value: 'todos' },
+        ...SOPORTE_TI_PRIORIDADES.map((p) => ({
+          label: p.label,
+          value: String(p.value)
+        }))
+      ]
     },
     {
       key: 'area',
       label: 'Área',
       placeholder: 'Áreas',
       multiple: true,
-      options: areasFiltro.value.map((nombre) => ({
-        label: nombre,
-        value: nombre
-      }))
+      options: [
+        { label: 'Todos', value: 'todos' },
+        ...areasFiltro.value.map((nombre) => ({
+          label: nombre,
+          value: nombre
+        }))
+      ]
     }
   ]
   if (rolActivo.value !== 'Solicitante') {
@@ -248,18 +257,26 @@ function asStringArray(value: unknown): string[] {
   return [String(value)]
 }
 
+/** Multi-select: "Todos" limpia el filtro; si eligen un valor concreto, se quita Todos. */
+function normalizeMultiFilter(value: unknown): string[] {
+  const vals = asStringArray(value)
+  if (vals.length === 0) return []
+  if (vals[vals.length - 1] === 'todos') return []
+  return vals.filter((v) => v !== 'todos')
+}
+
 function onFilterChange(key: string, value: string | string[] | number | null) {
   if (key === 'tipo' && (value === 'todos' || value === 'A' || value === 'B')) {
     filtroTipo.value = value
   }
   if (key === 'estado') {
-    filtroEstados.value = asStringArray(value)
+    filtroEstados.value = normalizeMultiFilter(value)
   }
   if (key === 'prioridad') {
-    filtroPrioridades.value = asStringArray(value)
+    filtroPrioridades.value = normalizeMultiFilter(value)
   }
   if (key === 'area') {
-    filtroAreas.value = asStringArray(value)
+    filtroAreas.value = normalizeMultiFilter(value)
   }
   if (key === 'creador') {
     filtroCreador.value = typeof value === 'string' ? value || 'todos' : 'todos'
