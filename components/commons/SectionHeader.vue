@@ -3,7 +3,12 @@
         <div v-if="loading" class="relative">
             <p v-if="title" class="m-0 mb-3 h-5 w-40 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
             <div class="flex gap-3 overflow-hidden">
-                <div v-for="i in skeletonCount" :key="i" class="h-[72px] min-w-[140px] flex-1 rounded-xl bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                <div
+                    v-for="i in skeletonCount"
+                    :key="i"
+                    class="flex-1 rounded-xl bg-gray-200 dark:bg-gray-700 animate-pulse"
+                    :class="size === 'comfortable' ? 'h-[96px] min-w-[168px]' : 'h-[72px] min-w-[140px]'"
+                />
             </div>
         </div>
 
@@ -35,27 +40,50 @@
                     <article
                         v-for="(header, index) in headers"
                         :key="header.key || `${header.label}-${index}`"
-                        class="customers-kpi kpi-card relative flex items-center gap-2 min-h-[72px] px-3 py-2 rounded-xl bg-white dark:bg-gray-800 shadow-[0_6px_20px_rgba(23,35,58,0.1)] border-l-[3px] border-[#f26522] overflow-hidden"
-                        :class="isInteractive(header) ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/60' : ''"
+                        class="customers-kpi kpi-card relative flex items-center rounded-xl bg-white dark:bg-gray-800 shadow-[0_6px_20px_rgba(23,35,58,0.1)] border-l-[3px] border-[#f26522] overflow-hidden"
+                        :class="[
+                            isInteractive(header) ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/60' : '',
+                            size === 'comfortable' ? 'kpi-card--comfortable gap-3 min-h-[96px] px-4 py-3' : 'gap-2 min-h-[72px] px-3 py-2',
+                        ]"
                         @click="onHeaderClick(header)"
                     >
-                        <div class="w-7 h-7 shrink-0 grid place-items-center text-[#f26522]" aria-hidden="true">
+                        <div
+                            class="shrink-0 grid place-items-center text-[#f26522]"
+                            :class="size === 'comfortable' ? 'w-9 h-9' : 'w-7 h-7'"
+                            aria-hidden="true"
+                        >
                             <img
                                 v-if="isUrl(header.icon)"
                                 :src="header.icon"
                                 alt=""
-                                class="w-6 h-4 object-contain"
+                                :class="size === 'comfortable' ? 'w-7 h-5 object-contain' : 'w-6 h-4 object-contain'"
                             >
-                            <UIcon v-else :name="header.icon || 'fluent:box-32-filled'" class="w-6 h-6" />
+                            <UIcon
+                                v-else
+                                :name="header.icon || 'fluent:box-32-filled'"
+                                :class="size === 'comfortable' ? 'w-8 h-8' : 'w-6 h-6'"
+                            />
                         </div>
                         <div class="min-w-0 flex-1">
-                            <p class="m-0 text-[10px] tracking-[0.6px] uppercase text-[#8494b0] truncate">
+                            <p
+                                class="m-0 uppercase text-[#8494b0] truncate"
+                                :class="size === 'comfortable' ? 'text-xs tracking-[0.7px]' : 'text-[10px] tracking-[0.6px]'"
+                            >
                                 {{ header.label }}
                             </p>
-                            <p class="mt-0.5 mb-0 font-bold leading-none text-[#17233a] dark:text-white truncate" :class="String(header.value ?? '').length > 8 ? 'text-base' : 'text-[1.25rem]'">
+                            <p
+                                class="mt-0.5 mb-0 font-bold leading-none text-[#17233a] dark:text-white truncate"
+                                :class="String(header.value ?? '').length > 8
+                                    ? (size === 'comfortable' ? 'text-lg' : 'text-base')
+                                    : (size === 'comfortable' ? 'text-[1.5rem]' : 'text-[1.25rem]')"
+                            >
                                 {{ header.value ?? 'N/A' }}
                             </p>
-                            <p v-if="header.hint" class="mt-1 mb-0 text-[10px] text-gray-400 truncate">
+                            <p
+                                v-if="header.hint"
+                                class="mt-1 mb-0 text-gray-400 truncate"
+                                :class="size === 'comfortable' ? 'text-xs' : 'text-[10px]'"
+                            >
                                 {{ header.hint }}
                             </p>
                         </div>
@@ -63,6 +91,7 @@
                         <div
                             v-if="countryRows(header).length || header.sublines?.length"
                             class="customers-kpi__breakdown"
+                            :class="{ 'customers-kpi__breakdown--wide': countryRows(header).length > 3 }"
                         >
                             <p class="customers-kpi__breakdown-title">{{ header.label }}</p>
                             <div
@@ -74,12 +103,18 @@
                                 <strong>{{ line.value }}</strong>
                             </div>
                             <div
-                                v-for="row in countryRows(header)"
-                                :key="row.country"
-                                class="customers-kpi__breakdown-row"
+                                v-if="countryRows(header).length"
+                                class="customers-kpi__countries"
+                                :style="{ gridTemplateColumns: `repeat(${breakdownCols}, minmax(0, 1fr))` }"
                             >
-                                <span>{{ row.country }}</span>
-                                <strong>{{ row.value }}</strong>
+                                <div
+                                    v-for="row in countryRows(header)"
+                                    :key="row.country"
+                                    class="customers-kpi__breakdown-row"
+                                >
+                                    <span>{{ row.country }}</span>
+                                    <strong>{{ row.value }}</strong>
+                                </div>
                             </div>
                         </div>
                     </article>
@@ -114,11 +149,15 @@ const props = withDefaults(defineProps<{
     loading?: boolean
     skeletonCount?: number
     showTitleSkeleton?: boolean
+    size?: 'compact' | 'comfortable'
+    breakdownCols?: 1 | 2 | 3
 }>(), {
     title: null,
     loading: false,
     skeletonCount: 8,
     showTitleSkeleton: true,
+    size: 'compact',
+    breakdownCols: 1,
 })
 
 const emit = defineEmits<{
@@ -239,6 +278,16 @@ onUnmounted(() => {
     min-width: max(140px, calc((100% - 84px) / 8));
 }
 
+.kpi-card--comfortable {
+    flex-basis: calc((100% - 84px) / 7);
+    min-width: max(168px, calc((100% - 84px) / 7));
+}
+
+.kpi-card:hover {
+    z-index: 12;
+    overflow: visible;
+}
+
 .kpi-fade {
     position: absolute;
     top: 0;
@@ -298,17 +347,30 @@ onUnmounted(() => {
     inset: 0;
     border-radius: 12px;
     background: #fff;
-    padding: 14px 16px;
+    padding: 10px 12px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     z-index: 6;
     opacity: 0;
     visibility: hidden;
     transform: translateY(10px);
     pointer-events: none;
     overflow: auto;
+    box-shadow: 0 10px 28px rgba(23, 35, 58, 0.16);
     transition: opacity 0.22s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.22s ease;
+}
+
+.customers-kpi__breakdown--wide {
+    right: auto;
+    width: max(100%, 340px);
+    max-width: min(420px, 92vw);
+}
+
+.customers-kpi__countries {
+    display: grid;
+    gap: 4px 12px;
+    min-width: 0;
 }
 
 .customers-kpi:hover .customers-kpi__breakdown {
@@ -319,7 +381,7 @@ onUnmounted(() => {
 }
 
 .customers-kpi__breakdown-title {
-    margin: 0 0 4px;
+    margin: 0;
     font-size: 11px;
     letter-spacing: 0.8px;
     text-transform: uppercase;
@@ -330,9 +392,17 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    font-size: 12.5px;
+    gap: 8px;
+    min-width: 0;
+    font-size: 12px;
     color: #3d4d66;
+}
+
+.customers-kpi__breakdown-row span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .customers-kpi__breakdown-row strong {
