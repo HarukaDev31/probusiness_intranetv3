@@ -5,7 +5,7 @@
     :loading="loading"
     :skeleton-count="skeletonCount"
     size="comfortable"
-    :breakdown-cols="3"
+    :breakdown-cols="2"
     @click-header="onClickHeader"
   />
 </template>
