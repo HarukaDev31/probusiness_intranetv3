@@ -21,7 +21,9 @@
                             <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
                                 <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="mb-4 md:w-100 h-15"
                                     color="neutral" />
-
+                                <UButton v-if="puedeDescargarTablasExcel" icon="i-heroicons-arrow-down-tray"
+                                    color="primary" variant="outline" size="sm" label="Descargar Excel"
+                                    @click="handleDescargarTablasExcel" />
                             </div>
                         </div>
                     </div>
@@ -45,19 +47,24 @@
                         <div class="flex flex-col gap-2 w-full">
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers"
                                 :loading="loadingEmbarcados || loadingHeaders" />
-                            <div class="flex justify-between">
+                            <div class="flex justify-between items-center gap-2 flex-wrap">
                                 <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="md:mb-4 w-100 h-15"
                                     color="neutral" />
-                                <div
-                                    class="hidden md:flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3 mb-0 md:mb-4">
-                                    <div class="flex flex-col mr-2 space-y-1">
-                                        <div class="text-xs font-semibold text-orange-600">F. Max. Documentacion</div>
-                                        <div class="flex items-center gap-2">
-                                            <input type="date" v-model="fMaxDocumentacion"
-                                                class="text-sm text-gray-700 dark:text-gray-400 bg-transparent outline-none" />
-                                            <UButton size="xs" variant="outline" color="primary"
-                                                icon="material-symbols:save-outline"
-                                                @click="handleSaveFMaxDocumentacion" />
+                                <div class="flex items-center gap-2 mb-0 md:mb-4">
+                                    <UButton v-if="puedeDescargarTablasExcel" icon="i-heroicons-arrow-down-tray"
+                                        color="primary" variant="outline" size="sm" label="Descargar Excel"
+                                        @click="handleDescargarTablasExcel" />
+                                    <div
+                                        class="hidden md:flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3">
+                                        <div class="flex flex-col mr-2 space-y-1">
+                                            <div class="text-xs font-semibold text-orange-600">F. Max. Documentacion</div>
+                                            <div class="flex items-center gap-2">
+                                                <input type="date" v-model="fMaxDocumentacion"
+                                                    class="text-sm text-gray-700 dark:text-gray-400 bg-transparent outline-none" />
+                                                <UButton size="xs" variant="outline" color="primary"
+                                                    icon="material-symbols:save-outline"
+                                                    @click="handleSaveFMaxDocumentacion" />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -93,10 +100,12 @@
                         <div class="flex flex-col gap-2 w-full">
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers"
                                 :loading="loadingVariacion || loadingHeaders" />
-                            <div class="flex justify-between">
+                            <div class="flex justify-between items-center gap-2 flex-wrap">
                                 <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="md:mb-4 w-100 h-15"
                                     color="neutral" />
-
+                                <UButton v-if="puedeDescargarTablasExcel" icon="i-heroicons-arrow-down-tray"
+                                    color="primary" variant="outline" size="sm" label="Descargar Excel"
+                                    class="mb-0 md:mb-4" @click="handleDescargarTablasExcel" />
                             </div>
                         </div>
                     </div>
@@ -138,6 +147,7 @@ import { useEmbarcados } from '~/composables/cargaconsolidada/clientes/useEmbarc
 import { useCotizacionProveedor } from '~/composables/cargaconsolidada/useCotizacionProveedor'
 import { useCotizacion } from '~/composables/cargaconsolidada/useCotizacion'
 import { useVariacion } from '~/composables/cargaconsolidada/clientes/useVariacion'
+import { useClientesTablasExcel } from '~/composables/cargaconsolidada/clientes/useClientesTablasExcel'
 import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
 import { USelect, UInput, UButton, UIcon, UBadge } from '#components'
 import { useModal } from '~/composables/commons/useModal'
@@ -495,6 +505,28 @@ const exportData = async () => {
         await exportVariacionData()
     } else if (tab.value === 'pagos') {
         await exportPagosData()
+    }
+}
+
+const { descargarTablasClientesExcel } = useClientesTablasExcel()
+const puedeDescargarTablasExcel = computed(() =>
+    currentRole.value === ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole.value)
+)
+
+const handleDescargarTablasExcel = async () => {
+    try {
+        await withSpinner(async () => {
+            await descargarTablasClientesExcel({
+                contenedorId: Number(id),
+                carga: carga.value,
+                role: currentRole.value,
+                usaEstadosCoord2: usaEstadosCoord2Docs.value,
+                isOrgNoAdmin: isOrgNoAdmin.value,
+            })
+        }, 'Generando Excel...')
+        showSuccess('Excel descargado', 'Se descargó la información de las tablas.')
+    } catch (err) {
+        showError('No se pudo descargar el Excel', err)
     }
 }
 
