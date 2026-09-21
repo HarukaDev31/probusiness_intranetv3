@@ -172,6 +172,7 @@ import {
   tipoEntregaBadgeColor,
   isEntregaLima
 } from '~/utils/cargaConsolidadaEntrega'
+import { formatQtyPlain } from '~/utils/formatters'
 
 const route = useRoute()
 const id = Number(route.params.id)
@@ -715,7 +716,7 @@ const entregasColumns = ref<TableColumn<any>[]>([
       else value = row.original.cbm_total_china ?? row.original.cbm ?? '—'
       return value ?? '—'
     } },
-  { accessorKey: 'bultos', header: 'Bultos', cell: ({ row }) => row.original.qty_box_china ?? '—' },
+  { accessorKey: 'bultos', header: 'Bultos', cell: ({ row }) => formatQtyPlain(row.original.qty_box_china) },
   {
     accessorKey: 'tipo_entrega', header: 'Envio', cell: ({ row }) => {
       const label = tipoEntregaLabel(resolveTypeFormEntrega(row.original))

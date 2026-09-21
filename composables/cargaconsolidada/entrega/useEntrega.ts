@@ -3,6 +3,7 @@ import type { PaginationInfo, HeaderResponse } from '~/types/data-table'
 import { EntregaService } from '../../../services/cargaconsolidada/entrega/entregaService'
 import type { Entrega } from '../../../types/cargaconsolidada/entrega/entrega'
 import { useSpinner } from '~/composables/commons/useSpinner'
+import { formatQtyPlain } from '~/utils/formatters'
 const { withSpinner } = useSpinner()
 
 // Define Header type for local use
@@ -223,7 +224,7 @@ export const useEntrega = () => {
           id_contenedor: meta?.id_contenedor ?? root.id_contenedor ?? null,
           type_form: (type_form === '1') ? 1 : (type_form === '0') ? 0 : type_form,
           // Generales
-          qty_box_china: resumen?.qty_box_china ?? root.qty_box_china ?? '',
+          qty_box_china: formatQtyPlain(resumen?.qty_box_china ?? root.qty_box_china, ''),
           peso: resumen?.peso ?? root.peso ?? '',
           documento: lima?.pick_doc ?? province?.r_doc ?? '',
           // Backend provincia usa typo histórico importer_nmae
