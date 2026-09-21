@@ -145,6 +145,15 @@ export const formatNumber = (number: number, decimals: number = 0): string => {
   }).format(number)
 }
 
+/** 12.00 → "12"; si hay decimales reales no redondea (12.5 → "12.5"). */
+export const formatQtyPlain = (value: unknown, empty = '—'): string => {
+  if (value === null || value === undefined || value === '') return empty
+  const n = Number(value)
+  if (!Number.isFinite(n)) return String(value)
+  if (Number.isInteger(n)) return String(n)
+  return String(n)
+}
+
 /**
  * Formatea una fecha en formato legible
  * @param date - Fecha a formatear (string, Date o timestamp)
