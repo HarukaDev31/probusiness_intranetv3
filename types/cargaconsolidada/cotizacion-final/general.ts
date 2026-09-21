@@ -59,6 +59,7 @@ export interface GeneralResponse {
     success: boolean
     message?: string
     data?: General[] | Record<string, unknown>
+    fecha_maxima_pago?: string | null
     pagination?: PaginationInfo
     requires_whatsapp_selection?: boolean
     id_cotizacion?: number

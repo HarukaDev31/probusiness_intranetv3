@@ -49,8 +49,9 @@ const emit = defineEmits<{
 }>()
 
 const displayValue = computed(() => {
-  if (!props.savedValue) return 'Sin definir'
-  return formatDateForDisplay(props.savedValue) || props.savedValue
+  const value = props.savedValue || props.modelValue
+  if (!value) return 'Sin definir'
+  return formatDateForDisplay(value) || value
 })
 
 const canSave = computed(() => {

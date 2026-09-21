@@ -161,7 +161,10 @@ const hasFechaMaximaPago = computed(() => !!fechaMaximaPago.value)
 watch(fechaMaximaPago, (value) => {
   fechaMaximaPagoDraft.value = value
 }, { immediate: true })
-const { pagos, loadingPagos, getPagos, currentPagePagos, totalPagesPagos, totalRecordsPagos, itemsPerPagePagos, searchPagos, filterConfigPagos, handleSearchPagos, handlePageChangePagos, handleItemsPerPageChangePagos, handleFilterChangePagos, exportContabilidadPagos } = usePagos()
+const { pagos, loadingPagos, getPagos, currentPagePagos, totalPagesPagos, totalRecordsPagos, itemsPerPagePagos, searchPagos, filterConfigPagos, handleSearchPagos, handlePageChangePagos, handleItemsPerPageChangePagos, handleFilterChangePagos, exportContabilidadPagos, fechaMaximaPago: fechaMaximaPagoPagos } = usePagos()
+watch(fechaMaximaPagoPagos, (value) => {
+  if (value) fechaMaximaPago.value = value
+}, { immediate: true })
 const { cargosExtra, loadingCargosExtra, getCargosExtra, currentPageCargosExtra, totalPagesCargosExtra, totalRecordsCargosExtra, itemsPerPageCargosExtra, searchCargosExtra, handleSearchCargosExtra, handlePageChangeCargosExtra, handleItemsPerPageChangeCargosExtra } = useCargosExtra()
 import { usePagos as usePagosClientes } from '~/composables/cargaconsolidada/clientes/usePagos'
 const { registrarPagoFinal, deletePago } = usePagosClientes()

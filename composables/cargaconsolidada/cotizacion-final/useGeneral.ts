@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { GeneralService } from '~/services/cargaconsolidada/cotizacion-final/generalService'
 import type { PaginationInfo } from '~/types/data-table'
+import { pickFechaMaximaPago, toIsoFechaMaximaPago } from '~/utils/fechaMaximaPago'
 
 export const useGeneral = () => {
     const general = ref<any[]>([])
@@ -17,6 +18,7 @@ export const useGeneral = () => {
     const route = useRoute()
     const id = Number(route.params.id)
     const searchGeneral = ref('')
+    const fechaMaximaPago = ref<string | null>(null)
     const itemsPerPageGeneral = ref(100)
     const totalPagesGeneral = computed(() => Math.ceil(paginationGeneral.value.total / itemsPerPageGeneral.value))
     const totalRecordsGeneral = computed(() => paginationGeneral.value.total)
@@ -52,6 +54,8 @@ export const useGeneral = () => {
             const response = await GeneralService.getGeneral(id, params)
             general.value = response.data
             paginationGeneral.value = response.pagination
+            const fechaFromGeneral = pickFechaMaximaPago(response)
+            if (fechaFromGeneral) fechaMaximaPago.value = fechaFromGeneral
         } catch (err) {
             error.value = err as string
 
@@ -74,9 +78,12 @@ export const useGeneral = () => {
             return { success: false, message }
         }
     }
-    const updateFechaMaximaPago = async (idContenedor: number, fechaMaximaPago: string) => {
+    const updateFechaMaximaPago = async (idContenedor: number, fecha: string) => {
         try {
-            return await GeneralService.updateFechaMaximaPago(idContenedor, fechaMaximaPago)
+            const response = await GeneralService.updateFechaMaximaPago(idContenedor, fecha)
+            const saved = pickFechaMaximaPago(response) || toIsoFechaMaximaPago((response as any)?.data?.fecha_maxima_pago) || toIsoFechaMaximaPago(fecha)
+            if (saved) fechaMaximaPago.value = saved
+            return response
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err)
             error.value = message
@@ -193,7 +200,8 @@ export const useGeneral = () => {
             headers.value = headersArray
             carga.value = response.carga
             fPuerto.value = response.f_puerto ?? null
-            fechaMaximaPago.value = response.fecha_maxima_pago ?? null
+            const fechaFromHeaders = pickFechaMaximaPago(response)
+            if (fechaFromHeaders) fechaMaximaPago.value = fechaFromHeaders
             // Tab Pagos: headers + total diferencia (desde backend) o data_pagos
             const extra: any[] = []
             if (response.data_pagos != null) {
@@ -216,7 +224,6 @@ export const useGeneral = () => {
     const headersPagos = ref<any[]>([])
     const carga = ref<string | null>(null)
     const fPuerto = ref<string | null>(null)
-    const fechaMaximaPago = ref<string | null>(null)
     const loadingHeaders = ref(true)
     return {
         general,
