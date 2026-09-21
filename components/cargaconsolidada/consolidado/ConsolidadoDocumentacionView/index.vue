@@ -147,24 +147,34 @@ const isStaffDocRole = computed(() =>
 
 const showOrg1DocActions = computed(() => !loading.value && !esContenedorSocio.value && isStaffDocRole.value)
 const showNuevoDocumento = computed(() => {
-  if (esContenedorSocio.value) return puedeEditar.value
+  if (esContenedorSocio.value) {
+    return puedeEditar.value || props.role === ROLES.CONTENEDOR_ALMACEN
+  }
   return isStaffDocRole.value
 })
 const showToolbar = computed(() => showOrg1DocActions.value || showNuevoDocumento.value)
 
 const canUploadFolder = (folder: { es_packing_list_china?: boolean }) => {
   if (folder.es_packing_list_china) return false
-  if (esContenedorSocio.value) return puedeEditar.value
+  if (esContenedorSocio.value) {
+    return puedeEditar.value || props.role === ROLES.CONTENEDOR_ALMACEN
+  }
   return props.role === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(props.role)
 }
 
 const canRemoveFolder = (folder: { id?: string | number; es_packing_list_china?: boolean }) => {
   if (folder.es_packing_list_china || folder.id == 1) return false
-  if (esContenedorSocio.value) return puedeEditar.value
+  if (esContenedorSocio.value) {
+    return puedeEditar.value || props.role === ROLES.CONTENEDOR_ALMACEN
+  }
   return props.role === ROLES.DOCUMENTACION
 }
 
-const isReadOnlySocio = computed(() => esContenedorSocio.value && !puedeEditar.value)
+const isReadOnlySocio = computed(() =>
+  esContenedorSocio.value
+  && !puedeEditar.value
+  && props.role !== ROLES.CONTENEDOR_ALMACEN
+)
 
 const handleSaveFile = async (file: File, folderId: string) => {
   await withSpinner(async () => {
