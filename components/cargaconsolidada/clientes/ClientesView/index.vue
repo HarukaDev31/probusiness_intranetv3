@@ -519,9 +519,6 @@ const handleDescargarTablasExcel = async () => {
             await descargarTablasClientesExcel({
                 contenedorId: Number(id),
                 carga: carga.value,
-                role: currentRole.value,
-                usaEstadosCoord2: usaEstadosCoord2Docs.value,
-                isOrgNoAdmin: isOrgNoAdmin.value,
             })
         }, 'Generando Excel...')
         showSuccess('Excel descargado', 'Se descargó la información de las tablas.')
