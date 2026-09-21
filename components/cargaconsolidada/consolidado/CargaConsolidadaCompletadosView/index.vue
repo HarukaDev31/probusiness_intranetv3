@@ -74,7 +74,6 @@
             <div class="flex-1">
               <div class="text-xs text-gray-500">{{ row.mes }}</div>
               <div class="font-semibold text-sm">Consolidado #{{ row.carga }}</div>
-              <div v-if="isOrgAdmin && !isAlmacen && row.organizacion?.nombre" class="text-xs text-gray-400">{{ row.organizacion.nombre }}</div>
               <div class="text-xs text-gray-400 mt-1">{{ row.empresa }}</div>
               <div class="mt-1 text-xs text-gray-400 flex flex-col items-center gap-1">
                 <span v-if="row.f_cierre">Cierre: {{ formatDateTimeToDmy(row.f_cierre) }}</span>
@@ -614,31 +613,18 @@ const almacenColumns: TableColumn<any>[] = [
   },
 ]
 
-const organizacionColumn: TableColumn<any> = {
-  accessorKey: 'organizacion',
-  header: 'Organización',
-  cell: ({ row }) => row.original.organizacion?.nombre || '—',
-}
-
-const withOrgColumn = (cols: TableColumn<any>[]) => {
-  if (!isOrgAdmin.value) return cols
-  const idx = cols.findIndex((col) => (col as { accessorKey?: string }).accessorKey === 'carga')
-  const insertAt = idx >= 0 ? idx + 1 : 1
-  return [...cols.slice(0, insertAt), organizacionColumn, ...cols.slice(insertAt)]
-}
-
 const getColumns = () => {
   switch (props.role) {
     case ROLES.DOCUMENTACION:
     case ROLES.COORDINADOR_GENERAL:
     case ROLES.JEFE_IMPORTACIONES:
-      return withOrgColumn(documentacionColumns)
+      return documentacionColumns
     case ROLES.CONTENEDOR_ALMACEN:
-      return withOrgColumn(almacenColumns)
+      return almacenColumns
     case ROLES.FINANZAS:
-      return withOrgColumn(finanzasColumns)
+      return finanzasColumns
     default:
-      return withOrgColumn(columns)
+      return columns
   }
 }
 

@@ -4,6 +4,8 @@
     :headers="kpiHeaders"
     :loading="loading"
     :skeleton-count="skeletonCount"
+    size="comfortable"
+    :breakdown-cols="3"
     @click-header="onClickHeader"
   />
 </template>
