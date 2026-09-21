@@ -111,6 +111,24 @@ export class GeneralService extends BaseService {
             throw error
         }
     }
+    static async exportTablasExcel(id: number): Promise<Blob> {
+        try {
+            return await this.apiCall<Blob>(
+                `api/carga-consolidada/contenedor/clientes/tablas-excel/${id}`,
+                {
+                    method: 'GET',
+                    responseType: 'blob',
+                    headers: {
+                        'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                    }
+                }
+            )
+        } catch (error: any) {
+            console.error('Error al exportar las tablas de clientes:', error)
+            throw new Error(error?.data?.message || error?.message || 'Error al exportar las tablas')
+        }
+    }
+
     static async exportClientes(id: number): Promise<Blob> {
         try {
             // Construir la URL base con los parámetros normales
