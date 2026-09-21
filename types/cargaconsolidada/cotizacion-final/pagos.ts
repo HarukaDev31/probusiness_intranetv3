@@ -19,4 +19,5 @@ export interface PagosResponse {
     data: Pagos[]
     pagination: PaginationInfo
     success: boolean
+    fecha_maxima_pago?: string | null
 }   

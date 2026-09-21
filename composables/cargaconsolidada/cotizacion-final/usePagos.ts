@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { PagosService } from '~/services/cargaconsolidada/cotizacion-final/pagosService'
 import type { PaginationInfo } from '~/types/data-table'
+import { pickFechaMaximaPago } from '~/utils/fechaMaximaPago'
 
 export const usePagos = () => {
     const pagos = ref<any[]>([])
@@ -15,6 +16,7 @@ export const usePagos = () => {
         to: 0
     })
     const searchPagos = ref('')
+    const fechaMaximaPago = ref<string | null>(null)
     const route = useRoute()
     const id = route.params.id
     const itemsPerPagePagos = ref(100)
@@ -53,6 +55,8 @@ export const usePagos = () => {
             const response = await PagosService.getPagos(id, params)
             pagos.value = response.data
             paginationPagos.value = response.pagination
+            const fechaFromPagos = pickFechaMaximaPago(response)
+            if (fechaFromPagos) fechaMaximaPago.value = fechaFromPagos
         } catch (err) {
             error.value = err as string
         } finally {
@@ -128,5 +132,6 @@ export const usePagos = () => {
         handleFilterChangePagos,
         registrarPago,
         exportContabilidadPagos,
+        fechaMaximaPago,
     }
 }   
