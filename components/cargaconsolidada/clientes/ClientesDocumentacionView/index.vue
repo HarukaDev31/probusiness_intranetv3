@@ -583,7 +583,9 @@ const isOrgNoAdmin = computed(() => {
     const orgId = getUserData()?.raw?.organizacion?.id
     return esRolSocio(currentRole.value) || esOrganizacionSocio(orgId)
 })
-const canEditDocumentacion = computed(() => isCoordinacion.value || isOrgNoAdmin.value)
+const canEditDocumentacion = computed(() =>
+    isCoordinacion.value || isOrgNoAdmin.value || roleEsComoJefeImportacion(currentRole.value)
+)
 const hideVolumenValorDocumento = computed(() => isOrgNoAdmin.value)
 const showInspeccionChina = computed(() =>
     currentRole.value === ROLES.DOCUMENTACION

@@ -8,7 +8,7 @@
     >
       <template #actions>
         <UButton
-          v-if="showTopSaveButton && isCoordinacion && showDocumentacionPeru && !readOnly"
+          v-if="showTopSaveButton && canEditDocumentacionPeru && showDocumentacionPeru && !readOnly"
           label="Guardar cambios"
           color="primary"
           variant="solid"
@@ -117,7 +117,7 @@
                   variant="solid"
                   icon="i-heroicons-plus"
                   size="sm"
-                  v-if="currentRole === ROLES.COORDINACION && !readOnly"
+                  v-if="canEditDocumentacionPeru && !readOnly"
                   @click="handleNuevoDocumento"
                 />
               </div>
@@ -134,7 +134,7 @@
                   placeholder="0"
                   class="w-full"
                   @update:model-value="handleVolumenChange"
-                  :disabled="!isCoordinacion || readOnly"
+                  :disabled="!canEditDocumentacionPeru || readOnly"
                 />
               </div>
               <div>
@@ -145,7 +145,7 @@
                   placeholder="$ 0"
                   class="w-full"
                   @update:model-value="handleValorChange"
-                  :disabled="!isCoordinacion || readOnly"
+                  :disabled="!canEditDocumentacionPeru || readOnly"
                 />
               </div>
             </div>
@@ -155,9 +155,9 @@
               <FileUploader
                 :accepted-types="acceptedTypes"
                 :immediate="false"
-                :disabled="!isCoordinacion || readOnly"
+                :disabled="!canEditDocumentacionPeru || readOnly"
                 :custom-message="'Selecciona o arrastra tu archivo aquí'"
-                :show-remove-button="currentRole === ROLES.COORDINACION && !readOnly"
+                :show-remove-button="canEditDocumentacionPeru && !readOnly"
                 :initial-files="proveedorActivo.factura_comercial ? [{
                   id: proveedorActivo.id,
                   file_name: 'Factura Comercial',
@@ -178,8 +178,8 @@
                 :accepted-types="acceptedTypes"
                 :custom-message="'Selecciona o arrastra tu archivo aquí'"
                 :immediate="false"
-                :disabled="!isCoordinacion || readOnly"
-                :show-remove-button="currentRole === ROLES.COORDINACION && !readOnly"
+                :disabled="!canEditDocumentacionPeru || readOnly"
+                :show-remove-button="canEditDocumentacionPeru && !readOnly"
                 :initial-files="proveedorActivo.packing_list ? [{
                   id: proveedorActivo.id,
                   file_name: 'Packing List',
@@ -199,8 +199,8 @@
               <FileUploader
                 :accepted-types="acceptedTypes"
                 :immediate="false"
-                :disabled="!isCoordinacion || readOnly"
-                :show-remove-button="currentRole === ROLES.COORDINACION && !readOnly"
+                :disabled="!canEditDocumentacionPeru || readOnly"
+                :show-remove-button="canEditDocumentacionPeru && !readOnly"
                 :custom-message="'Selecciona o arrastra tu archivo aquí'"
                 :initial-files="proveedorActivo.excel_confirmacion ? [{
                   id: proveedorActivo.id,
@@ -221,7 +221,7 @@
               <FileUploader
                 :accepted-types="acceptedTypes"
                 :immediate="false"
-                :show-remove-button="currentRole === ROLES.COORDINACION && !readOnly"
+                :show-remove-button="canEditDocumentacionPeru && !readOnly"
                 :initial-files="[{
                   id: file.id,
                   file_name: file.folder_name || file.file_name,
@@ -363,6 +363,9 @@ const props = withDefaults(defineProps<ClienteDocumentacionViewProps>(), {
 })
 
 const { currentRole, isCoordinacion } = useUserRole()
+const canEditDocumentacionPeru = computed(() =>
+  isCoordinacion.value || roleEsComoJefeImportacion(currentRole.value)
+)
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
 const {
