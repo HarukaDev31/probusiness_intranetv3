@@ -3378,15 +3378,16 @@ const socioProveedorCbmTotalInput = (proveedor: any, extra: Record<string, any> 
     },
 })
 
-const socioChinaSpan = (value: unknown) => {
-    const text = value === null || value === undefined || String(value).trim() === '' ? '—' : String(value)
-    return h('span', { class: 'block py-1 text-sm text-gray-800 dark:text-gray-100' }, text)
-}
+const socioChinaInput = (value: unknown, className = 'w-full') => h(UInput as any, {
+    modelValue: value === null || value === undefined ? '' : value,
+    class: className,
+    disabled: true,
+})
 
-const socioChinaDateSpan = (value: unknown) => {
-    if (!value) return socioChinaSpan('—')
+const socioChinaDateInput = (value: unknown, className = 'w-full w-40') => {
+    if (!value) return socioChinaInput('', className)
     const formatted = formatDateTimeToDmy(String(value))
-    return socioChinaSpan(formatted || value)
+    return socioChinaInput(formatted || value, className)
 }
 
 const getEmbarqueSocioChinaGroup = (): TableColumn<any> => wrapChinaColumnGroup({
@@ -3400,14 +3401,14 @@ const getEmbarqueSocioChinaGroup = (): TableColumn<any> => wrapChinaColumnGroup(
             accessorKey: 'qty_box_supplier',
             header: 'QTY Box',
             cell: ({ row }: { row: any }) => h('div', { class: 'flex flex-col gap-2' }, (row.original.proveedores || []).map((proveedor: any) =>
-                socioChinaSpan(proveedor.qty_box_china ?? 0)
+                socioChinaInput(proveedor.qty_box_china ?? 0, 'w-full w-10')
             )),
         },
         {
             accessorKey: 'qty_pallet_supplier',
             header: 'QTY Pallet',
             cell: ({ row }: { row: any }) => h('div', { class: 'flex flex-col gap-2' }, (row.original.proveedores || []).map((proveedor: any) =>
-                socioChinaSpan(proveedor.qty_pallet_china ?? 0)
+                socioChinaInput(proveedor.qty_pallet_china ?? 0, 'w-full w-10')
             )),
         },
         {
@@ -3415,28 +3416,28 @@ const getEmbarqueSocioChinaGroup = (): TableColumn<any> => wrapChinaColumnGroup(
             header: 'QTY Total',
             cell: ({ row }: { row: any }) => h('div', { class: 'flex flex-col gap-2' }, (row.original.proveedores || []).map((proveedor: any) => {
                 const qtyTotal = Number(proveedor.qty_box_china ?? 0) + Number(proveedor.qty_pallet_china ?? 0)
-                return socioChinaSpan(qtyTotal)
+                return socioChinaInput(qtyTotal, 'w-full w-10')
             })),
         },
         {
             accessorKey: 'cbm_total_supplier',
             header: 'CBM Total',
             cell: ({ row }: { row: any }) => h('div', { class: 'flex flex-col gap-2' }, (row.original.proveedores || []).map((proveedor: any) =>
-                socioChinaSpan(proveedor.cbm_total_china ?? 0)
+                socioChinaInput(proveedor.cbm_total_china ?? 0, 'w-full w-20')
             )),
         },
         {
             accessorKey: 'peso_china_supplier',
             header: 'Total Weight',
             cell: ({ row }: { row: any }) => h('div', { class: 'flex flex-col gap-2' }, (row.original.proveedores || []).map((proveedor: any) =>
-                socioChinaSpan(proveedor.peso_china ?? 0)
+                socioChinaInput(proveedor.peso_china ?? 0, 'w-full w-20')
             )),
         },
         {
             accessorKey: 'arrive_date',
             header: 'Arrive Date',
             cell: ({ row }: { row: any }) => h('div', { class: 'flex flex-col gap-2' }, (row.original.proveedores || []).map((proveedor: any) =>
-                socioChinaDateSpan(proveedor.arrive_date_china)
+                socioChinaDateInput(proveedor.arrive_date_china)
             )),
         },
     ],
@@ -3499,7 +3500,7 @@ const getEmbarqueSocioColumns = (): TableColumn<any>[] => {
                 const rawDatePart = rawValue && String(rawValue).includes('T')
                     ? String(rawValue).split('T')[0]
                     : (rawValue && String(rawValue).includes(' ') ? String(rawValue).split(' ')[0] : rawValue)
-                if (isChinaDate) return socioChinaDateSpan(rawDatePart)
+                if (isChinaDate) return socioChinaDateInput(rawDatePart, 'min-w-36')
                 return h(UInput as any, {
                     type: 'date',
                     modelValue: formatDateForInput(rawDatePart),

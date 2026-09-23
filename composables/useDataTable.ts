@@ -149,10 +149,11 @@ export const useDataTable = (props: DataTableProps, emit: any) => {
     document.removeEventListener('click', handleClickOutside)
   })
 
-  // Keep draft in sync if parent provides new filters (e.g. via programmatic navigation)
+  // Keep draft in sync if parent provides new filters (KPI click, clear, programmatic).
+  // deep: true so mutating a reactive filters.estado_china updates the panel select.
   watch(() => props.filtersValue, (v) => {
     draftFilters.value = v ? { ...(v as Record<string, any>) } : {}
-  })
+  }, { deep: true })
 
   return {
     // State
