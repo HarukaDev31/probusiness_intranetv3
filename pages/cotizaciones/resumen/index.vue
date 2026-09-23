@@ -25,6 +25,7 @@
       @page-change="onPageChange"
       @items-per-page-change="onItemsPerPageChange"
       @filter-change="onFilterChange"
+      @clear-filters="onClearFilters"
     />
   </div>
 </template>
@@ -95,14 +96,22 @@ const headers = ref<Record<string, Header>>({})
 const loading = ref(true)
 const search = ref('')
 const pagination = ref({ current_page: 1, last_page: 1, per_page: 10, total: 0 })
+const FILTER_ALL = new Set(['todos', 'todas', 'all', 'todo'])
+
 const filters = reactive<Record<string, string>>({
   fecha_inicio: '',
   fecha_fin: '',
-  id_contenedor: '',
-  estado: '',
-  id_usuario: '',
-  estado_china: ''
+  id_contenedor: 'todos',
+  estado: 'todos',
+  id_usuario: 'todos',
+  estado_china: 'todos'
 })
+
+function filtroActivo(value: string | undefined | null): string | undefined {
+  const raw = String(value ?? '').trim()
+  if (!raw || FILTER_ALL.has(raw.toLowerCase())) return undefined
+  return raw
+}
 
 function etiquetaConsolidadoCampania(label: string) {
   const cargaAnio = String(label || '')
@@ -156,14 +165,16 @@ const filterConfig = computed<FilterConfig[]>(() => [
 
 async function loadCotizaciones(page = pagination.value.current_page) {
   loading.value = true
+  const idContenedor = filtroActivo(filters.id_contenedor)
+  const idUsuario = filtroActivo(filters.id_usuario)
   const res = await getCotizaciones({
     search: search.value || undefined,
     fecha_inicio: filters.fecha_inicio || undefined,
     fecha_fin: filters.fecha_fin || undefined,
-    estado: filters.estado || undefined,
-    id_contenedor: filters.id_contenedor ? Number(filters.id_contenedor) : undefined,
-    id_usuario: filters.id_usuario ? Number(filters.id_usuario) : undefined,
-    estado_china: filters.estado_china || undefined,
+    estado: filtroActivo(filters.estado),
+    id_contenedor: idContenedor ? Number(idContenedor) : undefined,
+    id_usuario: idUsuario ? Number(idUsuario) : undefined,
+    estado_china: filtroActivo(filters.estado_china),
     page,
     per_page: pagination.value.per_page
   })
@@ -199,7 +210,22 @@ function onItemsPerPageChange(perPage: number) {
 }
 
 function onFilterChange(key: string, value: string) {
-  filters[key] = value === 'todos' || value === 'todas' ? '' : value
+  const raw = String(value ?? '').trim()
+  const isSelect =
+    key === 'id_contenedor' || key === 'estado' || key === 'id_usuario' || key === 'estado_china'
+  filters[key] = isSelect && (!raw || FILTER_ALL.has(raw.toLowerCase()))
+    ? 'todos'
+    : raw
+  loadCotizaciones(1)
+}
+
+function onClearFilters() {
+  filters.fecha_inicio = ''
+  filters.fecha_fin = ''
+  filters.id_contenedor = 'todos'
+  filters.estado = 'todos'
+  filters.id_usuario = 'todos'
+  filters.estado_china = 'todos'
   loadCotizaciones(1)
 }
 

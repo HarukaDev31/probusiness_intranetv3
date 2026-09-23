@@ -622,21 +622,33 @@ const cbmImoColumn: TableColumn<any> = {
 }
 
 const getColumns = () => {
+  let result: TableColumn<any>[]
   switch (props.role) {
     case ROLES.DOCUMENTACION:
-      return documentacionColumns
+      result = documentacionColumns
+      break
     case ROLES.COORDINADOR_GENERAL:
     case ROLES.JEFE_IMPORTACIONES:
-      return documentacionColumns
+      result = documentacionColumns
+      break
     case ROLES.FINANZAS:
-      return finanzasColumns
+      result = finanzasColumns
+      break
     case ROLES.CONTENEDOR_ALMACEN:
-      return columns.map((col) => (
+      result = columns.map((col) => (
         (col as { accessorKey?: string }).accessorKey === 'limite_cbm_imo' ? cbmImoColumn : col
       ))
+      break
     default:
-      return columns
+      result = columns
   }
+  // Socio (org ≠ 1): no mostrar límite; mostrar suma CBM IMO de proveedores.
+  if (!isOrgAdmin.value && props.role !== ROLES.CONTENEDOR_ALMACEN) {
+    result = result.map((col) => (
+      (col as { accessorKey?: string }).accessorKey === 'limite_cbm_imo' ? cbmImoColumn : col
+    ))
+  }
+  return result
 }
 
 const getColorByEstado = (estado: string) => {

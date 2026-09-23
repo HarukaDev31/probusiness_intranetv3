@@ -613,19 +613,36 @@ const almacenColumns: TableColumn<any>[] = [
   },
 ]
 
+const cbmImoColumn: TableColumn<any> = {
+  accessorKey: 'cbm_total_imo',
+  header: 'CBM IMO',
+  cell: ({ row }) => formatNumber(row.original.cbm_total_imo ?? 0, 2),
+}
+
 const getColumns = () => {
+  let result: TableColumn<any>[]
   switch (props.role) {
     case ROLES.DOCUMENTACION:
     case ROLES.COORDINADOR_GENERAL:
     case ROLES.JEFE_IMPORTACIONES:
-      return documentacionColumns
+      result = documentacionColumns
+      break
     case ROLES.CONTENEDOR_ALMACEN:
-      return almacenColumns
+      result = almacenColumns
+      break
     case ROLES.FINANZAS:
-      return finanzasColumns
+      result = finanzasColumns
+      break
     default:
-      return columns
+      result = columns
   }
+  // Socio (org ≠ 1): no mostrar límite; mostrar suma CBM IMO de proveedores.
+  if (!isOrgAdmin.value) {
+    result = result.map((col) => (
+      (col as { accessorKey?: string }).accessorKey === 'limite_cbm_imo' ? cbmImoColumn : col
+    ))
+  }
+  return result
 }
 
 const getEstadoLabel = (estado: string) => {
