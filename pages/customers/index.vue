@@ -5,10 +5,8 @@
 <script setup lang="ts">
 definePageMeta({ name: 'customers', keepalive: true })
 
-import { createLazyView } from '~/utils/lazyView'
+import CustomersView from '~/components/cargaconsolidada/customers/CustomersView/index.vue'
 import { useUserRole } from '~/composables/auth/useUserRole'
-
-const CustomersView = createLazyView(() => import('~/components/cargaconsolidada/customers/CustomersView/index.vue'))
 
 const { currentRole } = useUserRole()
 </script>

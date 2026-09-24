@@ -7,7 +7,7 @@
 </template>
 
 <script setup lang="ts">
-import { createLazyView } from '~/utils/lazyView'
+import CargaConsolidadaCompletadosView from '~/components/cargaconsolidada/consolidado/CargaConsolidadaCompletadosView/index.vue'
 import { ROLES } from '~/constants/roles'
 
 definePageMeta({
@@ -15,8 +15,6 @@ definePageMeta({
   name: 'cargaconsolidada-coordinacion-completados',
   keepalive: true,
 })
-
-const CargaConsolidadaCompletadosView = createLazyView(() => import('~/components/cargaconsolidada/consolidado/CargaConsolidadaCompletadosView/index.vue'))
 
 const backRoute = '/cargaconsolidada/coordinacion'
 </script>
