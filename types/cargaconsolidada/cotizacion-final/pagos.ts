@@ -12,7 +12,7 @@ export interface Pagos {
     id_cotizacion: number
     /** Estado de pago de cotización final (PENDIENTE, COTIZADO, COBRANDO, PAGADO, etc.) */
     estado_cotizacion_final?: string | null
-    /** Diferencia entre total logística+impuestos y total pagado (desde backend) */
+    /** Diferencia: pagado − importe (+ a favor / − pendiente) */
     diferencia?: number
 }
 export interface PagosResponse {

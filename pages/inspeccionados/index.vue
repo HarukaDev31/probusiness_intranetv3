@@ -43,7 +43,7 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
 import { useReminderPago } from '~/composables/cargaconsolidada/cotizacion-final/useReminderPago'
 import ReminderPagoModal from '~/components/cargaconsolidada/cotizacion-final/ReminderPagoModal/index.vue'
-import { formatCurrency } from '~/utils/formatters'
+import { formatCurrency, formatSaldoDiferencia, saldoDiferenciaToneClass } from '~/utils/formatters'
 import { STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
 import { createLazyView } from '~/utils/lazyView'
 
@@ -255,7 +255,10 @@ const getColumns = (): TableColumn<any>[] => [
     {
         accessorKey: 'diferencia',
         header:      'Diferencia',
-        cell:        ({ row }: { row: any }) => formatCurrency(row.original.diferencia ?? 0),
+        cell:        ({ row }: { row: any }) => {
+          const diff = Number(row.original.diferencia ?? 0)
+          return h('span', { class: saldoDiferenciaToneClass(diff) }, formatSaldoDiferencia(diff))
+        },
     },
     {
         accessorKey: 'adelantos',

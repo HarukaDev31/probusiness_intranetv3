@@ -137,6 +137,7 @@ import CobranzaWhatsappTemplatesModal from '~/components/cargaconsolidada/cotiza
 import ReminderPagoModal from '~/components/cargaconsolidada/cotizacion-final/ReminderPagoModal/index.vue'
 import FechaMaximaPagoField from '~/components/cargaconsolidada/cotizacion-final/FechaMaximaPagoField/index.vue'
 import type { CobranzaWhatsappTemplate, CobranzaWhatsappPreviewMeta } from '~/types/cargaconsolidada/cotizacion-final/general'
+import { formatCurrency, formatSaldoDiferencia, saldoDiferenciaToneClass } from '~/utils/formatters'
 import { useReminderPago } from '~/composables/cargaconsolidada/cotizacion-final/useReminderPago'
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
@@ -747,7 +748,10 @@ const getPagosColumns = (): TableColumn<any>[] => {
     base.push({
       accessorKey: 'diferencia',
       header: 'Diferencia',
-      cell: ({ row }: { row: any }) => formatCurrency(row.original.diferencia ?? 0)
+      cell: ({ row }: { row: any }) => {
+        const diff = Number(row.original.diferencia ?? 0)
+        return h('span', { class: saldoDiferenciaToneClass(diff) }, formatSaldoDiferencia(diff))
+      }
     })
   }
   base.push({
