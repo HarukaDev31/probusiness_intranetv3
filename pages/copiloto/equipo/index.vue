@@ -13,13 +13,11 @@
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
-import { createLazyView } from '~/utils/lazyView'
+import CopilotoJefeVentasView from '~/components/copiloto/CopilotoJefeVentasView/index.vue'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { ID_JEFEVENTAS, ROLES } from '~/constants/roles'
 
 definePageMeta({ layout: 'default', key: 'copiloto-equipo', name: 'copiloto-equipo-index', keepalive: true })
-
-const CopilotoJefeVentasView = createLazyView(() => import('~/components/copiloto/CopilotoJefeVentasView/index.vue'))
 
 const { currentId, fetchCurrentUser, hasRole } = useUserRole()
 
