@@ -125,6 +125,24 @@ export const formatCurrency = (amount: number, type: string = 'USD'): string => 
     }).format(amount)
   }
 }
+
+/**
+ * Diferencia de pagos: + = saldo a favor (pagó de más), - = saldo pendiente.
+ */
+export const formatSaldoDiferencia = (amount: number | null | undefined, type: string = 'USD'): string => {
+  const n = Number(amount)
+  if (!Number.isFinite(n) || n === 0) return formatCurrency(0, type)
+  const abs = formatCurrency(Math.abs(n), type)
+  return n > 0 ? `+${abs}` : `-${abs}`
+}
+
+export const saldoDiferenciaToneClass = (amount: number | null | undefined): string => {
+  const n = Number(amount)
+  if (!Number.isFinite(n) || n === 0) return ''
+  return n > 0
+    ? 'text-emerald-600 dark:text-emerald-400 font-medium'
+    : 'text-red-600 dark:text-red-400 font-medium'
+}
 export const getDateParts = (date: string): { year: number, month: number, day: number } => {
   //from 2025-06-09T00:00:00.000000Z to 2025-06-09
   const [year, month, day] = date.split('T')[0].split('-')

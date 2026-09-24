@@ -162,7 +162,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { useCotizacionProveedor } from '~/composables/cargaconsolidada/useCotizacionProveedor'
 import { useCotizacion } from '~/composables/cargaconsolidada/useCotizacion'
 import { useCotizacionResumen } from '~/composables/cargaconsolidada/cotizacion-resumen'
-import { formatDate, formatCurrency, formatDateTimeToDmy } from '~/utils/formatters'
+import { formatDate, formatCurrency, formatDateTimeToDmy, formatSaldoDiferencia, saldoDiferenciaToneClass } from '~/utils/formatters'
 import { formatDateForInput } from '~/utils/data-table'
 import { cbmNormalDesdeTotal, cbmTotalConImo } from '~/utils/cargaconsolidada/cbm'
 import { useSpinner } from '~/composables/commons/useSpinner'
@@ -1469,8 +1469,8 @@ const getPagosColumns = () => {
             accessorKey: 'diferencia',
             header: 'Diferencia',
             cell: ({ row }: { row: any }) => {
-                const diff = row.original.diferencia ?? (Number(row.original.monto) - Number(row.original.total_pagos))
-                return formatCurrency(diff)
+                const diff = row.original.diferencia ?? (Number(row.original.total_pagos) - Number(row.original.monto))
+                return h('span', { class: saldoDiferenciaToneClass(diff) }, formatSaldoDiferencia(diff))
             }
         },
         {

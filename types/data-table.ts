@@ -179,6 +179,9 @@ export interface HeaderResponse {
   f_cierre?: string
   /** Total diferencia entre lo pagado e impuestos + logística (cotización final, tab Pagos) */
   total_diferencia_impuestos_logistica?: string | number
+  saldos?: string | number
+  saldo_pendiente?: string | number
+  saldo_a_favor?: string | number
   /** Base del portal clientes de la org del contenedor */
   url_clientes?: string
 }
