@@ -14,7 +14,7 @@
       @export="handleExport">
 
       <template #body-top>
-        <SectionHeader :headers="kpiHeaders" :loading="loading" :skeleton-count="7" />
+        <SectionHeader :headers="kpiHeaders" :loading="loading" :skeleton-count="4" />
       </template>
 
       <template #actions>
@@ -67,12 +67,7 @@ const CALCULADORA_HEADER_ICONS: Record<string, string> = {
   cbm_total_peru: CUSTOMIZED_ICONS_URL.PERU,
   cbm_pendiente: 'mage:box-3d',
   cbm_total_imo: 'mdi:biohazard',
-  total_fob: 'cryptocurrency-color:soc',
-  total_logistica: 'cryptocurrency-color:soc',
-  total_impuestos: 'cryptocurrency-color:soc',
 }
-
-const MONEY_HEADER_KEYS = new Set(['total_fob', 'total_logistica', 'total_impuestos'])
 
 const kpiHeaders = computed<Header[]>(() => {
   const raw = headers.value as Header[] | Record<string, Header> | null
@@ -80,17 +75,13 @@ const kpiHeaders = computed<Header[]>(() => {
   const entries = Array.isArray(raw)
     ? raw.map((header, index) => [header.key || String(index), header] as const)
     : Object.entries(raw)
-  return entries.map(([key, header]) => {
-    const numericValue = Number(header.value)
-    return {
+  return entries
+    .filter(([key]) => !['total_fob', 'total_logistica', 'total_impuestos'].includes(key))
+    .map(([key, header]) => ({
       ...header,
       key,
       icon: header.icon || CALCULADORA_HEADER_ICONS[key] || 'fluent:box-32-filled',
-      value: MONEY_HEADER_KEYS.has(key) && Number.isFinite(numericValue)
-        ? formatCurrency(numericValue)
-        : header.value,
-    }
-  })
+    }))
 })
 const columns: TableColumn<any>[] = [
   {
