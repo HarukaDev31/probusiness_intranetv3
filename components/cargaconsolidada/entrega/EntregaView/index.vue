@@ -187,7 +187,12 @@ const backBasePath = computed(() => props.backBasePath || props.basePath)
 
 const READ_ONLY_ENTREGA_COLUMN_KEYS = new Set(['acciones', 'action', 'actions', 'accion', 'adelantos'])
 
-const isJefeMarketingReadOnly = computed(() => currentRole.value === ROLES.JEFE_MARKETING)
+const isMarketingProfile = computed(() => {
+  const role = String(currentRole.value || '').trim().toLowerCase()
+  return role === ROLES.JEFE_MARKETING.toLowerCase()
+    || role === ROLES.MARKETING.toLowerCase()
+})
+const isJefeMarketingReadOnly = computed(() => isMarketingProfile.value)
 
 function toReadOnlyEntregaColumns(columns: TableColumn<any>[]) {
   return columns.filter((column: any) => {
@@ -434,6 +439,20 @@ const clientesColumns = ref<TableColumn<any>[]>([
     accessorKey: 'name',
     header: 'T. Cliente',
     cell: ({ row }) => row.original.name || '—'
+  },
+  {
+    accessorKey: 'productos',
+    header: 'Productos',
+    cell: ({ row }) => {
+      const raw = row.original?.productos
+      const text = Array.isArray(raw)
+        ? raw.filter(Boolean).join('\n')
+        : String(raw || '').trim()
+      if (!text) return '—'
+      return h('div', {
+        class: 'max-w-48 whitespace-pre-line text-sm text-gray-700 dark:text-gray-300'
+      }, text)
+    }
   },
   {
     accessorKey: 'type_form',
@@ -1096,9 +1115,13 @@ const deliveryColumns = ref<TableColumn<any>[]>([
     }
   }
 ])
-const clientesColumnsView = computed(() =>
-  isJefeMarketingReadOnly.value ? toReadOnlyEntregaColumns(clientesColumns.value) : clientesColumns.value
-)
+const clientesColumnsView = computed(() => {
+  const cols = isJefeMarketingReadOnly.value
+    ? toReadOnlyEntregaColumns(clientesColumns.value)
+    : clientesColumns.value
+  if (isMarketingProfile.value) return cols
+  return cols.filter((column: any) => String(column?.accessorKey ?? '') !== 'productos')
+})
 
 const entregasColumnsView = computed(() => {
   if (!isJefeMarketingReadOnly.value) return entregasColumns.value

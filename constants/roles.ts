@@ -9,6 +9,7 @@ export const ROLES = {
     DOCUMENTACION: 'Documentacion',
     ADMINISTRACION: 'Administración',
     JEFE_MARKETING: 'Jefe Marketing',
+    MARKETING: 'Marketing',
     SUB_ADMINISTRACION: 'SUB_ADMINISTRACION',
     JEFE_IMPORTACIONES: 'Jefe Importacion',
     COORDINADOR_GENERAL: 'Coordinador General',
