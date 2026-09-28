@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <CotizacionesView
     :role="currentRole || undefined"
     base-path="/cargaconsolidada/completados"

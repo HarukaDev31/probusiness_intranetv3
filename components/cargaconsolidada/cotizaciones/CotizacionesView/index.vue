@@ -22,7 +22,7 @@
                                 class="mb-1 w-80 h-15 shrink-0" v-if="tabs.length > 1" />
                             <span v-if="(currentRole === ROLES.CONTABILIDAD || currentRole === ROLES.ADMINISTRACION) && fCierre"
                                 class="text-xs md:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                                F. LÃ­mite pago: {{ formatDateTimeToDmy(fCierre) }}
+                                F. Límite pago: {{ formatDateTimeToDmy(fCierre) }}
                             </span>
                         </div>
                     </div>
@@ -78,7 +78,7 @@
                             v-if="tabs.length > 1" />
                         <span v-if="(currentRole === ROLES.CONTABILIDAD || currentRole === ROLES.ADMINISTRACION) && fCierre"
                             class="text-xs md:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                            F. LÃ­mite pago: {{ formatDateTimeToDmy(fCierre) }}
+                            F. Límite pago: {{ formatDateTimeToDmy(fCierre) }}
                         </span>
                     </div>
                 </div>
@@ -133,7 +133,7 @@
                             v-if="tabs.length > 1" />
                         <span v-if="(currentRole === ROLES.CONTABILIDAD || currentRole === ROLES.ADMINISTRACION) && fCierre"
                             class="text-xs md:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                            F. LÃ­mite pago: {{ formatDateTimeToDmy(fCierre) }}
+                            F. Límite pago: {{ formatDateTimeToDmy(fCierre) }}
                         </span>
                     </div>
                 </div>
@@ -344,14 +344,14 @@ const confirmReminderInicial = async () => {
                 reminderInicialModal.idContainer as number
             )
             if (res && res.success) {
-                showSuccess('Recordatorio en camino', res.message || 'Se estï¿½ enviando al cliente por WhatsApp.')
+                showSuccess('Recordatorio en camino', res.message || 'Se está enviando al cliente por WhatsApp.')
                 reminderInicialModal.open = false
                 await getCotizacionPagos(Number(id))
                 await getHeaders(Number(id))
             } else {
                 showError('Error', res?.message || 'No se pudo enviar el recordatorio')
             }
-        }, 'Enviando recordatorioï¿½')
+        }, 'Enviando recordatorio...')
     } catch (err) {
         console.error('Error send reminder:', err)
         showError('Error', 'Error al enviar recordatorio')
@@ -368,17 +368,17 @@ const route = useRoute()
 const id = Array.isArray(route.params.id) ? route.params.id[0] : route.params.id
 const { showConfirmation, showSuccess, showError } = useModal()
 
-// Funciï¿½n para copiar al portapapeles
+// Función para copiar al portapapeles
 const copyToClipboard = async (text: string, successMessage: string = 'Copiado al portapapeles') => {
     try {
         await navigator.clipboard.writeText(text)
-        showSuccess('ï¿½xito', successMessage)
+        showSuccess('Éxito', successMessage)
     } catch (error) {
         showError('Error al copiar', 'No se pudo copiar al portapapeles')
     }
 }
 
-// Funciï¿½n para construir el URL de firma usando el UUID
+// Función para construir el URL de firma usando el UUID
 const { urlFirmaAcuerdo } = useOrganizacionPortal()
 const getSignUrl = (uuid: string): string => {
     return urlFirmaAcuerdo(uuid, urlClientes.value)
@@ -432,18 +432,18 @@ const deleteReasonModalHandlers: DeleteCotizacionReasonModalHandlers = {
     },
     confirmDeleteCotizacion: async (reasonId: number) => {
         if (!deleteTargetCotizacionId.value) {
-            throw new Error('Cotizaciï¿½n no encontrada')
+            throw new Error('Cotización no encontrada')
         }
         await withSpinner(async () => {
             const response = await deleteCotizacion(deleteTargetCotizacionId.value as number, reasonId)
             if (response?.success) {
-                showSuccess('Cotizaciï¿½n eliminada correctamente', 'La cotizaciï¿½n se ha eliminado correctamente.')
+                showSuccess('Cotización eliminada correctamente', 'La cotización se ha eliminado correctamente.')
                 showDeleteReasonModal.value = false
                 await getCotizaciones(Number(id))
                 return
             }
-            throw new Error('No se pudo eliminar la cotizaciï¿½n')
-        }, 'Eliminando cotizaciï¿½n...')
+            throw new Error('No se pudo eliminar la cotización')
+        }, 'Eliminando cotización...')
     }
 }
 const tabSwitching = ref(false)
@@ -757,13 +757,13 @@ const filterConfigProspectosSocioConEstado = [
         options: ESTADO_SOCIO_OPTIONS
     }
 ]
-// Filtros tab Pagos (solo Contabilidad): inspecciï¿½n y estado de pago
+// Filtros tab Pagos (solo Contabilidad): inspección y estado de pago
 const filterConfigPagos = ref([
     {
         key: 'estado_inspeccion',
-        label: 'Inspecciï¿½n',
+        label: 'Inspección',
         type: 'select',
-        placeholder: 'Seleccionar inspecciï¿½n',
+        placeholder: 'Seleccionar inspección',
         options: [
             { label: 'Todos', value: 'todos', inrow: true },
             { label: 'Pendiente', value: 'Pendiente', inrow: true },
@@ -849,7 +849,7 @@ const downloadPackingList = () => {
 
 const deletePackingList = () => {
     showUploadPanel.value = false
-    showConfirmation('Confirmar eliminaciï¿½n', 'Â¿EstÃ¡ seguro de que desea eliminar este archivo? Esta acciï¿½n no se puede deshacer.', async () => {
+    showConfirmation('Confirmar eliminación', '¿Está seguro de que desea eliminar este archivo? Esta acción no se puede deshacer.', async () => {
         await withSpinner(async () => {
             const result = await ConsolidadoService.deletePackingList(Number(id))
             if (result.success) {
@@ -863,7 +863,7 @@ const deletePackingList = () => {
 const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
     {
         accessorKey: 'index',
-        header: 'NÂ°',
+        header: 'N°',
         cell: ({ row }: { row: any }) => {
             return row.index + 1
         }
@@ -932,7 +932,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                         )
                     )
                 ]) : null ,
-                cod_cotizacion ? h('div', { class: 'text-sm text-gray-500' }, `Cotizaciï¿½n: ${cod_cotizacion}`) : null,
+                cod_cotizacion ? h('div', { class: 'text-sm text-gray-500' }, `Cotización: ${cod_cotizacion}`) : null,
                 permisoBlock
             ].filter(Boolean))
         }
@@ -1030,7 +1030,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                     variant: 'ghost',
                     size: 'xs',
                     color: 'primary',
-                    title: 'Subir cotizaciï¿½n',
+                    title: 'Subir cotización',
                     onClick: () => {
                         handleUpdateCotizacion(row.original.id)
                     }
@@ -1040,7 +1040,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                     variant: 'ghost',
                     size: 'xs',
                     color: 'error',
-                    title: 'Eliminar archivo de cotizaciï¿½n',
+                    title: 'Eliminar archivo de cotización',
                     onClick: () => {
                         handleDeleteFile(row.original.id)
                     }
@@ -1079,7 +1079,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                     variant: 'ghost',
                     size: 'xs',
                     color: 'info',
-                    title: 'Ver documentaciï¿½n cotizadores',
+                    title: 'Ver documentación cotizadores',
                     onClick: () => {
                         navigateTo(`${basePath.value}/cotizaciones/documentacion/${row.original.id}`)
                     }
@@ -1089,7 +1089,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                     variant: 'ghost',
                     activeColor: 'error',
                     size: 'xs',
-                    title: 'Eliminar cotizaciï¿½n',
+                    title: 'Eliminar cotización',
                     onClick: () => {
                         handleDelete(row.original.id)
                     }
@@ -1102,7 +1102,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
 const prospectosColumns = ref<TableColumn<any>[]>([
     {
         accessorKey: 'index',
-        header: 'NÂ°',
+        header: 'N°',
         cell: ({ row }: { row: any }) => {
             return row.index + 1
         }
@@ -1167,7 +1167,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                         )
                     )
                 ]) : null ,
-                cod_cotizacion ? h('div', { class: 'text-sm text-gray-500' }, `Cotizaciï¿½n: ${cod_cotizacion}`) : null
+                cod_cotizacion ? h('div', { class: 'text-sm text-gray-500' }, `Cotización: ${cod_cotizacion}`) : null
             ])
         }
         },
@@ -1255,7 +1255,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                     variant: 'ghost',
                     size: 'xs',
                     color: 'primary',
-                    title: 'Subir cotizaciï¿½n',
+                    title: 'Subir cotización',
                     onClick: () => {
                         handleUpdateCotizacion(row.original.id)
                     }
@@ -1265,7 +1265,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                     variant: 'ghost',
                     size: 'xs',
                     color: 'error',
-                    title: 'Eliminar archivo de cotizaciï¿½n',
+                    title: 'Eliminar archivo de cotización',
                     onClick: () => {
                         handleDeleteFile(row.original.id)
                     }
@@ -1328,7 +1328,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                 variant: 'ghost',
                 activeColor: 'error',
                 size: 'xs',
-                title: 'Eliminar cotizaciï¿½n',
+                title: 'Eliminar cotización',
                 onClick: () => {
                     handleDelete(row.original.id)
                 }
@@ -1348,7 +1348,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                     variant: 'ghost',
                     size: 'xs',
                     color: 'primary',
-                    title: 'Documentaciï¿½n',
+                    title: 'Documentación',
                     onClick: () => {
                         navigateTo(`${basePath.value}/cotizaciones/documentacion/${row.original.id}`)
                     }
@@ -1366,13 +1366,13 @@ const prospectosColumns = ref<TableColumn<any>[]>([
         }
     }
 ])
-// Columnas tab Pagos: NÂ° Contacto T. Cliente Acciones Inspecciï¿½n Estado Concepto Importe Pagado Diferencia Adelantos
+// Columnas tab Pagos: N° Contacto T. Cliente Acciones Inspección Estado Concepto Importe Pagado Diferencia Adelantos
 const getPagosColumns = () => {
     const isContabilidad = (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)
     const columns = [
         {
             accessorKey: 'index',
-            header: 'NÂ°',
+            header: 'N°',
             cell: ({ row }: { row: any }) => row.index + 1
         },
         {
@@ -1414,7 +1414,7 @@ const getPagosColumns = () => {
         },
         ...(isContabilidad ? [{
             accessorKey: 'estado_inspeccion',
-            header: 'Inspecciï¿½n',
+            header: 'Inspección',
             cell: ({ row }: { row: any }) => {
                 const estado = row.original.estado_inspeccion || 'Pendiente'
                 const INSPECCION_CLASSES: Record<string, string> = {
@@ -1513,21 +1513,21 @@ const getPagosColumns = () => {
                     },
                     onDelete: (pagoId: number) => {
                         showConfirmation(
-                            'Confirmar eliminaciï¿½n',
-                            'Â¿EstÃ¡ seguro de que desea eliminar el pago? Esta acciï¿½n no se puede deshacer.',
+                            'Confirmar eliminación',
+                            '¿Está seguro de que desea eliminar el pago? Esta acción no se puede deshacer.',
                             async () => {
                                 try {
                                     await withSpinner(async () => {
                                         const response = await deletePago(pagoId)
                                         if (response.success) {
                                             await getCotizacionPagos(Number(id))
-                                            showSuccess('Eliminaciï¿½n Exitosa', 'El pago se ha eliminado correctamente.')
+                                            showSuccess('Eliminación Exitosa', 'El pago se ha eliminado correctamente.')
                                             getHeaders(Number(id))
                                         }
                                     }, 'Eliminando pago...')
                                 } catch (error) {
                                     console.error('Error al eliminar el pago:', error)
-                                    showError('Error de Eliminaciï¿½n', 'Error al eliminar el pago')
+                                    showError('Error de Eliminación', 'Error al eliminar el pago')
                                 }
                             }
                         )
@@ -2858,7 +2858,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
 ])
 const handleRefreshRotuladoStatus = async (proveedor: any) => {
     try {
-        showConfirmation('Â¿EstÃ¡s seguro de querer actualizar el estado del proveedor?', 'Esta acciï¿½n no se puede deshacer.', async () => {
+        showConfirmation('¿Estás seguro de querer actualizar el estado del proveedor?', 'Esta acción no se puede deshacer.', async () => {
             await withSpinner(async () => {
                 await refreshRotuladoStatus(proveedor.id_proveedor)
             }, 'Actualizando estado del proveedor...')
@@ -2921,15 +2921,15 @@ const handleMoveCotizacion = async (idCotizacion: number) => {
 }
 const handleRefresh = async (idCotizacion: number) => {
     try {
-        showConfirmation('Â¿EstÃ¡s seguro de querer actualizar la cotizaciï¿½n?', 'Esta acciï¿½n no se puede deshacer.', async () => {
+        showConfirmation('¿Estás seguro de querer actualizar la cotización?', 'Esta acción no se puede deshacer.', async () => {
             await withSpinner(async () => {
                 await refreshCotizacionFile(idCotizacion)
-                showSuccess('Cotizaciï¿½n actualizada correctamente', 'La cotizaciï¿½n se ha actualizado correctamente.')
+                showSuccess('Cotización actualizada correctamente', 'La cotización se ha actualizado correctamente.')
                 await getCotizaciones(Number(id))
-            }, 'Actualizando cotizaciï¿½n...')
+            }, 'Actualizando cotización...')
         })
     } catch (error) {
-        showError('Error al actualizar la cotizaciï¿½n', error)
+        showError('Error al actualizar la cotización', error)
     }
 }
 const handleUpdateEstadoCotizacion = async (idCotizacion: number, estado: string) => {
@@ -2948,11 +2948,11 @@ const handleUpdateEstadoCotizacion = async (idCotizacion: number, estado: string
                 }
             } catch (error: any) {
 
-                showError('Error al actualizar el estado de la cotizaciï¿½n', error)
+                showError('Error al actualizar el estado de la cotización', error)
             }
-        }, 'Actualizando estado de la cotizaciï¿½n...')
+        }, 'Actualizando estado de la cotización...')
     } catch (error) {
-        showError('Error al actualizar el estado de la cotizaciï¿½n', error)
+        showError('Error al actualizar el estado de la cotización', error)
     }
 }
 
@@ -3005,7 +3005,7 @@ const handleUpdateCotizacion = async (idCotizacion: number) => {
 }
 const handleDeleteFile = async (idCotizacion: number) => {
     try {
-        showConfirmation('Â¿EstÃ¡s seguro de querer eliminar el archivo de esta cotizaciï¿½n?', 'Esta acciï¿½n no se puede deshacer.', async () => {
+        showConfirmation('¿Estás seguro de querer eliminar el archivo de esta cotización?', 'Esta acción no se puede deshacer.', async () => {
             await withSpinner(async () => {
                 const response = await deleteCotizacionFile(idCotizacion)
                 if (response?.success) {
@@ -3015,7 +3015,7 @@ const handleDeleteFile = async (idCotizacion: number) => {
             }, 'Eliminando archivo...')
         })
     } catch (error) {
-        showError('Error al eliminar el archivo de la cotizaciï¿½n', error)
+        showError('Error al eliminar el archivo de la cotización', error)
     }
 }
 
@@ -3045,7 +3045,7 @@ const handleDelete = async (idCotizacion: number) => {
 
 const handleSendRecordatorioFirma = async (idCotizacion: number) => {
     try {
-        showConfirmation('Â¿Deseas enviar el recordatorio de firma de contrato?', 'Se enviarÃ¡ un mensaje de WhatsApp al cliente.', async () => {
+        showConfirmation('¿Deseas enviar el recordatorio de firma de contrato?', 'Se enviará un mensaje de WhatsApp al cliente.', async () => {
             await withSpinner(async () => {
                 const response = await sendRecordatorioFirmaContrato(idCotizacion)
                 if (response?.success) {
@@ -3632,7 +3632,7 @@ const getEmbarqueColumns = () => {
             return embarqueCotizadorColumns.value
     }
 }
-// Funciï¿½n para obtener el color del estado
+// Función para obtener el color del estado
 const getEstadoColor = (estado: string) => {
     switch (estado) {
         case 'PENDIENTE':

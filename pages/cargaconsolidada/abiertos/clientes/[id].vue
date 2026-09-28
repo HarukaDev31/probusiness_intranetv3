@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <ClientesView
     :role="currentRole || undefined"
     base-path="/cargaconsolidada/abiertos"
