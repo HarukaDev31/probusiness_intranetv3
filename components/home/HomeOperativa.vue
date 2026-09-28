@@ -3,7 +3,7 @@
     <section class="home-op__hero">
       <img
         class="home-op__hero-img"
-        src="https://intranet.probusiness.pe/assets/img/backgrounds/inicioview.png"
+        src="https://cdn.probusiness.pe/assets/img/backgrounds/inicioview.png"
         alt=""
       >
       <div class="home-op__hero-shade" />

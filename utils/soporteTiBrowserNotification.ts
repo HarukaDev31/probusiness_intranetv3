@@ -1,5 +1,5 @@
 const ICONO_NOTIFICACION =
-  'https://intranet.probusiness.pe/assets/img/logos/probusiness.png'
+  'https://cdn.probusiness.pe/assets/img/logos/probusiness.png'
 
 const SW_PATH = '/soporte-ti-notifications-sw.js'
 const MAX_CUERPO = 220
