@@ -649,8 +649,8 @@ const getColumns = () => {
     default:
       result = columns
   }
-  // Socio (org ≠ 1): no mostrar límite; mostrar suma CBM IMO de proveedores.
-  if (!isOrgAdmin.value && props.role !== ROLES.CONTENEDOR_ALMACEN) {
+  // No mostrar el límite fijo del contenedor; mostrar la suma real de CBM IMO de los proveedores.
+  if (props.role !== ROLES.CONTENEDOR_ALMACEN) {
     result = result.map((col) => (
       (col as { accessorKey?: string }).accessorKey === 'limite_cbm_imo' ? cbmImoColumn : col
     ))
