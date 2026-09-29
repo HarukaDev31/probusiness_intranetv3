@@ -126,7 +126,7 @@ import { useModal } from '~/composables/commons/useModal'
 import CreateConsolidadoModal from '~/components/cargaconsolidada/consolidado/CreateConsolidadoModal/index.vue'
 import TextModal from '~/components/commons/TextModal.vue'
 import { USelect } from '#components'
-import { STATUS_BG_CLASSES } from '~/constants/ui'
+import { CUSTOMIZED_ICONS_URL, STATUS_BG_CLASSES } from '~/constants/ui'
 import type { CargaConsolidadaCompletadosProps, ConsolidadoFormData } from './types'
 import {
   ALMACEN_ITEMS_PER_PAGE,
@@ -179,6 +179,34 @@ const {
   deleteConsolidado,
   updateEstadoFinanzas,
 } = useConsolidado(toRef(props, 'role'))
+
+const flagUrlFromPais = (pais?: { Nu_Codigo_Sunat_ISO?: string, No_Pais?: string } | null) => {
+  const iso = String(pais?.Nu_Codigo_Sunat_ISO || '').trim().toLowerCase()
+  if (iso.length === 2) return `https://flagcdn.com/w40/${iso}.png`
+  const iso3: Record<string, string> = { per: 'pe', ecu: 'ec', chl: 'cl', col: 'co', bol: 'bo', arg: 'ar', mex: 'mx' }
+  if (iso.length === 3 && iso3[iso]) return `https://flagcdn.com/w40/${iso3[iso]}.png`
+  const name = String(pais?.No_Pais || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  if (name.includes('ecuador')) return 'https://flagcdn.com/w40/ec.png'
+  return CUSTOMIZED_ICONS_URL.PERU
+}
+
+const ECUADOR_FLAG_URL = 'https://flagcdn.com/w40/ec.png'
+
+// Org ≠ 1 (socios): CBM destino siempre con bandera de Ecuador.
+const destinoCbmFlag = computed(() =>
+  isOrgAdmin.value
+    ? flagUrlFromPais(consolidadoData.value?.[0]?.pais)
+    : ECUADOR_FLAG_URL
+)
+
+const cbmFlagHeader = (flagSrc: { value: string } | string) => () => h('div', { class: 'inline-flex items-center gap-1.5' }, [
+  h('img', {
+    src: typeof flagSrc === 'string' ? flagSrc : flagSrc.value,
+    alt: '',
+    class: 'w-5 h-3.5 object-contain shrink-0',
+  }),
+  h('span', 'CBM'),
+])
 
 const overlay = useOverlay()
 const modal = overlay.create(CreateConsolidadoModal)
@@ -370,8 +398,8 @@ const columns: TableColumn<any>[] = [
       return selectNode
     },
   },
-  { accessorKey: 'cbm_total_peru', header: 'CBM Perú', cell: ({ row }) => formatNumber(row.getValue('cbm_total_peru'), 2) },
-  { accessorKey: 'cbm_total_china', header: 'CBM China', cell: ({ row }) => formatNumber(row.getValue('cbm_total_china'), 2) },
+  { accessorKey: 'cbm_total_peru', header: cbmFlagHeader(destinoCbmFlag), cell: ({ row }) => formatNumber(row.getValue('cbm_total_peru'), 2) },
+  { accessorKey: 'cbm_total_china', header: cbmFlagHeader(CUSTOMIZED_ICONS_URL.CHINA), cell: ({ row }) => formatNumber(row.getValue('cbm_total_china'), 2) },
   {
     accessorKey: 'limite_cbm_imo',
     header: 'Límite CBM IMO',
@@ -476,8 +504,8 @@ const finanzasColumns: TableColumn<any>[] = [
       })
     },
   },
-  { accessorKey: 'cbm_total_peru', header: 'CBM Perú', cell: ({ row }) => formatNumber(row.getValue('cbm_total_peru'), 2) },
-  { accessorKey: 'cbm_total_china', header: 'CBM China', cell: ({ row }) => formatNumber(row.getValue('cbm_total_china'), 2) },
+  { accessorKey: 'cbm_total_peru', header: cbmFlagHeader(destinoCbmFlag), cell: ({ row }) => formatNumber(row.getValue('cbm_total_peru'), 2) },
+  { accessorKey: 'cbm_total_china', header: cbmFlagHeader(CUSTOMIZED_ICONS_URL.CHINA), cell: ({ row }) => formatNumber(row.getValue('cbm_total_china'), 2) },
   {
     id: 'actions',
     header: 'Acciones',
@@ -548,8 +576,8 @@ const documentacionColumns: TableColumn<any>[] = [
   { accessorKey: 'valor_fob', header: 'FOB', cell: ({ row }) => formatCurrency(row.getValue('valor_fob')) },
   { accessorKey: 'valor_flete', header: 'Flete', cell: ({ row }) => formatCurrency(row.getValue('valor_flete')) },
   { accessorKey: 'costo_destino', header: 'C. Destino', cell: ({ row }) => formatCurrency(row.getValue('costo_destino')) },
-  { accessorKey: 'cbm_total_peru', header: 'CBM Perú', cell: ({ row }) => formatNumber(row.getValue('cbm_total_peru'), 2) },
-  { accessorKey: 'cbm_total_china', header: 'CBM China', cell: ({ row }) => formatNumber(row.getValue('cbm_total_china'), 2) },
+  { accessorKey: 'cbm_total_peru', header: cbmFlagHeader(destinoCbmFlag), cell: ({ row }) => formatNumber(row.getValue('cbm_total_peru'), 2) },
+  { accessorKey: 'cbm_total_china', header: cbmFlagHeader(CUSTOMIZED_ICONS_URL.CHINA), cell: ({ row }) => formatNumber(row.getValue('cbm_total_china'), 2) },
   {
     accessorKey: 'acciones',
     header: 'Acciones',
