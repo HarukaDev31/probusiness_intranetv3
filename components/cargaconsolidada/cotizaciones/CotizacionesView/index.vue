@@ -9,9 +9,9 @@
             empty-state-message="No se encontraron registros de prospectos."
             @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
             @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos"
-            @export="exportData" :hide-back-button="false"
+            @export="exportData" :hide-back-button="!!scope"
             :previous-page-url="((currentRole == ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole)) || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.JEFE_MARKETING || currentRole == ROLES.RRHH || isOrgNoAdmin) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
-            :show-body-top="true">
+            :show-body-top="!scope">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
@@ -240,6 +240,12 @@ function renderEstadoPermisoPorTipo(list: Array<{ id_tipo_permiso?: number; nomb
     }))
 }
 
+const props = withDefaults(defineProps<CotizacionesViewProps>(), {
+    backBasePath: undefined,
+    scope: undefined
+})
+const scopeAgregado = computed(() => props.scope)
+
 const { getCotizacionProveedor,
     updateProveedorEstado,
     updateProveedor,
@@ -297,7 +303,7 @@ const { cotizaciones,
     exportData: exportProspectosData,
     fCierre,
     urlClientes,
-} = useCotizacion()
+} = useCotizacion({ scope: scopeAgregado })
 const { updateEstado: updateEstadoResumen } = useCotizacionResumen()
 const { forceSendInspection } = useCommons()
 const {
@@ -365,7 +371,8 @@ const showUploadPanel = ref(false)
 const { withSpinner } = useSpinner()
 import { STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
 const route = useRoute()
-const id = Array.isArray(route.params.id) ? route.params.id[0] : route.params.id
+// En la vista agregada (Jefe de Ventas) no hay contenedor: el back usa `alcance` y ignora el id.
+const id = props.scope ? '0' : (Array.isArray(route.params.id) ? route.params.id[0] : route.params.id)
 const { showConfirmation, showSuccess, showError } = useModal()
 
 // Función para copiar al portapapeles
@@ -477,23 +484,23 @@ const syncDriveSeguimientoFromHeaders = (
     syncDriveFromHeaders(Number(id), headersResponse.excel_seguimiento_drive)
 }
 
-const props = withDefaults(defineProps<CotizacionesViewProps>(), {
-    backBasePath: undefined
-})
-
 const currentRole = computed(() => props.role || authCurrentRole.value)
 const isSocio = computed(() => esRolSocio(currentRole.value))
 const isOrgNoAdmin = computed(() => {
     const orgId = getUserData()?.raw?.organizacion?.id
     return isSocio.value || esOrganizacionSocio(orgId)
 })
-const puedeCrearProspecto = computed(() => currentRole.value === ROLES.COTIZADOR || isSocio.value)
+const puedeCrearProspecto = computed(() => !props.scope && (currentRole.value === ROLES.COTIZADOR || isSocio.value))
 const basePath = computed(() => props.basePath)
 const backBasePath = computed(() => props.backBasePath || props.basePath)
 const tabs = ref([])
 import SimpleUploadFileModal from '~/components/commons/SimpleUploadFile.vue'
 import StatusOptionsModal from '~/components/cargaconsolidada/cotizaciones/StatusOptionsModal/index.vue'
 const loadTabs = () => {
+    if (props.scope) {
+        tabs.value = [{ label: 'Prospectos', value: 'prospectos' }]
+        return
+    }
     switch (currentRole.value) {
         case ROLES.ADMINISTRACION:
         case ROLES.CONTABILIDAD:
@@ -3223,7 +3230,18 @@ const toProspectosSocioColumns = (columns: TableColumn<any>[]) => {
     return mapped
 }
 
+const contenedorAgregadoColumn: TableColumn<any> = {
+    accessorKey: 'carga',
+    header: 'Contenedor',
+    cell: ({ row }: { row: any }) => h('div', { class: 'font-medium whitespace-nowrap' }, row.original.carga ? `#${row.original.carga}` : '-'),
+}
+
 const getProespectosColumns = () => {
+    const columns = getProespectosColumnsPorRol()
+    return props.scope ? [contenedorAgregadoColumn, ...columns] : columns
+}
+
+const getProespectosColumnsPorRol = () => {
     if (isOrgNoAdmin.value) return toProspectosSocioColumns(prospectosColumns.value)
     if (currentRole.value === ROLES.JEFE_MARKETING) return toMarketingProspectosColumns(prospectosCoordinacionColumns.value)
     switch (currentRole.value) {
@@ -3721,6 +3739,7 @@ const filterByNc = async () => {
 }
 
 const syncTabRoute = async (targetTab: 'prospectos' | 'embarque' | 'pagos') => {
+    if (props.scope) return
     const currentTab = typeof route.query.tab === 'string' ? route.query.tab : ''
     const query = { ...route.query, tab: targetTab }
     if (currentTab && currentTab !== targetTab) {
@@ -3867,7 +3886,7 @@ const resetFilters = () => {
 onMounted(() => {
     loadTabs();
 
-    const tabQuery = tabFromQuery()
+    const tabQuery = props.scope ? 'prospectos' : tabFromQuery()
 
     if (tabQuery) {
         tab.value = tabQuery
