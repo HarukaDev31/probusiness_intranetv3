@@ -88,10 +88,14 @@ const formatNombre = (s: string) => {
   return lower.charAt(0).toLocaleUpperCase('es-PE') + lower.slice(1)
 }
 
+const esAlmacen = computed(() => currentRole.value === ROLES.CONTENEDOR_ALMACEN || props.role === ROLES.CONTENEDOR_ALMACEN)
+
 const pasosMap = computed(() => ({
   'COTIZACION': (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)
     ? `${props.basePath}/cotizaciones/${id}?tab=pagos`
-    : `${props.basePath}/cotizaciones/${id}?tab=prospectos`,
+    : esAlmacen.value
+      ? `${props.basePath}/cotizaciones/${id}?tab=embarque`
+      : `${props.basePath}/cotizaciones/${id}?tab=prospectos`,
   'CLIENTES': currentRole.value === ROLES.FINANZAS
     ? `${props.basePath}/clientes/${id}?tab=general`
     : `${props.basePath}/clientes/${id}`,
