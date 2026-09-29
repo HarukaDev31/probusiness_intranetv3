@@ -113,6 +113,26 @@ export class CalculadoraImportacionService extends BaseService {
             throw new Error('No se pudo duplicar la cotización')
         }
     }
+    static async getRazonesDescarte(): Promise<{ success: boolean; data: Array<{ id: number; name: string }> }> {
+        return await this.apiCall<{ success: boolean; data: Array<{ id: number; name: string }> }>(`${this.baseUrl}/razones-descarte`, {
+            method: 'GET'
+        })
+    }
+
+    static async createRazonDescarte(name: string): Promise<{ success: boolean; data: { id: number; name: string } }> {
+        return await this.apiCall<{ success: boolean; data: { id: number; name: string } }>(`${this.baseUrl}/razones-descarte`, {
+            method: 'POST',
+            body: { name }
+        })
+    }
+
+    static async updateSeguimiento(id: number, seguimiento: 'SEGUIMIENTO' | 'DESCARTADA', idRazonDescarte?: number | null): Promise<any> {
+        return await this.apiCall<any>(`${this.baseUrl}/seguimiento/${id}`, {
+            method: 'POST',
+            body: { seguimiento, id_razon_descarte: idRazonDescarte ?? null }
+        })
+    }
+
     static async changeEstadoCotizacion(id: number, estado: string): Promise<any> {
         try {
             const response = await this.apiCall<any>(`${this.baseUrl}/change-estado/${id}`, {

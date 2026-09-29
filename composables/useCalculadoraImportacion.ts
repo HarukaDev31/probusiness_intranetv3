@@ -871,6 +871,17 @@ export const useCalculadoraImportacion = () => {
     }
   }
 
+  const getRazonesDescarte = async () => {
+    const response = await CalculadoraImportacionService.getRazonesDescarte()
+    return response?.data ?? []
+  }
+  const createRazonDescarte = async (name: string) => {
+    return await CalculadoraImportacionService.createRazonDescarte(name)
+  }
+  const updateSeguimientoCotizacion = async (id: number, seguimiento: 'SEGUIMIENTO' | 'DESCARTADA', idRazonDescarte?: number | null) => {
+    return await CalculadoraImportacionService.updateSeguimiento(id, seguimiento, idRazonDescarte)
+  }
+
   /**
    * Vincula la cotización en carga consolidada desde una fila de calculadora,
    * creando la cotización si no existe.
@@ -1057,6 +1068,9 @@ export const useCalculadoraImportacion = () => {
     deleteCotizacionCalculadora,
     duplicateCotizacionCalculadora,
     changeEstadoCotizacionCalculadora,
+    getRazonesDescarte,
+    createRazonDescarte,
+    updateSeguimientoCotizacion,
     vincularCotizacionCalculadora,
     vendedores,
     contenedores,
