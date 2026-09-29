@@ -134,7 +134,7 @@ import type { TableColumn, TableRow } from '@nuxt/ui'
 import type { FilterConfig } from '~/types/data-table'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
 import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
-import { ID_ORGANIZACION_ADMIN, ROLES, esOrganizacionSocio, esRolSocio, roleEsComoJefeImportacion } from '~/constants/roles'
+import { ID_ORGANIZACION_ADMIN, ROLES, esRolSocio, roleEsComoJefeImportacion } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
@@ -669,12 +669,7 @@ const getColorByEstado = (estado: string) => {
 const handleViewSteps = (id: number) => {
   const base = props.basePath ?? DEFAULT_BASE_PATH
   if (hasRole('ContenedorAlmacen')) {
-    const item = consolidadoData.value?.find((row: { id: number }) => row.id === id)
-    if (esOrganizacionSocio(item?.organizacion_id)) {
-      navigateTo(`${base}/pasos/${id}`)
-    } else {
-      navigateTo(`${base}/cotizaciones/${id}?tab=embarque`)
-    }
+    navigateTo(`${base}/cotizaciones/${id}?tab=embarque`)
   } else if (currentId.value !== GINO_USER_ID && props.role === ROLES.COTIZADOR) {
     navigateTo(`${base}/cotizaciones/${id}?tab=prospectos`)
   } else {
