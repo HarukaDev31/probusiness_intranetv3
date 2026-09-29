@@ -32,6 +32,30 @@ export class ConsolidadoService extends BaseService {
         }
         return ConsolidadoService.instance
       }
+    /** Exporta a Excel el listado de consolidados con los mismos filtros de la tabla (todas las páginas). */
+    static async exportConsolidadoList(params: ConsolidadoParams = {}): Promise<Blob> {
+        try {
+            const query = new URLSearchParams()
+            Object.entries(params).forEach(([key, value]) => {
+                if (key === 'page' || key === 'limit') return
+                if (value === undefined || value === null) return
+                const text = String(value).trim()
+                if (text === '' || text === 'todos') return
+                query.append(key, text)
+            })
+            return await this.apiCall<Blob>(`${this.baseUrl}/export-list?${query.toString()}`, {
+                method: 'GET',
+                responseType: 'blob',
+                headers: {
+                    Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                }
+            })
+        } catch (error) {
+            console.error('Error en ConsolidadoService.exportConsolidadoList:', error)
+            throw error
+        }
+    }
+
     static async getConsolidadoData(params: ConsolidadoParams = {}): Promise<ContenedorResponse> {
         try {
             // Validar y limpiar parámetros

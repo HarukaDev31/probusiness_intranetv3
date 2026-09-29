@@ -113,6 +113,36 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
         }
     }
 
+    const exportConsolidadoList = async (roleOverride?: string): Promise<{ success: boolean; error?: string }> => {
+        try {
+            const role = roleOverride ?? (roleRef && 'value' in roleRef ? roleRef.value : undefined)
+            const params: any = {
+                search: search.value,
+                estado_china: filters.value.estado_china,
+                anio: filters.value.anio,
+                estado_finanzas: filters.value.estado_finanzas,
+                completado: filters.value.completado,
+                organizacion_id: filters.value.organizacion_id,
+                empresa: filters.value.empresa,
+            }
+            if (role && String(role).trim()) params.role = String(role).trim()
+
+            const blob = await ConsolidadoService.exportConsolidadoList(params)
+            const url = window.URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            link.href = url
+            link.download = `consolidados_${new Date().toISOString().split('T')[0]}.xlsx`
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            window.URL.revokeObjectURL(url)
+            return { success: true }
+        } catch (err: any) {
+            console.error('Error al exportar consolidados:', err)
+            return { success: false, error: err?.message || 'Error al exportar' }
+        }
+    }
+
     const handleSearch = (value: string) => {
         search.value = value
         pagination.value.current_page = 1 // Reset a la primera página
@@ -296,6 +326,7 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
         organizacionOptions,
         empresaOptions,
         getConsolidadoData,
+        exportConsolidadoList,
         handleSearch,
         handlePageChange,
         handleItemsPerPageChange,
