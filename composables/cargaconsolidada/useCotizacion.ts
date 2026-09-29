@@ -1,7 +1,7 @@
 import { CotizacionService } from "../../services/cargaconsolidada/cotizacionService"
 import type { Header, PaginationInfo } from "../../types/data-table"
 import type { Cotizacion, CotizacionFilters } from "../../types/cargaconsolidada/cotizaciones"
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, type Ref, type ComputedRef } from 'vue'
 import { useRoute } from '#app'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useUserRole } from '~/composables/auth/useUserRole'
@@ -9,8 +9,9 @@ import { ROLES } from '~/constants/roles'
 
 const { withSpinner } = useSpinner()
 
-export const useCotizacion = () => {
+export const useCotizacion = (options: { scope?: Ref<'abiertos' | 'completados' | undefined> | ComputedRef<'abiertos' | 'completados' | undefined> } = {}) => {
     const { currentRole } = useUserRole()
+    const scope = options.scope
     const carga = ref<string | null>(null)
     const cotizaciones = ref<Cotizacion[]>([])
     const loading = ref(false)
@@ -86,6 +87,9 @@ export const useCotizacion = () => {
             }
             if (filters.value.estado_china && filters.value.estado_china !== 'todos') {
                 params.estado_china = filters.value.estado_china
+            }
+            if (scope?.value) {
+                params.alcance = scope.value
             }
             // Leer idCotizacion de la query string si existe
             if (route.query.idCotizacion) {
@@ -189,6 +193,11 @@ export const useCotizacion = () => {
         return await CotizacionService.updateOrigenMarketing(id, origen_marketing)
     }
     const getHeaders = async (id: number) => {
+        // En la vista agregada (todos los contenedores) no hay headers por contenedor.
+        if (scope?.value) {
+            loadingHeaders.value = false
+            return null
+        }
         loadingHeaders.value = true
         try {
             const response = await CotizacionService.getHeaders(id)

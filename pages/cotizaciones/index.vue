@@ -1,7 +1,31 @@
 <template>
   <div class="md:p-6">
+    <UTabs
+      v-if="mostrarTabsAgregadas"
+      v-model="activeTab"
+      color="neutral"
+      :items="pageTabs"
+      size="sm"
+      variant="pill"
+      class="mb-3 w-full md:w-96"
+    />
 
-    <DataTable title="Cotizaciones" :show-title="true" icon="i-heroicons-users" :data="cotizaciones" :columns="columns"
+    <CotizacionesView
+      v-if="activeTab === 'abiertos'"
+      scope="abiertos"
+      :role="currentRole || undefined"
+      base-path="/cargaconsolidada/abiertos"
+      back-base-path="/cargaconsolidada/abiertos"
+    />
+    <CotizacionesView
+      v-else-if="activeTab === 'embarcados'"
+      scope="completados"
+      :role="currentRole || undefined"
+      base-path="/cargaconsolidada/completados"
+      back-base-path="/cargaconsolidada/completados"
+    />
+
+    <DataTable v-show="activeTab === 'cotizaciones'" title="Cotizaciones" :show-title="true" icon="i-heroicons-users" :data="cotizaciones" :columns="columns"
       :loading="loading" :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
       :items-per-page="itemsPerPage" :search-query-value="search" :primary-search-value="search"
       :show-primary-search="true" :showPrimarySearchLabel="false" :primary-search-placeholder="'Buscar por'"
@@ -52,6 +76,17 @@ import type { FilterConfig } from '~/types/data-table'
 import { useIsDesktop } from '~/composables/useResponsive'
 import { STATUS_BG_CLASSES, CUSTOMIZED_ICONS_URL } from '~/constants/ui'
 import { formatCurrency } from '~/utils/formatters'
+import { useUserRole } from '~/composables/auth/useUserRole'
+import { esJefeVentasOEquivalente } from '~/constants/roles'
+const CotizacionesView = createLazyView(() => import('~/components/cargaconsolidada/cotizaciones/CotizacionesView/index.vue'))
+const { currentRole, currentId } = useUserRole()
+const mostrarTabsAgregadas = computed(() => esJefeVentasOEquivalente(currentId.value, currentRole.value))
+const pageTabs = [
+  { label: 'Cotizaciones', value: 'cotizaciones' },
+  { label: 'Abiertos', value: 'abiertos' },
+  { label: 'Embarcados', value: 'embarcados' },
+]
+const activeTab = ref('cotizaciones')
 const { isDesktop } = useIsDesktop()
 const route = useRoute()
 const { showSuccess, showConfirmation, showError } = useModal()
