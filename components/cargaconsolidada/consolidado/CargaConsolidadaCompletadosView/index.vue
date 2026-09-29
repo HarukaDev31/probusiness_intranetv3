@@ -170,6 +170,7 @@ const {
   organizacionOptions,
   empresaOptions,
   getConsolidadoData,
+  exportConsolidadoList,
   handleSearch,
   handlePageChange,
   handleItemsPerPageChange,
@@ -286,7 +287,8 @@ const filterConfig = computed<FilterConfig[]>(() => {
       ],
       placeholder: 'Selecciona un estado',
     })
-  } else {
+  } else if (isOrgAdmin.value) {
+    // Socio (org ≠ 1) solo ve consolidados completados: el filtro de estado no aporta nada.
     baseConfig.push({
       label: 'Estado',
       key: 'estado_china',
@@ -701,9 +703,16 @@ const handleDeleteCarga = async (id: number) => {
 
 const exportClientes = async () => {
   try {
-    // placeholder
-  } catch (error) {
-    console.error('Error al exportar:', error)
+    await withSpinner(async () => {
+      const result = await exportConsolidadoList()
+      if (result.success) {
+        showSuccess('Exportado', 'El listado se descargó correctamente.')
+      } else {
+        showError('Error al exportar', result.error ?? 'No se pudo exportar el listado.')
+      }
+    }, 'Exportando...')
+  } catch (error: any) {
+    showError('Error al exportar', error?.message ?? 'No se pudo exportar el listado.')
   }
 }
 
