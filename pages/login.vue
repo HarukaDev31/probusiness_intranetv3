@@ -146,7 +146,8 @@
 <script setup lang="ts">
 // Define layout for this page
 definePageMeta({
-  layout: 'auth'
+  layout: 'auth',
+  middleware: 'guest'
 })
 import { useAuth } from '../composables/auth/useAuth'
 // Auth composable
