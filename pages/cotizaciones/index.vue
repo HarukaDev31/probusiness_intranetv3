@@ -67,7 +67,7 @@ import { useRoute } from 'vue-router'
 import { useCalculadoraImportacion } from '~/composables/useCalculadoraImportacion'
 import SectionHeader from '~/components/commons/SectionHeader.vue'
 import type { Header } from '~/types/data-table'
-const { cotizaciones, loading, error, pagination, headers, search, itemsPerPage, totalPages, totalRecords, currentPage, filters, filterOptions, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, getCotizaciones, estadoCotizaciones, deleteCotizacionCalculadora, duplicateCotizacionCalculadora, changeEstadoCotizacionCalculadora, vincularCotizacionCalculadora, exportCotizacionesList, getRazonesDescarte, createRazonDescarte, updateSeguimientoCotizacion } = useCalculadoraImportacion()
+const { cotizaciones, loading, error, pagination, headers, search, itemsPerPage, totalPages, totalRecords, currentPage, filters, filterOptions, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, getCotizaciones, estadoCotizaciones, deleteCotizacionCalculadora, duplicateCotizacionCalculadora, changeEstadoCotizacionCalculadora, vincularCotizacionCalculadora, exportCotizacionesList, getRazonesDescarte, createRazonDescarte, deleteRazonDescarte, updateSeguimientoCotizacion } = useCalculadoraImportacion()
 import RazonDescarteModal from '~/components/calculadora/RazonDescarteModal/index.vue'
 import type { TableColumn } from '@nuxt/ui'
 import { UButton, USelect, UBadge } from '#components'
@@ -412,6 +412,12 @@ const razonDescarteHandlers = {
   createReason: async (name: string) => {
     const response = await createRazonDescarte(name)
     return response?.data
+  },
+  deleteReason: async (id: number) => {
+    const response = await deleteRazonDescarte(id)
+    if (!response?.success) {
+      throw new Error(response?.message || 'No se pudo eliminar la razón')
+    }
   },
   confirm: async (reasonId: number) => {
     if (!seguimientoTargetId.value) return
