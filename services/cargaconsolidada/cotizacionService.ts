@@ -53,7 +53,11 @@ export class CotizacionService extends BaseService {
         }
     static async getCotizaciones(id: number, filters: CotizacionFilters, signal?: AbortSignal) {
         try {
-            const response = await this.apiCall<CotizacionResponse>(`${this.baseUrl}/cotizaciones/${id}`, {
+            // Con alcance (vista Jefe de Ventas) se piden todos los contenedores, sin id de contenedor.
+            const url = filters?.alcance
+                ? `${this.baseUrl}/cotizaciones-todos`
+                : `${this.baseUrl}/cotizaciones/${id}`
+            const response = await this.apiCall<CotizacionResponse>(url, {
                 method: 'GET',
                 params: filters,
                 ...(signal ? { signal } : {})

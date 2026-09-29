@@ -1,29 +1,27 @@
 <template>
   <div class="md:p-6">
-    <UTabs
-      v-if="mostrarTabsAgregadas"
-      v-model="activeTab"
-      color="neutral"
-      :items="pageTabs"
-      size="sm"
-      variant="pill"
-      class="mb-3 w-full md:w-96"
-    />
-
     <CotizacionesView
       v-if="activeTab === 'abiertos'"
       scope="abiertos"
       :role="currentRole || undefined"
       base-path="/cargaconsolidada/abiertos"
       back-base-path="/cargaconsolidada/abiertos"
-    />
+    >
+      <template #tabs>
+        <UTabs v-model="activeTab" color="neutral" :items="pageTabs" size="sm" variant="pill" class="mb-1 w-80 h-15" />
+      </template>
+    </CotizacionesView>
     <CotizacionesView
       v-else-if="activeTab === 'embarcados'"
       scope="completados"
       :role="currentRole || undefined"
       base-path="/cargaconsolidada/completados"
       back-base-path="/cargaconsolidada/completados"
-    />
+    >
+      <template #tabs>
+        <UTabs v-model="activeTab" color="neutral" :items="pageTabs" size="sm" variant="pill" class="mb-1 w-80 h-15" />
+      </template>
+    </CotizacionesView>
 
     <DataTable v-show="activeTab === 'cotizaciones'" title="Cotizaciones" :show-title="true" icon="i-heroicons-users" :data="cotizaciones" :columns="columns"
       :loading="loading" :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
@@ -38,7 +36,10 @@
       @export="handleExport">
 
       <template #body-top>
-        <SectionHeader :headers="kpiHeaders" :loading="loading" :skeleton-count="4" />
+        <div class="flex flex-col gap-2 w-full">
+          <SectionHeader :headers="kpiHeaders" :loading="loading" :skeleton-count="4" />
+          <UTabs v-if="mostrarTabsAgregadas" v-model="activeTab" color="neutral" :items="pageTabs" size="sm" variant="pill" class="mb-1 w-80 h-15" />
+        </div>
       </template>
 
       <template #actions>
