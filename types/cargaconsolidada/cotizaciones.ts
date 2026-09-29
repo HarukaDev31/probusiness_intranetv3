@@ -30,6 +30,7 @@ export interface CotizacionFilters {
     estado_coordinacion: string
     estado_cotizador: string
     estado_china: string
+    alcance?: 'abiertos' | 'completados'
 }
 
 export interface CotizacionResponse {

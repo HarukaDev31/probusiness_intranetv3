@@ -11,10 +11,11 @@
             @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos"
             @export="exportData" :hide-back-button="!!scope"
             :previous-page-url="((currentRole == ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole)) || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.JEFE_MARKETING || currentRole == ROLES.RRHH || isOrgNoAdmin) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
-            :show-body-top="!scope">
+            :show-body-top="!scope || !!$slots.tabs">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
-                    <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
+                    <slot v-if="scope" name="tabs" />
+                    <SectionHeader v-if="!scope" :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingCotizaciones || loadingHeaders" />
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <div class="flex flex-wrap items-center gap-3 min-w-0">
