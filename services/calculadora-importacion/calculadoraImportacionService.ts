@@ -126,6 +126,12 @@ export class CalculadoraImportacionService extends BaseService {
         })
     }
 
+    static async deleteRazonDescarte(id: number): Promise<{ success: boolean; message?: string }> {
+        return await this.apiCall<{ success: boolean; message?: string }>(`${this.baseUrl}/razones-descarte/${id}`, {
+            method: 'DELETE'
+        })
+    }
+
     static async updateSeguimiento(id: number, seguimiento: 'SEGUIMIENTO' | 'DESCARTADA', idRazonDescarte?: number | null): Promise<any> {
         return await this.apiCall<any>(`${this.baseUrl}/seguimiento/${id}`, {
             method: 'POST',

@@ -23,6 +23,14 @@
             title="Crear razón de descarte"
             @click="showCreateReasonModal = true"
           />
+          <UButton
+            icon="i-heroicons-trash"
+            color="error"
+            variant="soft"
+            title="Eliminar razón seleccionada"
+            :disabled="!selectedReasonId"
+            @click="showConfirmDeleteReasonModal = true"
+          />
         </div>
       </div>
     </template>
@@ -37,6 +45,20 @@
           :disabled="!selectedReasonId || saving"
           @click="handleConfirm"
         />
+      </div>
+    </template>
+  </UModal>
+
+  <UModal v-model:open="showConfirmDeleteReasonModal" title="Eliminar razón">
+    <template #body>
+      <p class="text-sm text-gray-600 dark:text-gray-300">
+        ¿Deseas eliminar la razón seleccionada? Las cotizaciones que ya la usan la conservan, pero dejará de aparecer en la lista.
+      </p>
+    </template>
+    <template #footer>
+      <div class="flex justify-end gap-2">
+        <UButton label="Cancelar" color="neutral" variant="ghost" @click="showConfirmDeleteReasonModal = false" />
+        <UButton label="Eliminar" color="error" @click="handleDeleteReason" />
       </div>
     </template>
   </UModal>
@@ -66,6 +88,7 @@ interface RazonOption {
 interface RazonDescarteModalHandlers {
   fetchReasons: () => Promise<RazonOption[]>
   createReason: (name: string) => Promise<RazonOption | void>
+  deleteReason: (id: number) => Promise<void>
   confirm: (reasonId: number) => Promise<void>
 }
 
@@ -91,6 +114,7 @@ const selectedReasonId = ref(0)
 const reasons = ref<RazonOption[]>([])
 const newReasonName = ref('')
 const showCreateReasonModal = ref(false)
+const showConfirmDeleteReasonModal = ref(false)
 
 const reasonItems = computed(() => reasons.value.map((item) => ({ label: item.name, value: item.id })))
 
@@ -110,9 +134,22 @@ watch(open, (value) => {
     selectedReasonId.value = 0
     newReasonName.value = ''
     showCreateReasonModal.value = false
+    showConfirmDeleteReasonModal.value = false
     loadReasons()
   }
 })
+
+const handleDeleteReason = async () => {
+  if (!selectedReasonId.value) return
+  try {
+    await props.handlers.deleteReason(selectedReasonId.value)
+    selectedReasonId.value = 0
+    showConfirmDeleteReasonModal.value = false
+    await loadReasons()
+  } catch (error) {
+    showError('Error al eliminar razón', String(error))
+  }
+}
 
 const handleCreateReason = async () => {
   const name = newReasonName.value.trim()

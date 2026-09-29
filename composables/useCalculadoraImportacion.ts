@@ -878,6 +878,9 @@ export const useCalculadoraImportacion = () => {
   const createRazonDescarte = async (name: string) => {
     return await CalculadoraImportacionService.createRazonDescarte(name)
   }
+  const deleteRazonDescarte = async (id: number) => {
+    return await CalculadoraImportacionService.deleteRazonDescarte(id)
+  }
   const updateSeguimientoCotizacion = async (id: number, seguimiento: 'SEGUIMIENTO' | 'DESCARTADA', idRazonDescarte?: number | null) => {
     return await CalculadoraImportacionService.updateSeguimiento(id, seguimiento, idRazonDescarte)
   }
@@ -1070,6 +1073,7 @@ export const useCalculadoraImportacion = () => {
     changeEstadoCotizacionCalculadora,
     getRazonesDescarte,
     createRazonDescarte,
+    deleteRazonDescarte,
     updateSeguimientoCotizacion,
     vincularCotizacionCalculadora,
     vendedores,
