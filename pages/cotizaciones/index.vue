@@ -57,6 +57,8 @@
         <ErrorState :message="error || 'Error desconocido'" />
       </template>
     </DataTable>
+
+    <RazonDescarteModal v-model="showRazonDescarteModal" :handlers="razonDescarteHandlers" />
   </div>
 </template>
 <script setup lang="ts">
@@ -65,7 +67,8 @@ import { useRoute } from 'vue-router'
 import { useCalculadoraImportacion } from '~/composables/useCalculadoraImportacion'
 import SectionHeader from '~/components/commons/SectionHeader.vue'
 import type { Header } from '~/types/data-table'
-const { cotizaciones, loading, error, pagination, headers, search, itemsPerPage, totalPages, totalRecords, currentPage, filters, filterOptions, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, getCotizaciones, estadoCotizaciones, deleteCotizacionCalculadora, duplicateCotizacionCalculadora, changeEstadoCotizacionCalculadora, vincularCotizacionCalculadora, exportCotizacionesList } = useCalculadoraImportacion()
+const { cotizaciones, loading, error, pagination, headers, search, itemsPerPage, totalPages, totalRecords, currentPage, filters, filterOptions, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, getCotizaciones, estadoCotizaciones, deleteCotizacionCalculadora, duplicateCotizacionCalculadora, changeEstadoCotizacionCalculadora, vincularCotizacionCalculadora, exportCotizacionesList, getRazonesDescarte, createRazonDescarte, updateSeguimientoCotizacion } = useCalculadoraImportacion()
+import RazonDescarteModal from '~/components/calculadora/RazonDescarteModal/index.vue'
 import type { TableColumn } from '@nuxt/ui'
 import { UButton, USelect, UBadge } from '#components'
 import { createLazyView } from '~/utils/lazyView'
@@ -305,6 +308,31 @@ const columns: TableColumn<any>[] = [
       })
     }
   },
+  {
+    accessorKey: 'seguimiento',
+    header: 'Seguimiento',
+    cell: ({ row }: { row: any }) => {
+      const estado = row.original.estado
+      if (estado !== 'PENDIENTE' && estado !== 'COTIZADO') {
+        return h(UBadge, { label: '—', color: 'neutral', variant: 'soft', size: 'sm' })
+      }
+      const seguimiento = row.original.seguimiento === 'DESCARTADA' ? 'DESCARTADA' : 'SEGUIMIENTO'
+      return h('div', { class: 'flex flex-col gap-1' }, [
+        h(USelect as any, {
+          class: 'min-w-36',
+          color: seguimiento === 'DESCARTADA' ? 'error' : 'info',
+          items: SEGUIMIENTO_OPTIONS,
+          modelValue: seguimiento,
+          'onUpdate:modelValue': (value: 'SEGUIMIENTO' | 'DESCARTADA') => {
+            handleSeguimientoChange(row.original.id, value, seguimiento)
+          }
+        }),
+        seguimiento === 'DESCARTADA' && row.original.razon_descarte_nombre
+          ? h('span', { class: 'text-xs text-gray-500 whitespace-normal' }, row.original.razon_descarte_nombre)
+          : null
+      ])
+    }
+  },
 
   {
     accessorKey: 'acciones',
@@ -372,6 +400,52 @@ const columns: TableColumn<any>[] = [
     }
   }
 ]
+const SEGUIMIENTO_OPTIONS = [
+  { label: 'Seguimiento', value: 'SEGUIMIENTO' },
+  { label: 'Descartada', value: 'DESCARTADA' },
+]
+const showRazonDescarteModal = ref(false)
+const seguimientoTargetId = ref<number | null>(null)
+
+const razonDescarteHandlers = {
+  fetchReasons: async () => await getRazonesDescarte(),
+  createReason: async (name: string) => {
+    const response = await createRazonDescarte(name)
+    return response?.data
+  },
+  confirm: async (reasonId: number) => {
+    if (!seguimientoTargetId.value) return
+    const result = await updateSeguimientoCotizacion(seguimientoTargetId.value, 'DESCARTADA', reasonId)
+    if (!result?.success) {
+      throw new Error(result?.message || 'No se pudo descartar la cotización')
+    }
+    showSuccess('Cotización descartada', 'La razón de descarte se guardó correctamente.')
+    await getCotizaciones()
+  },
+}
+
+const handleSeguimientoChange = async (id: number | string, value: 'SEGUIMIENTO' | 'DESCARTADA', actual: string) => {
+  if (value === actual) return
+  if (value === 'DESCARTADA') {
+    seguimientoTargetId.value = Number(id)
+    showRazonDescarteModal.value = true
+    return
+  }
+  await withSpinner(async () => {
+    try {
+      const result = await updateSeguimientoCotizacion(Number(id), 'SEGUIMIENTO')
+      if (result?.success) {
+        showSuccess('Seguimiento actualizado', 'La cotización volvió a seguimiento.')
+        await getCotizaciones()
+      } else {
+        showError('Error al actualizar el seguimiento', result?.message || 'No se pudo actualizar el seguimiento')
+      }
+    } catch (error: any) {
+      showError('Error al actualizar el seguimiento', error?.data?.message || error?.message || 'No se pudo actualizar el seguimiento')
+    }
+  })
+}
+
 const handleEstadoChange = (id: string, value: string) => {
   // Validar que si se quiere cambiar a COTIZADO, debe tener id_carga_consolidada
   if (value === 'COTIZADO') {
