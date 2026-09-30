@@ -12,6 +12,8 @@ export interface WaInboxSession {
   configured?: boolean
   enabled?: boolean
   can_configure?: boolean
+  /** Código de país de la org (51 en org 1) */
+  phone_code?: string | null
 }
 
 export interface WaInboxOrgConfig {
