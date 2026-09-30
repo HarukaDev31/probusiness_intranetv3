@@ -81,7 +81,7 @@
               <div class="text-gray-900 dark:text-gray-100 break-words whitespace-normal max-w-full">{{ cliente?.red_social }}</div>
           </div>
         </div>
-        <div v-if="cliente?.id_user || cliente?.primer_servicio?.servicio == 'Curso'" class="mt-6 w-full flex flex-col gap-2">
+        <div v-if="puedeRecuperarContrasena" class="mt-6 w-full flex flex-col gap-2">
           <UButton 
             @click="handleEnviarInstruccionesRecuperacionContrasena" 
             color="primary" 
@@ -261,6 +261,13 @@ const historialComprasPaginado = computed(() => {
   const start = (currentPageHistorial.value - 1) * itemsPerPageHistorial.value
   const end = start + itemsPerPageHistorial.value
   return historialComprasOriginal.value.slice(start, end)
+})
+
+// Fuera de org 1 (sin cursos) solo si el backend encontró usuario del portal de su org
+const puedeRecuperarContrasena = computed(() => {
+  if (cliente.value?.id_user) return true
+  const esOrgPrincipal = (cliente.value?.organizacion_id ?? 1) === 1
+  return esOrgPrincipal && cliente.value?.primer_servicio?.servicio == 'Curso'
 })
 
 const tieneConsolidados = computed(() =>

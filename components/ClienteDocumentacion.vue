@@ -121,7 +121,7 @@
 
             <form @submit.prevent="guardarDocumentacion" class="space-y-4">
               <!-- Campos de volumen y valor -->
-              <div class="flex justify-between align-items-center gap-4">
+              <div v-if="esOrgPrincipal" class="flex justify-between align-items-center gap-4">
                 <div class="flex align-items-center justify-flex-start gap-2">
                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Volumen
                     documento</label>
@@ -503,6 +503,9 @@ const proveedorActivo = computed(() => {
   if (!documentacion.value || !servicioActivo.value) return null
   return documentacion.value.providers.find(p => p.id === servicioActivo.value) || null
 })
+
+// Volumen/valor documento solo aplican a la org principal
+const esOrgPrincipal = computed(() => (documentacion.value?.organizacion_id ?? 1) === 1)
 
 // Computed para los datos del documento del proveedor activo
 const documentoProveedor = computed(() => {
