@@ -3,6 +3,7 @@
 export interface ClienteDocumentacion {
   id: number
   id_contenedor: number
+  organizacion_id?: number | null
   id_tipo_cliente: number
   id_cliente: number
   fecha: string
