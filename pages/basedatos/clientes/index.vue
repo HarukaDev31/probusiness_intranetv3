@@ -35,11 +35,15 @@ import type { TableColumn } from '@nuxt/ui'
 
 // Components
 const UButton = resolveComponent('UButton')
-import { ID_JEFEVENTAS, ROLES } from '~/constants/roles'
+import { ID_JEFEVENTAS, ID_ORGANIZACION_ADMIN, ROLES } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
-const { hasRole, isCoordinacion, currentRole, currentId } = useUserRole()
+const { hasRole, isCoordinacion, currentRole, currentId, getUserData } = useUserRole()
+const isOrgAdmin = computed(() => {
+  const user = getUserData()
+  return Number(user?.raw?.organizacion?.id || user?.organizacion?.id || 0) === ID_ORGANIZACION_ADMIN
+})
 const { showSuccess, showError } = useModal()
 const { withSpinner } = useSpinner()
 import { useIsDesktop } from '~/composables/useResponsive'
@@ -115,7 +119,8 @@ const filterConfig = computed(() => [
     placeholder: 'DD/MM/YYYY',
     options: []
   },
-  {
+  // Curso solo existe en la org 1: para otras organizaciones el filtro de servicio no aporta.
+  ...(isOrgAdmin.value ? [{
     key: 'servicio',
     label: 'Servicio',
     type: 'select',
@@ -125,7 +130,7 @@ const filterConfig = computed(() => [
       { label: 'Curso', value: 'Curso' },
       { label: 'Consolidado', value: 'Consolidado' },
     ]
-  },
+  }] : []),
   {
     key: 'categoria',
     label: 'Categoría',
