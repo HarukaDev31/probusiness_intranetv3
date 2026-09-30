@@ -426,6 +426,7 @@
     <WhatsappInboxNewContactModal
       v-model:open="newContactOpen"
       :assignable-users="assignableUsers"
+      :phone-code="session?.phone_code"
       :saving="savingNewContact"
       @save="onNewContactSave"
     />

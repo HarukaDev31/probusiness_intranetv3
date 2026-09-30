@@ -21,12 +21,12 @@
 
         <UFormField
           label="Teléfono WhatsApp"
-          :hint="phonePreview || '9 dígitos (Perú) o número con código 51'"
+          :hint="phonePreview || 'Con o sin código de país'"
           required
         >
           <UInput
             v-model="phone"
-            placeholder="987 654 321"
+            :placeholder="`Ej. ${phoneCodeLabel} 987 654 321 o sin código`"
             inputmode="tel"
             autocomplete="tel"
           />
@@ -66,6 +66,8 @@ import {
 const props = defineProps<{
   assignableUsers: WaInboxAssignableUser[]
   saving?: boolean
+  /** Código de país de la org; se antepone si el número no lo trae */
+  phoneCode?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -83,14 +85,17 @@ const assignItems = computed(() => [
   ...props.assignableUsers.map((u) => ({ label: u.name, value: u.id }))
 ])
 
+const orgPhoneCode = computed(() => props.phoneCode || '51')
+const phoneCodeLabel = computed(() => `+${orgPhoneCode.value}`)
+
 const phonePreview = computed(() => {
-  const e164 = normalizeWaInboxPhoneE164(phone.value)
+  const e164 = normalizeWaInboxPhoneE164(phone.value, orgPhoneCode.value)
   return e164 ? formatWaInboxPhonePreview(e164) : ''
 })
 
 const canSubmit = computed(() => {
   const name = contactName.value.trim()
-  return name.length >= 2 && isValidWaInboxPhone(phone.value)
+  return name.length >= 2 && isValidWaInboxPhone(phone.value, orgPhoneCode.value)
 })
 
 function resetForm() {
