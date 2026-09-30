@@ -1023,14 +1023,14 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                     innerHTML: CUSTOMIZED_ICONS.PDF,
                     class: 'cursor-pointer',
                     onClick: () => {
-                        downloadFile(row.original.url_cotizacion_pdf)
+                        downloadFile(row.original.url_cotizacion_pdf, row.original.nombre)
                     }
                 }) : null,
                 row.original.cotizacion_file_url ? h('div', {
                     innerHTML: CUSTOMIZED_ICONS.EXCEL,
                     class: 'cursor-pointer',
                     onClick: () => {
-                        downloadFile(row.original.cotizacion_file_url)
+                        downloadFile(row.original.cotizacion_file_url, row.original.nombre)
                     }
                 }) : null,
                 showBorrarResubir && !row.original.cotizacion_file_url ? h(UButton, {
@@ -1248,14 +1248,14 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                     innerHTML: CUSTOMIZED_ICONS.PDF,
                     class: 'cursor-pointer',
                     onClick: () => {
-                        downloadFile(row.original.url_cotizacion_pdf)
+                        downloadFile(row.original.url_cotizacion_pdf, row.original.nombre)
                     }
                 }) : null,
                 row.original.cotizacion_file_url ? h('div', {
                     innerHTML: CUSTOMIZED_ICONS.EXCEL,
                     class: 'cursor-pointer',
                     onClick: () => {
-                        downloadFile(row.original.cotizacion_file_url)
+                        downloadFile(row.original.cotizacion_file_url, row.original.nombre)
                     }
                 }) : null,
                 showBorrarResubir && !row.original.cotizacion_file_url ? h(UButton, {
@@ -3679,18 +3679,37 @@ const getEstadoPago = (estado: string) => {
             return 'bg-gray-100 text-gray-800 border-gray-200'
     }
 }
-const downloadFile = async (fileUrl: string) => {
+// Nombre de descarga: "NOMBRE CLIENTE #19A.pdf" (carga ya viene con la parte si está partido)
+const buildDownloadName = (fileUrl: string, nombre?: string | null) => {
+    const ext = (fileUrl.split('?')[0].match(/\.[a-z0-9]{2,5}$/i)?.[0] ?? '').toLowerCase()
+    const base = [String(nombre ?? '').trim(), carga.value ? `#${carga.value}` : '']
+        .filter(Boolean)
+        .join(' ')
+        .replace(/[\\/:*?"<>|]+/g, '')
+    return `${base || 'archivo'}${ext}`
+}
 
-
+const downloadFile = async (fileUrl: string, nombre?: string | null) => {
+    const fileName = buildDownloadName(fileUrl, nombre)
     try {
         await withSpinner(async () => {
             const a = document.createElement('a')
-            a.href = fileUrl
-            a.download = 'archivo'
-            a.target = '_blank'
+            let objectUrl: string | null = null
+            try {
+                // El atributo download no aplica a URLs de otro origen (CDN): bajar como blob para poder nombrarlo
+                const res = await fetch(fileUrl)
+                if (!res.ok) throw new Error(`HTTP ${res.status}`)
+                objectUrl = window.URL.createObjectURL(await res.blob())
+                a.href = objectUrl
+            } catch {
+                a.href = fileUrl
+                a.target = '_blank'
+            }
+            a.download = fileName
             document.body.appendChild(a)
             a.click()
             document.body.removeChild(a)
+            if (objectUrl) window.URL.revokeObjectURL(objectUrl)
         }, 'Descargando archivo...')
     } catch (error) {
         showError('Error al descargar archivo', error as string)
