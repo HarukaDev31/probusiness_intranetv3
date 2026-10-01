@@ -134,6 +134,10 @@ export const useCalculadoraImportacion = () => {
     to: 0
   })
   const headers = ref<Header[]>([])
+  /** Tab del listado: abiertos (consolidado abierto o sin asignar) | embarcados */
+  const tab = ref<'abiertos' | 'embarcados'>('abiertos')
+  /** Filtro por seguimiento (KPI de pendientes): '' = sin filtro */
+  const seguimientoFilter = ref<'' | 'SEGUIMIENTO' | 'DESCARTADA'>('')
   const search = ref('')
   const itemsPerPage = ref(10)
   const totalPages = computed(() => Math.ceil(pagination.value.total / itemsPerPage.value))
@@ -738,7 +742,11 @@ export const useCalculadoraImportacion = () => {
     try {
       const params: any = {
         page: pagination.value.current_page,
-        per_page: itemsPerPage.value
+        per_page: itemsPerPage.value,
+        tab: tab.value
+      }
+      if (seguimientoFilter.value) {
+        params.seguimiento = seguimientoFilter.value
       }
       const idCalc = options?.id_calculadora
       if (idCalc != null && idCalc > 0) {
@@ -763,6 +771,9 @@ export const useCalculadoraImportacion = () => {
       }
       if (filters.value.vendedor && filters.value.vendedor !== '' && filters.value.vendedor !== 'todos') {
         params.vendedor = filters.value.vendedor
+      }
+      if (filters.value.anio && filters.value.anio !== 'todos') {
+        params.anio = filters.value.anio
       }
 
       if (filters.value.proveedores_vinculados && filters.value.proveedores_vinculados !== 'todos' && filters.value.proveedores_vinculados !== '') {
@@ -817,7 +828,8 @@ export const useCalculadoraImportacion = () => {
   /** Exporta la lista de cotizaciones (con filtros actuales). El backend devuelve XLSX con estilos. */
   const exportCotizacionesList = async (): Promise<{ success: boolean; error?: string }> => {
     try {
-      const params: Record<string, string | number | undefined> = {}
+      const params: Record<string, string | number | undefined> = { tab: tab.value }
+      if (seguimientoFilter.value) params.seguimiento = seguimientoFilter.value
       if (search.value.trim()) params.search = search.value.trim()
       if (filters.value.fecha_inicio) params.fecha_inicio = filters.value.fecha_inicio
       if (filters.value.fecha_fin) params.fecha_fin = filters.value.fecha_fin
@@ -825,6 +837,7 @@ export const useCalculadoraImportacion = () => {
       if (filters.value.campania && filters.value.campania !== '' && filters.value.campania !== 'todas') params.campania = filters.value.campania
       if (filters.value.estado_calculadora && filters.value.estado_calculadora !== '' && filters.value.estado_calculadora !== 'todos') params.estado_calculadora = filters.value.estado_calculadora
       if (filters.value.vendedor && filters.value.vendedor !== '' && filters.value.vendedor !== 'todos') params.vendedor = filters.value.vendedor
+      if (filters.value.anio && filters.value.anio !== 'todos') params.anio = filters.value.anio
       if (filters.value.proveedores_vinculados && filters.value.proveedores_vinculados !== '' && filters.value.proveedores_vinculados !== 'todos') params.proveedores_vinculados = filters.value.proveedores_vinculados
 
       const blob = await CalculadoraImportacionService.exportListCotizaciones(params)
@@ -881,7 +894,7 @@ export const useCalculadoraImportacion = () => {
   const deleteRazonDescarte = async (id: number) => {
     return await CalculadoraImportacionService.deleteRazonDescarte(id)
   }
-  const updateSeguimientoCotizacion = async (id: number, seguimiento: 'SEGUIMIENTO' | 'DESCARTADA', idRazonDescarte?: number | null) => {
+  const updateSeguimientoCotizacion = async (id: number, seguimiento: 'SEGUIMIENTO' | 'DESCARTADA' | null, idRazonDescarte?: number | null) => {
     return await CalculadoraImportacionService.updateSeguimiento(id, seguimiento, idRazonDescarte)
   }
 
@@ -1055,6 +1068,8 @@ export const useCalculadoraImportacion = () => {
     error,
     pagination,
     headers,
+    tab,
+    seguimientoFilter,
     search,
     itemsPerPage,
     totalPages,

@@ -86,6 +86,7 @@
                             >
                                 {{ header.hint }}
                             </p>
+                            <slot name="extra" :header="header" />
                         </div>
 
                         <div

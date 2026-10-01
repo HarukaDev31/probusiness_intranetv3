@@ -137,6 +137,8 @@ export interface CotizacionFilters {
   proveedores_vinculados: string
   estado_calculadora: string
   vendedor: string
+  /** Año de creación de la cotización ('' = todos) */
+  anio?: string
 }
 
 export interface FilterOption {
