@@ -543,7 +543,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
             const cotizacion_contrato_autosigned_url = String(pick(['cotizacion_contrato_autosigned_url']) || '')
             const cod_cotizacion = String(pick(['cod_contract_calculator']) || '')
             return h('div', { class: '' }, [
-                h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
+                h('div', { class: 'font-medium whitespace-normal break-words max-w-[260px]' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
                 documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
                 telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
                 correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : null,
@@ -797,7 +797,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
             const cotizacion_contrato_autosigned_url = String(pick(['cotizacion_contrato_autosigned_url']) || '')
             const cod_cotizacion = String(pick(['cod_contract_calculator']) || '')
             return h('div', { class: 'py-2' }, [
-                h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
+                h('div', { class: 'font-medium whitespace-normal break-words max-w-[260px]' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
                 documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
                 telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
                 correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : h('div', { class: 'text-sm text-gray-500' }, 'Sin correo'),
@@ -1031,7 +1031,7 @@ const getPagosColumns = () => {
                 const telefono = row.original?.telefono || ''
                 const correo = row.original?.correo || ''
                 return h('div', { class: 'py-2' }, [
-                    h('div', { class: 'font-medium' }, nombre?.toUpperCase()),
+                    h('div', { class: 'font-medium whitespace-normal break-words max-w-[260px]' }, nombre?.toUpperCase()),
                     h('div', { class: 'text-sm text-gray-500' }, documento),
                     h('div', { class: 'text-sm text-gray-500' }, telefono),
                     h('div', { class: 'text-sm text-gray-500' }, correo || 'Sin correo')
@@ -1214,7 +1214,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
             const nombre = row.original?.nombre || row.original?.cliente?.nombre || ''
             const telefono = row.original?.telefono || row.original?.cliente?.telefono || ''
             return h('div', { class: 'w-70 whitespace-normal' }, [
-                h('div', { class: 'font-medium' }, nombre ? (typeof nombre === 'string' ? nombre.toUpperCase() : nombre) : ''),
+                h('div', { class: 'font-medium whitespace-normal break-words max-w-[260px]' }, nombre ? (typeof nombre === 'string' ? nombre.toUpperCase() : nombre) : ''),
                 telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null
             ])
         }
@@ -1638,7 +1638,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
             const nombre = row.original?.nombre || row.original?.cliente?.nombre || ''
             const telefono = row.original?.telefono || row.original?.cliente?.telefono || ''
             return h('div', { class: 'w-70 whitespace-normal' }, [
-                h('div', { class: 'font-medium' }, nombre ? (typeof nombre === 'string' ? nombre.toUpperCase() : nombre) : ''),
+                h('div', { class: 'font-medium whitespace-normal break-words max-w-[260px]' }, nombre ? (typeof nombre === 'string' ? nombre.toUpperCase() : nombre) : ''),
                 telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null
             ])
         }
@@ -2108,7 +2108,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
             const nombre = row.original?.nombre || row.original?.cliente?.nombre || ''
             const telefono = row.original?.telefono || row.original?.cliente?.telefono || ''
             return h('div', { class: 'w-40 whitespace-normal' }, [
-                h('div', { class: 'font-medium' }, nombre ? (typeof nombre === 'string' ? nombre.toUpperCase() : nombre) : ''),
+                h('div', { class: 'font-medium whitespace-normal break-words max-w-[260px]' }, nombre ? (typeof nombre === 'string' ? nombre.toUpperCase() : nombre) : ''),
                 telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null
             ])
         }
