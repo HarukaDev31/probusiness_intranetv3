@@ -132,22 +132,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, ref } from 'vue'
 import { useCalendarStore } from '~/composables/useCalendarStore'
 import { useModal } from '~/composables/commons/useModal'
+import { COLOR_PRESETS } from '~/constants/calendar'
 
 const router = useRouter()
-import { COLOR_PRESETS } from '~/constants/calendar'
 
 const {
   responsables,
   loading,
+  initialize,
   loadResponsables,
   loadColorConfig,
   updateUserColor,
-  getResponsableColor,
-  getCalendarRoute
+  getResponsableColor
 } = useCalendarStore()
 
 const { showSuccess, showError } = useModal()
@@ -155,22 +154,13 @@ const { showSuccess, showError } = useModal()
 const colorPresets = COLOR_PRESETS
 const colorPickerOpen = ref<Record<number, boolean>>({})
 
-const getColor = (userId: number, nombre?: string) => {
-  return getResponsableColor(userId, nombre)
-}
+const getColor = (userId: number, nombre?: string | null) => getResponsableColor(userId, nombre)
 
 const setColor = async (userId: number, color: string) => {
-  const hex = color.startsWith('#') ? color : `#${color}`
-  try {
-    const ok = await updateUserColor(userId, hex)
-    if (ok) {
-      await loadColorConfig(true)
-      showSuccess('Color actualizado', 'El color del responsable se guardó correctamente.')
-    } else {
-      showError('Error', 'No se pudo guardar el color.')
-    }
-  } catch (err: any) {
-    showError('Error', err?.message || 'No se pudo guardar el color.')
+  if (await updateUserColor(userId, color)) {
+    showSuccess('Color actualizado', 'El color del responsable se guardó correctamente.')
+  } else {
+    showError('Error', 'No se pudo guardar el color.')
   }
 }
 
@@ -179,10 +169,8 @@ const toggleColorPicker = (userId: number) => {
 }
 
 onMounted(async () => {
-  await Promise.all([
-    loadResponsables(),
-    loadColorConfig(true)
-  ])
+  await initialize()
+  await Promise.all([loadResponsables(), loadColorConfig(true)])
 })
 
 definePageMeta({

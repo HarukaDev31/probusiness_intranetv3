@@ -1,81 +1,88 @@
-import type { CalendarEventPriority, CalendarEventStatus } from '~/types/calendar'
+import type { CalendarColorSource, CalendarEventPriority, CalendarEventStatus } from '~/types/calendar'
 
-/** Cuenta solo días hábiles (lun–vie) entre dos fechas YYYY-MM-DD, inclusive. No cuenta sábado ni domingo. */
-export function countWeekdaysBetween(startDateStr: string, endDateStr: string): number {
-  const start = new Date(startDateStr + 'T12:00:00')
-  const end = new Date(endDateStr + 'T12:00:00')
-  if (start > end) return 0
-  let count = 0
-  const cur = new Date(start)
-  while (cur <= end) {
-    const d = cur.getDay()
-    if (d !== 0 && d !== 6) count++
-    cur.setDate(cur.getDate() + 1)
-  }
-  return count
+/** Colores semánticos de NuxtUI (prop `color` de UButton/UBadge). */
+export type UiColor = 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral'
+
+export interface PriorityOption {
+  label: string
+  value: CalendarEventPriority
+  color: UiColor
+  /** Clases del badge (fondo + texto). */
+  badgeClass: string
 }
 
-// Opciones de prioridad para selects
-export const PRIORITY_OPTIONS: { label: string; value: CalendarEventPriority; color: string }[] = [
-  { label: 'Bajo', value: 0, color: 'success' },
-  { label: 'Medio', value: 1, color: 'warning' },
-  { label: 'Alto', value: 2, color: 'error' }
+export interface StatusOption {
+  label: string
+  value: CalendarEventStatus
+  icon: string
+  /** Clases del badge (fondo + texto). */
+  badgeClass: string
+}
+
+export const PRIORITY_OPTIONS: PriorityOption[] = [
+  { label: 'Bajo', value: 0, color: 'success', badgeClass: 'bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-400' },
+  { label: 'Medio', value: 1, color: 'warning', badgeClass: 'bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-400' },
+  { label: 'Alto', value: 2, color: 'error', badgeClass: 'bg-error-100 text-error-700 dark:bg-error-900/30 dark:text-error-400' }
 ]
 
-// Opciones de estado para selects
-export const STATUS_OPTIONS: { label: string; value: CalendarEventStatus; color: string }[] = [
-  { label: 'Pendiente', value: 'PENDIENTE', color: 'warning' },
-  { label: 'En Progreso', value: 'PROGRESO', color: 'info' },
-  { label: 'Completado', value: 'COMPLETADO', color: 'success' }
+export const STATUS_OPTIONS: StatusOption[] = [
+  { label: 'Pendiente', value: 'PENDIENTE', icon: 'i-heroicons-clock', badgeClass: 'bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-400' },
+  { label: 'En progreso', value: 'PROGRESO', icon: 'i-heroicons-play-circle', badgeClass: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
+  { label: 'Completado', value: 'COMPLETADO', icon: 'i-heroicons-check-circle', badgeClass: 'bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-400' }
 ]
 
-// Colores por defecto para responsables (se sobrescriben con los de la BD)
+export const getPriorityOption = (priority: CalendarEventPriority): PriorityOption =>
+  PRIORITY_OPTIONS.find(o => o.value === priority) ?? PRIORITY_OPTIONS[0]
+
+export const getStatusOption = (status: CalendarEventStatus): StatusOption =>
+  STATUS_OPTIONS.find(o => o.value === status) ?? STATUS_OPTIONS[0]
+
+/** Color hex del evento según prioridad (fuente PRIORIDAD). */
+export const PRIORITY_HEX: Record<CalendarEventPriority, string> = {
+  0: '#22c55e',
+  1: '#f59e0b',
+  2: '#ef4444'
+}
+
+/** Gris para eventos/responsables completados. */
+export const COMPLETED_HEX = '#9ca3af'
+/** Color neutro cuando un usuario o consolidado no tiene color configurado. */
+export const FALLBACK_HEX = '#6B7280'
+
+export const DEFAULT_JEFE_COLOR_ORDER: CalendarColorSource[] = ['ACTIVIDAD', 'CONSOLIDADO', 'USUARIO', 'PRIORIDAD', 'COMPLETADO']
+export const DEFAULT_MIEMBRO_COLOR_ORDER: CalendarColorSource[] = ['USUARIO', 'PRIORIDAD', 'ACTIVIDAD', 'CONSOLIDADO', 'COMPLETADO']
+
+export const COLOR_SOURCE_LABELS: Record<CalendarColorSource, string> = {
+  PRIORIDAD: 'Prioridad',
+  ACTIVIDAD: 'Actividad',
+  CONSOLIDADO: 'Consolidado',
+  USUARIO: 'Por perfil',
+  COMPLETADO: 'Completado'
+}
+
+/** Colores por defecto para responsables (se sobrescriben con los de la BD). */
 export const DEFAULT_RESPONSABLE_COLORS: Record<string, string> = {
-  'Danitza': '#8B5CF6',   // Violeta
-  'Daniela': '#EC4899',   // Rosa
-  'Patrick': '#3B82F6',   // Azul
-  'Meliza': '#10B981'     // Verde
+  'Danitza': '#8B5CF6',
+  'Daniela': '#EC4899',
+  'Patrick': '#3B82F6',
+  'Meliza': '#10B981'
 }
 
-// Opciones de vista del calendario
-export const VIEW_OPTIONS = [
-  { label: 'Día', value: 'day' },
-  { label: 'Semana', value: 'week' },
-  { label: 'Mes', value: 'month' },
-  { label: 'Actividades', value: 'activities' } // Nueva vista de tabla
-]
-
-// Colores predefinidos para el color picker
+/** Colores predefinidos para el color picker. */
 export const COLOR_PRESETS = [
-  '#EF4444', // Red
-  '#F97316', // Orange
-  '#F59E0B', // Amber
-  '#EAB308', // Yellow
-  '#84CC16', // Lime
-  '#22C55E', // Green
-  '#10B981', // Emerald
-  '#14B8A6', // Teal
-  '#06B6D4', // Cyan
-  '#0EA5E9', // Sky
-  '#3B82F6', // Blue
-  '#6366F1', // Indigo
-  '#8B5CF6', // Violet
-  '#A855F7', // Purple
-  '#D946EF', // Fuchsia
-  '#EC4899', // Pink
-  '#F43F5E', // Rose
-  '#78716C', // Stone
-  '#6B7280', // Gray
-  '#1F2937'  // Dark
+  '#EF4444', '#F97316', '#F59E0B', '#EAB308', '#84CC16',
+  '#22C55E', '#10B981', '#14B8A6', '#06B6D4', '#0EA5E9',
+  '#3B82F6', '#6366F1', '#8B5CF6', '#A855F7', '#D946EF',
+  '#EC4899', '#F43F5E', '#78716C', '#6B7280', '#1F2937'
 ]
 
-// Días de la semana
-export const WEEK_DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
-export const WEEK_DAYS_FULL = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+/** Lunes primero (columnas de la grilla). */
+export const WEEK_DAYS_SHORT = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
-// Meses
 export const MONTHS = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ]
 export const MONTHS_SHORT = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+
+export const PER_PAGE_OPTIONS = [10, 25, 50, 100].map(value => ({ label: `${value} por página`, value }))

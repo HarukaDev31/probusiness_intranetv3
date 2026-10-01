@@ -68,7 +68,7 @@
 
               <UFormField
                 label="Fecha fin"
-                :error="item.errors.end_date"
+                
               >
                 <UPopover :open="undefined">
                   <UButton
@@ -79,10 +79,14 @@
                     class="w-full justify-start"
                     :class="{ 'text-gray-400 dark:text-gray-500': !item.end_date }"
                   >
-                    {{ item.end_date ? formatCalendarDate(item.end_date) : 'Seleccionar fecha' }}
+                    {{ item.end_date ? formatIsoDate(item.end_date) : 'Seleccionar fecha' }}
                   </UButton>
                   <template #content>
-                    <UCalendar v-model="item.end_date" class="p-2" />
+                    <UCalendar
+                      :model-value="parseIsoDate(item.end_date) ?? undefined"
+                      class="p-2"
+                      @update:model-value="(v) => (item.end_date = v && 'day' in v ? toIsoDate(v) : null)"
+                    />
                   </template>
                 </UPopover>
               </UFormField>
@@ -129,36 +133,34 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import type { CreateSubtaskRequest, IsoDate } from '~/types/calendar'
+import { formatIsoDate, parseIsoDate, toIsoDate } from '~/utils/calendar/dates'
+
+/** Subtarea lista para crear (el estado inicial siempre es PENDIENTE). */
+export type NewSubtask = Pick<CreateSubtaskRequest, 'name' | 'duration_hours' | 'end_date'>
 
 interface SubtaskRow {
   name: string
   duration_hours: number | null
-  end_date: any
-  errors: {
-    name: string
-    duration_hours: string
-    end_date: string
-  }
+  end_date: IsoDate | null
+  errors: { name: string; duration_hours: string }
 }
 
-interface Props {
+const props = withDefaults(defineProps<{
   open: boolean
   activityName?: string
+  /** Ya formateada para mostrar (DD/MM/YYYY). */
   activityEndDate?: string
-  chargeName?: string
   saving?: boolean
-}
-
-const props = withDefaults(defineProps<Props>(), {
+}>(), {
   saving: false,
   activityName: '',
-  activityEndDate: '',
-  chargeName: ''
+  activityEndDate: ''
 })
 
 const emit = defineEmits<{
   (e: 'close'): void
-  (e: 'create', items: { name: string; duration_hours: number; end_date: any }[]): void
+  (e: 'create', items: NewSubtask[]): void
 }>()
 
 const subtasks = ref<SubtaskRow[]>([])
@@ -167,7 +169,7 @@ const createEmptyRow = (): SubtaskRow => ({
   name: '',
   duration_hours: null,
   end_date: null,
-  errors: { name: '', duration_hours: '', end_date: '' }
+  errors: { name: '', duration_hours: '' }
 })
 
 const addRow = () => {
@@ -179,29 +181,22 @@ const removeRow = (index: number) => {
 }
 
 const clearError = (index: number, field: keyof SubtaskRow['errors']) => {
-  if (subtasks.value[index]) {
-    subtasks.value[index].errors[field] = ''
-  }
-}
-
-const formatCalendarDate = (d: { year: number; month: number; day: number } | null): string => {
-  if (!d || d.year == null) return ''
-  return `${String(d.day).padStart(2, '0')}/${String(d.month).padStart(2, '0')}/${d.year}`
+  const row = subtasks.value[index]
+  if (row) row.errors[field] = ''
 }
 
 const validate = (): boolean => {
   let valid = true
   for (const item of subtasks.value) {
-    item.errors = { name: '', duration_hours: '', end_date: '' }
-
-    if (!item.name.trim()) {
+    item.errors = { name: '', duration_hours: '' }
+    const name = item.name.trim()
+    if (!name) {
       item.errors.name = 'El nombre es obligatorio'
       valid = false
-    } else if (item.name.trim().length < 3) {
+    } else if (name.length < 3) {
       item.errors.name = 'Mínimo 3 caracteres'
       valid = false
     }
-
     if (item.duration_hours != null && item.duration_hours < 0) {
       item.errors.duration_hours = 'No puede ser negativo'
       valid = false
@@ -212,23 +207,18 @@ const validate = (): boolean => {
 
 const handleCreate = () => {
   if (!validate()) return
-  const items = subtasks.value.map(s => ({
+  emit('create', subtasks.value.map(s => ({
     name: s.name.trim(),
     duration_hours: s.duration_hours != null ? Number(s.duration_hours) : 0,
     end_date: s.end_date
-  }))
-  emit('create', items)
+  })))
 }
 
 const handleClose = () => {
-  if (!props.saving) {
-    emit('close')
-  }
+  if (!props.saving) emit('close')
 }
 
 watch(() => props.open, (isOpen) => {
-  if (isOpen) {
-    subtasks.value = [createEmptyRow()]
-  }
+  if (isOpen) subtasks.value = [createEmptyRow()]
 })
 </script>

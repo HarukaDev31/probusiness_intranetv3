@@ -1,501 +1,356 @@
-import { CalendarService, type CalendarRoleGroup } from "~/services/calendar/calendarService"
+import { CalendarService } from '~/services/calendar/calendarService'
 import type {
-  CalendarEvent,
-  CalendarFilters,
-  CalendarPaginationMeta,
-  CalendarResponsable,
-  CalendarContenedor,
-  CalendarUserColorConfig,
-  CalendarConsolidadoColorConfig,
+  CalendarActivityCatalogExtras,
   CalendarActivityCatalogItem,
-  CalendarEventStatus,
+  CalendarColorSource,
+  CalendarConfig,
+  CalendarConsolidadoColor,
+  CalendarContenedor,
+  CalendarEvent,
+  CalendarEventApi,
+  CalendarEventCharge,
   CalendarEventPriority,
+  CalendarEventStatus,
+  CalendarFilters,
+  CalendarMyRoleGroup,
+  CalendarPaginationMeta,
+  CalendarPermissions,
+  CalendarProgressStats,
+  CalendarResponsable,
+  CalendarSubtask,
+  CalendarUserColor,
   CreateCalendarEventRequest,
-  UpdateCalendarEventRequest,
-  TeamProgress,
+  CreateSubtaskRequest,
   ResponsableProgress,
-  CalendarSubtask
-} from "~/types/calendar"
+  TeamProgress,
+  UpdateCalendarEventRequest,
+  UpdateSubtaskRequest
+} from '~/types/calendar'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useUserRole } from '~/composables/auth/useUserRole'
-import type { CalendarConfigResponse } from '~/services/calendar/calendarService'
 import { markCalendarActionByCurrentUser } from '~/config/websocket/events/calendar'
-import { DEFAULT_RESPONSABLE_COLORS } from '~/constants/calendar'
+import {
+  COMPLETED_HEX,
+  DEFAULT_JEFE_COLOR_ORDER,
+  DEFAULT_MIEMBRO_COLOR_ORDER,
+  DEFAULT_RESPONSABLE_COLORS,
+  FALLBACK_HEX,
+  PRIORITY_HEX
+} from '~/constants/calendar'
+import { deriveStatusFromCharges, deriveStatusFromSubtasks, getEventEndDate, getEventStartDate } from '~/utils/calendar/events'
 
 const { withSpinner } = useSpinner()
 
-// Colores por defecto para prioridades
-const PRIORITY_COLORS: Record<number, string> = {
-  0: '#22c55e', // Verde - Bajo
-  1: '#f59e0b', // Amarillo - Medio
-  2: '#ef4444'  // Rojo - Alto
+/** Recursos cacheados en memoria (TTL de 5 minutos). */
+type CacheKey = 'events' | 'responsables' | 'contenedores' | 'colorConfig' | 'consolidadoColorConfig' | 'activityCatalog' | 'progress'
+
+const CACHE_TTL_MS = 5 * 60 * 1000
+
+const EMPTY_PERMISSIONS: CalendarPermissions = {
+  canCreateActivity: false,
+  canEditActivity: false,
+  canDeleteActivity: false,
+  canAssignResponsables: false,
+  canEditAnyStatus: false,
+  canEditOwnStatus: false,
+  canEditPriority: false,
+  canViewTeamProgress: false,
+  canFilterByResponsable: false,
+  canAccessConfig: false
 }
 
-// Estado global compartido (singleton)
+const emptyFilters = (): CalendarFilters => ({})
+
+// Estado global compartido entre todas las vistas del calendario (singleton)
 const state = {
-  // Datos principales
-  events: ref<CalendarEvent[]>([]),
+  events: shallowRef<CalendarEvent[]>([]),
   responsables: ref<CalendarResponsable[]>([]),
   contenedores: ref<CalendarContenedor[]>([]),
-  colorConfig: ref<CalendarUserColorConfig[]>([]),
-  consolidadoColorConfig: ref<CalendarConsolidadoColorConfig[]>([]),
+  colorConfig: ref<CalendarUserColor[]>([]),
+  consolidadoColorConfig: ref<CalendarConsolidadoColor[]>([]),
   activityCatalog: ref<CalendarActivityCatalogItem[]>([]),
   teamProgress: ref<TeamProgress | null>(null),
   responsableProgress: ref<ResponsableProgress[]>([]),
-  myProgressStats: ref<{ total: number; completadas: number; en_progreso: number; pendientes: number } | null>(null),
-  globalProgressStats: ref<{ total: number; completadas: number; en_progreso: number; pendientes: number } | null>(null),
-  
-  // Estado de carga
+  myProgressStats: ref<CalendarProgressStats | null>(null),
+  globalProgressStats: ref<CalendarProgressStats | null>(null),
+
+  /** Solo carga de listas (eventos / inicialización). Las mutaciones no lo activan. */
   loading: ref(false),
   error: ref<string | null>(null),
-  
-  // Filtros activos
-  filters: ref<CalendarFilters>({
-    start_date: undefined,
-    end_date: undefined,
-    responsable_id: undefined,
-    responsable_ids: undefined,
-    contenedor_id: undefined,
-    contenedor_ids: undefined,
-    status: undefined,
-    priority: undefined,
-    event_id: undefined
-  }),
-  
-  /** Metadatos de paginación cuando getEvents se llama con page/per_page */
+
+  filters: ref<CalendarFilters>(emptyFilters()),
   eventsPagination: ref<CalendarPaginationMeta | null>(null),
-  
-  // Control de caché
+  lastEventsQuery: '',
+  /** Filtros de la última consulta de eventos (para "Recargar vista actual"). */
+  lastEventsFilters: {} as CalendarFilters,
+
   lastFetch: {
-    events: ref<number>(0),
-    responsables: ref<number>(0),
-    contenedores: ref<number>(0),
-    colorConfig: ref<number>(0),
-    consolidadoColorConfig: ref<number>(0),
-    activityCatalog: ref<number>(0),
-    progress: ref<number>(0)
-  },
-  
-  // Tiempo de caché en ms (5 minutos)
-  CACHE_TTL: 5 * 60 * 1000,
-  
-  // Flag para saber si ya se inicializó
-  initialized: ref(false),
+    events: 0,
+    responsables: 0,
+    contenedores: 0,
+    colorConfig: 0,
+    consolidadoColorConfig: 0,
+    activityCatalog: 0,
+    progress: 0
+  } as Record<CacheKey, number>,
 
-  // Configuración de calendario (permisos, rol, colores) — compartida entre todas las vistas
-  calendarConfig: ref<CalendarConfigResponse['data'] | null>(null),
-
-  // Id del grupo de calendario activo (para usuarios en varios grupos). Se envía en todas las peticiones y se sincroniza con la URL.
+  initialized: false,
+  calendarConfig: ref<CalendarConfig | null>(null),
+  /** Grupo activo; se envía en las peticiones y se sincroniza con ?role_group_id. */
   currentRoleGroupId: ref<number | null>(null),
+  /** Grupos donde el usuario es JEFE (selector de calendarios). */
+  myRoleGroups: ref<CalendarMyRoleGroup[]>([])
+}
 
-  // Grupos de calendario del usuario (para selector de calendarios en index.vue)
-  myRoleGroups: ref<CalendarRoleGroup[]>([])
+const isFresh = (key: CacheKey) => Date.now() - state.lastFetch[key] < CACHE_TTL_MS
+
+const errorMessage = (err: unknown, fallback: string): string =>
+  err instanceof Error && err.message ? err.message : fallback
+
+/** Reemplaza el evento por id generando un nuevo array (state.events es shallowRef). */
+const replaceEvent = (id: number, update: (event: CalendarEvent) => CalendarEvent) => {
+  state.events.value = state.events.value.map(e => (e.id === id ? update(e) : e))
+}
+
+/** Actualiza un charge (y el estado derivado del evento) sin recargar la lista. */
+const updateChargeInEvents = (chargeId: number, update: (charge: CalendarEventCharge) => CalendarEventCharge) => {
+  state.events.value = state.events.value.map(event => {
+    if (!event.charges.some(c => c.id === chargeId)) return event
+    const charges = event.charges.map(c => (c.id === chargeId ? update(c) : c))
+    return { ...event, charges, status: deriveStatusFromCharges(charges) }
+  })
+}
+
+const updateSubtasksOfCharge = (chargeId: number, update: (subtasks: CalendarSubtask[]) => CalendarSubtask[]) => {
+  updateChargeInEvents(chargeId, charge => {
+    const subtasks = update(charge.subtasks)
+    return { ...charge, subtasks, status: deriveStatusFromSubtasks(subtasks) }
+  })
+}
+
+const chargeIdOfSubtask = (subtaskId: number): number | null => {
+  for (const event of state.events.value) {
+    for (const charge of event.charges) {
+      if (charge.subtasks.some(s => s.id === subtaskId)) return charge.id
+    }
+  }
+  return null
 }
 
 export const useCalendarStore = () => {
-  const { currentRole, currentId } = useUserRole()
+  const { currentId } = useUserRole()
   const route = useRoute()
 
-  // ============================================
-  // HELPERS DE CACHÉ
-  // ============================================
-  
-  const isCacheValid = (lastFetchTime: number): boolean => {
-    return Date.now() - lastFetchTime < state.CACHE_TTL
-  }
-
-  const shouldRefetch = (key: keyof typeof state.lastFetch, force: boolean = false): boolean => {
-    if (force) return true
-    return !isCacheValid(state.lastFetch[key].value)
-  }
+  const currentUserIdNum = computed(() => Number(currentId.value) || 0)
 
   // ============================================
-  // TRANSFORMACIÓN DE DATOS
-  // ============================================
-
-  const transformEvent = (event: CalendarEvent): CalendarEvent => {
-    const title = event.name || event.title || 'Sin título'
-
-    // Misma prioridad que getEventColors: actividad > consolidado > prioridad (solo para .color del evento)
-    let color = PRIORITY_COLORS[event.priority] || '#3b82f6'
-    const activityId = event.activity_id != null ? Number(event.activity_id) : null
-    if (activityId != null && !Number.isNaN(activityId)) {
-      const catalogItem = state.activityCatalog.value.find(a => Number(a.id) === activityId)
-      if (catalogItem?.color_code && String(catalogItem.color_code).trim()) {
-        color = String(catalogItem.color_code).trim()
-      }
-    }
-    if (color === (PRIORITY_COLORS[event.priority] || '#3b82f6') && event.contenedor_id) {
-      const consolidadoConfig = state.consolidadoColorConfig.value.find(c => c.contenedor_id === event.contenedor_id)
-      if (consolidadoConfig) color = consolidadoConfig.color_code
-    }
-
-    let startDate = event.start_date
-    let endDate = event.end_date
-    
-    if (!startDate && event.days && event.days.length > 0) {
-      const sortedDays = [...event.days].sort((a, b) => a.date.localeCompare(b.date))
-      startDate = sortedDays[0].date
-      endDate = sortedDays[sortedDays.length - 1].date
-    }
-
-    return {
-      ...event,
-      title,
-      color,
-      start_date: startDate,
-      end_date: endDate || startDate,
-      is_all_day: true,
-    }
-  }
-
-  // ============================================
-  // PERMISOS Y CONFIGURACIÓN (desde backend)
+  // CONFIGURACIÓN Y PERMISOS
   // ============================================
 
   const calendarConfig = state.calendarConfig
-
-  const calendarPermissions = computed(() => {
-    return calendarConfig.value?.permissions ?? {}
-  })
-
-  const isJefeImportaciones = computed(() => {
-    return calendarConfig.value?.role_group?.role_type === 'JEFE'
-  })
-
+  const calendarPermissions = computed<CalendarPermissions>(() => calendarConfig.value?.permissions ?? EMPTY_PERMISSIONS)
+  const isJefeImportaciones = computed(() => calendarConfig.value?.role_group?.role_type === 'JEFE')
   const isCoordinacionOrDocumentacion = computed(() => {
     const roleType = calendarConfig.value?.role_group?.role_type
-    // En el nuevo esquema de grupos de calendario solo hay JEFE o MIEMBRO.
-    // Ambos se consideran parte del equipo para efectos de filtros/vistas.
     return roleType === 'JEFE' || roleType === 'MIEMBRO'
   })
+  const usaConsolidado = computed(() => calendarConfig.value?.usa_consolidado ?? true)
+  const showEventDetails = computed(() => calendarConfig.value?.show_event_details ?? false)
 
-  const usaConsolidado = computed(() => {
-    return calendarConfig.value?.usa_consolidado ?? true
+  /** Orden de prioridad de colores según el rol del usuario en el grupo activo. */
+  const effectiveColorOrder = computed<CalendarColorSource[]>(() => {
+    const order = calendarConfig.value?.color_priority_order
+    if (isJefeImportaciones.value) return order?.jefe?.length ? order.jefe : DEFAULT_JEFE_COLOR_ORDER
+    return order?.miembro?.length ? order.miembro : DEFAULT_MIEMBRO_COLOR_ORDER
   })
 
-  const defaultJefeOrder = ['ACTIVIDAD', 'CONSOLIDADO', 'USUARIO', 'PRIORIDAD', 'COMPLETADO']
-  const defaultMiembroOrder = ['USUARIO', 'PRIORIDAD', 'ACTIVIDAD', 'CONSOLIDADO', 'COMPLETADO']
-
-  /** Orden guardado en role-groups para el jefe; solo usa default si la API no devuelve array con elementos. */
-  const jefeColorOrder = computed(() => {
-    const raw = calendarConfig.value?.color_priority_order?.jefe
-    if (Array.isArray(raw) && raw.length > 0) return raw
-    return defaultJefeOrder
-  })
-  /** Orden guardado en role-groups para el miembro; solo usa default si la API no devuelve array con elementos. */
-  const miembroColorOrder = computed(() => {
-    const raw = calendarConfig.value?.color_priority_order?.miembro
-    if (Array.isArray(raw) && raw.length > 0) return raw
-    return defaultMiembroOrder
-  })
-
-  /** Orden de prioridad de colores según el rol del usuario en el grupo actual (el de la config). */
-  const effectiveColorOrder = computed(() => {
-    const roleType = calendarConfig.value?.role_group?.role_type
-    if (roleType === 'JEFE') return jefeColorOrder.value
-    return miembroColorOrder.value
-  })
-
-  const showEventDetails = computed(() => {
-    return calendarConfig.value?.show_event_details ?? false
-  })
-
-  // ============================================
-  // EVENTOS / ACTIVIDADES
-  // ============================================
-
-  const getEvents = async (filters?: CalendarFilters, force: boolean = false) => {
-    // Si los filtros son los mismos y el caché es válido, no recargar
-    const filtersKey = JSON.stringify({ ...state.filters.value, ...filters })
-    const lastFiltersKey = (state as any)._lastFiltersKey
-    
-    if (!force && lastFiltersKey === filtersKey && isCacheValid(state.lastFetch.events.value)) {
-      return state.events.value
-    }
-    
-    try {
-      state.loading.value = true
-      state.error.value = null
-      const appliedFilters: CalendarFilters = {
-        ...state.filters.value,
-        ...filters,
-        role_group_id: state.currentRoleGroupId.value ?? undefined
-      }
-      const response = await CalendarService.getEvents(appliedFilters)
-      state.events.value = (response.data || []).map(transformEvent)
-      if (response.meta) {
-        state.eventsPagination.value = response.meta
-      } else if (appliedFilters.page === undefined && appliedFilters.per_page === undefined) {
-        state.eventsPagination.value = null
-      }
-      if ((response as any).my_progress) {
-        state.myProgressStats.value = (response as any).my_progress
-      }
-      if ((response as any).global_progress) {
-        state.globalProgressStats.value = (response as any).global_progress
-      }
-      state.lastFetch.events.value = Date.now()
-      ;(state as any)._lastFiltersKey = filtersKey
-      return state.events.value
-    } catch (err: any) {
-      state.error.value = err?.message || 'Error al cargar eventos'
-      console.error('Error en getEvents:', err)
-      return []
-    } finally {
-      state.loading.value = false
-    }
+  const roleGroupIdFromRoute = (): number | null => {
+    const raw = route.query.role_group_id
+    const parsed = typeof raw === 'string' ? Number.parseInt(raw, 10) : Number.NaN
+    return Number.isNaN(parsed) ? null : parsed
   }
 
-  const createActivity = async (data: CreateCalendarEventRequest): Promise<CalendarEvent | null> => {
-    try {
-      state.error.value = null
-      const activity = await withSpinner(
-        () => CalendarService.createActivity(data),
-        'Creando actividad...'
-      )
-      // No hacer push aquí: el caller hace loadEvents/loadActivitiesData y reemplaza la lista.
-      // Evita duplicados cuando se recarga justo después de crear.
-      return activity
-    } catch (err: any) {
-      state.error.value = err?.message || 'Error al crear actividad'
-      console.error('Error en createActivity:', err)
-      return null
-    }
-  }
-
-  const updateActivity = async (data: UpdateCalendarEventRequest): Promise<CalendarEvent | null> => {
-    try {
-      state.error.value = null
-      const activity = await withSpinner(
-        () => CalendarService.updateActivity(data),
-        'Actualizando actividad...'
-      )
-      if (activity) {
-        // Actualizar en la lista local
-        const index = state.events.value.findIndex(e => e.id === data.id)
-        if (index !== -1) {
-          state.events.value[index] = transformEvent(activity)
-        }
-      }
-      return activity
-    } catch (err: any) {
-      state.error.value = err?.message || 'Error al actualizar actividad'
-      console.error('Error en updateActivity:', err)
-      return null
-    }
-  }
-
-  const deleteActivity = async (id: number): Promise<boolean> => {
-    try {
-      state.error.value = null
-      await withSpinner(
-        () => CalendarService.deleteActivity(id),
-        'Eliminando actividad...'
-      )
-      // Remover de la lista local
-      state.events.value = state.events.value.filter(e => e.id !== id)
-      return true
-    } catch (err: any) {
-      state.error.value = err?.message || 'Error al eliminar actividad'
-      console.error('Error en deleteActivity:', err)
-      return false
-    }
-  }
-
-  // ============================================
-  // RESPONSABLES
-  // ============================================
-
-  const loadResponsables = async (force: boolean = false) => {
-    if (!shouldRefetch('responsables', force) && state.responsables.value.length > 0) {
-      return state.responsables.value
-    }
-    
-    try {
-      const data = await CalendarService.getResponsables()
-      state.responsables.value = data
-      state.lastFetch.responsables.value = Date.now()
-      return data
-    } catch (err: any) {
-      console.error('Error al cargar responsables:', err)
-      return []
-    }
-  }
-
-  // ============================================
-  // GRUPOS DEL USUARIO (selector de calendarios)
-  // ============================================
-
-  const loadMyRoleGroups = async (): Promise<CalendarRoleGroup[]> => {
-    try {
-      const groups = await CalendarService.getMyRoleGroups()
-      const jefeGroups = groups.filter((g: CalendarRoleGroup) => g.role_type === 'JEFE')
-      state.myRoleGroups.value = jefeGroups
-      // Si no hay grupo activo pero sí grupos donde es jefe, seleccionar el primero por defecto
-      if (state.currentRoleGroupId.value == null && jefeGroups.length > 0) {
-        state.currentRoleGroupId.value = jefeGroups[0].id
-      }
-      return jefeGroups
-    } catch (err) {
-      console.error('Error al cargar grupos de calendario del usuario:', err)
-      state.myRoleGroups.value = []
-      return []
-    }
-  }
-
-  // ============================================
-  // CONTENEDORES
-  // ============================================
-
-  const loadContenedores = async (force: boolean = false) => {
-    if (!shouldRefetch('contenedores', force) && state.contenedores.value.length > 0) {
-      return state.contenedores.value
-    }
-    
-    try {
-      const data = await CalendarService.getContenedores()
-      state.contenedores.value = data
-      state.lastFetch.contenedores.value = Date.now()
-      return data
-    } catch (err: any) {
-      console.error('Error al cargar contenedores:', err)
-      return []
-    }
-  }
+  const roleGroupFilter = (): { role_group_id?: number } =>
+    state.currentRoleGroupId.value != null ? { role_group_id: state.currentRoleGroupId.value } : {}
 
   // ============================================
   // COLORES
   // ============================================
 
-  const loadColorConfig = async (force: boolean = false) => {
-    if (!shouldRefetch('colorConfig', force) && state.colorConfig.value.length > 0) {
-      return state.colorConfig.value
+  const getResponsableColor = (userId: number, nombre?: string | null): string => {
+    const config = state.colorConfig.value.find(c => c.user_id === userId)
+    if (config?.color_code) return config.color_code
+    if (nombre && DEFAULT_RESPONSABLE_COLORS[nombre]) return DEFAULT_RESPONSABLE_COLORS[nombre]
+    return FALLBACK_HEX
+  }
+
+  const getConsolidadoColor = (contenedorId: number): string =>
+    state.consolidadoColorConfig.value.find(c => c.contenedor_id === contenedorId)?.color_code ?? FALLBACK_HEX
+
+  const activityColorOf = (activityId: number | null): string | null => {
+    if (activityId == null) return null
+    const color = state.activityCatalog.value.find(a => a.id === activityId)?.color_code?.trim()
+    return color || null
+  }
+
+  const consolidadoColorOf = (contenedorId: number | null): string | null =>
+    contenedorId == null
+      ? null
+      : state.consolidadoColorConfig.value.find(c => c.contenedor_id === contenedorId)?.color_code ?? null
+
+  /** Color base del evento (actividad > consolidado > prioridad). */
+  const baseColorOf = (event: CalendarEventApi): string =>
+    activityColorOf(event.activity_id) ?? consolidadoColorOf(event.contenedor_id) ?? PRIORITY_HEX[event.priority] ?? PRIORITY_HEX[0]
+
+  const toCalendarEvent = (event: CalendarEventApi): CalendarEvent => ({
+    ...event,
+    start_date: getEventStartDate(event),
+    end_date: getEventEndDate(event) ?? getEventStartDate(event),
+    color: baseColorOf(event)
+  })
+
+  /**
+   * Colores con que se pinta un evento, según el orden de prioridad del grupo.
+   * USUARIO devuelve un color por responsable (gris si ese responsable ya completó).
+   */
+  const getEventColors = (event: CalendarEvent): string[] => {
+    const priorityColor = PRIORITY_HEX[event.priority] ?? PRIORITY_HEX[0]
+    const isCompleted = event.status === 'COMPLETADO'
+    const userColors = event.charges.map(c =>
+      c.status === 'COMPLETADO' ? COMPLETED_HEX : (c.user?.color?.trim() || getResponsableColor(c.user_id, c.user?.nombre))
+    )
+    const sources: Record<CalendarColorSource, () => string[] | null> = {
+      COMPLETADO: () => (isCompleted ? [COMPLETED_HEX] : null),
+      PRIORIDAD: () => [priorityColor],
+      ACTIVIDAD: () => { const c = activityColorOf(event.activity_id); return c ? [c] : null },
+      CONSOLIDADO: () => { const c = consolidadoColorOf(event.contenedor_id); return c ? [c] : null },
+      USUARIO: () => (userColors.length ? userColors : null)
     }
-    
+    for (const key of effectiveColorOrder.value) {
+      const colors = sources[key]?.()
+      if (colors) return colors
+    }
+    return [isCompleted ? COMPLETED_HEX : priorityColor]
+  }
+
+  const loadColorConfig = async (force = false): Promise<CalendarUserColor[]> => {
+    if (!force && isFresh('colorConfig') && state.colorConfig.value.length) return state.colorConfig.value
     try {
-      const data = await CalendarService.getColorConfig()
-      state.colorConfig.value = data
-      state.lastFetch.colorConfig.value = Date.now()
-      return data
-    } catch (err: any) {
+      state.colorConfig.value = await CalendarService.getColorConfig()
+      state.lastFetch.colorConfig = Date.now()
+    } catch (err) {
       console.error('Error al cargar configuración de colores:', err)
-      return []
     }
+    return state.colorConfig.value
   }
 
   const updateUserColor = async (userId: number, colorCode: string): Promise<boolean> => {
     const hex = colorCode.startsWith('#') ? colorCode : `#${colorCode}`
     try {
-      await CalendarService.updateUserColor({ user_id: userId, color_code: hex })
-      const index = state.colorConfig.value.findIndex(c => c.user_id === userId)
-      if (index !== -1) {
-        state.colorConfig.value[index].color_code = hex
-      } else {
-        state.colorConfig.value.push({ user_id: userId, color_code: hex } as CalendarUserColorConfig)
-      }
+      await CalendarService.updateUserColor(userId, hex)
+      const others = state.colorConfig.value.filter(c => c.user_id !== userId)
+      state.colorConfig.value = [...others, { user_id: userId, color_code: hex }]
       return true
-    } catch (err: any) {
-      state.error.value = err?.message || 'Error al actualizar color'
-      console.error('Error en updateUserColor:', err)
+    } catch (err) {
+      state.error.value = errorMessage(err, 'Error al actualizar color')
       return false
     }
   }
 
-  const getResponsableColor = (userId: number, nombre?: string): string => {
-    const config = state.colorConfig.value.find(c => c.user_id === userId)
-    if (config?.color_code) {
-      return config.color_code
-    }
-    if (nombre && DEFAULT_RESPONSABLE_COLORS[nombre]) {
-      return DEFAULT_RESPONSABLE_COLORS[nombre]
-    }
-    return '#6B7280'
-  }
-
-  const loadConsolidadoColorConfig = async (force: boolean = false) => {
-    if (!shouldRefetch('consolidadoColorConfig', force) && state.consolidadoColorConfig.value.length > 0) {
-      return state.consolidadoColorConfig.value
-    }
+  const loadConsolidadoColorConfig = async (force = false): Promise<CalendarConsolidadoColor[]> => {
+    if (!force && isFresh('consolidadoColorConfig') && state.consolidadoColorConfig.value.length) return state.consolidadoColorConfig.value
     try {
-      const data = await CalendarService.getConsolidadoColorConfig()
-      state.consolidadoColorConfig.value = data
-      state.lastFetch.consolidadoColorConfig.value = Date.now()
-      return data
-    } catch (err: any) {
+      state.consolidadoColorConfig.value = await CalendarService.getConsolidadoColorConfig()
+      state.lastFetch.consolidadoColorConfig = Date.now()
+    } catch (err) {
       console.error('Error al cargar colores de consolidados:', err)
-      return []
     }
+    return state.consolidadoColorConfig.value
   }
 
-  /** Guarda múltiples colores de consolidados en una sola petición */
-  const updateConsolidadoColors = async (items: Array<{ contenedorId: number; colorCode: string }>): Promise<boolean> => {
+  /** Guarda varios colores de consolidado en una sola petición. */
+  const updateConsolidadoColors = async (items: CalendarConsolidadoColor[]): Promise<boolean> => {
     try {
-      await CalendarService.updateConsolidadoColors(
-        items.map(i => ({ contenedor_id: i.contenedorId, color_code: i.colorCode }))
-      )
-      const next = [...state.consolidadoColorConfig.value]
-      for (const { contenedorId, colorCode } of items) {
-        const index = next.findIndex(c => c.contenedor_id === contenedorId)
-        if (index !== -1) {
-          next[index] = { ...next[index], color_code: colorCode }
-        } else {
-          next.push({ contenedor_id: contenedorId, color_code: colorCode } as CalendarConsolidadoColorConfig)
-        }
-      }
-      state.consolidadoColorConfig.value = next
+      await CalendarService.updateConsolidadoColors(items)
+      const changedIds = new Set(items.map(i => i.contenedor_id))
+      state.consolidadoColorConfig.value = [
+        ...state.consolidadoColorConfig.value.filter(c => !changedIds.has(c.contenedor_id)),
+        ...items
+      ]
       return true
-    } catch (err: any) {
-      state.error.value = err?.message || 'Error al actualizar colores de consolidados'
-      console.error('Error en updateConsolidadoColors:', err)
+    } catch (err) {
+      state.error.value = errorMessage(err, 'Error al actualizar colores de consolidados')
       return false
     }
   }
 
-  const updateConsolidadoColor = async (contenedorId: number, colorCode: string): Promise<boolean> => {
-    return updateConsolidadoColors([{ contenedorId, colorCode }])
-  }
-
-  const getConsolidadoColor = (contenedorId: number): string => {
-    const config = state.consolidadoColorConfig.value.find(c => c.contenedor_id === contenedorId)
-    return config?.color_code ?? '#6B7280'
-  }
-
   // ============================================
-  // CATÁLOGO DE ACTIVIDADES
+  // CATÁLOGOS
   // ============================================
 
-  const loadActivityCatalog = async (force: boolean = false) => {
-    let roleGroupId = state.currentRoleGroupId.value
-    if (roleGroupId == null) {
-      const raw = route.query.role_group_id
-      const parsed = typeof raw === 'string' ? parseInt(raw, 10) : NaN
-      if (!Number.isNaN(parsed)) {
-        roleGroupId = parsed
-        state.currentRoleGroupId.value = parsed
-      }
+  const loadResponsables = async (force = false): Promise<CalendarResponsable[]> => {
+    if (!force && isFresh('responsables') && state.responsables.value.length) return state.responsables.value
+    try {
+      state.responsables.value = await CalendarService.getResponsables(state.currentRoleGroupId.value)
+      state.lastFetch.responsables = Date.now()
+    } catch (err) {
+      console.error('Error al cargar responsables:', err)
     }
+    return state.responsables.value
+  }
+
+  const loadContenedores = async (force = false): Promise<CalendarContenedor[]> => {
+    if (!force && isFresh('contenedores') && state.contenedores.value.length) return state.contenedores.value
+    try {
+      state.contenedores.value = await CalendarService.getContenedores()
+      state.lastFetch.contenedores = Date.now()
+    } catch (err) {
+      console.error('Error al cargar consolidados:', err)
+    }
+    return state.contenedores.value
+  }
+
+  /** Solo grupos donde el usuario es JEFE (los miembros no eligen calendario). */
+  const loadMyRoleGroups = async (): Promise<CalendarMyRoleGroup[]> => {
+    try {
+      const groups = await CalendarService.getMyRoleGroups()
+      state.myRoleGroups.value = groups.filter(g => g.role_type === 'JEFE')
+    } catch (err) {
+      console.error('Error al cargar grupos de calendario del usuario:', err)
+      state.myRoleGroups.value = []
+    }
+    if (state.currentRoleGroupId.value == null && state.myRoleGroups.value.length) {
+      state.currentRoleGroupId.value = state.myRoleGroups.value[0].id
+    }
+    return state.myRoleGroups.value
+  }
+
+  const requireRoleGroupId = (): number | null => {
+    if (state.currentRoleGroupId.value == null) {
+      const fromRoute = roleGroupIdFromRoute()
+      if (fromRoute != null) state.currentRoleGroupId.value = fromRoute
+    }
+    return state.currentRoleGroupId.value
+  }
+
+  const loadActivityCatalog = async (force = false): Promise<CalendarActivityCatalogItem[]> => {
+    const roleGroupId = requireRoleGroupId()
     if (roleGroupId == null) {
       state.activityCatalog.value = []
       return []
     }
-    if (!shouldRefetch('activityCatalog', force) && state.activityCatalog.value.length > 0) {
-      return state.activityCatalog.value
-    }
-
+    if (!force && isFresh('activityCatalog') && state.activityCatalog.value.length) return state.activityCatalog.value
     try {
-      const data = await CalendarService.getActivityCatalog(roleGroupId)
-      state.activityCatalog.value = data
-      state.lastFetch.activityCatalog.value = Date.now()
-      return data
-    } catch (err: any) {
+      state.activityCatalog.value = await CalendarService.getActivityCatalog(roleGroupId)
+      state.lastFetch.activityCatalog = Date.now()
+    } catch (err) {
       console.error('Error al cargar catálogo de actividades:', err)
-      return []
     }
+    return state.activityCatalog.value
   }
 
   const createActivityInCatalog = async (name: string): Promise<CalendarActivityCatalogItem | null> => {
-    const roleGroupId = state.currentRoleGroupId.value
+    const roleGroupId = requireRoleGroupId()
     if (roleGroupId == null) {
       state.error.value = 'No hay grupo de calendario seleccionado'
       return null
@@ -504,85 +359,256 @@ export const useCalendarStore = () => {
       const activity = await CalendarService.createActivityCatalog(name, roleGroupId)
       state.activityCatalog.value = [...state.activityCatalog.value, activity]
       return activity
-    } catch (err: any) {
-      state.error.value = err?.message || 'Error al crear actividad en catálogo'
-      console.error('Error en createActivityInCatalog:', err)
+    } catch (err) {
+      state.error.value = errorMessage(err, 'Error al crear actividad en catálogo')
       return null
     }
   }
 
+  /** colorCode: undefined = no tocar; null = quitar color. */
   const updateActivityInCatalog = async (
     id: number,
     name: string,
     colorCode?: string | null,
-    extras?: { allow_saturday?: boolean; allow_sunday?: boolean; default_priority?: number }
+    extras?: CalendarActivityCatalogExtras
   ): Promise<boolean> => {
-    const roleGroupId = state.currentRoleGroupId.value
+    const roleGroupId = requireRoleGroupId()
     if (roleGroupId == null) {
       state.error.value = 'No hay grupo de calendario seleccionado'
       return false
     }
     try {
-      const updated = await CalendarService.updateActivityCatalog(id, name, colorCode, extras, roleGroupId)
-      const index = state.activityCatalog.value.findIndex(a => a.id === id)
-      if (index !== -1) {
-        state.activityCatalog.value[index] = updated
-      }
-      // Re-aplicar color a eventos que usan esta actividad para que el calendario se actualice sin editar
-      const activityIdNum = Number(id)
-      const hasAffectedEvents = state.events.value.some(
-        ev => ev.activity_id != null && Number(ev.activity_id) === activityIdNum
-      )
-      if (hasAffectedEvents) {
-        state.events.value = state.events.value.map(ev => {
-          const evActivityId = ev.activity_id != null ? Number(ev.activity_id) : null
-          if (evActivityId === activityIdNum) return transformEvent(ev)
-          return ev
-        })
+      const updated = await CalendarService.updateActivityCatalog(id, name, roleGroupId, colorCode, extras)
+      state.activityCatalog.value = state.activityCatalog.value.map(a => (a.id === id ? updated : a))
+      // Re-aplicar color a los eventos de esa actividad sin recargar
+      if (state.events.value.some(e => e.activity_id === id)) {
+        state.events.value = state.events.value.map(e => (e.activity_id === id ? toCalendarEvent(e) : e))
       }
       return true
-    } catch (err: any) {
-      state.error.value = err?.message || 'Error al actualizar actividad del catálogo'
-      console.error('Error en updateActivityInCatalog:', err)
+    } catch (err) {
+      state.error.value = errorMessage(err, 'Error al actualizar actividad del catálogo')
       return false
     }
   }
 
   const reorderActivityCatalog = async (ids: number[]): Promise<boolean> => {
-    const roleGroupId = state.currentRoleGroupId.value
-    if (roleGroupId == null) {
-      state.error.value = 'No hay grupo de calendario seleccionado'
-      return false
-    }
+    const roleGroupId = requireRoleGroupId()
+    if (roleGroupId == null) return false
     try {
       await CalendarService.reorderActivityCatalog(ids, roleGroupId)
-      // Reordenar localmente para reflejar el cambio sin recarga
-      const sorted = ids
-        .map(id => state.activityCatalog.value.find(a => a.id === id))
-        .filter(Boolean) as CalendarActivityCatalogItem[]
-      state.activityCatalog.value = sorted
+      const byId = new Map(state.activityCatalog.value.map(a => [a.id, a]))
+      state.activityCatalog.value = ids
+        .map(id => byId.get(id))
+        .filter((a): a is CalendarActivityCatalogItem => a !== undefined)
       return true
-    } catch (err: any) {
-      state.error.value = err?.message || 'Error al reordenar catálogo'
-      console.error('Error en reorderActivityCatalog:', err)
+    } catch (err) {
+      state.error.value = errorMessage(err, 'Error al reordenar catálogo')
       return false
     }
   }
 
   const deleteActivityFromCatalog = async (catalogId: number): Promise<boolean> => {
-    const roleGroupId = state.currentRoleGroupId.value
-    if (roleGroupId == null) {
-      state.error.value = 'No hay grupo de calendario seleccionado'
-      return false
-    }
+    const roleGroupId = requireRoleGroupId()
+    if (roleGroupId == null) return false
     try {
       await CalendarService.deleteActivityCatalog(catalogId, roleGroupId)
       state.activityCatalog.value = state.activityCatalog.value.filter(a => a.id !== catalogId)
-      state.lastFetch.activityCatalog.value = 0
       return true
-    } catch (err: any) {
-      state.error.value = err?.message || 'Error al eliminar del catálogo'
-      console.error('Error en deleteActivityFromCatalog:', err)
+    } catch (err) {
+      state.error.value = errorMessage(err, 'Error al eliminar del catálogo')
+      return false
+    }
+  }
+
+  // ============================================
+  // EVENTOS
+  // ============================================
+
+  /**
+   * Carga eventos con los filtros del store + los recibidos.
+   * Si la consulta es la misma y está fresca, no vuelve a pedirla (salvo force).
+   */
+  const getEvents = async (filters: CalendarFilters = {}, force = false): Promise<CalendarEvent[]> => {
+    const applied: CalendarFilters = { ...state.filters.value, ...filters, ...roleGroupFilter() }
+    const queryKey = JSON.stringify(applied)
+    if (!force && queryKey === state.lastEventsQuery && isFresh('events')) return state.events.value
+
+    state.loading.value = true
+    state.error.value = null
+    try {
+      const response = await CalendarService.getEvents(applied)
+      state.events.value = (response.data ?? []).map(toCalendarEvent)
+      state.eventsPagination.value = response.meta ?? null
+      if (response.my_progress) state.myProgressStats.value = response.my_progress
+      if (response.global_progress) state.globalProgressStats.value = response.global_progress
+      state.lastFetch.events = Date.now()
+      state.lastEventsQuery = queryKey
+      state.lastEventsFilters = applied
+    } catch (err) {
+      state.error.value = errorMessage(err, 'Error al cargar eventos')
+      console.error('Error en getEvents:', err)
+    } finally {
+      state.loading.value = false
+    }
+    return state.events.value
+  }
+
+  const createActivity = async (data: CreateCalendarEventRequest): Promise<CalendarEvent | null> => {
+    state.error.value = null
+    try {
+      const created = await withSpinner(() => CalendarService.createActivity(data), 'Creando actividad...')
+      markCalendarActionByCurrentUser()
+      // No se agrega a la lista: el caller recarga con sus filtros (evita duplicados y respeta el rango).
+      state.lastFetch.events = 0
+      state.lastFetch.progress = 0
+      return toCalendarEvent(created)
+    } catch (err) {
+      state.error.value = errorMessage(err, 'Error al crear actividad')
+      return null
+    }
+  }
+
+  const updateActivity = async (data: UpdateCalendarEventRequest): Promise<CalendarEvent | null> => {
+    state.error.value = null
+    try {
+      const updated = toCalendarEvent(await withSpinner(() => CalendarService.updateActivity(data), 'Actualizando actividad...'))
+      markCalendarActionByCurrentUser()
+      replaceEvent(data.id, () => updated)
+      state.lastFetch.events = 0
+      state.lastFetch.progress = 0
+      return updated
+    } catch (err) {
+      state.error.value = errorMessage(err, 'Error al actualizar actividad')
+      return null
+    }
+  }
+
+  const deleteActivity = async (id: number): Promise<boolean> => {
+    state.error.value = null
+    try {
+      await withSpinner(() => CalendarService.deleteActivity(id), 'Eliminando actividad...')
+      markCalendarActionByCurrentUser()
+      state.events.value = state.events.value.filter(e => e.id !== id)
+      state.lastFetch.events = 0
+      state.lastFetch.progress = 0
+      return true
+    } catch (err) {
+      state.error.value = errorMessage(err, 'Error al eliminar actividad')
+      return false
+    }
+  }
+
+  /** Orden manual de eventos en la vista mes. */
+  const reorderEvents = async (ids: number[]): Promise<boolean> => {
+    try {
+      const response = await CalendarService.reorderEvents(ids)
+      if (!response.success) return false
+      const position = new Map(ids.map((id, i) => [id, i]))
+      state.events.value = [...state.events.value].sort((a, b) =>
+        (position.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (position.get(b.id) ?? Number.MAX_SAFE_INTEGER)
+        || (a.start_date ?? '').localeCompare(b.start_date ?? '')
+        || a.id - b.id
+      )
+      return true
+    } catch (err) {
+      console.error('Error al reordenar eventos:', err)
+      return false
+    }
+  }
+
+  // ============================================
+  // ESTADO, PRIORIDAD, NOTAS Y SUBTAREAS
+  // (actualizan la lista local; no recargan)
+  // ============================================
+
+  const updateChargeStatus = async (chargeId: number, status: CalendarEventStatus): Promise<boolean> => {
+    try {
+      await CalendarService.updateChargeStatus(chargeId, status)
+      updateChargeInEvents(chargeId, c => ({ ...c, status }))
+      state.lastFetch.progress = 0
+      return true
+    } catch (err) {
+      state.error.value = errorMessage(err, 'Error al actualizar estado')
+      return false
+    }
+  }
+
+  /** Estado de toda la actividad (solo jefe). */
+  const updateEventStatus = async (eventId: number, status: CalendarEventStatus): Promise<boolean> => {
+    try {
+      const updated = toCalendarEvent(await CalendarService.updateEventStatus(eventId, status))
+      replaceEvent(eventId, () => updated)
+      state.lastFetch.progress = 0
+      return true
+    } catch (err) {
+      state.error.value = errorMessage(err, 'Error al actualizar estado')
+      return false
+    }
+  }
+
+  const updateEventPriority = async (eventId: number, priority: CalendarEventPriority): Promise<boolean> => {
+    try {
+      await CalendarService.updateEventPriority(eventId, priority)
+      replaceEvent(eventId, e => toCalendarEvent({ ...e, priority }))
+      return true
+    } catch (err) {
+      state.error.value = errorMessage(err, 'Error al actualizar prioridad')
+      return false
+    }
+  }
+
+  const updateChargeNotes = async (chargeId: number, notes: string): Promise<boolean> => {
+    try {
+      await CalendarService.updateChargeNotes(chargeId, notes)
+      updateChargeInEvents(chargeId, c => ({ ...c, notes }))
+      return true
+    } catch (err) {
+      state.error.value = errorMessage(err, 'Error al actualizar notas')
+      return false
+    }
+  }
+
+  const updateEventNotes = async (eventId: number, notes: string): Promise<boolean> => {
+    try {
+      await CalendarService.updateEventNotes(eventId, notes)
+      replaceEvent(eventId, e => ({ ...e, notes }))
+      return true
+    } catch (err) {
+      state.error.value = errorMessage(err, 'Error al actualizar notas')
+      return false
+    }
+  }
+
+  const createSubtask = async (chargeId: number, payload: CreateSubtaskRequest): Promise<CalendarSubtask | null> => {
+    try {
+      const subtask = await CalendarService.createSubtask(chargeId, payload)
+      updateSubtasksOfCharge(chargeId, list => [...list, subtask])
+      return subtask
+    } catch (err) {
+      state.error.value = errorMessage(err, 'Error al crear subtarea')
+      return null
+    }
+  }
+
+  const updateSubtask = async (subtaskId: number, payload: UpdateSubtaskRequest): Promise<boolean> => {
+    try {
+      const updated = await CalendarService.updateSubtask(subtaskId, payload)
+      updateSubtasksOfCharge(updated.calendar_event_charge_id, list => list.map(s => (s.id === subtaskId ? updated : s)))
+      return true
+    } catch (err) {
+      state.error.value = errorMessage(err, 'Error al actualizar subtarea')
+      return false
+    }
+  }
+
+  const deleteSubtask = async (subtaskId: number): Promise<boolean> => {
+    const chargeId = chargeIdOfSubtask(subtaskId)
+    try {
+      await CalendarService.deleteSubtask(subtaskId)
+      if (chargeId != null) updateSubtasksOfCharge(chargeId, list => list.filter(s => s.id !== subtaskId))
+      return true
+    } catch (err) {
+      state.error.value = errorMessage(err, 'Error al eliminar subtarea')
       return false
     }
   }
@@ -591,257 +617,18 @@ export const useCalendarStore = () => {
   // PROGRESO
   // ============================================
 
-  const loadProgress = async (filters?: CalendarFilters, force: boolean = false) => {
-    if (!calendarPermissions.value.canViewTeamProgress) {
-      return
-    }
-
-    // Si se pasan filtros explícitos siempre refresca (ignorar caché)
-    const hasExplicitFilters = filters && Object.keys(filters).some(k => (filters as any)[k] !== undefined)
-    if (!hasExplicitFilters && !shouldRefetch('progress', force) && state.teamProgress.value) {
-      return { team: state.teamProgress.value, by_responsable: state.responsableProgress.value }
-    }
-
+  /** Progreso del equipo (solo jefe). Con filtros explícitos siempre consulta. */
+  const loadProgress = async (filters?: CalendarFilters, force = false): Promise<void> => {
+    if (!calendarPermissions.value.canViewTeamProgress) return
+    const hasExplicitFilters = !!filters && Object.values(filters).some(v => v !== undefined)
+    if (!hasExplicitFilters && !force && isFresh('progress') && state.teamProgress.value) return
     try {
-      const baseFilters = hasExplicitFilters ? filters! : state.filters.value
-      const appliedFilters = { ...baseFilters, role_group_id: state.currentRoleGroupId.value ?? undefined }
-      const data = await CalendarService.getProgress(appliedFilters)
+      const data = await CalendarService.getProgress({ ...(hasExplicitFilters ? filters : state.filters.value), ...roleGroupFilter() })
       state.teamProgress.value = data.team
       state.responsableProgress.value = data.by_responsable
-      if (!hasExplicitFilters) {
-        state.lastFetch.progress.value = Date.now()
-      }
-      return data
-    } catch (err: any) {
+      if (!hasExplicitFilters) state.lastFetch.progress = Date.now()
+    } catch (err) {
       console.error('Error al cargar progreso:', err)
-      return null
-    }
-  }
-
-  // ============================================
-  // TRACKING / HISTORIAL
-  // ============================================
-
-  /**
-   * Obtener historial de cambios de estado de un charge específico
-   */
-  const getChargeTracking = async (chargeId: number) => {
-    try {
-      const data = await CalendarService.getChargeTracking(chargeId)
-      return data
-    } catch (err: any) {
-      state.error.value = err?.message || 'Error al obtener tracking'
-      console.error('Error en getChargeTracking:', err)
-      return []
-    }
-  }
-
-  /**
-   * Obtener historial de cambios de estado de una actividad completa
-   * (todos los charges de esa actividad)
-   */
-  const getActivityTracking = async (activityId: number) => {
-    try {
-      const data = await CalendarService.getActivityTracking(activityId)
-      return data
-    } catch (err: any) {
-      state.error.value = err?.message || 'Error al obtener tracking de actividad'
-      console.error('Error en getActivityTracking:', err)
-      return []
-    }
-  }
-
-  // ============================================
-  // ESTADOS Y PRIORIDADES
-  // ============================================
-
-  const updateChargeStatus = async (chargeId: number, status: CalendarEventStatus): Promise<boolean> => {
-    try {
-      await CalendarService.updateChargeStatus({ charge_id: chargeId, status })
-      // Actualizar en la lista local
-      for (const event of state.events.value) {
-        const charge = event.charges?.find(c => c.id === chargeId)
-        if (charge) {
-          charge.status = status
-          break
-        }
-      }
-      return true
-    } catch (err: any) {
-      state.error.value = err?.message || 'Error al actualizar estado'
-      console.error('Error en updateChargeStatus:', err)
-      return false
-    }
-  }
-
-  /** Estado por actividad: actualiza todos los charges del evento; cualquier participante puede cambiarlo */
-  const updateEventStatus = async (eventId: number, status: CalendarEventStatus): Promise<boolean> => {
-    try {
-      const response = await CalendarService.updateEventStatus({ event_id: eventId, status })
-      // Actualizar en la lista local (todos los charges del evento)
-      const event = state.events.value.find(e => e.id === eventId)
-      if (event?.charges) {
-        event.charges.forEach(c => { c.status = status })
-      }
-      if (response?.data) {
-        const idx = state.events.value.findIndex(e => e.id === eventId)
-        if (idx !== -1) state.events.value[idx] = transformEvent(response.data)
-      }
-      return true
-    } catch (err: any) {
-      state.error.value = err?.message || 'Error al actualizar estado'
-      console.error('Error en updateEventStatus:', err)
-      return false
-    }
-  }
-
-  const updateEventPriority = async (eventId: number, priority: CalendarEventPriority): Promise<boolean> => {
-    try {
-      await CalendarService.updateEventPriority({ event_id: eventId, priority })
-      // Actualizar en la lista local
-      const event = state.events.value.find(e => e.id === eventId)
-      if (event) {
-        event.priority = priority
-      }
-      return true
-    } catch (err: any) {
-      state.error.value = err?.message || 'Error al actualizar prioridad'
-      console.error('Error en updateEventPriority:', err)
-      return false
-    }
-  }
-
-  // ============================================
-  // SUBTAREAS (POR RESPONSABLE / CHARGE)
-  // ============================================
-
-  /** Calcula el estado del charge a partir de sus subtareas (misma lógica que el backend). */
-  const computeChargeStatusFromSubtasks = (subtasks: CalendarSubtask[]): CalendarEventStatus => {
-    if (!subtasks?.length) return 'PENDIENTE'
-    const allCompleted = subtasks.every(s => s.status === 'COMPLETADO')
-    if (allCompleted) return 'COMPLETADO'
-    const allPendiente = subtasks.every(s => s.status === 'PENDIENTE')
-    if (allPendiente) return 'PENDIENTE'
-    return 'PROGRESO'
-  }
-
-  const createSubtask = async (
-    chargeId: number,
-    payload: { name: string; duration_hours: number; status: CalendarEventStatus; end_date?: string | null }
-  ): Promise<CalendarSubtask | null> => {
-    try {
-      state.error.value = null
-      const subtask = await CalendarService.createSubtask(chargeId, payload)
-      // Asegurar que el estado inicial sea siempre PENDIENTE para el select
-      if (!subtask.status) {
-        ;(subtask as any).status = 'PENDIENTE'
-      }
-      // Añadir en la estructura local
-      for (const event of state.events.value) {
-        const charge = event.charges?.find(c => c.id === chargeId)
-        if (charge) {
-          if (!Array.isArray(charge.subtasks)) {
-            ;(charge as any).subtasks = []
-          }
-          ;(charge.subtasks as CalendarSubtask[]).push(subtask)
-          ;(charge as any).status = computeChargeStatusFromSubtasks(charge.subtasks as CalendarSubtask[])
-          break
-        }
-      }
-      return subtask
-    } catch (err: any) {
-      state.error.value = err?.message || 'Error al crear subtarea'
-      console.error('Error en createSubtask:', err)
-      return null
-    }
-  }
-
-  const updateSubtask = async (
-    subtaskId: number,
-    payload: Partial<{ name: string; duration_hours: number; status: CalendarEventStatus; end_date?: string | null }>
-  ): Promise<boolean> => {
-    try {
-      state.error.value = null
-      const updated = await CalendarService.updateSubtask(subtaskId, payload)
-      for (const event of state.events.value) {
-        if (!event.charges) continue
-        for (const charge of event.charges) {
-          if (!charge.subtasks) continue
-          const idx = charge.subtasks.findIndex(s => s.id === subtaskId)
-          if (idx !== -1) {
-            charge.subtasks[idx] = updated
-            ;(charge as any).status = computeChargeStatusFromSubtasks(charge.subtasks as CalendarSubtask[])
-            return true
-          }
-        }
-      }
-      return true
-    } catch (err: any) {
-      state.error.value = err?.message || 'Error al actualizar subtarea'
-      console.error('Error en updateSubtask:', err)
-      return false
-    }
-  }
-
-  const deleteSubtask = async (subtaskId: number): Promise<boolean> => {
-    try {
-      state.error.value = null
-      await CalendarService.deleteSubtask(subtaskId)
-      for (const event of state.events.value) {
-        if (!event.charges) continue
-        for (const charge of event.charges) {
-          if (!charge.subtasks) continue
-          const hadId = charge.subtasks.some(s => s.id === subtaskId)
-          charge.subtasks = charge.subtasks.filter(s => s.id !== subtaskId)
-          if (hadId) {
-            ;(charge as any).status = computeChargeStatusFromSubtasks(charge.subtasks as CalendarSubtask[])
-          }
-        }
-      }
-      return true
-    } catch (err: any) {
-      state.error.value = err?.message || 'Error al eliminar subtarea'
-      console.error('Error en deleteSubtask:', err)
-      return false
-    }
-  }
-
-  // ============================================
-  // NOTAS
-  // ============================================
-
-  const updateChargeNotes = async (chargeId: number, notes: string): Promise<boolean> => {
-    try {
-      await CalendarService.updateChargeNotes({ charge_id: chargeId, notes })
-      // Actualizar en la lista local
-      for (const event of state.events.value) {
-        const charge = event.charges?.find(c => c.id === chargeId)
-        if (charge) {
-          charge.notes = notes
-          break
-        }
-      }
-      return true
-    } catch (err: any) {
-      state.error.value = err?.message || 'Error al actualizar notas'
-      console.error('Error en updateChargeNotes:', err)
-      return false
-    }
-  }
-
-  const updateEventNotes = async (eventId: number, notes: string): Promise<boolean> => {
-    try {
-      await CalendarService.updateEventNotes(eventId, notes)
-      // Actualizar en la lista local
-      const event = state.events.value.find(e => e.id === eventId)
-      if (event) {
-        event.notes = notes
-      }
-      return true
-    } catch (err: any) {
-      state.error.value = err?.message || 'Error al actualizar notas'
-      console.error('Error en updateEventNotes:', err)
-      return false
     }
   }
 
@@ -849,297 +636,55 @@ export const useCalendarStore = () => {
   // FILTROS
   // ============================================
 
-  const setFilter = <K extends keyof CalendarFilters>(key: K, value: CalendarFilters[K]) => {
-    state.filters.value[key] = value
+  const setFilters = (filters: CalendarFilters) => {
+    state.filters.value = { ...state.filters.value, ...filters }
   }
 
   const clearFilters = () => {
-    state.filters.value = {
-      start_date: undefined,
-      end_date: undefined,
-      responsable_id: undefined,
-      responsable_ids: undefined,
-      contenedor_id: undefined,
-      contenedor_ids: undefined,
-      status: undefined,
-      priority: undefined,
-      event_id: undefined
-    }
+    state.filters.value = emptyFilters()
   }
 
-  const setDateRange = (startDate: string, endDate: string) => {
-    state.filters.value.start_date = startDate
-    state.filters.value.end_date = endDate
-  }
-
-  // ============================================
-  // COMPUTED
-  // ============================================
-
+  /**
+   * Eventos visibles en la grilla: con filtro de responsable(s) se muestran los suyos
+   * y también los que no tienen responsable asignado.
+   */
   const visibleEvents = computed(() => {
-    const responsableIds = state.filters.value.responsable_ids
-    const responsableId = state.filters.value.responsable_id
-    const idSet = responsableIds?.length ? new Set(responsableIds) : null
-    const currentIdNum = Number(currentId.value)
-
-    return state.events.value.filter(event => {
-      // Verificar visibilidad del evento (acceso del usuario actual)
-      let visible = false
-      if (event.charges && event.charges.length > 0) {
-        if (event.charges.some(charge => charge.user_id === currentIdNum)) visible = true
-      } else {
-        // Sin responsables: visible para todos los del grupo (el backend ya filtró por grupo)
-        visible = true
-      }
-      if (!visible) {
-        if (event.is_public) visible = true
-        else if (event.is_for_me && event.created_by === currentIdNum) visible = true
-        else if (event.role_name && event.role_name === currentRole.value) visible = true
-        else if (event.created_by === currentIdNum) visible = true
-        else {
-          const hasLegacyFields = event.is_public !== undefined ||
-            event.is_for_me !== undefined ||
-            event.role_name !== undefined ||
-            event.created_by !== undefined
-          if (!hasLegacyFields) visible = true
-        }
-      }
-      if (!visible) return false
-
-      // Aplicar filtro de responsable: incluir eventos del responsable seleccionado + eventos sin responsable asignado
-      const hasNoCharges = !event.charges || event.charges.length === 0
-      if (idSet) return hasNoCharges || event.charges!.some(charge => idSet.has(charge.user_id))
-      if (responsableId != null && typeof responsableId === 'number') {
-        return hasNoCharges || event.charges!.some(charge => charge.user_id === responsableId)
-      }
-      return true
-    })
+    const { responsable_ids: ids, responsable_id: single } = state.filters.value
+    const wanted = ids?.length ? new Set(ids) : single != null ? new Set([single]) : null
+    if (!wanted) return state.events.value
+    return state.events.value.filter(e => e.charges.length === 0 || e.charges.some(c => wanted.has(c.user_id)))
   })
 
-  const myActivities = computed(() => {
-    if (isJefeImportaciones.value) {
-      return state.events.value
-    }
-    return state.events.value.filter(activity => {
-      return activity.charges?.some(charge => charge.user_id === Number(currentId.value))
-    })
-  })
-
+  /**
+   * Actividades de las tablas (progreso / registro). Con responsable_ids se excluyen las
+   * actividades sin responsable; con un único responsable_id se mantienen.
+   */
   const visibleActivities = computed(() => {
-    const responsableIds = state.filters.value.responsable_ids
-    const responsableId = state.filters.value.responsable_id
-    const canViewAll = calendarPermissions.value.canViewAllActivities
-    const idSet = responsableIds?.length ? new Set(responsableIds) : null
-    const hasResponsableId = responsableId != null && typeof responsableId === 'number'
-
-    // Optimización: sin filtros activos, devolver directamente sin iterar
-    if (canViewAll && !idSet && !hasResponsableId) {
-      return state.events.value
-    }
-
+    const { responsable_ids: ids, responsable_id: single } = state.filters.value
+    const idSet = ids?.length ? new Set(ids) : null
+    if (!idSet && single == null) return state.events.value
     return state.events.value.filter(activity => {
-      const noCharges = !activity.charges?.length
-      // Si hay filtro por responsable(s), no incluir actividades sin responsables
-      if (noCharges) return !idSet
-
-      // Filtro de visibilidad para no-jefe (en el mismo pass)
-      if (!canViewAll && hasResponsableId) {
-        if (!(activity.charges?.some(charge => charge.user_id === responsableId) ?? false)) return false
-      }
-
-      // Filtro por responsable_ids (aplica a todos)
-      if (idSet) return activity.charges?.some(charge => idSet.has(charge.user_id)) ?? false
-
-      // Filtro por responsable_id único (jefe o no-jefe sin idSet)
-      if (hasResponsableId && canViewAll) {
-        return activity.charges?.some(charge => charge.user_id === responsableId) ?? false
-      }
-
+      if (activity.charges.length === 0) return !idSet
+      if (single != null && !activity.charges.some(c => c.user_id === single)) return false
+      if (idSet) return activity.charges.some(c => idSet.has(c.user_id))
       return true
     })
   })
-
-  // ============================================
-  // UTILIDADES PARA EVENTOS MULTI-DÍA
-  // ============================================
-
-  const normalizeStatus = (status: unknown): CalendarEventStatus => {
-    const raw = String(status ?? '').trim().toUpperCase()
-    if (raw === 'COMPLETADO' || raw === 'COMPLETADA' || raw === 'DONE') return 'COMPLETADO'
-    if (raw === 'PROGRESO' || raw === 'EN_PROGRESO' || raw === 'IN_PROGRESS') return 'PROGRESO'
-    return 'PENDIENTE'
-  }
-
-  const getEventColors = (event: CalendarEvent, options?: { usePriority?: boolean }): string[] => {
-    const charges = event.charges || []
-
-    const activityId = event.activity_id != null ? Number(event.activity_id) : null
-    const catalogItem = activityId != null && !Number.isNaN(activityId)
-      ? state.activityCatalog.value.find(a => Number(a.id) === activityId)
-      : null
-    const activityColor = catalogItem?.color_code && String(catalogItem.color_code).trim()
-      ? String(catalogItem.color_code).trim()
-      : null
-    const consolidadoConfig = event.contenedor_id
-      ? state.consolidadoColorConfig.value.find(c => c.contenedor_id === event.contenedor_id)
-      : null
-    const consolidadoColor = consolidadoConfig?.color_code ?? null
-    const priorityColor = PRIORITY_COLORS[event.priority] || '#3b82f6'
-
-    // Colores por responsable: gris (#9ca3af) si ese charge está COMPLETADO, sino color del perfil.
-    // Así cada “mitad” del evento puede ser gris de forma independiente.
-    const userColorsFromCharges: string[] = []
-    if (Array.isArray(event.charges) && event.charges.length > 0) {
-      for (const c of event.charges as any[]) {
-        const uid = c.user_id ?? c.user?.id
-        const nombre = c.user?.nombre
-        const apiColor = c.user?.color && String(c.user.color).trim()
-        const isCompleted = normalizeStatus(c.status) === 'COMPLETADO'
-        if (uid != null) {
-          const profileColor = apiColor || getResponsableColor(uid, nombre)
-          userColorsFromCharges.push(isCompleted ? '#9ca3af' : (profileColor || '#3b82f6'))
-        }
-      }
-    }
-
-    const allChargesCompleted = Array.isArray(event.charges) &&
-      event.charges.length > 0 &&
-      event.charges.every(c => normalizeStatus((c as any).status) === 'COMPLETADO')
-    const eventCompleted = normalizeStatus(event.status) === 'COMPLETADO'
-    const isCompletedEvent = allChargesCompleted || eventCompleted
-
-    // Si hay charges con colores por usuario (y orden USUARIO), devolver uno por charge (gris o perfil).
-    const order = effectiveColorOrder.value
-    for (const key of order) {
-      if (key === 'COMPLETADO' && isCompletedEvent) return ['#9ca3af']
-      if (key === 'PRIORIDAD' && priorityColor) return [priorityColor]
-      if (key === 'ACTIVIDAD' && activityColor) return [activityColor]
-      if (key === 'CONSOLIDADO' && consolidadoColor) return [consolidadoColor]
-      if (key === 'USUARIO' && userColorsFromCharges.length > 0) {
-        return userColorsFromCharges
-      }
-    }
-
-    // Sin responsables: gris si evento completado (status del evento), sino color por prioridad
-    if (charges.length === 0 && isCompletedEvent) {
-      return ['#9ca3af']
-    }
-    return [priorityColor]
-  }
-
-  const getEventPosition = (event: CalendarEvent, dateStr: string): 'start' | 'middle' | 'end' | 'single' | null => {
-    const startDate = event.start_date
-    const endDate = event.end_date
-    
-    if (!startDate || !endDate) return null
-    if (dateStr < startDate || dateStr > endDate) return null
-    
-    if (startDate === endDate) return 'single'
-    if (dateStr === startDate) return 'start'
-    if (dateStr === endDate) return 'end'
-    return 'middle'
-  }
-
-  const isEventOnDate = (event: CalendarEvent, dateStr: string): boolean => {
-    const startDate = event.start_date
-    const endDate = event.end_date
-    if (!startDate || !endDate) return false
-    return dateStr >= startDate && dateStr <= endDate
-  }
-
-  // ============================================
-  // FUNCIONES LEGACY (compatibilidad)
-  // ============================================
-
-  const createEvent = async (data: any): Promise<CalendarEvent | null> => {
-    try {
-      state.error.value = null
-      const event = await withSpinner(
-        () => CalendarService.createEvent(data),
-        'Creando evento...'
-      )
-      if (event) {
-        const transformed = transformEvent(event)
-        state.events.value.push(transformed)
-        markCalendarActionByCurrentUser()
-      }
-      return event
-    } catch (err: any) {
-      state.error.value = err?.message || 'Error al crear evento'
-      console.error('Error en createEvent:', err)
-      return null
-    }
-  }
-
-  const updateEvent = async (data: any): Promise<CalendarEvent | null> => {
-    try {
-      state.error.value = null
-      const event = await withSpinner(
-        () => CalendarService.updateEvent(data),
-        'Actualizando evento...'
-      )
-      if (event) {
-        const index = state.events.value.findIndex(e => e.id === data.id)
-        if (index !== -1) {
-          state.events.value[index] = transformEvent(event)
-        }
-        markCalendarActionByCurrentUser()
-      }
-      return event
-    } catch (err: any) {
-      state.error.value = err?.message || 'Error al actualizar evento'
-      console.error('Error en updateEvent:', err)
-      return null
-    }
-  }
-
-  const deleteEvent = async (id: number, taskDayId?: number | null): Promise<boolean> => {
-    try {
-      state.error.value = null
-      await withSpinner(
-        () => CalendarService.deleteEvent(id, taskDayId),
-        'Eliminando evento...'
-      )
-      if (taskDayId) {
-        // Eliminar solo el día de la tarea
-        const event = state.events.value.find(e => e.task_day_id === taskDayId)
-        if (event) {
-          state.events.value = state.events.value.filter(e => e.task_day_id !== taskDayId)
-        }
-      } else {
-        state.events.value = state.events.value.filter(e => e.id !== id)
-      }
-      markCalendarActionByCurrentUser()
-      return true
-    } catch (err: any) {
-      state.error.value = err?.message || 'Error al eliminar evento'
-      console.error('Error en deleteEvent:', err)
-      return false
-    }
-  }
 
   // ============================================
   // INICIALIZACIÓN
   // ============================================
 
-  const initialize = async (force: boolean = false) => {
-    if (state.initialized.value && !force) {
-      return
-    }
-
+  /** Carga grupo activo, configuración y catálogos. Sin force no repite si ya se hizo. */
+  const initialize = async (force = false): Promise<void> => {
+    if (state.initialized && !force) return
     state.loading.value = true
     try {
-      // Cargar mis grupos de calendario y, si hay más de uno, usar role_group_id de la URL o el primero.
       const groups = await loadMyRoleGroups()
-      const raw = route.query.role_group_id
-      const parsed = typeof raw === 'string' ? parseInt(raw, 10) : NaN
-      const roleGroupIdFromQuery = Number.isNaN(parsed) ? null : parsed
-      const effectiveRoleGroupId = roleGroupIdFromQuery ?? (state.currentRoleGroupId.value ?? (groups[0]?.id ?? null))
-
-      const config = await CalendarService.getCalendarConfig(effectiveRoleGroupId ?? undefined)
-      calendarConfig.value = config
+      const requestedId = roleGroupIdFromRoute() ?? state.currentRoleGroupId.value ?? groups[0]?.id ?? null
+      const config = await CalendarService.getCalendarConfig(requestedId)
+      state.calendarConfig.value = config
       state.currentRoleGroupId.value = config.role_group?.id ?? null
-
       await Promise.all([
         loadResponsables(force),
         loadContenedores(force),
@@ -1147,45 +692,54 @@ export const useCalendarStore = () => {
         loadConsolidadoColorConfig(force),
         loadActivityCatalog(force)
       ])
-      state.initialized.value = true
+      state.initialized = true
+    } catch (err) {
+      state.error.value = errorMessage(err, 'Error al cargar la configuración del calendario')
     } finally {
       state.loading.value = false
     }
   }
 
-  // Invalidar caché (forzar recarga en la próxima petición)
-  const invalidateCache = (key?: keyof typeof state.lastFetch) => {
+  const invalidateCache = (key?: CacheKey) => {
     if (key) {
-      state.lastFetch[key].value = 0
-    } else {
-      // Invalidar todo
-      Object.keys(state.lastFetch).forEach(k => {
-        (state.lastFetch as any)[k].value = 0
-      })
+      state.lastFetch[key] = 0
+      return
     }
+    for (const k of Object.keys(state.lastFetch) as CacheKey[]) state.lastFetch[k] = 0
   }
 
-  // Refrescar todos los datos
-  const refresh = async () => {
+  /** La configuración del grupo cambió (role-groups): la próxima initialize() la vuelve a pedir. */
+  const invalidateConfig = () => {
+    state.initialized = false
+    invalidateCache()
+  }
+
+  /**
+   * Recarga configuración y catálogos. Con reloadEvents repite la última consulta de eventos
+   * de la vista actual (misma página/filtros) en el grupo activo.
+   */
+  const refresh = async ({ reloadEvents = true }: { reloadEvents?: boolean } = {}): Promise<void> => {
     invalidateCache()
     await initialize(true)
-    // Si el usuario es JEFE, limpiar filtros de responsable para que vea todo el equipo
-    if (calendarConfig.value?.role_group?.role_type === 'JEFE') {
-      clearFilters()
-    }
-    await getEvents(state.filters.value, true)
+    if (!reloadEvents) return
+    const { role_group_id: _previousGroup, ...lastFilters } = state.lastEventsFilters
+    await getEvents(lastFilters, true)
+  }
+
+  /** Ruta del calendario con role_group_id en query. */
+  const getCalendarRoute = (path: string): string => {
+    const id = state.currentRoleGroupId.value
+    if (id == null) return path
+    return `${path}${path.includes('?') ? '&' : '?'}role_group_id=${id}`
   }
 
   return {
-    // Estado (readonly)
+    // Estado
     events: computed(() => state.events.value),
     visibleEvents,
     visibleActivities,
-    myActivities,
     responsables: computed(() => state.responsables.value),
     contenedores: computed(() => state.contenedores.value),
-    colorConfig: computed(() => state.colorConfig.value),
-    consolidadoColorConfig: computed(() => state.consolidadoColorConfig.value),
     activityCatalog: computed(() => state.activityCatalog.value),
     teamProgress: computed(() => state.teamProgress.value),
     responsableProgress: computed(() => state.responsableProgress.value),
@@ -1195,8 +749,7 @@ export const useCalendarStore = () => {
     error: computed(() => state.error.value),
     filters: computed(() => state.filters.value),
     eventsPagination: computed(() => state.eventsPagination.value),
-    initialized: computed(() => state.initialized.value),
-    currentUserId: currentId,
+    currentUserId: currentUserIdNum,
     currentRoleGroupId: computed(() => state.currentRoleGroupId.value),
     myRoleGroups: computed(() => state.myRoleGroups.value),
 
@@ -1205,52 +758,33 @@ export const useCalendarStore = () => {
     isJefeImportaciones,
     isCoordinacionOrDocumentacion,
     usaConsolidado,
+    showEventDetails,
 
-    // Eventos / Actividades
+    // Eventos
     getEvents,
     createActivity,
     updateActivity,
     deleteActivity,
-
-    // Legacy (compatibilidad)
-    createEvent,
-    updateEvent,
-    deleteEvent,
-
-    // Estados y prioridades
+    reorderEvents,
     updateChargeStatus,
     updateEventStatus,
     updateEventPriority,
-
-    // Notas
     updateChargeNotes,
     updateEventNotes,
-    // Subtareas
     createSubtask,
     updateSubtask,
     deleteSubtask,
 
-    // Responsables
+    // Catálogos y colores
     loadResponsables,
-
-    // Grupos del usuario
-    loadMyRoleGroups,
-
-    // Colores por usuario
+    loadContenedores,
     loadColorConfig,
     updateUserColor,
     getResponsableColor,
-
-    // Colores por consolidado
     loadConsolidadoColorConfig,
     updateConsolidadoColors,
-    updateConsolidadoColor,
     getConsolidadoColor,
-
-    // Contenedores
-    loadContenedores,
-
-    // Catálogo de actividades
+    getEventColors,
     loadActivityCatalog,
     createActivityInCatalog,
     updateActivityInCatalog,
@@ -1260,53 +794,15 @@ export const useCalendarStore = () => {
     // Progreso
     loadProgress,
 
-    // Tracking / Historial
-    getChargeTracking,
-    getActivityTracking,
-
     // Filtros
-    setFilter,
+    setFilters,
     clearFilters,
-    setDateRange,
 
-    // Utilidades para eventos multi-día
-    getEventColors,
-    getEventPosition,
-    isEventOnDate,
-
-    // Inicialización y caché
+    // Ciclo de vida
     initialize,
     invalidateCache,
+    invalidateConfig,
     refresh,
-
-    // Orden manual de eventos (vista mes)
-    async reorderEvents(ids: number[]): Promise<boolean> {
-      try {
-        const response = await CalendarService.reorderEvents(ids)
-        if (!response?.success) return false
-        const orderMap = new Map<number, number>()
-        ids.forEach((id, i) => orderMap.set(id, i))
-        state.events.value = [...state.events.value].sort((a, b) => {
-          const ao = orderMap.get(a.id) ?? Number.MAX_SAFE_INTEGER
-          const bo = orderMap.get(b.id) ?? Number.MAX_SAFE_INTEGER
-          return ao - bo || (a.start_date ?? '').localeCompare(b.start_date ?? '') || a.id - b.id
-        })
-        return true
-      } catch (err) {
-        console.error('Error al reordenar eventos:', err)
-        return false
-      }
-    },
-
-    // UI
-    showEventDetails,
-
-    /** Ruta de calendario con role_group_id en query (para que el backend sepa el grupo en cada petición). */
-    getCalendarRoute: (path: string) => {
-      const id = state.currentRoleGroupId.value
-      if (id == null) return path
-      const sep = path.includes('?') ? '&' : '?'
-      return `${path}${sep}role_group_id=${id}`
-    }
+    getCalendarRoute
   }
 }

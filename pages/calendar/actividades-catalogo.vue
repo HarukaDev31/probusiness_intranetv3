@@ -222,7 +222,7 @@
                 <select
                   :value="item.default_priority ?? 0"
                   class="text-xs rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 py-0.5 px-1.5 focus:ring-primary-500 focus:border-primary-500"
-                  @change="setLocalOption(item.id, 'default_priority', Number(($event.target as HTMLSelectElement).value))"
+                  @change="setLocalOption(item.id, 'default_priority', Number(($event.target as HTMLSelectElement).value) as CalendarEventPriority)"
                 >
                   <option :value="0">Baja</option>
                   <option :value="1">Media</option>
@@ -245,7 +245,7 @@ import { useCalendarStore } from '~/composables/useCalendarStore'
 import { useModal } from '~/composables/commons/useModal'
 
 const router = useRouter()
-import type { CalendarActivityCatalogItem } from '~/types/calendar'
+import type { CalendarActivityCatalogItem, CalendarEventPriority } from '~/types/calendar'
 
 const {
   activityCatalog,
@@ -348,7 +348,7 @@ async function confirmColorChange(item: CalendarActivityCatalogItem) {
     const ok = await updateActivityInCatalog(item.id, item.name, hex)
     if (ok) {
       const idx = localItems.value.findIndex(i => i.id === item.id)
-      if (idx !== -1) localItems.value[idx] = { ...localItems.value[idx], color_code: hex || undefined }
+      if (idx !== -1) localItems.value[idx] = { ...localItems.value[idx], color_code: hex }
       cancelColorEdit()
     } else {
       showError('Error', 'No se pudo actualizar el color.')
@@ -359,7 +359,9 @@ async function confirmColorChange(item: CalendarActivityCatalogItem) {
 }
 
 // ─── Opciones de programación (solo local, se persisten con "Guardar cambios") ───
-function setLocalOption(id: number, field: 'allow_saturday' | 'allow_sunday' | 'default_priority', value: boolean | number) {
+type CatalogOptions = Pick<CalendarActivityCatalogItem, 'allow_saturday' | 'allow_sunday' | 'default_priority'>
+
+function setLocalOption<K extends keyof CatalogOptions>(id: number, field: K, value: CatalogOptions[K]) {
   const idx = localItems.value.findIndex(i => i.id === id)
   if (idx === -1) return
   localItems.value[idx] = { ...localItems.value[idx], [field]: value }
@@ -369,9 +371,9 @@ function isItemOptionChanged(id: number): boolean {
   const local = localItems.value.find(i => i.id === id)
   const original = activityCatalog.value.find(i => i.id === id)
   if (!local || !original) return false
-  return (!!local.allow_saturday) !== (!!original.allow_saturday)
-    || (!!local.allow_sunday) !== (!!original.allow_sunday)
-    || (local.default_priority ?? 0) !== (original.default_priority ?? 0)
+  return local.allow_saturday !== original.allow_saturday
+    || local.allow_sunday !== original.allow_sunday
+    || local.default_priority !== original.default_priority
 }
 
 const optionsChanged = computed(() => localItems.value.some(item => isItemOptionChanged(item.id)))
@@ -385,9 +387,9 @@ async function handleSaveOptions() {
   try {
     for (const item of changed) {
       const ok = await updateActivityInCatalog(item.id, item.name, undefined, {
-        allow_saturday: !!item.allow_saturday,
-        allow_sunday: !!item.allow_sunday,
-        default_priority: item.default_priority ?? 0,
+        allow_saturday: item.allow_saturday,
+        allow_sunday: item.allow_sunday,
+        default_priority: item.default_priority
       })
       if (!ok) allOk = false
     }

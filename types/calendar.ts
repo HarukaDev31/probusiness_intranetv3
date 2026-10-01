@@ -1,426 +1,285 @@
+// Tipos del módulo Calendario. Reflejan exactamente lo que devuelve el backend
+// (intranet_back: CalendarController, CalendarActivityController, CalendarRoleGroupController
+// y CalendarEventService::formatEventForResponseWithColorMap).
+
 // ============================================
-// TIPOS BASADOS EN TABLAS DEL BACKEND
+// ENUMS
 // ============================================
 
-// Estados de una actividad/carga
 export type CalendarEventStatus = 'PENDIENTE' | 'PROGRESO' | 'COMPLETADO'
 
-// Prioridades de una actividad
-export type CalendarEventPriority = 0 | 1 | 2 // 0: Bajo, 1: Medio, 2: Alto
+/** 0: Bajo, 1: Medio, 2: Alto */
+export type CalendarEventPriority = 0 | 1 | 2
 
-export const PRIORITY_LABELS: Record<CalendarEventPriority, string> = {
-  0: 'Bajo',
-  1: 'Medio',
-  2: 'Alto'
-}
+/** Rol del usuario dentro de un grupo de calendario (calendar_role_group_members.role_type). */
+export type CalendarRoleType = 'JEFE' | 'MIEMBRO'
 
-export const PRIORITY_COLORS: Record<CalendarEventPriority, string> = {
-  0: 'success',   // Verde - Bajo
-  1: 'warning',   // Amarillo - Medio
-  2: 'error'      // Rojo - Alto
-}
+/** Fuentes de color del evento, en el orden de prioridad configurado por grupo. */
+export type CalendarColorSource = 'ACTIVIDAD' | 'CONSOLIDADO' | 'USUARIO' | 'PRIORIDAD' | 'COMPLETADO'
 
-export const STATUS_LABELS: Record<CalendarEventStatus, string> = {
-  'PENDIENTE': 'Pendiente',
-  'PROGRESO': 'En Progreso',
-  'COMPLETADO': 'Completado'
-}
-
-export const STATUS_COLORS: Record<CalendarEventStatus, string> = {
-  'PENDIENTE': 'warning',
-  'PROGRESO': 'info',
-  'COMPLETADO': 'success'
-}
+/** Fecha en formato YYYY-MM-DD. */
+export type IsoDate = string
+/** Fecha-hora ISO 8601 (Carbon ->format('c')). */
+export type IsoDateTime = string
 
 // ============================================
-// INTERFACES BASADAS EN TABLAS
+// EVENTOS (GET /calendar/events, /activities/*)
 // ============================================
 
-/**
- * Tabla: calendars
- * Calendario principal de un usuario
- */
-export interface Calendar {
+/** Usuario resumido dentro de un charge (incluye el color configurado por el calendario). */
+export interface CalendarChargeUser {
   id: number
-  user_id: number
-  created_at?: string
-  updated_at?: string
+  nombre: string
+  email: string | null
+  avatar: string | null
+  color: string | null
 }
 
-/**
- * Tabla: calendar_events
- * Evento/Actividad principal
- */
-export interface CalendarEventBase {
-  id: number
-  calendar_id: number
-  priority: CalendarEventPriority
-  name: string
-  contenedor_id?: number | null
-  notes?: string | null
-  /** Orden manual para vista mes (drag & drop) */
-  display_order?: number | null
-  created_at?: string
-  updated_at?: string
-  deleted_at?: string | null
-}
-
-/**
- * Tabla: calendar_event_days
- * Días asociados a un evento (rango de fechas)
- */
-export interface CalendarEventDay {
-  id: number
-  calendar_id: number
-  calendar_event_id: number
-  date: string // YYYY-MM-DD
-  created_at?: string
-  updated_at?: string
-}
-
-/**
- * Tabla: calendar_event_charges
- * Asignación de responsables a un evento
- */
-export interface CalendarEventCharge {
-  id: number
-  calendar_id: number
-  user_id: number
-  calendar_event_id: number
-  notes?: string | null
-  assigned_at?: string | null
-  removed_at?: string | null
-  status: CalendarEventStatus
-  created_at?: string
-  updated_at?: string
-  // Datos extendidos del usuario (join)
-  user?: CalendarResponsable
-  subtasks?: CalendarSubtask[]
-}
-
-/**
- * Subtarea asociada a un responsable (charge) de una actividad.
- */
 export interface CalendarSubtask {
   id: number
   calendar_event_charge_id: number
   name: string
   duration_hours: number
-  end_date?: string | null
+  end_date: IsoDate | null
   status: CalendarEventStatus
-  created_at?: string
-  updated_at?: string
+  created_at: IsoDateTime | null
+  updated_at: IsoDateTime | null
 }
 
-/**
- * Tabla: calendar_event_charge_tracking
- * Historial de cambios de estado
- */
-export interface CalendarEventChargeTracking {
-  id: number
-  calendar_event_charge_id: number
-  from_status?: CalendarEventStatus | null
-  to_status: CalendarEventStatus
-  changed_at: string
-  changed_by?: number | null
-  // Datos extendidos (joins)
-  changed_by_user?: CalendarResponsable | null
-  charge?: CalendarEventCharge | null
-}
-
-/**
- * Tabla: calendar_user_color_config
- * Configuración de colores por usuario
- */
-export interface CalendarUserColorConfig {
+/** Responsable asignado a un evento (calendar_event_charges). */
+export interface CalendarEventCharge {
   id: number
   calendar_id: number
   user_id: number
-  color_code: string // Hex, ej. #RRGGBB
-  created_at?: string
-  updated_at?: string
-  // Datos extendidos del usuario (join)
-  user?: CalendarResponsable
+  calendar_event_id: number
+  notes: string | null
+  assigned_at: IsoDateTime | null
+  removed_at: IsoDateTime | null
+  status: CalendarEventStatus
+  subtasks: CalendarSubtask[]
+  user: CalendarChargeUser | null
 }
 
-/**
- * Tabla: calendar_consolidado_color_config
- * Configuración de colores por consolidado/contenedor
- */
-export interface CalendarConsolidadoColorConfig {
+export interface CalendarEventDay {
   id: number
   calendar_id: number
-  contenedor_id: number
-  color_code: string // Hex, ej. #RRGGBB
-  created_at?: string
-  updated_at?: string
-  // Datos extendidos del contenedor (join)
-  contenedor?: CalendarContenedor
+  calendar_event_id: number
+  date: IsoDate
 }
 
-/**
- * Ítem del catálogo de actividades con orden
- */
+/** Consolidado asociado al evento. nombre = "Consolidado #19A" (incluye la parte si está partido). */
+export interface CalendarEventContenedor {
+  id: number
+  nombre: string
+  codigo: string
+}
+
+/** Evento tal como llega del backend. */
+export interface CalendarEventApi {
+  id: number
+  calendar_id: number
+  activity_id: number | null
+  priority: CalendarEventPriority
+  name: string
+  contenedor_id: number | null
+  display_order: number | null
+  notes: string | null
+  /** Derivado de los charges: COMPLETADO si todos, PENDIENTE si alguno, si no PROGRESO. */
+  status: CalendarEventStatus
+  created_at: IsoDateTime | null
+  updated_at: IsoDateTime | null
+  deleted_at: IsoDateTime | null
+  days: CalendarEventDay[]
+  charges: CalendarEventCharge[]
+  contenedor: CalendarEventContenedor | null
+  start_date: IsoDate | null
+  end_date: IsoDate | null
+  /** Días calendario entre start_date y end_date (inclusive). */
+  duration: number
+}
+
+/** Evento ya procesado por el store (color base calculado). */
+export interface CalendarEvent extends CalendarEventApi {
+  color: string
+}
+
+// ============================================
+// CATÁLOGOS Y CONFIGURACIÓN
+// ============================================
+
+/** GET /calendar/responsables */
+export interface CalendarResponsable {
+  id: number
+  nombre: string
+  email: string | null
+  avatar: string | null
+  color: string | null
+}
+
+/** GET /calendar/contenedores. nombre = "#19A - 2026". */
+export interface CalendarContenedor {
+  id: number
+  nombre: string
+  codigo: string
+}
+
+/** Color de un usuario en el calendario (lo mínimo que usa el front). */
+export interface CalendarUserColor {
+  user_id: number
+  color_code: string
+}
+
+/** GET /calendar/colors */
+export interface CalendarUserColorConfig extends CalendarUserColor {
+  id: number
+  calendar_id: number
+  user: { id: number; nombre: string } | null
+}
+
+/** Color de un consolidado (lo mínimo que usa el front). */
+export interface CalendarConsolidadoColor {
+  contenedor_id: number
+  color_code: string
+}
+
+/** GET /calendar/consolidado-colors */
+export interface CalendarConsolidadoColorConfig extends CalendarConsolidadoColor {
+  id: number
+  calendar_id: number
+  role_group_id: number
+}
+
+/** GET /calendar/activity-catalog */
 export interface CalendarActivityCatalogItem {
   id: number
   name: string
   orden: number
-  /** Color opcional para la actividad en el calendario (hex). Prioridad sobre color de consolidado. */
-  color_code?: string | null
+  color_code: string | null
+  allow_saturday: boolean
+  allow_sunday: boolean
+  default_priority: CalendarEventPriority
+}
+
+/** Campos opcionales al editar una actividad del catálogo (PUT /activity-catalog/{id}). */
+export interface CalendarActivityCatalogExtras {
   allow_saturday?: boolean
   allow_sunday?: boolean
-  default_priority?: number
+  default_priority?: CalendarEventPriority
+}
+
+/** Permisos devueltos por GET /calendar/config (CalendarPermissionService). */
+export interface CalendarPermissions {
+  canCreateActivity: boolean
+  canEditActivity: boolean
+  canDeleteActivity: boolean
+  canAssignResponsables: boolean
+  canEditAnyStatus: boolean
+  canEditOwnStatus: boolean
+  canEditPriority: boolean
+  canViewTeamProgress: boolean
+  canFilterByResponsable: boolean
+  canAccessConfig: boolean
+}
+
+/** GET /calendar/config */
+export interface CalendarConfig {
+  role_group: {
+    id: number
+    name: string
+    code: string | null
+    /** NINGUNO si el usuario no es miembro del grupo resuelto. */
+    role_type: CalendarRoleType | 'NINGUNO'
+  } | null
+  permissions: CalendarPermissions
+  colors: {
+    prioridad: string | null
+    actividad: string | null
+    consolidado: string | null
+    completado: string | null
+  } | null
+  color_priority_order: {
+    jefe: CalendarColorSource[]
+    miembro: CalendarColorSource[]
+  }
+  show_event_details: boolean
+  usa_consolidado: boolean
 }
 
 // ============================================
-// INTERFACES EXTENDIDAS (CON JOINS)
+// GRUPOS DE ROLES
 // ============================================
 
-/**
- * Responsable/Usuario simplificado para el calendario
- */
-export interface CalendarResponsable {
+/** GET /calendar/role-groups */
+export interface CalendarRoleGroup {
   id: number
-  nombre: string
-  email?: string
-  avatar?: string | null
-  color?: string // Del color_config
-}
-
-/**
- * Contenedor/Consolidado simplificado
- */
-export interface CalendarContenedor {
-  id: number
-  nombre: string
-  codigo?: string
-}
-
-/**
- * Evento completo con todas las relaciones
- * (respuesta típica del backend)
- */
-export interface CalendarEvent {
-  id: number
-  calendar_id: number
-  /** ID de la actividad en el catálogo (opcional) */
-  activity_id?: number | null
-  priority: CalendarEventPriority
   name: string
-  contenedor_id?: number | null
-  notes?: string | null
-  display_order?: number | null
-  created_at?: string
-  updated_at?: string
-  deleted_at?: string | null
-  // Relaciones
-  days: CalendarEventDay[]
-  charges: CalendarEventCharge[]
-  contenedor?: CalendarContenedor | null
-  // Campos calculados para UI
-  start_date?: string // Primera fecha de days
-  start_time?: string // Hora de inicio (HH:mm)
-  end_time?: string   // Hora de fin (HH:mm)
-  is_all_day?: boolean // Todo el día
-  is_for_me?: boolean
-  is_public?: boolean
-  role_id?: number | null
-  role_name?: string | null
-  created_by?: number
-  created_by_name?: string
-  description?: string
-  end_date?: string   // Última fecha de days
-  duration?: number   // Días entre start_date y end_date
-  /** Estado del evento derivado de los charges (backend) */
-  status?: CalendarEventStatus
-  responsables?: CalendarResponsable[]
-  // Campos legacy para compatibilidad
-  title?: string // Alias de name
-  color?: string // Color del primer responsable
-  type?: 'evento' | 'tarea'
-  task_day_id?: number | null
+  code: string | null
+  usa_consolidado: boolean
+  is_active: boolean
 }
 
-// ============================================
-// REQUESTS
-// ============================================
+/** GET /calendar/my-role-groups: incluye el rol del usuario en cada grupo. */
+export interface CalendarMyRoleGroup extends CalendarRoleGroup {
+  role_type: CalendarRoleType | null
+}
 
-/**
- * Request para crear una actividad
- */
-export interface CreateCalendarEventRequest {
+export interface CalendarRoleGroupPayload {
   name: string
-  /** ID de la actividad del catálogo (para color y tipo) */
-  activity_id?: number | null
-  priority?: CalendarEventPriority
-  contenedor_id?: number | null
-  notes?: string | null
-  start_date: string // YYYY-MM-DD
-  end_date: string   // YYYY-MM-DD
-  responsable_ids?: number[] // Array de 1 o 2 user_ids
+  code: string | null
+  usa_consolidado: boolean
+  is_active: boolean
 }
 
-/**
- * Request para actualizar una actividad
- */
-export interface UpdateCalendarEventRequest extends Partial<CreateCalendarEventRequest> {
+/** GET /calendar/role-groups/{id}/members */
+export interface CalendarRoleGroupMember {
   id: number
-}
-
-/**
- * Request para actualizar el estado de un charge (responsable)
- */
-export interface UpdateChargeStatusRequest {
-  charge_id: number
-  status: CalendarEventStatus
-}
-
-/**
- * Request para actualizar la prioridad de un evento
- */
-export interface UpdateEventPriorityRequest {
-  event_id: number
-  priority: CalendarEventPriority
-}
-
-/**
- * Request para actualizar el estado de una actividad (aplica a todos los participantes)
- */
-export interface UpdateEventStatusRequest {
-  event_id: number
-  status: CalendarEventStatus
-}
-
-/**
- * Request para agregar/actualizar nota de un charge
- */
-export interface UpdateChargeNotesRequest {
-  charge_id: number
-  notes: string
-}
-
-/**
- * Request para configurar color de usuario
- */
-export interface UpdateUserColorRequest {
   user_id: number
-  color_code: string
+  role_type: CalendarRoleType
+  user: { id: number; nombre: string; email: string | null } | null
 }
 
-/**
- * Request para configurar color de consolidado
- */
-export interface UpdateConsolidadoColorRequest {
-  contenedor_id: number
-  color_code: string
+/** Modelo crudo devuelto por POST /role-groups/{id}/members (sin relación user). */
+export interface CalendarRoleGroupMemberRecord {
+  id: number
+  role_group_id: number
+  user_id: number
+  role_type: CalendarRoleType
 }
 
-// ============================================
-// FILTROS
-// ============================================
-
-export interface CalendarFilters {
-  start_date?: string
-  end_date?: string
-  responsable_id?: number
-  /** Varios responsables (solo jefe). El backend acepta responsable_ids[] */
-  responsable_ids?: number[]
-  contenedor_id?: number
-  /** Varios consolidados (ej. en vista progreso). El backend acepta contenedor_ids[] */
-  contenedor_ids?: number[]
-  status?: CalendarEventStatus
-  priority?: CalendarEventPriority
-  /** Filtrar por un único evento (ej. desde calendario para ir a progreso con esa actividad). */
-  event_id?: number | null
-  /** Paginación: si se envían, el backend devuelve meta (current_page, last_page, per_page, total) */
-  page?: number
-  per_page?: number
-  /** Id del grupo de calendario (contexto multi-grupo). Se envía en todas las peticiones cuando el usuario puede estar en varios grupos. */
-  role_group_id?: number | null
-  /** Solo devolver actividades con al menos un responsable asignado */
-  has_charges?: number
-  /** Ordenar por fecha descendente (más recientes primero) */
-  order_desc?: number
+/** GET/PUT /calendar/role-groups/{id}/config (modelo CalendarRoleGroupConfig). */
+export interface CalendarRoleGroupConfig {
+  id: number
+  role_group_id: number
+  color_prioridad: string | null
+  color_actividad: string | null
+  color_consolidado: string | null
+  color_completado: string | null
+  /** CSV de CalendarColorSource. */
+  jefe_color_priority_order: string | null
+  /** CSV de CalendarColorSource. */
+  miembro_color_priority_order: string | null
+  show_event_details: boolean
 }
 
-/** Metadatos de paginación devueltos por el backend cuando se envían page y per_page */
-export interface CalendarPaginationMeta {
-  current_page: number
-  last_page: number
-  per_page: number
-  total: number
+export interface CalendarRoleGroupConfigPayload {
+  jefe_color_priority_order?: string | null
+  miembro_color_priority_order?: string | null
+  usa_consolidado?: boolean
+  show_event_details?: boolean
+}
+
+/** GET /calendar/users */
+export interface CalendarIntranetUser {
+  id: number
+  nombre: string
+  email: string | null
 }
 
 // ============================================
-// RESPONSES
+// PROGRESO
 // ============================================
 
-export interface CalendarResponse<T = CalendarEvent[]> {
-  success: boolean
-  data: T
-  message?: string
-  /** Presente cuando la petición incluyó page y per_page */
-  meta?: CalendarPaginationMeta
-}
-
-export interface CalendarEventResponse {
-  success: boolean
-  data: CalendarEvent
-  message?: string
-}
-
-/**
- * Respuesta de responsables disponibles
- */
-export interface ResponsablesResponse {
-  success: boolean
-  data: CalendarResponsable[]
-  message?: string
-}
-
-/**
- * Respuesta de configuración de colores (usuarios)
- */
-export interface ColorConfigResponse {
-  success: boolean
-  data: CalendarUserColorConfig[]
-  message?: string
-}
-
-/**
- * Respuesta de configuración de colores por consolidado
- */
-export interface ConsolidadoColorConfigResponse {
-  success: boolean
-  data: CalendarConsolidadoColorConfig[]
-  message?: string
-}
-
-/**
- * Respuesta de contenedores para filtro
- */
-export interface ContenedoresResponse {
-  success: boolean
-  data: CalendarContenedor[]
-  message?: string
-}
-
-/**
- * Respuesta de tracking/historial de cambios de estado
- */
-export interface ChargeTrackingResponse {
-  success: boolean
-  data: CalendarEventChargeTracking[]
-  message?: string
-}
-
-// ============================================
-// PROGRESO (ESTADÍSTICAS)
-// ============================================
-
-/**
- * Estadísticas de progreso del equipo
- */
+/** GET /calendar/progress → data.team */
 export interface TeamProgress {
   total_actividades: number
   completadas: number
@@ -429,13 +288,11 @@ export interface TeamProgress {
   porcentaje_completado: number
 }
 
-/**
- * Estadísticas de progreso por responsable
- */
+/** GET /calendar/progress → data.by_responsable[] */
 export interface ResponsableProgress {
   user_id: number
-  nombre: string
-  color?: string
+  nombre: string | null
+  color: string | null
   total_asignadas: number
   completadas: number
   en_progreso: number
@@ -443,42 +300,98 @@ export interface ResponsableProgress {
   porcentaje_completado: number
 }
 
-export interface ProgressResponse {
+export interface CalendarProgress {
+  team: TeamProgress
+  by_responsable: ResponsableProgress[]
+}
+
+/** my_progress / global_progress de GET /calendar/events paginado. */
+export interface CalendarProgressStats {
+  total: number
+  completadas: number
+  en_progreso: number
+  pendientes: number
+}
+
+// ============================================
+// REQUESTS
+// ============================================
+
+/** POST /calendar/activities y PUT /calendar/activities/{id} */
+export interface CreateCalendarEventRequest {
+  name: string
+  activity_id: number | null
+  priority: CalendarEventPriority
+  contenedor_id: number | null
+  notes: string | null
+  start_date: IsoDate
+  end_date: IsoDate
+  /** Máximo 2 responsables. */
+  responsable_ids: number[]
+}
+
+export interface UpdateCalendarEventRequest extends CreateCalendarEventRequest {
+  id: number
+}
+
+export interface CreateSubtaskRequest {
+  name: string
+  duration_hours: number
+  status: CalendarEventStatus
+  end_date: IsoDate | null
+}
+
+export type UpdateSubtaskRequest = Partial<CreateSubtaskRequest>
+
+// ============================================
+// FILTROS Y RESPUESTAS
+// ============================================
+
+export interface CalendarFilters {
+  start_date?: IsoDate
+  end_date?: IsoDate
+  /** Un responsable (no-jefe: "Yo"). */
+  responsable_id?: number
+  /** Varios responsables (jefe). Se envía como responsable_ids[]. */
+  responsable_ids?: number[]
+  /** Varios consolidados. Se envía como contenedor_ids[]. */
+  contenedor_ids?: number[]
+  status?: CalendarEventStatus
+  priority?: CalendarEventPriority
+  /** Un único evento (ej. al ir a progreso desde el calendario). */
+  event_id?: number
+  /** Paginación: con page y per_page el backend devuelve meta + my_progress + global_progress. */
+  page?: number
+  per_page?: number
+  role_group_id?: number
+  /** 1 = solo actividades con al menos un responsable. */
+  has_charges?: 0 | 1
+  /** 1 = más recientes primero. */
+  order_desc?: 0 | 1
+}
+
+export interface CalendarPaginationMeta {
+  current_page: number
+  last_page: number
+  per_page: number
+  total: number
+}
+
+export interface ApiResponse<T> {
   success: boolean
-  data: {
-    team: TeamProgress
-    by_responsable: ResponsableProgress[]
-  }
+  data: T
   message?: string
 }
 
-// ============================================
-// LEGACY INTERFACES (para compatibilidad)
-// ============================================
-
-export interface CreateEventRequest {
-  title: string
-  description?: string
-  start_date: string
-  end_date: string
-  start_time?: string
-  end_time?: string
-  is_all_day?: boolean
-  is_for_me?: boolean
-  is_for_my_role?: boolean
-  is_public?: boolean
-  type?: 'evento' | 'tarea'
+export interface ApiMessageResponse {
+  success: boolean
+  message?: string
 }
 
-export interface UpdateEventRequest extends CreateEventRequest {
-  id: number
-  task_day_id?: number | null
-}
-
-export interface MoveEventRequest {
-  id: number
-  start_date: string
-  end_date: string
-  start_time?: string
-  end_time?: string
+/** GET /calendar/events */
+export interface CalendarEventsResponse extends ApiResponse<CalendarEventApi[]> {
+  /** Solo con page/per_page. */
+  meta?: CalendarPaginationMeta
+  my_progress?: CalendarProgressStats | null
+  global_progress?: CalendarProgressStats | null
 }

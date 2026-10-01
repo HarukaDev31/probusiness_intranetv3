@@ -71,15 +71,15 @@
             <div class="flex items-center gap-1">
               <UButton
                 icon="i-heroicons-pencil-square"
-                size="2xs"
+                size="xs"
                 variant="ghost"
                 @click.stop="startEditGroup(group)"
               />
               <UButton
                 icon="i-heroicons-trash"
-                size="2xs"
+                size="xs"
                 variant="ghost"
-                color="red"
+                color="error"
                 @click.stop="confirmDeleteGroup(group)"
               />
             </div>
@@ -157,7 +157,7 @@
                 </div>
                 <UButton
                   icon="i-heroicons-arrow-path"
-                  size="2xs"
+                  size="xs"
                   variant="ghost"
                   title="Recargar"
                   @click="loadMembers"
@@ -177,8 +177,7 @@
                     :items="userOptions"
                     value-key="value"
                     placeholder="Buscar por nombre o email..."
-                    searchable
-                    searchable-placeholder="Escribe para buscar en toda la intranet"
+                    :search-input="{ placeholder: 'Escribe para buscar en toda la intranet' }"
                     :loading="loadingUsers"
                   />
                 </div>
@@ -225,9 +224,9 @@
                   </div>
                   <UButton
                     icon="i-heroicons-trash"
-                    size="2xs"
+                    size="xs"
                     variant="ghost"
-                    color="red"
+                    color="error"
                     @click="removeMember(m)"
                   />
                 </li>
@@ -247,7 +246,7 @@
                 </div>
                 <UButton
                   icon="i-heroicons-arrow-path"
-                  size="2xs"
+                  size="xs"
                   variant="ghost"
                   title="Recargar"
                   @click="loadGroupConfig"
@@ -316,7 +315,7 @@
 
               <div class="flex flex-col gap-3 pt-2">
                 <div class="flex items-center gap-2">
-                  <UToggle v-model="groupConfigForm.usa_consolidado" />
+                  <USwitch v-model="groupConfigForm.usa_consolidado" />
                   <span class="text-sm text-gray-700 dark:text-gray-300">
                     Este grupo usa consolidado en el calendario
                   </span>
@@ -355,132 +354,75 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { CalendarService, type CalendarRoleGroup, type CalendarRoleGroupMember, type CalendarRoleGroupConfig } from '~/services/calendar/calendarService'
+import { onMounted, ref } from 'vue'
+import draggable from 'vuedraggable'
+import { CalendarService } from '~/services/calendar/calendarService'
 import { useCalendarStore } from '~/composables/useCalendarStore'
+import { useModal } from '~/composables/commons/useModal'
+import type {
+  CalendarColorSource,
+  CalendarMyRoleGroup,
+  CalendarRoleGroupMember,
+  CalendarRoleGroupPayload,
+  CalendarRoleType
+} from '~/types/calendar'
+import { COLOR_SOURCE_LABELS, DEFAULT_JEFE_COLOR_ORDER, DEFAULT_MIEMBRO_COLOR_ORDER } from '~/constants/calendar'
+
+interface ColorSourceItem {
+  key: CalendarColorSource
+  label: string
+}
 
 const router = useRouter()
-import { useModal } from '~/composables/commons/useModal'
-import draggable from 'vuedraggable'
+const { invalidateConfig } = useCalendarStore()
+const { showSuccess, showError, showConfirmation } = useModal()
 
-const { getCalendarRoute } = useCalendarStore()
-const { showSuccess, showError } = useModal()
+const errorText = (err: unknown, fallback: string) => (err instanceof Error && err.message ? err.message : fallback)
 
-const groups = ref<RoleGroup[]>([])
+// ============================================
+// GRUPOS
+// ============================================
+
+/** Solo los grupos donde el usuario es jefe. */
+const groups = ref<CalendarMyRoleGroup[]>([])
 const loadingGroups = ref(false)
 const savingGroup = ref(false)
 const selectedGroupId = ref<number | null>(null)
 const editingGroupId = ref<number | null>(null)
 
-const groupForm = ref({
-  name: '',
-  code: '',
-  usa_consolidado: true,
-  is_active: true
-})
-
-const members = ref<RoleGroupMember[]>([])
-const loadingMembers = ref(false)
-const savingMember = ref(false)
-
-const groupConfigForm = ref<{
-  color_prioridad: string | null
-  color_actividad: string | null
-  color_consolidado: string | null
-  color_completado: string | null
-  usa_consolidado: boolean
-  show_event_details: boolean
-}>({
-  color_prioridad: null,
-  color_actividad: null,
-  color_consolidado: null,
-  color_completado: null,
-  usa_consolidado: true,
-  show_event_details: false
-})
-
-const savingConfig = ref(false)
-
-// Usuarios de la intranet para el selector de miembros (autocomplete)
-const userOptions = ref<{ label: string; value: number }[]>([])
-const loadingUsers = ref(false)
-const userSearchQuery = ref('')
-
-const memberForm = ref<{ user_id: number | null; role_type: string | null }>({
-  user_id: null,
-  role_type: null
-})
-
-// Rol dentro del grupo de calendario: solo Jefe o Miembro
-const roleTypeOptions = [
-  { label: 'Jefe del grupo', value: 'JEFE' },
-  { label: 'Miembro', value: 'MIEMBRO' }
-]
-
-// Fuentes de color para prioridad visual en el calendario (qué color gana al pintar cada evento).
-// No interviene en la carga de eventos: los eventos se cargan en la vista del calendario vía API
-// (GET /api/calendar/events). El Jefe recibe todos los eventos; los miembros solo los suyos o "Todos" si eligen ese filtro.
-const allSources = [
-  { key: 'PRIORIDAD', label: 'Prioridad' },
-  { key: 'ACTIVIDAD', label: 'Actividad' },
-  { key: 'CONSOLIDADO', label: 'Consolidado' },
-  { key: 'USUARIO', label: 'Por perfil' },
-  { key: 'COMPLETADO', label: 'Completado' }
-]
-
-const jefeOrder = ref(allSources.map(s => ({ ...s })))
-const miembroOrder = ref(allSources.map(s => ({ ...s })))
+const emptyGroupForm = () => ({ name: '', code: '', usa_consolidado: true, is_active: true })
+const groupForm = ref(emptyGroupForm())
 
 const startCreateGroup = () => {
   editingGroupId.value = null
-  groupForm.value = {
-    name: '',
-    code: '',
-    usa_consolidado: true,
-    is_active: true
-  }
+  groupForm.value = emptyGroupForm()
 }
 
-const startEditGroup = (group: RoleGroup) => {
+const startEditGroup = (group: CalendarMyRoleGroup) => {
   editingGroupId.value = group.id
-  groupForm.value = {
-    name: group.name,
-    code: group.code || '',
-    usa_consolidado: group.usa_consolidado,
-    is_active: group.is_active
-  }
+  groupForm.value = { name: group.name, code: group.code ?? '', usa_consolidado: group.usa_consolidado, is_active: group.is_active }
 }
 
 const resetGroupForm = () => {
-  editingGroupId.value = null
-  if (selectedGroupId.value) {
-    const g = groups.value.find(gr => gr.id === selectedGroupId.value)
-    if (g) {
-      startEditGroup(g)
-      return
-    }
-  }
-  startCreateGroup()
+  const selected = groups.value.find(g => g.id === selectedGroupId.value)
+  if (selected) startEditGroup(selected)
+  else startCreateGroup()
 }
 
 const loadGroups = async () => {
+  loadingGroups.value = true
   try {
-    loadingGroups.value = true
     const data = await CalendarService.getMyRoleGroups()
-    groups.value = data.filter((g: CalendarRoleGroup) => g.role_type === 'JEFE')
-    if (!selectedGroupId.value && groups.value.length > 0) {
-      selectGroup(groups.value[0])
-    }
-  } catch (err: any) {
-    console.error('Error al cargar grupos de roles:', err)
-    showError('Error', err?.message || 'No se pudieron cargar los grupos')
+    groups.value = data.filter(g => g.role_type === 'JEFE')
+    if (!selectedGroupId.value && groups.value.length) selectGroup(groups.value[0])
+  } catch (err) {
+    showError('Error', errorText(err, 'No se pudieron cargar los grupos'))
   } finally {
     loadingGroups.value = false
   }
 }
 
-const selectGroup = (group: RoleGroup) => {
+const selectGroup = (group: CalendarMyRoleGroup) => {
   selectedGroupId.value = group.id
   startEditGroup(group)
   loadMembers()
@@ -489,69 +431,78 @@ const selectGroup = (group: RoleGroup) => {
 }
 
 const saveGroup = async () => {
-  if (!groupForm.value.name.trim()) {
+  const name = groupForm.value.name.trim()
+  if (!name) {
     showError('Validación', 'El nombre del grupo es obligatorio')
     return
   }
+  const payload: CalendarRoleGroupPayload = {
+    name,
+    code: groupForm.value.code.trim() || null,
+    usa_consolidado: groupForm.value.usa_consolidado,
+    is_active: groupForm.value.is_active
+  }
+  savingGroup.value = true
   try {
-    savingGroup.value = true
-    const payload = {
-      name: groupForm.value.name.trim(),
-      code: groupForm.value.code?.trim() || null,
-      usa_consolidado: groupForm.value.usa_consolidado,
-      is_active: groupForm.value.is_active
-    }
-
     if (editingGroupId.value) {
       await CalendarService.updateRoleGroup(editingGroupId.value, payload)
       showSuccess('Grupo actualizado', 'El grupo se actualizó correctamente')
-      await loadGroups()
     } else {
       await CalendarService.createRoleGroup(payload)
       showSuccess('Grupo creado', 'El grupo se creó correctamente')
-      await loadGroups()
     }
-  } catch (err: any) {
-    console.error('Error al guardar grupo:', err)
-    showError('Error', err?.message || 'Ocurrió un error al guardar el grupo')
+    invalidateConfig()
+    await loadGroups()
+  } catch (err) {
+    showError('Error', errorText(err, 'Ocurrió un error al guardar el grupo'))
   } finally {
     savingGroup.value = false
   }
 }
 
-const confirmDeleteGroup = async (group: RoleGroup) => {
-  if (!confirm(`¿Eliminar el grupo "${group.name}"? Esta acción no se puede deshacer.`)) {
-    return
-  }
-  try {
-    const response = await CalendarService.deleteRoleGroup(group.id)
-    if (response.success) {
-      showSuccess('Grupo eliminado', response.message || 'El grupo se eliminó correctamente')
+const confirmDeleteGroup = (group: CalendarMyRoleGroup) => {
+  showConfirmation('Eliminar grupo', `¿Eliminar el grupo "${group.name}"? Esta acción no se puede deshacer.`, async () => {
+    try {
+      const response = await CalendarService.deleteRoleGroup(group.id)
+      if (!response.success) {
+        showError('Error', response.message ?? 'No se pudo eliminar el grupo')
+        return
+      }
+      showSuccess('Grupo eliminado', response.message ?? 'El grupo se eliminó correctamente')
       if (selectedGroupId.value === group.id) {
         selectedGroupId.value = null
         editingGroupId.value = null
       }
+      invalidateConfig()
       await loadGroups()
-    } else {
-      showError('Error', response.message || 'No se pudo eliminar el grupo')
+    } catch (err) {
+      showError('Error', errorText(err, 'Ocurrió un error al eliminar el grupo'))
     }
-  } catch (err: any) {
-    console.error('Error al eliminar grupo:', err)
-    showError('Error', err?.message || 'Ocurrió un error al eliminar el grupo')
-  }
+  })
 }
 
-/** Carga usuarios de la intranet para el selector de miembros (todos los usuarios activos). */
-const loadIntranetUsers = async (search: string = '') => {
+// ============================================
+// MIEMBROS
+// ============================================
+
+const members = ref<CalendarRoleGroupMember[]>([])
+const loadingMembers = ref(false)
+const savingMember = ref(false)
+const userOptions = ref<{ label: string; value: number }[]>([])
+const loadingUsers = ref(false)
+const memberForm = ref<{ user_id: number | undefined; role_type: CalendarRoleType | undefined }>({ user_id: undefined, role_type: undefined })
+
+const roleTypeOptions: { label: string; value: CalendarRoleType }[] = [
+  { label: 'Jefe del grupo', value: 'JEFE' },
+  { label: 'Miembro', value: 'MIEMBRO' }
+]
+
+const loadIntranetUsers = async () => {
+  loadingUsers.value = true
   try {
-    loadingUsers.value = true
-    const data = await CalendarService.getIntranetUsers(search)
-    userOptions.value = data.map(u => ({
-      label: u.email ? `${u.nombre} (${u.email})` : u.nombre,
-      value: u.id
-    }))
-  } catch (err) {
-    console.error('Error al cargar usuarios para grupos:', err)
+    const users = await CalendarService.getIntranetUsers()
+    userOptions.value = users.map(u => ({ label: u.email ? `${u.nombre} (${u.email})` : u.nombre, value: u.id }))
+  } catch {
     showError('Error', 'No se pudieron cargar los usuarios de la intranet')
     userOptions.value = []
   } finally {
@@ -561,119 +512,117 @@ const loadIntranetUsers = async (search: string = '') => {
 
 const loadMembers = async () => {
   if (!selectedGroupId.value) return
+  loadingMembers.value = true
   try {
-    loadingMembers.value = true
     members.value = await CalendarService.getRoleGroupMembers(selectedGroupId.value)
-  } catch (err: any) {
-    console.error('Error al cargar miembros:', err)
-    showError('Error', err?.message || 'Ocurrió un error al cargar los miembros')
+  } catch (err) {
+    showError('Error', errorText(err, 'Ocurrió un error al cargar los miembros'))
   } finally {
     loadingMembers.value = false
   }
 }
 
 const saveMember = async () => {
-  if (!selectedGroupId.value) return
-  if (!memberForm.value.user_id || !memberForm.value.role_type) {
+  const groupId = selectedGroupId.value
+  const { user_id, role_type } = memberForm.value
+  if (!groupId) return
+  if (!user_id || !role_type) {
     showError('Validación', 'Debes seleccionar un usuario y un tipo de rol')
     return
   }
+  savingMember.value = true
   try {
-    savingMember.value = true
-    await CalendarService.addRoleGroupMember(selectedGroupId.value, {
-      user_id: memberForm.value.user_id as number,
-      role_type: memberForm.value.role_type as string
-    })
+    await CalendarService.addRoleGroupMember(groupId, { user_id, role_type })
     showSuccess('Miembro guardado', 'El miembro se agregó/actualizó correctamente')
+    invalidateConfig()
     await loadMembers()
-  } catch (err: any) {
-    console.error('Error al guardar miembro:', err)
-    showError('Error', err?.message || 'Ocurrió un error al guardar el miembro')
+  } catch (err) {
+    showError('Error', errorText(err, 'Ocurrió un error al guardar el miembro'))
   } finally {
     savingMember.value = false
   }
 }
 
-const removeMember = async (member: RoleGroupMember) => {
-  if (!selectedGroupId.value) return
-  if (!confirm(`¿Quitar a "${member.user?.nombre || 'usuario #' + member.user_id}" del grupo?`)) {
-    return
-  }
-  try {
-    const response = await CalendarService.removeRoleGroupMember(selectedGroupId.value, member.id)
-    if (response.success) {
-      showSuccess('Miembro eliminado', response.message || 'El miembro se eliminó correctamente')
+const removeMember = (member: CalendarRoleGroupMember) => {
+  const groupId = selectedGroupId.value
+  if (!groupId) return
+  const who = member.user?.nombre ?? `usuario #${member.user_id}`
+  showConfirmation('Quitar miembro', `¿Quitar a "${who}" del grupo?`, async () => {
+    try {
+      const response = await CalendarService.removeRoleGroupMember(groupId, member.id)
+      if (!response.success) {
+        showError('Error', response.message ?? 'No se pudo eliminar el miembro')
+        return
+      }
+      showSuccess('Miembro eliminado', response.message ?? 'El miembro se eliminó correctamente')
+      invalidateConfig()
       await loadMembers()
-    } else {
-      showError('Error', response.message || 'No se pudo eliminar el miembro')
+    } catch (err) {
+      showError('Error', errorText(err, 'Ocurrió un error al eliminar el miembro'))
     }
-  } catch (err: any) {
-    console.error('Error al eliminar miembro:', err)
-    showError('Error', err?.message || 'Ocurrió un error al eliminar el miembro')
-  }
+  })
 }
 
+// ============================================
+// PRIORIDAD DE COLORES Y OPCIONES DEL GRUPO
+// ============================================
+
+const ALL_SOURCES = Object.keys(COLOR_SOURCE_LABELS) as CalendarColorSource[]
+const isColorSource = (key: string): key is CalendarColorSource => (ALL_SOURCES as string[]).includes(key)
+const toItems = (keys: CalendarColorSource[]): ColorSourceItem[] => keys.map(key => ({ key, label: COLOR_SOURCE_LABELS[key] }))
+
+/** CSV guardado → orden completo (las fuentes que falten se agregan al final). */
+const parseOrder = (csv: string | null, fallback: CalendarColorSource[]): ColorSourceItem[] => {
+  const keys = (csv ?? '').split(',').map(s => s.trim()).filter(isColorSource)
+  const ordered = keys.length ? keys : fallback
+  return toItems([...ordered, ...ALL_SOURCES.filter(k => !ordered.includes(k))])
+}
+
+const jefeOrder = ref<ColorSourceItem[]>(toItems(DEFAULT_JEFE_COLOR_ORDER))
+const miembroOrder = ref<ColorSourceItem[]>(toItems(DEFAULT_MIEMBRO_COLOR_ORDER))
+const groupConfigForm = ref({ usa_consolidado: true, show_event_details: false })
+const savingConfig = ref(false)
+
 const loadGroupConfig = async () => {
-  if (!selectedGroupId.value) return
+  const groupId = selectedGroupId.value
+  if (!groupId) return
   try {
-    const cfg = await CalendarService.getRoleGroupConfig(selectedGroupId.value)
-    const group = groups.value.find(g => g.id === selectedGroupId.value)
-    groupConfigForm.value.usa_consolidado = group?.usa_consolidado ?? true
-    groupConfigForm.value.show_event_details = cfg?.show_event_details ?? false
-
-    const jefeCsv = cfg?.jefe_color_priority_order || 'ACTIVIDAD,CONSOLIDADO,USUARIO,PRIORIDAD,COMPLETADO'
-    const miembroCsv = cfg?.miembro_color_priority_order || 'USUARIO,PRIORIDAD,ACTIVIDAD,CONSOLIDADO,COMPLETADO'
-
-    const jefeKeys = jefeCsv.split(',').map(s => s.trim()).filter(Boolean)
-    const miembroKeys = miembroCsv.split(',').map(s => s.trim()).filter(Boolean)
-
-    const mapOrder = (keys: string[]) => {
-      const ordered = keys
-        .map(k => allSources.find(s => s.key === k))
-        .filter((s): s is { key: string; label: string } => !!s)
-      const orderedKeys = new Set(ordered.map(s => s.key))
-      const missing = allSources.filter(s => !orderedKeys.has(s.key))
-      return [...ordered, ...missing]
+    const config = await CalendarService.getRoleGroupConfig(groupId)
+    groupConfigForm.value = {
+      usa_consolidado: groups.value.find(g => g.id === groupId)?.usa_consolidado ?? true,
+      show_event_details: config?.show_event_details ?? false
     }
-
-    const defaultJefe = ['ACTIVIDAD', 'CONSOLIDADO', 'USUARIO', 'PRIORIDAD', 'COMPLETADO']
-    const defaultMiembro = ['USUARIO', 'PRIORIDAD', 'ACTIVIDAD', 'CONSOLIDADO', 'COMPLETADO']
-    jefeOrder.value = mapOrder(jefeKeys.length ? jefeKeys : defaultJefe)
-    miembroOrder.value = mapOrder(miembroKeys.length ? miembroKeys : defaultMiembro)
-  } catch (err: any) {
-    console.error('Error al obtener configuración de grupo:', err)
-    showError('Error', err?.message || 'Ocurrió un error al obtener la configuración')
+    jefeOrder.value = parseOrder(config?.jefe_color_priority_order ?? null, DEFAULT_JEFE_COLOR_ORDER)
+    miembroOrder.value = parseOrder(config?.miembro_color_priority_order ?? null, DEFAULT_MIEMBRO_COLOR_ORDER)
+  } catch (err) {
+    showError('Error', errorText(err, 'Ocurrió un error al obtener la configuración'))
   }
 }
 
 const saveGroupConfig = async () => {
-  if (!selectedGroupId.value) return
+  const groupId = selectedGroupId.value
+  if (!groupId) return
+  savingConfig.value = true
   try {
-    savingConfig.value = true
-    const jefeCsv = jefeOrder.value.map(i => i.key).join(',')
-    const miembroCsv = miembroOrder.value.map(i => i.key).join(',')
-    await CalendarService.updateRoleGroupConfig(selectedGroupId.value, {
-      jefe_color_priority_order: jefeCsv,
-      miembro_color_priority_order: miembroCsv,
+    await CalendarService.updateRoleGroupConfig(groupId, {
+      jefe_color_priority_order: jefeOrder.value.map(i => i.key).join(','),
+      miembro_color_priority_order: miembroOrder.value.map(i => i.key).join(','),
       usa_consolidado: groupConfigForm.value.usa_consolidado,
       show_event_details: groupConfigForm.value.show_event_details
     })
     showSuccess('Configuración guardada', 'La configuración se guardó correctamente')
+    invalidateConfig()
     await loadGroups()
-  } catch (err: any) {
-    console.error('Error al guardar configuración de grupo:', err)
-    showError('Error', err?.message || 'Ocurrió un error al guardar la configuración')
+  } catch (err) {
+    showError('Error', errorText(err, 'Ocurrió un error al guardar la configuración'))
   } finally {
     savingConfig.value = false
   }
 }
 
-onMounted(async () => {
-  await loadGroups()
-})
+onMounted(loadGroups)
 
 definePageMeta({
   middleware: ['auth', 'calendar-jefe']
 })
 </script>
-
