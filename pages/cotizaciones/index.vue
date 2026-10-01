@@ -1,29 +1,6 @@
 <template>
   <div class="md:p-6">
-    <CotizacionesView
-      v-if="activeTab === 'abiertos'"
-      scope="abiertos"
-      :role="currentRole || undefined"
-      base-path="/cargaconsolidada/abiertos"
-      back-base-path="/cargaconsolidada/abiertos"
-    >
-      <template #tabs>
-        <UTabs v-model="activeTab" color="neutral" :items="pageTabs" size="sm" variant="pill" class="mb-1 w-80 h-15" />
-      </template>
-    </CotizacionesView>
-    <CotizacionesView
-      v-else-if="activeTab === 'embarcados'"
-      scope="completados"
-      :role="currentRole || undefined"
-      base-path="/cargaconsolidada/completados"
-      back-base-path="/cargaconsolidada/completados"
-    >
-      <template #tabs>
-        <UTabs v-model="activeTab" color="neutral" :items="pageTabs" size="sm" variant="pill" class="mb-1 w-80 h-15" />
-      </template>
-    </CotizacionesView>
-
-    <DataTable v-show="activeTab === 'cotizaciones'" title="Cotizaciones" :show-title="true" icon="i-heroicons-users" :data="cotizaciones" :columns="columns"
+    <DataTable title="Cotizaciones" :show-title="true" icon="i-heroicons-users" :data="cotizaciones" :columns="columns"
       :loading="loading" :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
       :items-per-page="itemsPerPage" :search-query-value="search" :primary-search-value="search"
       :show-primary-search="true" :showPrimarySearchLabel="false" :primary-search-placeholder="'Buscar por'"
@@ -37,12 +14,48 @@
 
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
-          <SectionHeader :headers="kpiHeaders" :loading="loading" :skeleton-count="4" />
-          <UTabs v-if="mostrarTabsAgregadas" v-model="activeTab" color="neutral" :items="pageTabs" size="sm" variant="pill" class="mb-1 w-80 h-15" />
+          <SectionHeader :headers="kpiHeaders" :loading="loading" :skeleton-count="4">
+            <template #extra="{ header }">
+              <div v-if="header.key === 'cotizaciones_pendientes'" class="flex flex-wrap gap-1.5 mt-1.5">
+                <button
+                  v-for="chip in seguimientoChips(header)"
+                  :key="chip.value"
+                  type="button"
+                  class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[11px] cursor-pointer transition-colors"
+                  :class="seguimientoFilter === chip.value
+                    ? 'bg-orange-50 text-orange-700 border-[#f26522] dark:bg-orange-900/30 dark:text-orange-300'
+                    : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-[#f26522] dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600'"
+                  :title="`Filtrar: ${chip.label}`"
+                  @click.stop="toggleSeguimientoFilter(chip.value)"
+                >
+                  <span class="w-1.5 h-1.5 rounded-full" :class="chip.dotClass" />
+                  {{ chip.label }} <strong class="font-bold">{{ chip.count }}</strong>
+                </button>
+              </div>
+            </template>
+          </SectionHeader>
+          <div class="flex items-center gap-3 flex-wrap">
+            <UTabs v-model="activeTab" color="neutral" :items="pageTabs" size="sm" variant="pill" class="mb-1 w-80 h-15" />
+            <span
+              v-if="seguimientoFilter"
+              class="inline-flex items-center gap-2 text-xs text-orange-700 bg-orange-50 border border-orange-200 rounded-full pl-3 pr-1 py-1 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800"
+            >
+              Filtrando: {{ seguimientoFilter === 'DESCARTADA' ? 'Descartadas' : 'En seguimiento' }}
+              <UButton icon="i-heroicons-x-mark" size="xs" color="neutral" variant="ghost" title="Quitar filtro" @click="toggleSeguimientoFilter(seguimientoFilter)" />
+            </span>
+          </div>
         </div>
       </template>
 
       <template #actions>
+        <UButton
+          label="Motivos de descarte"
+          icon="i-heroicons-adjustments-horizontal"
+          color="neutral"
+          variant="outline"
+          class="h-8 md:h-11 font-normal"
+          @click="showMotivosModal = true"
+        />
         <UButton
           label="Gestionar tarifas de calculadora"
           icon="i-heroicons-calculator"
@@ -59,6 +72,7 @@
     </DataTable>
 
     <RazonDescarteModal v-model="showRazonDescarteModal" :handlers="razonDescarteHandlers" />
+    <MotivosDescarteModal v-model="showMotivosModal" :handlers="razonDescarteHandlers" />
   </div>
 </template>
 <script setup lang="ts">
@@ -67,8 +81,9 @@ import { useRoute } from 'vue-router'
 import { useCalculadoraImportacion } from '~/composables/useCalculadoraImportacion'
 import SectionHeader from '~/components/commons/SectionHeader.vue'
 import type { Header } from '~/types/data-table'
-const { cotizaciones, loading, error, pagination, headers, search, itemsPerPage, totalPages, totalRecords, currentPage, filters, filterOptions, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, getCotizaciones, estadoCotizaciones, deleteCotizacionCalculadora, duplicateCotizacionCalculadora, changeEstadoCotizacionCalculadora, vincularCotizacionCalculadora, exportCotizacionesList, getRazonesDescarte, createRazonDescarte, deleteRazonDescarte, updateSeguimientoCotizacion } = useCalculadoraImportacion()
+const { cotizaciones, loading, error, pagination, headers, tab, seguimientoFilter, search, itemsPerPage, totalPages, totalRecords, currentPage, filters, filterOptions, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, getCotizaciones, estadoCotizaciones, deleteCotizacionCalculadora, duplicateCotizacionCalculadora, changeEstadoCotizacionCalculadora, vincularCotizacionCalculadora, exportCotizacionesList, getRazonesDescarte, createRazonDescarte, deleteRazonDescarte, updateSeguimientoCotizacion } = useCalculadoraImportacion()
 import RazonDescarteModal from '~/components/calculadora/RazonDescarteModal/index.vue'
+import MotivosDescarteModal from '~/components/calculadora/MotivosDescarteModal/index.vue'
 import type { TableColumn } from '@nuxt/ui'
 import { UButton, USelect, UBadge } from '#components'
 import { createLazyView } from '~/utils/lazyView'
@@ -80,17 +95,39 @@ import type { FilterConfig } from '~/types/data-table'
 import { useIsDesktop } from '~/composables/useResponsive'
 import { STATUS_BG_CLASSES, CUSTOMIZED_ICONS_URL } from '~/constants/ui'
 import { formatCurrency } from '~/utils/formatters'
-import { useUserRole } from '~/composables/auth/useUserRole'
-import { esJefeVentasOEquivalente } from '~/constants/roles'
-const CotizacionesView = createLazyView(() => import('~/components/cargaconsolidada/cotizaciones/CotizacionesView/index.vue'))
-const { currentRole, currentId } = useUserRole()
-const mostrarTabsAgregadas = computed(() => esJefeVentasOEquivalente(currentId.value, currentRole.value))
+// Abiertos: consolidado abierto o pendientes sin contenedor asignado. Embarcados: contenedor COMPLETADO.
+// Ambos tabs usan la misma tabla y KPIs; solo cambian los valores (filtro `tab` del backend).
 const pageTabs = [
-  { label: 'Cotizaciones', value: 'cotizaciones' },
   { label: 'Abiertos', value: 'abiertos' },
   { label: 'Embarcados', value: 'embarcados' },
 ]
-const activeTab = ref('cotizaciones')
+const activeTab = computed({
+  get: () => tab.value,
+  set: (value: string) => {
+    const next = value === 'embarcados' ? 'embarcados' : 'abiertos'
+    if (next === tab.value) return
+    tab.value = next
+    seguimientoFilter.value = ''
+    pagination.value.current_page = 1
+    getCotizaciones()
+  }
+})
+
+const seguimientoChips = (header: Header) => {
+  const raw = header as Header & { seguimiento?: number; descartadas?: number }
+  return [
+    { value: 'SEGUIMIENTO' as const, label: 'En seguimiento', count: raw.seguimiento ?? 0, dotClass: 'bg-amber-500' },
+    { value: 'DESCARTADA' as const, label: 'Descartadas', count: raw.descartadas ?? 0, dotClass: 'bg-gray-400' },
+  ]
+}
+
+const toggleSeguimientoFilter = async (value: 'SEGUIMIENTO' | 'DESCARTADA' | '') => {
+  seguimientoFilter.value = seguimientoFilter.value === value ? '' : value
+  pagination.value.current_page = 1
+  await getCotizaciones()
+}
+
+const showMotivosModal = ref(false)
 const { isDesktop } = useIsDesktop()
 const route = useRoute()
 const { showSuccess, showConfirmation, showError } = useModal()
@@ -259,7 +296,8 @@ const columns: TableColumn<any>[] = [
         label: '',
         title: 'Ver cotización en contenedor',
         onClick: () => {
-          navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${idContenedor}?idCotizacion=${idCotizacion}`)
+          const base = tab.value === 'embarcados' ? '/cargaconsolidada/completados' : '/cargaconsolidada/abiertos'
+          navigateTo(`${base}/cotizaciones/${idContenedor}?idCotizacion=${idCotizacion}`)
         }
       })
     }
@@ -316,14 +354,15 @@ const columns: TableColumn<any>[] = [
       if (estado !== 'PENDIENTE' && estado !== 'COTIZADO') {
         return h(UBadge, { label: '—', color: 'neutral', variant: 'soft', size: 'sm' })
       }
-      const seguimiento = row.original.seguimiento === 'DESCARTADA' ? 'DESCARTADA' : 'SEGUIMIENTO'
+      const raw = row.original.seguimiento
+      const seguimiento: SeguimientoValue = raw === 'DESCARTADA' || raw === 'SEGUIMIENTO' ? raw : SIN_SELECCIONAR
       return h('div', { class: 'flex flex-col gap-1' }, [
         h(USelect as any, {
           class: 'min-w-36',
-          color: seguimiento === 'DESCARTADA' ? 'error' : 'info',
+          color: seguimiento === 'DESCARTADA' ? 'error' : seguimiento === 'SEGUIMIENTO' ? 'warning' : 'neutral',
           items: SEGUIMIENTO_OPTIONS,
           modelValue: seguimiento,
-          'onUpdate:modelValue': (value: 'SEGUIMIENTO' | 'DESCARTADA') => {
+          'onUpdate:modelValue': (value: SeguimientoValue) => {
             handleSeguimientoChange(row.original.id, value, seguimiento)
           }
         }),
@@ -400,8 +439,12 @@ const columns: TableColumn<any>[] = [
     }
   }
 ]
+// Valor por defecto: seguimiento null en BD se muestra como "Sin seleccionar".
+const SIN_SELECCIONAR = 'SIN_SELECCIONAR' as const
+type SeguimientoValue = 'SEGUIMIENTO' | 'DESCARTADA' | typeof SIN_SELECCIONAR
 const SEGUIMIENTO_OPTIONS = [
-  { label: 'Seguimiento', value: 'SEGUIMIENTO' },
+  { label: 'Sin seleccionar', value: SIN_SELECCIONAR },
+  { label: 'En seguimiento', value: 'SEGUIMIENTO' },
   { label: 'Descartada', value: 'DESCARTADA' },
 ]
 const showRazonDescarteModal = ref(false)
@@ -430,7 +473,7 @@ const razonDescarteHandlers = {
   },
 }
 
-const handleSeguimientoChange = async (id: number | string, value: 'SEGUIMIENTO' | 'DESCARTADA', actual: string) => {
+const handleSeguimientoChange = async (id: number | string, value: SeguimientoValue, actual: SeguimientoValue) => {
   if (value === actual) return
   if (value === 'DESCARTADA') {
     seguimientoTargetId.value = Number(id)
@@ -439,9 +482,9 @@ const handleSeguimientoChange = async (id: number | string, value: 'SEGUIMIENTO'
   }
   await withSpinner(async () => {
     try {
-      const result = await updateSeguimientoCotizacion(Number(id), 'SEGUIMIENTO')
+      const result = await updateSeguimientoCotizacion(Number(id), value === SIN_SELECCIONAR ? null : value)
       if (result?.success) {
-        showSuccess('Seguimiento actualizado', 'La cotización volvió a seguimiento.')
+        showSuccess('Seguimiento actualizado', result?.message || 'El seguimiento se actualizó correctamente.')
         await getCotizaciones()
       } else {
         showError('Error al actualizar el seguimiento', result?.message || 'No se pudo actualizar el seguimiento')
@@ -634,6 +677,19 @@ const filterConfig = computed<FilterConfig[]>(() => [
     type: 'date',
     placeholder: 'DD/MM/YYYY',
     options: []
+  },
+  {
+    key: 'anio',
+    label: 'Año',
+    type: 'select',
+    placeholder: 'Seleccionar año',
+    options: [
+      { label: 'Todos', value: 'todos' },
+      ...Array.from({ length: new Date().getFullYear() - 2024 + 1 }, (_, i) => {
+        const year = String(new Date().getFullYear() - i)
+        return { label: year, value: year }
+      })
+    ]
   },
   {
     key: 'campania',

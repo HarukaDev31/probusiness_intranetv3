@@ -113,8 +113,8 @@ export class CalculadoraImportacionService extends BaseService {
             throw new Error('No se pudo duplicar la cotización')
         }
     }
-    static async getRazonesDescarte(): Promise<{ success: boolean; data: Array<{ id: number; name: string }> }> {
-        return await this.apiCall<{ success: boolean; data: Array<{ id: number; name: string }> }>(`${this.baseUrl}/razones-descarte`, {
+    static async getRazonesDescarte(): Promise<{ success: boolean; data: Array<{ id: number; name: string; uses?: number }> }> {
+        return await this.apiCall<{ success: boolean; data: Array<{ id: number; name: string; uses?: number }> }>(`${this.baseUrl}/razones-descarte`, {
             method: 'GET'
         })
     }
@@ -132,7 +132,8 @@ export class CalculadoraImportacionService extends BaseService {
         })
     }
 
-    static async updateSeguimiento(id: number, seguimiento: 'SEGUIMIENTO' | 'DESCARTADA', idRazonDescarte?: number | null): Promise<any> {
+    /** seguimiento null = "Sin seleccionar" */
+    static async updateSeguimiento(id: number, seguimiento: 'SEGUIMIENTO' | 'DESCARTADA' | null, idRazonDescarte?: number | null): Promise<any> {
         return await this.apiCall<any>(`${this.baseUrl}/seguimiento/${id}`, {
             method: 'POST',
             body: { seguimiento, id_razon_descarte: idRazonDescarte ?? null }
