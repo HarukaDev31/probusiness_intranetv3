@@ -249,7 +249,6 @@ export const useCalendarStore = () => {
 
   const createActivity = async (data: CreateCalendarEventRequest): Promise<CalendarEvent | null> => {
     try {
-      state.loading.value = true
       state.error.value = null
       const activity = await withSpinner(
         () => CalendarService.createActivity(data),
@@ -262,14 +261,11 @@ export const useCalendarStore = () => {
       state.error.value = err?.message || 'Error al crear actividad'
       console.error('Error en createActivity:', err)
       return null
-    } finally {
-      state.loading.value = false
     }
   }
 
   const updateActivity = async (data: UpdateCalendarEventRequest): Promise<CalendarEvent | null> => {
     try {
-      state.loading.value = true
       state.error.value = null
       const activity = await withSpinner(
         () => CalendarService.updateActivity(data),
@@ -287,14 +283,11 @@ export const useCalendarStore = () => {
       state.error.value = err?.message || 'Error al actualizar actividad'
       console.error('Error en updateActivity:', err)
       return null
-    } finally {
-      state.loading.value = false
     }
   }
 
   const deleteActivity = async (id: number): Promise<boolean> => {
     try {
-      state.loading.value = true
       state.error.value = null
       await withSpinner(
         () => CalendarService.deleteActivity(id),
@@ -307,8 +300,6 @@ export const useCalendarStore = () => {
       state.error.value = err?.message || 'Error al eliminar actividad'
       console.error('Error en deleteActivity:', err)
       return false
-    } finally {
-      state.loading.value = false
     }
   }
 
@@ -396,7 +387,6 @@ export const useCalendarStore = () => {
   const updateUserColor = async (userId: number, colorCode: string): Promise<boolean> => {
     const hex = colorCode.startsWith('#') ? colorCode : `#${colorCode}`
     try {
-      state.loading.value = true
       await CalendarService.updateUserColor({ user_id: userId, color_code: hex })
       const index = state.colorConfig.value.findIndex(c => c.user_id === userId)
       if (index !== -1) {
@@ -409,8 +399,6 @@ export const useCalendarStore = () => {
       state.error.value = err?.message || 'Error al actualizar color'
       console.error('Error en updateUserColor:', err)
       return false
-    } finally {
-      state.loading.value = false
     }
   }
 
@@ -443,7 +431,6 @@ export const useCalendarStore = () => {
   /** Guarda múltiples colores de consolidados en una sola petición */
   const updateConsolidadoColors = async (items: Array<{ contenedorId: number; colorCode: string }>): Promise<boolean> => {
     try {
-      state.loading.value = true
       await CalendarService.updateConsolidadoColors(
         items.map(i => ({ contenedor_id: i.contenedorId, color_code: i.colorCode }))
       )
@@ -462,8 +449,6 @@ export const useCalendarStore = () => {
       state.error.value = err?.message || 'Error al actualizar colores de consolidados'
       console.error('Error en updateConsolidadoColors:', err)
       return false
-    } finally {
-      state.loading.value = false
     }
   }
 
@@ -516,7 +501,6 @@ export const useCalendarStore = () => {
       return null
     }
     try {
-      state.loading.value = true
       const activity = await CalendarService.createActivityCatalog(name, roleGroupId)
       state.activityCatalog.value = [...state.activityCatalog.value, activity]
       return activity
@@ -524,8 +508,6 @@ export const useCalendarStore = () => {
       state.error.value = err?.message || 'Error al crear actividad en catálogo'
       console.error('Error en createActivityInCatalog:', err)
       return null
-    } finally {
-      state.loading.value = false
     }
   }
 
@@ -541,7 +523,6 @@ export const useCalendarStore = () => {
       return false
     }
     try {
-      state.loading.value = true
       const updated = await CalendarService.updateActivityCatalog(id, name, colorCode, extras, roleGroupId)
       const index = state.activityCatalog.value.findIndex(a => a.id === id)
       if (index !== -1) {
@@ -564,8 +545,6 @@ export const useCalendarStore = () => {
       state.error.value = err?.message || 'Error al actualizar actividad del catálogo'
       console.error('Error en updateActivityInCatalog:', err)
       return false
-    } finally {
-      state.loading.value = false
     }
   }
 
@@ -648,15 +627,12 @@ export const useCalendarStore = () => {
    */
   const getChargeTracking = async (chargeId: number) => {
     try {
-      state.loading.value = true
       const data = await CalendarService.getChargeTracking(chargeId)
       return data
     } catch (err: any) {
       state.error.value = err?.message || 'Error al obtener tracking'
       console.error('Error en getChargeTracking:', err)
       return []
-    } finally {
-      state.loading.value = false
     }
   }
 
@@ -666,15 +642,12 @@ export const useCalendarStore = () => {
    */
   const getActivityTracking = async (activityId: number) => {
     try {
-      state.loading.value = true
       const data = await CalendarService.getActivityTracking(activityId)
       return data
     } catch (err: any) {
       state.error.value = err?.message || 'Error al obtener tracking de actividad'
       console.error('Error en getActivityTracking:', err)
       return []
-    } finally {
-      state.loading.value = false
     }
   }
 
@@ -684,7 +657,6 @@ export const useCalendarStore = () => {
 
   const updateChargeStatus = async (chargeId: number, status: CalendarEventStatus): Promise<boolean> => {
     try {
-      state.loading.value = true
       await CalendarService.updateChargeStatus({ charge_id: chargeId, status })
       // Actualizar en la lista local
       for (const event of state.events.value) {
@@ -699,15 +671,12 @@ export const useCalendarStore = () => {
       state.error.value = err?.message || 'Error al actualizar estado'
       console.error('Error en updateChargeStatus:', err)
       return false
-    } finally {
-      state.loading.value = false
     }
   }
 
   /** Estado por actividad: actualiza todos los charges del evento; cualquier participante puede cambiarlo */
   const updateEventStatus = async (eventId: number, status: CalendarEventStatus): Promise<boolean> => {
     try {
-      state.loading.value = true
       const response = await CalendarService.updateEventStatus({ event_id: eventId, status })
       // Actualizar en la lista local (todos los charges del evento)
       const event = state.events.value.find(e => e.id === eventId)
@@ -716,21 +685,18 @@ export const useCalendarStore = () => {
       }
       if (response?.data) {
         const idx = state.events.value.findIndex(e => e.id === eventId)
-        if (idx !== -1) state.events.value[idx] = response.data
+        if (idx !== -1) state.events.value[idx] = transformEvent(response.data)
       }
       return true
     } catch (err: any) {
       state.error.value = err?.message || 'Error al actualizar estado'
       console.error('Error en updateEventStatus:', err)
       return false
-    } finally {
-      state.loading.value = false
     }
   }
 
   const updateEventPriority = async (eventId: number, priority: CalendarEventPriority): Promise<boolean> => {
     try {
-      state.loading.value = true
       await CalendarService.updateEventPriority({ event_id: eventId, priority })
       // Actualizar en la lista local
       const event = state.events.value.find(e => e.id === eventId)
@@ -742,8 +708,6 @@ export const useCalendarStore = () => {
       state.error.value = err?.message || 'Error al actualizar prioridad'
       console.error('Error en updateEventPriority:', err)
       return false
-    } finally {
-      state.loading.value = false
     }
   }
 
@@ -766,7 +730,6 @@ export const useCalendarStore = () => {
     payload: { name: string; duration_hours: number; status: CalendarEventStatus; end_date?: string | null }
   ): Promise<CalendarSubtask | null> => {
     try {
-      state.loading.value = true
       state.error.value = null
       const subtask = await CalendarService.createSubtask(chargeId, payload)
       // Asegurar que el estado inicial sea siempre PENDIENTE para el select
@@ -790,8 +753,6 @@ export const useCalendarStore = () => {
       state.error.value = err?.message || 'Error al crear subtarea'
       console.error('Error en createSubtask:', err)
       return null
-    } finally {
-      state.loading.value = false
     }
   }
 
@@ -800,7 +761,6 @@ export const useCalendarStore = () => {
     payload: Partial<{ name: string; duration_hours: number; status: CalendarEventStatus; end_date?: string | null }>
   ): Promise<boolean> => {
     try {
-      state.loading.value = true
       state.error.value = null
       const updated = await CalendarService.updateSubtask(subtaskId, payload)
       for (const event of state.events.value) {
@@ -820,14 +780,11 @@ export const useCalendarStore = () => {
       state.error.value = err?.message || 'Error al actualizar subtarea'
       console.error('Error en updateSubtask:', err)
       return false
-    } finally {
-      state.loading.value = false
     }
   }
 
   const deleteSubtask = async (subtaskId: number): Promise<boolean> => {
     try {
-      state.loading.value = true
       state.error.value = null
       await CalendarService.deleteSubtask(subtaskId)
       for (const event of state.events.value) {
@@ -846,8 +803,6 @@ export const useCalendarStore = () => {
       state.error.value = err?.message || 'Error al eliminar subtarea'
       console.error('Error en deleteSubtask:', err)
       return false
-    } finally {
-      state.loading.value = false
     }
   }
 
@@ -857,7 +812,6 @@ export const useCalendarStore = () => {
 
   const updateChargeNotes = async (chargeId: number, notes: string): Promise<boolean> => {
     try {
-      state.loading.value = true
       await CalendarService.updateChargeNotes({ charge_id: chargeId, notes })
       // Actualizar en la lista local
       for (const event of state.events.value) {
@@ -872,14 +826,11 @@ export const useCalendarStore = () => {
       state.error.value = err?.message || 'Error al actualizar notas'
       console.error('Error en updateChargeNotes:', err)
       return false
-    } finally {
-      state.loading.value = false
     }
   }
 
   const updateEventNotes = async (eventId: number, notes: string): Promise<boolean> => {
     try {
-      state.loading.value = true
       await CalendarService.updateEventNotes(eventId, notes)
       // Actualizar en la lista local
       const event = state.events.value.find(e => e.id === eventId)
@@ -891,8 +842,6 @@ export const useCalendarStore = () => {
       state.error.value = err?.message || 'Error al actualizar notas'
       console.error('Error en updateEventNotes:', err)
       return false
-    } finally {
-      state.loading.value = false
     }
   }
 
@@ -1104,7 +1053,6 @@ export const useCalendarStore = () => {
 
   const createEvent = async (data: any): Promise<CalendarEvent | null> => {
     try {
-      state.loading.value = true
       state.error.value = null
       const event = await withSpinner(
         () => CalendarService.createEvent(data),
@@ -1120,14 +1068,11 @@ export const useCalendarStore = () => {
       state.error.value = err?.message || 'Error al crear evento'
       console.error('Error en createEvent:', err)
       return null
-    } finally {
-      state.loading.value = false
     }
   }
 
   const updateEvent = async (data: any): Promise<CalendarEvent | null> => {
     try {
-      state.loading.value = true
       state.error.value = null
       const event = await withSpinner(
         () => CalendarService.updateEvent(data),
@@ -1145,14 +1090,11 @@ export const useCalendarStore = () => {
       state.error.value = err?.message || 'Error al actualizar evento'
       console.error('Error en updateEvent:', err)
       return null
-    } finally {
-      state.loading.value = false
     }
   }
 
   const deleteEvent = async (id: number, taskDayId?: number | null): Promise<boolean> => {
     try {
-      state.loading.value = true
       state.error.value = null
       await withSpinner(
         () => CalendarService.deleteEvent(id, taskDayId),
@@ -1173,8 +1115,6 @@ export const useCalendarStore = () => {
       state.error.value = err?.message || 'Error al eliminar evento'
       console.error('Error en deleteEvent:', err)
       return false
-    } finally {
-      state.loading.value = false
     }
   }
 

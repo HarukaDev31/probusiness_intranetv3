@@ -545,7 +545,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { CalendarDate, getLocalTimeZone, today, parseDate } from '@internationalized/date'
 import { useCalendarStore } from '~/composables/useCalendarStore'
@@ -583,8 +583,7 @@ const {
   getCalendarRoute,
   createSubtask,
   updateSubtask,
-  deleteSubtask,
-  invalidateCache
+  deleteSubtask
 } = useCalendarStore()
 
 const { showSuccess, showError } = useModal()
@@ -1209,18 +1208,6 @@ onMounted(async () => {
     }
   }
   await applyFilters(true)
-
-  document.addEventListener('visibilitychange', onVisibilityChange)
-})
-
-const onVisibilityChange = async () => {
-  if (document.visibilityState !== 'visible') return
-  invalidateCache('events')
-  await applyFilters(true)
-}
-
-onBeforeUnmount(() => {
-  document.removeEventListener('visibilitychange', onVisibilityChange)
 })
 
 definePageMeta({
