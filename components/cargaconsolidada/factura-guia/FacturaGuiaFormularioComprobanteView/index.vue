@@ -84,6 +84,16 @@
               <dd class="text-sm text-gray-900 dark:text-white font-mono">{{ form.dni_carnet || '—' }}</dd>
             </div>
           </template>
+
+          <!-- Dirección fiscal (solo si el cliente la registró) -->
+          <div v-if="form.domicilio_fiscal" class="flex items-start justify-between gap-4 py-3 border-t border-gray-100 dark:border-gray-700">
+            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 shrink-0">Domicilio fiscal</dt>
+            <dd class="text-sm text-gray-900 dark:text-white text-right">{{ form.domicilio_fiscal }}</dd>
+          </div>
+          <div v-if="form.distrito_nombre" class="flex items-start justify-between gap-4 py-3 border-t border-gray-100 dark:border-gray-700">
+            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 shrink-0">Distrito</dt>
+            <dd class="text-sm text-gray-900 dark:text-white text-right">{{ form.distrito_nombre }}</dd>
+          </div>
         </dl>
 
         <template #footer>

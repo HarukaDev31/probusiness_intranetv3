@@ -211,9 +211,15 @@
                   </div>
                 </div>
 
-                <div v-if="comprobanteForm?.domicilio_fiscal" class="mt-4">
-                  <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Domicilio fiscal</div>
-                  <div class="text-sm text-gray-900 dark:text-white">{{ comprobanteForm.domicilio_fiscal }}</div>
+                <div v-if="comprobanteForm?.domicilio_fiscal || comprobanteForm?.distrito_nombre" class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div v-if="comprobanteForm?.domicilio_fiscal" class="md:col-span-2">
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Domicilio fiscal</div>
+                    <div class="text-sm text-gray-900 dark:text-white">{{ comprobanteForm.domicilio_fiscal }}</div>
+                  </div>
+                  <div v-if="comprobanteForm?.distrito_nombre">
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Distrito</div>
+                    <div class="text-sm text-gray-900 dark:text-white">{{ comprobanteForm.distrito_nombre }}</div>
+                  </div>
                 </div>
               </div>
 
