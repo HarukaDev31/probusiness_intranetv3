@@ -483,7 +483,7 @@ function handleStepClick(step: number) {
 }
 
 // ─── Paso 1: documento + IA ────────────────────────────────────────────────
-const READS_CHIPS = ['Datos del cliente', 'RUC / ID', 'Proveedores', 'CBM y peso', 'Productos']
+const READS_CHIPS = ['Datos del cliente', 'CBM', 'Productos']
 
 type ScanState = 'idle' | 'scanning' | 'done'
 const scanState = ref<ScanState>('idle')
