@@ -1,27 +1,20 @@
 <template>
   <div>
-    <!-- Estado de la actividad (compartido por todos los participantes) -->
-    <!-- Editable: cualquier participante o jefe -->
-    <UDropdownMenu v-if="canEdit" :items="statusItems">
+    <UDropdownMenu v-if="canEdit" :items="items">
       <span
         class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity"
-        :class="activityStatusClasses"
+        :class="option.badgeClass"
       >
-        {{ activityStatusLabel }}
+        {{ option.label }}
         <UIcon name="i-heroicons-chevron-down" class="w-3 h-3 ml-1" />
       </span>
     </UDropdownMenu>
 
-    <!-- Solo lectura -->
     <div v-else class="flex flex-col gap-1">
-      <span
-        class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
-        :class="activityStatusClasses"
-      >
-        {{ activityStatusLabel }}
+      <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium" :class="option.badgeClass">
+        {{ option.label }}
       </span>
-      <!-- Jefe: ver responsables (opcional) -->
-      <UPopover v-if="isJefe && activity.charges && activity.charges.length > 1">
+      <UPopover v-if="isJefe && activity.charges.length > 1">
         <button class="text-xs text-gray-500 hover:text-primary-600 flex items-center gap-1">
           <UIcon name="i-heroicons-users" class="w-3 h-3" />
           Ver responsables
@@ -29,15 +22,9 @@
         <template #content>
           <div class="p-3 space-y-2 min-w-[200px]">
             <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Responsables:</p>
-            <div
-              v-for="charge in activity.charges"
-              :key="charge.id"
-              class="flex items-center gap-2 py-1"
-            >
-              <span class="text-sm text-gray-600 dark:text-gray-400">
-                {{ charge.user?.nombre || 'N/A' }}
-              </span>
-            </div>
+            <p v-for="charge in activity.charges" :key="charge.id" class="text-sm text-gray-600 dark:text-gray-400 py-1">
+              {{ charge.user?.nombre ?? 'N/A' }}
+            </p>
           </div>
         </template>
       </UPopover>
@@ -47,78 +34,40 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { DropdownMenuItem } from '@nuxt/ui'
 import type { CalendarEvent, CalendarEventStatus } from '~/types/calendar'
-import { STATUS_OPTIONS } from '~/constants/calendar'
+import { STATUS_OPTIONS, getStatusOption } from '~/constants/calendar'
+import { findChargeOfUser } from '~/utils/calendar/events'
 
-interface Props {
+const props = defineProps<{
   activity: CalendarEvent
   canEdit: boolean
-  currentUserId?: number | string
-  isJefe?: boolean
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  currentUserId: 0,
-  isJefe: false
-})
+  currentUserId: number
+  isJefe: boolean
+}>()
 
 const emit = defineEmits<{
+  /** Jefe: estado de toda la actividad. */
   (e: 'update', eventId: number, status: CalendarEventStatus): void
+  /** Miembro: estado de su propio charge. */
   (e: 'update-charge', chargeId: number, status: CalendarEventStatus): void
 }>()
 
-const myCharge = computed(() => {
-  if (props.isJefe) return null
-  return (props.activity.charges || []).find(c => c.user_id === Number(props.currentUserId)) ?? null
-})
+const myCharge = computed(() => (props.isJefe ? undefined : findChargeOfUser(props.activity, props.currentUserId)))
 
-const activityStatus = computed((): CalendarEventStatus => {
-  if (!props.isJefe && myCharge.value) {
-    return (myCharge.value.status as CalendarEventStatus) || 'PENDIENTE'
-  }
-  const charges = props.activity.charges || []
-  if (charges.length === 0) return 'PENDIENTE'
-  const statuses = charges.map(c => c.status || 'PENDIENTE')
-  if (statuses.every(s => s === 'COMPLETADO')) return 'COMPLETADO'
-  if (statuses.every(s => s === 'PENDIENTE')) return 'PENDIENTE'
-  return 'PROGRESO'
-})
+/** El miembro ve su propio estado; el jefe, el estado global de la actividad. */
+const status = computed<CalendarEventStatus>(() => myCharge.value?.status ?? props.activity.status)
+const option = computed(() => getStatusOption(status.value))
 
-const activityStatusLabel = computed(() => getStatusLabel(activityStatus.value))
-const activityStatusClasses = computed(() => getStatusClasses(activityStatus.value))
-
-function getStatusLabel(status: CalendarEventStatus): string {
-  const option = STATUS_OPTIONS.find(o => o.value === status)
-  return option?.label || 'Pendiente'
-}
-
-function getStatusClasses(status: CalendarEventStatus): string {
-  switch (status) {
-    case 'PENDIENTE':
-      return 'bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-400'
-    case 'PROGRESO':
-      return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-    case 'COMPLETADO':
-      return 'bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-400'
-    default:
-      return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
-  }
-}
-
-const statusItems = computed(() => {
-  const items = STATUS_OPTIONS.map(option => ({
-    label: option.label,
-    icon: option.value === activityStatus.value ? 'i-heroicons-check' : undefined,
+const items = computed<DropdownMenuItem[][]>(() => [
+  STATUS_OPTIONS.map(o => ({
+    label: o.label,
+    icon: o.value === status.value ? 'i-heroicons-check' : undefined,
     onSelect: () => {
-      if (option.value !== activityStatus.value) {
-        if (!props.isJefe && myCharge.value) {
-          emit('update-charge', myCharge.value.id, option.value)
-        } else {
-          emit('update', props.activity.id, option.value)
-        }
-      }
+      if (o.value === status.value) return
+      if (myCharge.value) emit('update-charge', myCharge.value.id, o.value)
+      else emit('update', props.activity.id, o.value)
     }
   }))
-  return [items]
-})
+])
 </script>

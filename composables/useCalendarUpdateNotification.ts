@@ -45,7 +45,7 @@ export function useCalendarUpdateNotification() {
       const { refresh, loadProgress } = useCalendarStore()
       await refresh()
       // Siempre recargar progreso para que la vista de progreso (/calendar/progreso) se actualice
-      await loadProgress(true)
+      await loadProgress(undefined, true)
     } catch (e) {
       console.debug('Calendar reload failed', e)
     }

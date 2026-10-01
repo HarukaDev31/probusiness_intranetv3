@@ -1,131 +1,162 @@
 <template>
-
   <UModal
     class="w-full sm:max-w-2xl"
     :close="{ onClick: handleClose }"
     @close="handleClose"
   >
     <template #header>
-      <div class="flex items-center justify-between">
-        <h3 class="text-lg font-semibold">
-          {{ isEdit ? 'Editar Actividad' : 'Nueva Actividad' }}
-        </h3>
-
-      </div>
+      <h3 class="text-lg font-semibold">
+        {{ isEdit ? 'Editar Actividad' : 'Nueva Actividad' }}
+      </h3>
     </template>
 
     <template #body>
       <div class="space-y-5">
-        <!-- Consolidado/Contenedor (solo si el grupo usa consolidado) -->
+        <!-- Consolidado (solo si el grupo usa consolidado) -->
         <UFormField v-if="usaConsolidado" label="Consolidado" required>
-          <USelectMenu :model-value="selectedContenedorOption" :items="contenedorOptions" value-attribute="value"
-            placeholder="Seleccionar consolidado" size="lg" class="w-full" searchable
-            searchable-placeholder="Buscar consolidado..." @update:model-value="onContenedorChange" />
+          <USelectMenu
+            :model-value="selectedContenedorOption ?? undefined"
+            :items="contenedorOptions"
+            placeholder="Seleccionar consolidado"
+            size="lg"
+            class="w-full"
+            :search-input="{ placeholder: 'Buscar consolidado...' }"
+            @update:model-value="onContenedorChange"
+          />
         </UFormField>
 
-        <!-- Seleccionar o crear actividad -->
+        <!-- Actividad del catálogo -->
         <UFormField label="Actividad" required :error="errors.name">
           <div class="space-y-2">
             <div class="flex gap-2 items-center">
-              <USelectMenu v-model="selectedActivity" :items="activityOptions" :placeholder="loadingUsedActivities ? 'Cargando actividades...' : 'Seleccionar actividad'"
-                size="lg" class="flex-1" searchable searchable-placeholder="Buscar actividad..."
-                :disabled="(usaConsolidado && form.contenedor_id == null) || loadingUsedActivities"
+              <USelectMenu
+                :model-value="selectedActivity ?? undefined"
+                :items="activityOptions"
+                :placeholder="loadingUsedActivities ? 'Cargando actividades...' : 'Seleccionar actividad'"
+                size="lg"
+                class="flex-1"
+                :search-input="{ placeholder: 'Buscar actividad...' }"
+                :disabled="activityLocked"
                 :loading="loadingUsedActivities"
-                @update:model-value="handleActivitySelect" />
-              <UButton icon="i-heroicons-plus" color="primary" variant="outline" size="lg" title="Crear nueva actividad"
-                :disabled="(usaConsolidado && form.contenedor_id == null) || loadingUsedActivities"
-                @click="openCreateActivityModal" />
-              <UTooltip v-if="hasCatalogActivityId && (calendarPermissions?.canDeleteActivity ?? false)"
-                text="Editar nombre de esta actividad">
-                <UButton icon="i-heroicons-pencil-square" color="primary" variant="ghost" size="lg" class="!p-2"
-                  @click.stop.prevent="openEditActivityModal" />
-              </UTooltip>
-              <UTooltip v-if="hasCatalogActivityId && (calendarPermissions?.canDeleteActivity ?? false)"
-                text="Eliminar esta actividad del catálogo">
-                <UButton icon="i-heroicons-trash" color="error" variant="ghost" size="lg" class="!p-2"
-                  title="Eliminar del catálogo" @click.stop.prevent="openDeleteConfirmModal" />
-              </UTooltip>
+                @update:model-value="handleActivitySelect"
+              />
+              <UButton
+                icon="i-heroicons-plus"
+                color="primary"
+                variant="outline"
+                size="lg"
+                title="Crear nueva actividad"
+                :disabled="activityLocked"
+                @click="isCreateActivityModalOpen = true"
+              />
+              <template v-if="form.activity_id != null && calendarPermissions.canDeleteActivity">
+                <UTooltip text="Editar nombre de esta actividad">
+                  <UButton icon="i-heroicons-pencil-square" color="primary" variant="ghost" size="lg" class="!p-2" @click.stop.prevent="isEditActivityModalOpen = true" />
+                </UTooltip>
+                <UTooltip text="Eliminar esta actividad del catálogo">
+                  <UButton icon="i-heroicons-trash" color="error" variant="ghost" size="lg" class="!p-2" @click.stop.prevent="confirmDeleteFromCatalog" />
+                </UTooltip>
+              </template>
             </div>
             <p v-if="usaConsolidado && form.contenedor_id == null" class="text-xs text-amber-500">Selecciona un consolidado primero</p>
           </div>
         </UFormField>
 
-        <!-- Modal para crear nueva actividad -->
-        <CreateActivityNameModal :open="isCreateActivityModalOpen" :loading="isCreatingActivity"
-          @close="closeCreateActivityModal" @create="handleCreateNewActivity" />
+        <CreateActivityNameModal
+          :open="isCreateActivityModalOpen"
+          :loading="isCreatingActivity"
+          @close="isCreateActivityModalOpen = false"
+          @create="handleCreateNewActivity"
+        />
 
-        <!-- Modal para editar nombre de actividad -->
         <EditActivityNameModal
           v-model:open="isEditActivityModalOpen"
-          :activity-id="form.activity_id ?? selectedActivity?.value ?? null"
+          :activity-id="form.activity_id"
           :activity-name="selectedActivity?.label ?? ''"
           :loading="isUpdatingActivity"
           @save="handleEditActivity"
         />
 
-        <!-- Fechas (deshabilitadas hasta seleccionar actividad) -->
+        <!-- Fechas (habilitadas tras elegir actividad) -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <UFormField label="Fecha de inicio" required :error="errors.start_date">
             <UPopover :disabled="!selectedActivity">
-              <UButton color="neutral" variant="outline" icon="i-heroicons-calendar" class="w-full justify-start"
-                size="lg" :disabled="!selectedActivity">
-                {{ startDate ? formatDisplayDate(startDate) : 'Seleccionar fecha' }}
+              <UButton color="neutral" variant="outline" icon="i-heroicons-calendar" class="w-full justify-start" size="lg" :disabled="!selectedActivity">
+                {{ startDate ? formatLongDate(startDate) : 'Seleccionar fecha' }}
               </UButton>
               <template #content>
-                <UCalendar v-model="startDate" class="p-2" :is-date-disabled="isDateDisabledForActivity" />
+                <UCalendar
+                  :model-value="startDate ?? undefined"
+                  class="p-2"
+                  :is-date-disabled="isDateDisabledForActivity"
+                  @update:model-value="(v) => (startDate = asCalendarDate(v))"
+                />
               </template>
             </UPopover>
           </UFormField>
 
           <UFormField label="Fecha de fin" required :error="errors.end_date">
             <UPopover :disabled="!selectedActivity">
-              <UButton color="neutral" variant="outline" icon="i-heroicons-calendar" class="w-full justify-start"
-                size="lg" :disabled="!selectedActivity">
-                {{ endDate ? formatDisplayDate(endDate) : 'Seleccionar fecha' }}
+              <UButton color="neutral" variant="outline" icon="i-heroicons-calendar" class="w-full justify-start" size="lg" :disabled="!selectedActivity">
+                {{ endDate ? formatLongDate(endDate) : 'Seleccionar fecha' }}
               </UButton>
               <template #content>
-                <UCalendar v-model="endDate" class="p-2" :is-date-disabled="isDateDisabledForActivity" />
+                <UCalendar
+                  :model-value="endDate ?? undefined"
+                  class="p-2"
+                  :is-date-disabled="isDateDisabledForActivity"
+                  @update:model-value="(v) => (endDate = asCalendarDate(v))"
+                />
               </template>
             </UPopover>
           </UFormField>
           <p v-if="!selectedActivity && !isEdit" class="text-xs text-amber-500 col-span-full">Selecciona una actividad primero</p>
         </div>
 
-        <!-- Prioridad (solo editable si tiene permiso) -->
+        <!-- Prioridad -->
         <UFormField v-if="calendarPermissions.canEditPriority" label="Prioridad">
           <div class="flex gap-2">
-            <UButton v-for="option in priorityOptions" :key="option.value" :label="option.label"
-              :variant="form.priority === option.value ? 'solid' : 'outline'" :color="option.color" size="md"
-              class="flex-1" @click="form.priority = option.value" />
+            <UButton
+              v-for="option in PRIORITY_OPTIONS"
+              :key="option.value"
+              :label="option.label"
+              :variant="form.priority === option.value ? 'solid' : 'outline'"
+              :color="option.color"
+              size="md"
+              class="flex-1"
+              @click="form.priority = option.value"
+            />
           </div>
         </UFormField>
 
-        <!-- Responsables (solo si tiene permiso) -->
+        <!-- Responsables -->
         <UFormField v-if="calendarPermissions.canAssignResponsables" label="Responsables" :error="errors.responsables">
           <div class="space-y-3">
-            <USelectMenu v-model="responsableSelection" :items="responsableOptions"
-              placeholder="Seleccionar responsables" size="lg" class="w-full" multiple searchable
-              searchable-placeholder="Buscar responsable...">
+            <USelectMenu
+              v-model="responsableSelection"
+              :items="responsableOptions"
+              placeholder="Seleccionar responsables"
+              size="lg"
+              class="w-full"
+              multiple
+              :search-input="{ placeholder: 'Buscar responsable...' }"
+            >
               <template #item="{ item }">
                 <div class="flex items-center gap-2 w-full">
-                  <div class="w-2 h-2 rounded-full shrink-0" :style="{ backgroundColor: item.color || '#6B7280' }" />
+                  <div class="w-2 h-2 rounded-full shrink-0" :style="{ backgroundColor: item.color }" />
                   <span class="flex-1">{{ item.label }}</span>
                   <UIcon v-if="isResponsableSelected(item)" name="i-heroicons-check" class="w-5 h-5 text-primary-500 shrink-0" />
                 </div>
               </template>
             </USelectMenu>
 
-            <!-- Mostrar responsables seleccionados o "Sin responsable" -->
             <div class="flex flex-wrap gap-2">
               <template v-if="form.responsable_ids.length > 0">
-                <UBadge v-for="(item, index) in form.responsable_ids" :key="toResponsableId(item) ?? index" variant="soft"
-                  size="lg" class="pr-1">
+                <UBadge v-for="id in form.responsable_ids" :key="id" variant="soft" size="lg" class="pr-1">
                   <div class="flex items-center gap-1">
-                    <div class="w-2 h-2 rounded-full"
-                      :style="{ backgroundColor: getResponsableColorById(toResponsableId(item)) }" />
-                    <span>{{ getResponsableNameById(toResponsableId(item)) }}</span>
-                    <UButton icon="i-heroicons-x-mark" variant="ghost" size="xs" class="ml-1"
-                      @click="removeResponsable(item)" />
+                    <div class="w-2 h-2 rounded-full" :style="{ backgroundColor: responsableColor(id) }" />
+                    <span>{{ responsableName(id) }}</span>
+                    <UButton icon="i-heroicons-x-mark" variant="ghost" size="xs" class="ml-1" @click="removeResponsable(id)" />
                   </div>
                 </UBadge>
               </template>
@@ -133,12 +164,9 @@
                 <span>Sin responsable</span>
               </UBadge>
             </div>
-
-
           </div>
         </UFormField>
 
-        <!-- Notas -->
         <UFormField label="Notas">
           <UTextarea v-model="form.notes" placeholder="Agregar notas..." :rows="3" class="w-full" />
         </UFormField>
@@ -153,171 +181,88 @@
           color="error"
           variant="ghost"
           icon="i-heroicons-trash"
-          @click="handleDelete"
+          @click="onDelete"
         />
         <div class="flex gap-2 ml-auto">
           <UButton label="Cancelar" variant="ghost" @click="handleClose" />
-          <UButton :label="isEdit ? 'Guardar cambios' : 'Crear actividad'" color="primary" :loading="loading"
-            @click="submit" />
+          <UButton :label="isEdit ? 'Guardar cambios' : 'Crear actividad'" color="primary" :loading="saving" @click="submit" />
         </div>
       </div>
     </template>
   </UModal>
-
-
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
-import { CalendarDate, getLocalTimeZone, today, parseDate, DateFormatter } from '@internationalized/date'
+import { computed, ref, shallowRef, watch } from 'vue'
+import { CalendarDate, DateFormatter, getLocalTimeZone, today } from '@internationalized/date'
 import type { DateValue } from '@internationalized/date'
 import type {
-  CalendarEvent,
-  CalendarResponsable,
+  CalendarActivityCatalogItem,
   CalendarContenedor,
+  CalendarEvent,
   CalendarEventPriority,
-  CreateCalendarEventRequest
+  CalendarPermissions,
+  CalendarResponsable,
+  CreateCalendarEventRequest,
+  IsoDate
 } from '~/types/calendar'
 import { PRIORITY_OPTIONS } from '~/constants/calendar'
 import { CalendarService } from '~/services/calendar/calendarService'
-import CreateActivityNameModal from '~/components/calendar/CreateActivityNameModal.vue'
-import EditActivityNameModal from '~/components/calendar/EditActivityNameModal.vue'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
+import { isWeekend, parseIsoDate, toCalendarDate, toIsoDate } from '~/utils/calendar/dates'
+import CreateActivityNameModal from '~/components/calendar/CreateActivityNameModal.vue'
+import EditActivityNameModal from '~/components/calendar/EditActivityNameModal.vue'
 
-// Actividades predefinidas (catálogo)
-interface ActivityOption {
-  id: number
-  name: string
-  allow_saturday?: boolean
-  allow_sunday?: boolean
-  default_priority?: number
+interface SelectOption {
+  label: string
+  value: number
 }
 
-interface Props {
+interface ResponsableOption extends SelectOption {
+  color: string
+}
+
+const props = withDefaults(defineProps<{
+  /** Cambia en cada open() del overlay para reinicializar el formulario. */
+  openKey: number
   event?: CalendarEvent | null
+  initialDate?: IsoDate
   responsables: CalendarResponsable[]
   contenedores: CalendarContenedor[]
-  calendarPermissions: any
-  getResponsableColor: (userId: number, nombre?: string) => string
-  loading?: boolean
-  initialDate?: string
-  /** Clave que cambia en cada open() del overlay para poder reabrir el modal (misma instancia) */
-  openKey?: number | string
-  /** Si el grupo de calendario usa consolidado; si es false no se muestra ni se envía contenedor_id */
-  usaConsolidado?: boolean
-  // Catálogo de actividades predefinidas
-  actividadesPredefinidas?: ActivityOption[]
-  // Callbacks para overlay (onClose puede venir como función o como array desde useOverlay)
-  onSave?: (data: CreateCalendarEventRequest) => void | Promise<void>
-  onDelete?: () => void | Promise<void>
-  onDeleteFromCatalog?: (catalogActivityId: number) => void | Promise<void>
-  onClose?: (() => void) | (() => void)[]
-  onCreateActivity?: (name: string) => Promise<ActivityOption | null>
-  onUpdateActivity?: (id: number, name: string) => Promise<boolean>
-}
-
-const props = withDefaults(defineProps<Props>(), {
+  calendarPermissions: CalendarPermissions
+  getResponsableColor: (userId: number, nombre?: string | null) => string
+  /** Si es false no se muestra ni se envía contenedor_id. */
+  usaConsolidado: boolean
+  actividadesPredefinidas: CalendarActivityCatalogItem[]
+  /** Devuelve true si se guardó (el caller cierra el modal). */
+  onSave: (data: CreateCalendarEventRequest) => Promise<boolean>
+  onDelete?: () => void
+  onCreateActivity: (name: string) => Promise<CalendarActivityCatalogItem | null>
+  onUpdateActivity: (id: number, name: string) => Promise<boolean>
+  onDeleteFromCatalog: (catalogActivityId: number) => Promise<void>
+  onClose: () => void
+}>(), {
   event: null,
-  loading: false,
   initialDate: undefined,
-  usaConsolidado: true,
-  actividadesPredefinidas: () => [],
-  onSave: undefined,
-  onDelete: undefined,
-  onClose: undefined,
-  onCreateActivity: undefined,
-  onUpdateActivity: undefined
+  onDelete: undefined
 })
 
-const emit = defineEmits<{
-  (e: 'save', data: CreateCalendarEventRequest): void
-  (e: 'delete'): void
-  (e: 'delete-from-catalog', catalogActivityId: number): void
-  (e: 'close'): void
-  (e: 'create-activity', name: string): void
-}>()
+const { showConfirmation } = useModal()
+const { withSpinner } = useSpinner()
 
-// Sincronizado con el overlay: al montar o al recibir nuevas props (reopen) el modal debe estar abierto
-const modalOpen = ref(true)
+/** Valor especial "Sin responsable" (no es un user_id real). */
+const SIN_RESPONSABLE = 0
 
-const handleClose = () => {
-  initializeForm()
-  modalOpen.value = false
-  emit('close')
-  const fn = Array.isArray(props.onClose) ? props.onClose[0] : props.onClose
-  if (typeof fn === 'function') {
-    fn()
-  }
-}
+const longDate = new DateFormatter('es-ES', { dateStyle: 'long' })
+const formatLongDate = (date: CalendarDate) => longDate.format(date.toDate(getLocalTimeZone()))
+const asCalendarDate = (value: DateValue | DateValue[] | unknown): CalendarDate | null =>
+  value && typeof value === 'object' && 'day' in value ? toCalendarDate(value as DateValue) : null
 
-const onOpenChange = (open: boolean) => {
-  if (!open) handleClose()
-}
+// ============================================
+// ESTADO DEL FORMULARIO
+// ============================================
 
-onMounted(() => {
-  modalOpen.value = true
-})
-
-watch(
-  () => [props.openKey, props.event?.id ?? null, props.initialDate],
-  () => {
-    modalOpen.value = true
-  },
-  { flush: 'sync' }
-)
-
-const df = new DateFormatter('es-ES', { dateStyle: 'long' })
-
-/** Deshabilita sábado (6) y domingo (0) en el calendario (días no laborables). */
-const isWeekendDisabled = (date: DateValue): boolean => {
-  if (!date) return false
-  try {
-    const d =
-      typeof (date as { toDate?: (zone: string) => Date }).toDate === 'function'
-        ? (date as { toDate: (zone: string) => Date }).toDate(getLocalTimeZone())
-        : new Date(
-          (date as { year: number }).year,
-          ((date as { month: number }).month ?? 1) - 1,
-          (date as { day: number }).day
-        )
-    const dayOfWeek = d.getDay()
-    return dayOfWeek === 0 || dayOfWeek === 6
-  } catch {
-    return false
-  }
-}
-
-// Item completo del catálogo para la actividad seleccionada
-const selectedCatalogItem = computed(() => {
-  const id = selectedActivity.value?.value ?? form.value.activity_id
-  if (id == null) return null
-  return props.actividadesPredefinidas.find(a => a.id === id) ?? null
-})
-
-/** Deshabilita fechas según la configuración de la actividad seleccionada (sáb/dom). */
-const isDateDisabledForActivity = (date: DateValue): boolean => {
-  if (!date) return false
-  try {
-    const d =
-      typeof (date as { toDate?: (zone: string) => Date }).toDate === 'function'
-        ? (date as { toDate: (zone: string) => Date }).toDate(getLocalTimeZone())
-        : new Date(
-          (date as { year: number }).year,
-          ((date as { month: number }).month ?? 1) - 1,
-          (date as { day: number }).day
-        )
-    const dayOfWeek = d.getDay()
-    const catalog = selectedCatalogItem.value
-    if (dayOfWeek === 6) return !(catalog?.allow_saturday)
-    if (dayOfWeek === 0) return !(catalog?.allow_sunday)
-    return false
-  } catch {
-    return false
-  }
-}
-
-// Estado del formulario
 const form = ref({
   name: '',
   activity_id: null as number | null,
@@ -326,53 +271,53 @@ const form = ref({
   responsable_ids: [] as number[],
   notes: ''
 })
+const startDate = shallowRef<CalendarDate | null>(null)
+const endDate = shallowRef<CalendarDate | null>(null)
+const errors = ref<Partial<Record<'name' | 'start_date' | 'end_date' | 'responsables', string>>>({})
+const saving = ref(false)
 
-const startDate = ref<CalendarDate | null>(null)
-const endDate = ref<CalendarDate | null>(null)
-const errors = ref<Record<string, string>>({})
-
-// Estado para selección/creación de actividad
-const selectedActivity = ref<{ label: string; value: number } | null>(null)
+const selectedActivity = ref<SelectOption | null>(null)
+const createdActivities = ref<CalendarActivityCatalogItem[]>([])
 const isCreateActivityModalOpen = ref(false)
 const isCreatingActivity = ref(false)
-const localActivities = ref<ActivityOption[]>([])
+const isEditActivityModalOpen = ref(false)
+const isUpdatingActivity = ref(false)
 
-// Computed
-const isEdit = computed(() => !!props.event?.id)
+const isEdit = computed(() => props.event !== null)
 
-/** Hay una actividad del catálogo seleccionada (para mostrar "Eliminar del catálogo") */
-const hasCatalogActivityId = computed(() => {
-  const formId = form.value.activity_id
-  if (formId != null && typeof formId === 'number') return true
-  const sel = selectedActivity.value
-  if (sel == null) return false
-  if (typeof sel === 'number') return true
-  if (typeof sel === 'object' && sel && 'value' in sel && typeof (sel as { value: number }).value === 'number') return true
-  return false
+// ============================================
+// CONSOLIDADO
+// ============================================
+
+const contenedorOptions = computed<{ label: string; value: number | null }[]>(() => {
+  const options: { label: string; value: number | null }[] = [{ label: 'Sin consolidado', value: null }]
+  options.push(...props.contenedores.map(c => ({ label: c.nombre, value: c.id })))
+  // Al editar, el consolidado del evento puede no estar en la lista (p. ej. ya cerrado)
+  const own = props.event?.contenedor
+  if (own && !props.contenedores.some(c => c.id === own.id)) options.push({ label: own.nombre, value: own.id })
+  return options
 })
 
-const priorityOptions = PRIORITY_OPTIONS
+const selectedContenedorOption = computed(() => contenedorOptions.value.find(o => o.value === form.value.contenedor_id) ?? null)
 
-// IDs de actividades ya usadas para el contenedor seleccionado (obtenidas del backend)
+// Actividades ya usadas en el consolidado elegido (no se pueden repetir)
 const usedActivityIds = ref<Set<number>>(new Set())
 const loadingUsedActivities = ref(false)
 
 const fetchUsedActivities = async (contenedorId: number | null) => {
-  if (props.usaConsolidado === false || contenedorId == null) {
+  if (!props.usaConsolidado || contenedorId == null) {
     usedActivityIds.value = new Set()
     return
   }
   loadingUsedActivities.value = true
   try {
     const response = await CalendarService.getEvents({ contenedor_ids: [contenedorId] })
-    const events = response?.data ?? response ?? []
-    const editingEventId = props.event?.id ?? null
-    const ids = new Set<number>()
-    for (const ev of (Array.isArray(events) ? events : [])) {
-      if (ev.id === editingEventId) continue
-      if (ev.activity_id != null) ids.add(ev.activity_id)
-    }
-    usedActivityIds.value = ids
+    const editingId = props.event?.id ?? null
+    usedActivityIds.value = new Set(
+      response.data
+        .filter(ev => ev.id !== editingId && ev.activity_id != null)
+        .map(ev => ev.activity_id as number)
+    )
   } catch {
     usedActivityIds.value = new Set()
   } finally {
@@ -380,211 +325,81 @@ const fetchUsedActivities = async (contenedorId: number | null) => {
   }
 }
 
-// Combinar actividades predefinidas con las locales, filtrar las ya usadas en el contenedor
-const activityOptions = computed(() => {
-  const allActivities = [...props.actividadesPredefinidas, ...localActivities.value]
-  const used = usedActivityIds.value
-  return allActivities
-    .filter(a => !used.has(a.id))
-    .map(a => ({
-      label: a.name,
-      value: a.id
-    }))
-})
-
-const contenedorOptions = computed(() => {
-  const options: { label: string; value: number | null }[] = [{ label: 'Sin consolidado', value: null }]
-  const addedIds = new Set<number>()
-  props.contenedores.forEach(c => {
-    options.push({
-      label: c.nombre || c.codigo || `#${c.id}`,
-      value: c.id
-    })
-    addedIds.add(c.id)
-  })
-  // Si estamos editando y el evento tiene contenedor que no está en la lista, añadirlo para que se muestre
-  const eventContenedor = props.event?.contenedor
-  if (eventContenedor?.id != null && !addedIds.has(Number(eventContenedor.id))) {
-    options.push({
-      label: eventContenedor.nombre || eventContenedor.codigo || `#${eventContenedor.id}`,
-      value: Number(eventContenedor.id)
-    })
-  }
-  return options
-})
-
-type ContenedorOption = { label: string; value: number | null }
-const selectedContenedorOption = computed(() => {
-  const id = form.value.contenedor_id
-  return contenedorOptions.value.find((o: ContenedorOption) => o.value === id) ?? null
-})
-const onContenedorChange = async (payload: ContenedorOption | number | null) => {
-  if (payload == null) {
-    form.value.contenedor_id = null
-  } else {
-    form.value.contenedor_id = typeof payload === 'object' && 'value' in payload ? payload.value : (typeof payload === 'number' ? payload : null)
-  }
-  // Limpiar actividad seleccionada al cambiar de contenedor
+const onContenedorChange = async (option: { label: string; value: number | null } | undefined) => {
+  form.value.contenedor_id = option?.value ?? null
   selectedActivity.value = null
   form.value.name = ''
   form.value.activity_id = null
-  // Obtener actividades ya usadas para el nuevo contenedor
   await fetchUsedActivities(form.value.contenedor_id)
 }
 
-/** Valor especial para "Sin responsable" (no es un user_id real). */
-const SIN_RESPONSABLE_VALUE = 0
+/** Sin consolidado no se puede elegir actividad (cuando el grupo usa consolidado). */
+const activityLocked = computed(() => (props.usaConsolidado && form.value.contenedor_id == null) || loadingUsedActivities.value)
 
-const responsableOptions = computed(() => {
-  const list = props.responsables.map(r => ({
-    label: r.nombre,
-    value: r.id,
-    color: props.getResponsableColor(r.id, r.nombre)
-  }))
-  return [{ label: 'Sin responsable', value: SIN_RESPONSABLE_VALUE, color: '#9ca3af' }, ...list]
+// ============================================
+// ACTIVIDAD (CATÁLOGO)
+// ============================================
+
+const catalog = computed(() => {
+  const known = new Set(props.actividadesPredefinidas.map(a => a.id))
+  return [...props.actividadesPredefinidas, ...createdActivities.value.filter(a => !known.has(a.id))]
 })
 
-type ResponsableOption = { label: string; value: number; color: string }
+const activityOptions = computed<SelectOption[]>(() =>
+  catalog.value
+    .filter(a => !usedActivityIds.value.has(a.id))
+    .map(a => ({ label: a.name, value: a.id }))
+)
 
-/** Selección actual: array de opciones (objetos). Sin value-key para que USelectMenu compare por objeto. */
-const responsableSelection = ref<ResponsableOption[]>([])
+const selectedCatalogItem = computed(() =>
+  form.value.activity_id == null ? null : catalog.value.find(a => a.id === form.value.activity_id) ?? null
+)
 
-/** Última selección aplicada (ids), para saber si el usuario acaba de elegir "Sin responsable" o un responsable real. */
-const lastAppliedResponsableIds = ref<number[]>([])
-
-function isResponsableSelected(item: ResponsableOption): boolean {
-  return responsableSelection.value.some(s => s.value === item.value)
+/** Sábados/domingos solo si la actividad del catálogo lo permite. */
+const isDateDisabledForActivity = (date: DateValue): boolean => {
+  if (!isWeekend(date)) return false
+  const isSunday = new Date(date.year, date.month - 1, date.day).getDay() === 0
+  const item = selectedCatalogItem.value
+  return isSunday ? !item?.allow_sunday : !item?.allow_saturday
 }
 
-/** Exclusión mutua: "Sin responsable" y responsables reales no pueden estar a la vez.
- * - Si hay ambos: si antes solo había responsables reales → el usuario acaba de elegir "Sin responsable" → dejamos solo "Sin responsable".
- * - Si hay ambos: si antes había "Sin responsable" o vacío → el usuario acaba de elegir un responsable → dejamos solo los reales.
- * - Si solo "Sin responsable" o vacío → form = []. */
-watch(responsableSelection, (val) => {
-  const raw = Array.isArray(val) ? val : []
-  const ids = raw.map((o: ResponsableOption) => o.value).filter((id): id is number => typeof id === 'number')
-  const hasSinResponsable = ids.includes(SIN_RESPONSABLE_VALUE)
-  const realIds = ids.filter(id => id !== SIN_RESPONSABLE_VALUE)
-  const opts = responsableOptions.value
-  const prevHadOnlyReal = lastAppliedResponsableIds.value.length > 0 && !lastAppliedResponsableIds.value.includes(SIN_RESPONSABLE_VALUE)
+const selectActivity = (item: { id: number; name: string }) => {
+  selectedActivity.value = { label: item.name, value: item.id }
+  form.value.name = item.name
+  form.value.activity_id = item.id
+}
 
-  if (hasSinResponsable && realIds.length > 0) {
-    if (prevHadOnlyReal) {
-      responsableSelection.value = [opts[0]]
-      form.value.responsable_ids = []
-      lastAppliedResponsableIds.value = [SIN_RESPONSABLE_VALUE]
-    } else {
-      responsableSelection.value = opts.filter(o => realIds.includes(o.value))
-      form.value.responsable_ids = realIds
-      lastAppliedResponsableIds.value = realIds
-    }
-    return
-  }
-  if (realIds.length > 0) {
-    form.value.responsable_ids = realIds
-    lastAppliedResponsableIds.value = realIds
-    if (hasSinResponsable) {
-      responsableSelection.value = opts.filter(o => realIds.includes(o.value))
-    }
-  } else {
-    form.value.responsable_ids = []
-    lastAppliedResponsableIds.value = [SIN_RESPONSABLE_VALUE]
-    if (raw.length === 0) {
-      responsableSelection.value = [opts[0]]
-    }
-  }
-}, { deep: true })
-
-// Funciones para manejo de actividades
-const handleActivitySelect = (selected: { label: string; value: number } | null) => {
-  if (selected) {
-    form.value.name = selected.label
-    form.value.activity_id = selected.value
-    const catalog = props.actividadesPredefinidas.find(a => a.id === selected.value)
-    if (catalog?.default_priority != null) {
-      form.value.priority = catalog.default_priority as CalendarEventPriority
-    }
-  } else {
+const handleActivitySelect = (option: SelectOption | undefined) => {
+  if (!option) {
+    selectedActivity.value = null
     form.value.name = ''
     form.value.activity_id = null
+    return
   }
-}
-
-const openCreateActivityModal = () => {
-  isCreateActivityModalOpen.value = true
-}
-
-const closeCreateActivityModal = () => {
-  isCreateActivityModalOpen.value = false
+  selectActivity({ id: option.value, name: option.label })
+  const item = catalog.value.find(a => a.id === option.value)
+  if (item) form.value.priority = item.default_priority
 }
 
 const handleCreateNewActivity = async (name: string) => {
   isCreatingActivity.value = true
-
   try {
-    // Si hay callback para crear en el backend (catálogo): no pushear a localActivities
-    // porque el store ya actualiza activityCatalog y viene como actividadesPredefinidas.
-    if (props.onCreateActivity) {
-      const newActivity = await props.onCreateActivity(name)
-      if (newActivity) {
-        localActivities.value.push({
-          id: newActivity.id,
-          name: newActivity.name,
-          allow_saturday: newActivity.allow_saturday,
-          allow_sunday: newActivity.allow_sunday,
-          default_priority: newActivity.default_priority
-        })
-        form.value.name = newActivity.name
-        form.value.activity_id = newActivity.id
-        selectedActivity.value = { label: newActivity.name, value: newActivity.id }
-        closeCreateActivityModal()
-      }
-    } else {
-      // Crear localmente con ID temporal negativo
-      const tempId = -(localActivities.value.length + 1)
-      const newActivity: ActivityOption = { id: tempId, name }
-      localActivities.value.push(newActivity)
-      form.value.name = name
-      form.value.activity_id = tempId
-      selectedActivity.value = { label: name, value: tempId }
-      emit('create-activity', name)
-      closeCreateActivityModal()
+    const created = await props.onCreateActivity(name)
+    if (created) {
+      createdActivities.value.push(created)
+      selectActivity(created)
+      isCreateActivityModalOpen.value = false
     }
-  } catch (error) {
-    console.error('Error al crear actividad:', error)
   } finally {
     isCreatingActivity.value = false
   }
 }
 
-const clearActivity = () => {
-  form.value.name = ''
-  form.value.activity_id = null
-  selectedActivity.value = null
-}
-
-// Editar actividad del catálogo
-const isEditActivityModalOpen = ref(false)
-const isUpdatingActivity = ref(false)
-
-const openEditActivityModal = () => {
-  isEditActivityModalOpen.value = true
-}
-
 const handleEditActivity = async ({ id, name }: { id: number; name: string }) => {
   isUpdatingActivity.value = true
   try {
-    if (props.onUpdateActivity) {
-      const ok = await props.onUpdateActivity(id, name)
-      if (ok) {
-        // Actualizar el item seleccionado localmente
-        form.value.name = name
-        if (selectedActivity.value) {
-          selectedActivity.value = { label: name, value: selectedActivity.value.value }
-        }
-        isEditActivityModalOpen.value = false
-      }
-    } else {
+    if (await props.onUpdateActivity(id, name)) {
+      selectActivity({ id, name })
       isEditActivityModalOpen.value = false
     }
   } finally {
@@ -592,146 +407,15 @@ const handleEditActivity = async ({ id, name }: { id: number; name: string }) =>
   }
 }
 
-// Helpers
-const formatDisplayDate = (date: CalendarDate): string => {
-  return df.format(date.toDate(getLocalTimeZone()))
-}
-
-// Normalizar id: USelectMenu multiple puede guardar número o objeto { value }
-const toResponsableId = (item: number | { value?: number } | unknown): number => {
-  if (typeof item === 'number') return item
-  if (item && typeof item === 'object' && 'value' in item && typeof (item as { value: number }).value === 'number') {
-    return (item as { value: number }).value
-  }
-  return Number(item)
-}
-
-const getResponsableNameById = (id: number): string => {
-  if (id === SIN_RESPONSABLE_VALUE) return 'Sin responsable'
-  const responsable = props.responsables.find(r => r.id === id)
-  return responsable?.nombre || 'Desconocido'
-}
-
-const getResponsableColorById = (id: number): string => {
-  if (id === SIN_RESPONSABLE_VALUE) return '#9ca3af'
-  const responsable = props.responsables.find(r => r.id === id)
-  return props.getResponsableColor(id, responsable?.nombre)
-}
-
-const removeResponsable = (item: number | { value?: number }) => {
-  const id = toResponsableId(item)
-  form.value.responsable_ids = form.value.responsable_ids.filter(rid => toResponsableId(rid) !== id)
-}
-
-// Validación
-const validate = (): boolean => {
-  errors.value = {}
-
-  if (!form.value.name.trim()) {
-    errors.value.name = 'El nombre es requerido'
-  }
-
-  if (!startDate.value) {
-    errors.value.start_date = 'La fecha de inicio es requerida'
-  }
-
-  if (!endDate.value) {
-    errors.value.end_date = 'La fecha de fin es requerida'
-  }
-
-  if (startDate.value && endDate.value) {
-    const start = startDate.value.toDate(getLocalTimeZone())
-    const end = endDate.value.toDate(getLocalTimeZone())
-    if (start > end) {
-      errors.value.end_date = 'La fecha de fin debe ser posterior a la de inicio'
-    }
-  }
-
-  return Object.keys(errors.value).length === 0
-}
-
-// Acciones
-const submit = async () => {
-  if (!validate()) return
-
-  const formatDate = (date: CalendarDate): string => {
-    return `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`
-  }
-
-  // Extraer valores correctamente (por si vienen como objetos)
-  const extractValue = (val: any): number | null => {
-    if (val === null || val === undefined) return null
-    if (typeof val === 'number') return val
-    if (typeof val === 'object' && 'value' in val) return val.value
-    return null
-  }
-
-  const extractIds = (vals: any[]): number[] => {
-    const raw = vals.map(v => {
-      if (typeof v === 'number') return v
-      if (typeof v === 'object' && 'value' in v) return v.value
-      return v
-    }).filter((v): v is number => typeof v === 'number')
-    return raw.filter(id => id !== SIN_RESPONSABLE_VALUE)
-  }
-
-  const activityId = form.value.activity_id ?? selectedActivity.value?.value ?? null
-  const data: CreateCalendarEventRequest = {
-    name: form.value.name.trim(),
-    activity_id: activityId != null ? Number(activityId) : null,
-    priority: form.value.priority,
-    contenedor_id: props.usaConsolidado !== false ? extractValue(form.value.contenedor_id) : null,
-    notes: form.value.notes.trim() || null,
-    start_date: formatDate(startDate.value!),
-    end_date: formatDate(endDate.value!),
-    responsable_ids: extractIds(form.value.responsable_ids)
-  }
-
-  try {
-    if (props.onSave) {
-      await props.onSave(data)
-    } else {
-      emit('save', data)
-    }
-    handleClose()
-  } catch {
-    // El padre ya muestra el error; no cerrar el modal
-  }
-}
-
-const close = () => {
-  // Usar callback si existe, si no usar emit
-  if (props.onClose) {
-    props.onClose()
-  } else {
-    emit('close')
-  }
-}
-
-const { showConfirmation } = useModal()
-const { withSpinner } = useSpinner()
-
-const handleDelete = async () => {
-  if (props.onDelete) {
-    await props.onDelete()
-  } else {
-    emit('delete')
-  }
-}
-
-const openDeleteConfirmModal = () => {
-  const id = form.value.activity_id ?? selectedActivity.value?.value ?? null
+const confirmDeleteFromCatalog = () => {
+  const id = form.value.activity_id
   if (id == null) return
   showConfirmation(
     'Eliminar del catálogo',
     '¿Está seguro de que desea eliminar esta actividad del catálogo? Los eventos ya creados con esta actividad no se modifican.',
     async () => {
       await withSpinner(async () => {
-        if (props.onDeleteFromCatalog) {
-          await props.onDeleteFromCatalog(id)
-        } else {
-          emit('delete-from-catalog', id)
-        }
+        await props.onDeleteFromCatalog(id)
         selectedActivity.value = null
         form.value.activity_id = null
         form.value.name = ''
@@ -742,117 +426,127 @@ const openDeleteConfirmModal = () => {
   )
 }
 
-// Inicializar formulario
+// ============================================
+// RESPONSABLES
+// ============================================
+
+const responsableOptions = computed<ResponsableOption[]>(() => [
+  { label: 'Sin responsable', value: SIN_RESPONSABLE, color: '#9ca3af' },
+  ...props.responsables.map(r => ({ label: r.nombre, value: r.id, color: props.getResponsableColor(r.id, r.nombre) }))
+])
+
+const responsableSelection = ref<ResponsableOption[]>([])
+/** Última selección aplicada, para saber qué eligió el usuario en el último cambio. */
+const lastAppliedIds = ref<number[]>([])
+
+const isResponsableSelected = (item: ResponsableOption) => responsableSelection.value.some(s => s.value === item.value)
+const responsableName = (id: number) => props.responsables.find(r => r.id === id)?.nombre ?? 'Desconocido'
+const responsableColor = (id: number) => props.getResponsableColor(id, props.responsables.find(r => r.id === id)?.nombre)
+
+const setResponsables = (ids: number[]) => {
+  form.value.responsable_ids = ids
+  lastAppliedIds.value = ids.length ? [...ids] : [SIN_RESPONSABLE]
+  responsableSelection.value = ids.length
+    ? responsableOptions.value.filter(o => ids.includes(o.value))
+    : [responsableOptions.value[0]]
+}
+
+/**
+ * "Sin responsable" y responsables reales son excluyentes: si conviven, gana lo último que
+ * eligió el usuario (comparando con la selección anterior).
+ */
+watch(responsableSelection, (selection) => {
+  const ids = selection.map(o => o.value)
+  const hasNone = ids.includes(SIN_RESPONSABLE)
+  const realIds = ids.filter(id => id !== SIN_RESPONSABLE)
+  const prevOnlyReal = !lastAppliedIds.value.includes(SIN_RESPONSABLE) && lastAppliedIds.value.length > 0
+
+  if (hasNone && realIds.length) {
+    setResponsables(prevOnlyReal ? [] : realIds)
+    return
+  }
+  if (realIds.length) {
+    form.value.responsable_ids = realIds
+    lastAppliedIds.value = realIds
+    return
+  }
+  form.value.responsable_ids = []
+  lastAppliedIds.value = [SIN_RESPONSABLE]
+  if (selection.length === 0) responsableSelection.value = [responsableOptions.value[0]]
+}, { deep: true })
+
+const removeResponsable = (id: number) => setResponsables(form.value.responsable_ids.filter(rid => rid !== id))
+
+// ============================================
+// INICIALIZACIÓN, VALIDACIÓN Y ENVÍO
+// ============================================
+
 const initializeForm = async () => {
   errors.value = {}
   isCreateActivityModalOpen.value = false
-  isCreatingActivity.value = false
+  createdActivities.value = []
+  const event = props.event
 
-  if (props.event) {
-    form.value.name = props.event.name || props.event.title || ''
-    form.value.activity_id = props.event.activity_id ?? null
-    form.value.priority = props.event.priority ?? 0
-    const rawContenedorId = props.usaConsolidado !== false
-      ? (props.event.contenedor_id ?? props.event.contenedor?.id ?? null)
-      : null
-    form.value.contenedor_id = rawContenedorId != null ? Number(rawContenedorId) : null
-    form.value.notes = props.event.notes || ''
-    form.value.responsable_ids = props.event.charges?.map(c => c.user_id) || []
-    const opts = responsableOptions.value
-    responsableSelection.value = form.value.responsable_ids.length
-      ? opts.filter(o => form.value.responsable_ids.includes(o.value))
-      : [opts[0]]
-    lastAppliedResponsableIds.value = form.value.responsable_ids.length ? [...form.value.responsable_ids] : [SIN_RESPONSABLE_VALUE]
-
-    // Cargar actividades usadas para el contenedor del evento
-    await fetchUsedActivities(form.value.contenedor_id)
-
-    // Buscar si la actividad existe en las predefinidas (por nombre o por id de catálogo)
-    const existingActivity = props.actividadesPredefinidas.find(
-      a => a.name === form.value.name || a.id === props.event?.activity_id
-    )
-    if (existingActivity) {
-      selectedActivity.value = { label: existingActivity.name, value: existingActivity.id }
-    } else if (form.value.name) {
-      selectedActivity.value = null
-    } else {
-      selectedActivity.value = null
-    }
-
-    // Fechas
-    const startDateStr = props.event.start_date || (props.event.days?.[0]?.date)
-    const endDateStr = props.event.end_date || (props.event.days?.[props.event.days.length - 1]?.date)
-
-    if (startDateStr) {
-      try {
-        startDate.value = parseDate(startDateStr) as CalendarDate
-      } catch {
-        startDate.value = today(getLocalTimeZone())
-      }
-    }
-
-    if (endDateStr) {
-      try {
-        endDate.value = parseDate(endDateStr) as CalendarDate
-      } catch {
-        endDate.value = today(getLocalTimeZone())
-      }
-    }
-  } else {
-    // Nuevo evento
-    form.value = {
-      name: '',
-      activity_id: null,
-      priority: 0,
-      contenedor_id: null,
-      responsable_ids: [],
-      notes: ''
-    }
-    responsableSelection.value = [responsableOptions.value[0]]
-    lastAppliedResponsableIds.value = [SIN_RESPONSABLE_VALUE]
+  if (!event) {
+    form.value = { name: '', activity_id: null, priority: 0, contenedor_id: null, responsable_ids: [], notes: '' }
     selectedActivity.value = null
+    setResponsables([])
+    usedActivityIds.value = new Set()
+    const initial = parseIsoDate(props.initialDate) ?? today(getLocalTimeZone())
+    startDate.value = initial
+    endDate.value = initial
+    return
+  }
 
-    // Fecha inicial: la pasada (ej. día clicado) o hoy
-    if (props.initialDate) {
-      try {
-        const parsed = parseDate(props.initialDate) as CalendarDate
-        startDate.value = parsed
-        endDate.value = parsed
-      } catch {
-        const todayDate = today(getLocalTimeZone())
-        startDate.value = todayDate
-        endDate.value = todayDate
-      }
-    } else {
-      const todayDate = today(getLocalTimeZone())
-      startDate.value = todayDate
-      endDate.value = todayDate
-    }
+  form.value = {
+    name: event.name,
+    activity_id: event.activity_id,
+    priority: event.priority,
+    contenedor_id: props.usaConsolidado ? event.contenedor_id : null,
+    responsable_ids: [],
+    notes: event.notes ?? ''
+  }
+  setResponsables(event.charges.map(c => c.user_id))
+  const item = props.actividadesPredefinidas.find(a => a.id === event.activity_id || a.name === event.name)
+  selectedActivity.value = item ? { label: item.name, value: item.id } : null
+  startDate.value = parseIsoDate(event.start_date) ?? today(getLocalTimeZone())
+  endDate.value = parseIsoDate(event.end_date) ?? startDate.value
+  await fetchUsedActivities(form.value.contenedor_id)
+}
+
+watch(() => props.openKey, initializeForm, { immediate: true })
+
+const validate = (): boolean => {
+  const next: typeof errors.value = {}
+  if (!form.value.name.trim()) next.name = 'El nombre es requerido'
+  if (!startDate.value) next.start_date = 'La fecha de inicio es requerida'
+  if (!endDate.value) next.end_date = 'La fecha de fin es requerida'
+  if (startDate.value && endDate.value && startDate.value.compare(endDate.value) > 0) {
+    next.end_date = 'La fecha de fin debe ser posterior a la de inicio'
+  }
+  errors.value = next
+  return Object.keys(next).length === 0
+}
+
+const submit = async () => {
+  if (!validate() || !startDate.value || !endDate.value) return
+  const data: CreateCalendarEventRequest = {
+    name: form.value.name.trim(),
+    activity_id: form.value.activity_id,
+    priority: form.value.priority,
+    contenedor_id: props.usaConsolidado ? form.value.contenedor_id : null,
+    notes: form.value.notes.trim() || null,
+    start_date: toIsoDate(startDate.value),
+    end_date: toIsoDate(endDate.value),
+    responsable_ids: form.value.responsable_ids.filter(id => id !== SIN_RESPONSABLE)
+  }
+  saving.value = true
+  try {
+    await props.onSave(data)
+  } finally {
+    saving.value = false
   }
 }
 
-// Watch para reinicializar cuando cambia el evento
-watch(() => props.event, () => {
-  initializeForm()
-}, { immediate: true })
-
-// Al reabrir con otro día (mismo event null, distinto initialDate) reinicializar fechas
-watch(
-  () => [props.openKey, props.initialDate],
-  () => {
-    if (!props.event && props.initialDate) {
-      try {
-        const parsed = parseDate(props.initialDate) as CalendarDate
-        startDate.value = parsed
-        endDate.value = parsed
-      } catch {
-        //
-      }
-    }
-  }
-)
-
-onMounted(() => {
-  initializeForm()
-})
+const handleClose = () => props.onClose()
 </script>

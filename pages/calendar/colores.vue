@@ -172,49 +172,41 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
 import { useCalendarStore } from '~/composables/useCalendarStore'
 import { useModal } from '~/composables/commons/useModal'
+import type { CalendarConsolidadoColor } from '~/types/calendar'
+import { COLOR_PRESETS } from '~/constants/calendar'
 
 const router = useRouter()
-import { COLOR_PRESETS } from '~/constants/calendar'
 
 const {
   contenedores,
   loading,
   usaConsolidado,
+  initialize,
   loadContenedores,
   loadConsolidadoColorConfig,
   updateConsolidadoColors,
-  getConsolidadoColor,
-  getCalendarRoute
+  getConsolidadoColor
 } = useCalendarStore()
 
 const { showSuccess, showError } = useModal()
 
-// Estado local
+/** Colores editados y aún sin guardar, por contenedor_id. */
 const localColors = ref<Record<number, string>>({})
 const colorPickerOpen = ref<Record<number, boolean>>({})
 const saving = ref(false)
 const colorPresets = COLOR_PRESETS
 
-// Computed
-const hasChanges = computed(() => {
-  for (const [id, color] of Object.entries(localColors.value)) {
-    const originalColor = getConsolidadoColor(Number(id))
-    if (color !== originalColor) return true
-  }
-  return false
-})
+const changedColors = computed<CalendarConsolidadoColor[]>(() =>
+  Object.entries(localColors.value)
+    .filter(([id, color]) => color !== getConsolidadoColor(Number(id)))
+    .map(([id, color]) => ({ contenedor_id: Number(id), color_code: color }))
+)
+const hasChanges = computed(() => changedColors.value.length > 0)
 
-// Helpers
-const getColor = (contenedorId: number): string => {
-  if (localColors.value[contenedorId]) {
-    return localColors.value[contenedorId]
-  }
-  return getConsolidadoColor(contenedorId)
-}
+const getColor = (contenedorId: number): string => localColors.value[contenedorId] ?? getConsolidadoColor(contenedorId)
 
 const setColor = (contenedorId: number, color: string) => {
   localColors.value[contenedorId] = color
@@ -224,32 +216,25 @@ const toggleColorPicker = (contenedorId: number) => {
   colorPickerOpen.value[contenedorId] = !colorPickerOpen.value[contenedorId]
 }
 
-// Guardar todos los colores en una sola petición
+/** Guarda todos los cambios en una sola petición. */
 const saveAllColors = async () => {
+  if (!hasChanges.value) return
   saving.value = true
   try {
-    const changed = Object.entries(localColors.value)
-      .filter(([id, color]) => color !== getConsolidadoColor(Number(id)))
-      .map(([id, color]) => ({ contenedorId: Number(id), colorCode: color }))
-
-    if (changed.length === 0) return
-
-    await updateConsolidadoColors(changed)
-    showSuccess('Éxito', 'Los colores se han actualizado correctamente.')
-    localColors.value = {}
-  } catch (err: any) {
-    showError('Error', err?.message || 'No se pudieron guardar los colores.')
+    if (await updateConsolidadoColors(changedColors.value)) {
+      showSuccess('Éxito', 'Los colores se han actualizado correctamente.')
+      localColors.value = {}
+    } else {
+      showError('Error', 'No se pudieron guardar los colores.')
+    }
   } finally {
     saving.value = false
   }
 }
 
-// Inicialización
 onMounted(async () => {
-  await Promise.all([
-    loadContenedores(),
-    loadConsolidadoColorConfig()
-  ])
+  await initialize()
+  await Promise.all([loadContenedores(), loadConsolidadoColorConfig()])
 })
 
 definePageMeta({
