@@ -1,5 +1,5 @@
 <template>
-  <UModal v-model:open="open" title="Motivos de descarte" description="Crea, revisa o elimina los motivos que usa el equipo de ventas">
+  <UModal v-model:open="open" title="Motivos de descarte" :description="description">
     <template #body>
       <div class="space-y-4">
         <div class="flex gap-2">
@@ -60,11 +60,18 @@ interface MotivosDescarteHandlers {
 const props = defineProps<{
   modelValue: boolean
   handlers: MotivosDescarteHandlers
+  /** Si viene, el motivo creado se asigna a esta cotización (emit `assign`) y se cierra el modal */
+  targetId?: number | null
 }>()
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
+  (e: 'assign', reasonId: number): void
 }>()
+
+const description = computed(() => props.targetId
+  ? `Crea el motivo y se asignará a la cotización #${props.targetId}`
+  : 'Crea, revisa o elimina los motivos que usa el equipo de ventas')
 
 const { showError, showConfirmation } = useModal()
 
@@ -101,8 +108,14 @@ const handleCreate = async () => {
   if (!name || saving.value) return
   saving.value = true
   try {
-    await props.handlers.createReason(name)
+    const created = await props.handlers.createReason(name) as Motivo | undefined
     newName.value = ''
+    if (props.targetId && created?.id) {
+      const targetReason = created.id
+      open.value = false
+      emit('assign', targetReason)
+      return
+    }
     await loadReasons()
   } catch (error) {
     showError('Error al crear motivo', String(error))

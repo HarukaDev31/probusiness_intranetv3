@@ -13,8 +13,8 @@
       @export="handleExport">
 
       <template #body-top>
-        <div class="flex flex-col gap-2 w-full">
-          <SectionHeader :headers="kpiHeaders" :loading="loading" :skeleton-count="4">
+        <div class="flex flex-col gap-3 w-full">
+          <SectionHeader :headers="cotizacionKpis" :loading="loading" :skeleton-count="3" grid>
             <template #extra="{ header }">
               <div v-if="header.key === 'cotizaciones_pendientes'" class="flex flex-wrap gap-1.5 mt-1.5">
                 <button
@@ -34,6 +34,7 @@
               </div>
             </template>
           </SectionHeader>
+          <SectionHeader :headers="cbmKpis" :loading="loading" :skeleton-count="4" grid />
           <div class="flex items-center gap-3 flex-wrap">
             <UTabs v-model="activeTab" color="neutral" :items="pageTabs" size="sm" variant="pill" class="mb-1 w-80 h-15" />
             <span
@@ -43,19 +44,19 @@
               Filtrando: {{ seguimientoFilter === 'DESCARTADA' ? 'Descartadas' : 'En seguimiento' }}
               <UButton icon="i-heroicons-x-mark" size="xs" color="neutral" variant="ghost" title="Quitar filtro" @click="toggleSeguimientoFilter(seguimientoFilter)" />
             </span>
+            <UButton
+              label="Motivos de descarte"
+              icon="i-heroicons-adjustments-horizontal"
+              color="neutral"
+              variant="outline"
+              class="ml-auto font-normal"
+              @click="openMotivos"
+            />
           </div>
         </div>
       </template>
 
       <template #actions>
-        <UButton
-          label="Motivos de descarte"
-          icon="i-heroicons-adjustments-horizontal"
-          color="neutral"
-          variant="outline"
-          class="h-8 md:h-11 font-normal"
-          @click="showMotivosModal = true"
-        />
         <UButton
           label="Gestionar tarifas de calculadora"
           icon="i-heroicons-calculator"
@@ -71,8 +72,12 @@
       </template>
     </DataTable>
 
-    <RazonDescarteModal v-model="showRazonDescarteModal" :handlers="razonDescarteHandlers" />
-    <MotivosDescarteModal v-model="showMotivosModal" :handlers="razonDescarteHandlers" />
+    <MotivosDescarteModal
+      v-model="showMotivosModal"
+      :handlers="razonDescarteHandlers"
+      :target-id="motivoTargetId"
+      @assign="handleMotivoCreado"
+    />
   </div>
 </template>
 <script setup lang="ts">
@@ -82,7 +87,6 @@ import { useCalculadoraImportacion } from '~/composables/useCalculadoraImportaci
 import SectionHeader from '~/components/commons/SectionHeader.vue'
 import type { Header } from '~/types/data-table'
 const { cotizaciones, loading, error, pagination, headers, tab, seguimientoFilter, search, itemsPerPage, totalPages, totalRecords, currentPage, filters, filterOptions, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, getCotizaciones, estadoCotizaciones, deleteCotizacionCalculadora, duplicateCotizacionCalculadora, changeEstadoCotizacionCalculadora, vincularCotizacionCalculadora, exportCotizacionesList, getRazonesDescarte, createRazonDescarte, deleteRazonDescarte, updateSeguimientoCotizacion } = useCalculadoraImportacion()
-import RazonDescarteModal from '~/components/calculadora/RazonDescarteModal/index.vue'
 import MotivosDescarteModal from '~/components/calculadora/MotivosDescarteModal/index.vue'
 import type { TableColumn } from '@nuxt/ui'
 import { UButton, USelect, UBadge } from '#components'
@@ -128,6 +132,10 @@ const toggleSeguimientoFilter = async (value: 'SEGUIMIENTO' | 'DESCARTADA' | '')
 }
 
 const showMotivosModal = ref(false)
+const openMotivos = () => {
+  motivoTargetId.value = null
+  showMotivosModal.value = true
+}
 const { isDesktop } = useIsDesktop()
 const route = useRoute()
 const { showSuccess, showConfirmation, showError } = useModal()
@@ -159,6 +167,11 @@ const kpiHeaders = computed<Header[]>(() => {
       icon: header.icon || CALCULADORA_HEADER_ICONS[key] || 'fluent:box-32-filled',
     }))
 })
+// Fila 1: cotizaciones (total, confirmadas, pendientes). Fila 2: CBM.
+const COTIZACION_KPI_KEYS = ['total_cotizaciones', 'cotizaciones_confirmadas', 'cotizaciones_pendientes']
+const cotizacionKpis = computed(() => kpiHeaders.value.filter((h) => COTIZACION_KPI_KEYS.includes(h.key || '')))
+const cbmKpis = computed(() => kpiHeaders.value.filter((h) => !COTIZACION_KPI_KEYS.includes(h.key || '')))
+
 const columns: TableColumn<any>[] = [
   {
     accessorKey: 'id',
@@ -354,20 +367,34 @@ const columns: TableColumn<any>[] = [
       if (estado !== 'PENDIENTE' && estado !== 'COTIZADO') {
         return h(UBadge, { label: '—', color: 'neutral', variant: 'soft', size: 'sm' })
       }
+      const id = Number(row.original.id)
       const raw = row.original.seguimiento
-      const seguimiento: SeguimientoValue = raw === 'DESCARTADA' || raw === 'SEGUIMIENTO' ? raw : SIN_SELECCIONAR
-      return h('div', { class: 'flex flex-col gap-1' }, [
+      const guardado: SeguimientoValue = raw === 'DESCARTADA' || raw === 'SEGUIMIENTO' ? raw : SIN_SELECCIONAR
+      // "Descartada" elegida pero aún sin motivo: se muestra el select de motivo antes de guardar.
+      const seguimiento: SeguimientoValue = descartePendiente.value[id] ? 'DESCARTADA' : guardado
+      const idRazon = guardado === 'DESCARTADA' ? Number(row.original.id_razon_descarte) || undefined : undefined
+      return h('div', { class: 'flex flex-col gap-1.5 w-40' }, [
         h(USelect as any, {
-          class: 'min-w-36',
-          color: seguimiento === 'DESCARTADA' ? 'error' : seguimiento === 'SEGUIMIENTO' ? 'warning' : 'neutral',
+          class: 'w-full',
+          color: seguimiento === 'DESCARTADA' ? 'neutral' : seguimiento === 'SEGUIMIENTO' ? 'warning' : 'neutral',
+          variant: seguimiento === 'SEGUIMIENTO' ? 'soft' : 'outline',
           items: SEGUIMIENTO_OPTIONS,
           modelValue: seguimiento,
           'onUpdate:modelValue': (value: SeguimientoValue) => {
-            handleSeguimientoChange(row.original.id, value, seguimiento)
+            handleSeguimientoChange(id, value, guardado)
           }
         }),
-        seguimiento === 'DESCARTADA' && row.original.razon_descarte_nombre
-          ? h('span', { class: 'text-xs text-gray-500 whitespace-normal' }, row.original.razon_descarte_nombre)
+        seguimiento === 'DESCARTADA'
+          ? h(USelect as any, {
+            class: 'w-full',
+            size: 'xs',
+            placeholder: 'Elegir motivo…',
+            items: motivoItems(row.original),
+            modelValue: idRazon,
+            'onUpdate:modelValue': (value: number) => {
+              handleMotivoChange(id, Number(value), idRazon)
+            }
+          })
           : null
       ])
     }
@@ -447,8 +474,78 @@ const SEGUIMIENTO_OPTIONS = [
   { label: 'En seguimiento', value: 'SEGUIMIENTO' },
   { label: 'Descartada', value: 'DESCARTADA' },
 ]
-const showRazonDescarteModal = ref(false)
-const seguimientoTargetId = ref<number | null>(null)
+// Valor del option "+ Crear motivo…" en el select de motivo.
+const CREAR_MOTIVO = -1
+// Filas con "Descartada" elegida que aún no tienen motivo guardado.
+const descartePendiente = ref<Record<number, boolean>>({})
+const razones = ref<Array<{ id: number; name: string; uses?: number }>>([])
+// Fila a la que se asigna el motivo creado desde "+ Crear motivo…".
+const motivoTargetId = ref<number | null>(null)
+
+const loadRazones = async () => {
+  try {
+    razones.value = await getRazonesDescarte()
+  } catch (error) {
+    console.error('Error al cargar motivos de descarte:', error)
+  }
+}
+
+const motivoItems = (original: any) => {
+  const items = razones.value.map((r) => ({ label: r.name, value: r.id }))
+  // Un motivo eliminado sigue mostrándose en las cotizaciones que ya lo usan.
+  const actual = Number(original?.id_razon_descarte)
+  if (actual && !items.some((i) => i.value === actual) && original?.razon_descarte_nombre) {
+    items.unshift({ label: original.razon_descarte_nombre, value: actual })
+  }
+  return [...items, { label: '+ Crear motivo…', value: CREAR_MOTIVO }]
+}
+
+const setDescartePendiente = (id: number, pendiente: boolean) => {
+  const next = { ...descartePendiente.value }
+  if (pendiente) next[id] = true
+  else delete next[id]
+  descartePendiente.value = next
+}
+
+const guardarSeguimiento = async (id: number, seguimiento: 'SEGUIMIENTO' | 'DESCARTADA' | null, idRazon?: number) => {
+  await withSpinner(async () => {
+    try {
+      const result = await updateSeguimientoCotizacion(id, seguimiento, idRazon ?? null)
+      if (result?.success) {
+        setDescartePendiente(id, false)
+        showSuccess('Seguimiento actualizado', result?.message || 'El seguimiento se actualizó correctamente.')
+        await getCotizaciones()
+      } else {
+        showError('Error al actualizar el seguimiento', result?.message || 'No se pudo actualizar el seguimiento')
+      }
+    } catch (error: any) {
+      showError('Error al actualizar el seguimiento', error?.data?.message || error?.message || 'No se pudo actualizar el seguimiento')
+    }
+  })
+}
+
+const handleMotivoChange = async (id: number, value: number, actual?: number) => {
+  if (value === CREAR_MOTIVO) {
+    motivoTargetId.value = id
+    showMotivosModal.value = true
+    return
+  }
+  if (!value || value === actual) return
+  await guardarSeguimiento(id, 'DESCARTADA', value)
+}
+
+const handleMotivoCreado = async (reasonId: number) => {
+  const id = motivoTargetId.value
+  motivoTargetId.value = null
+  if (id) await guardarSeguimiento(id, 'DESCARTADA', reasonId)
+}
+
+watch(showMotivosModal, (open) => {
+  if (!open) {
+    motivoTargetId.value = null
+    loadRazones()
+  }
+})
 
 const razonDescarteHandlers = {
   fetchReasons: async () => await getRazonesDescarte(),
@@ -462,37 +559,17 @@ const razonDescarteHandlers = {
       throw new Error(response?.message || 'No se pudo eliminar la razón')
     }
   },
-  confirm: async (reasonId: number) => {
-    if (!seguimientoTargetId.value) return
-    const result = await updateSeguimientoCotizacion(seguimientoTargetId.value, 'DESCARTADA', reasonId)
-    if (!result?.success) {
-      throw new Error(result?.message || 'No se pudo descartar la cotización')
-    }
-    showSuccess('Cotización descartada', 'La razón de descarte se guardó correctamente.')
-    await getCotizaciones()
-  },
 }
 
-const handleSeguimientoChange = async (id: number | string, value: SeguimientoValue, actual: SeguimientoValue) => {
-  if (value === actual) return
+const handleSeguimientoChange = async (id: number, value: SeguimientoValue, guardado: SeguimientoValue) => {
   if (value === 'DESCARTADA') {
-    seguimientoTargetId.value = Number(id)
-    showRazonDescarteModal.value = true
+    // No se guarda hasta elegir el motivo en el select que aparece debajo.
+    if (guardado !== 'DESCARTADA') setDescartePendiente(id, true)
     return
   }
-  await withSpinner(async () => {
-    try {
-      const result = await updateSeguimientoCotizacion(Number(id), value === SIN_SELECCIONAR ? null : value)
-      if (result?.success) {
-        showSuccess('Seguimiento actualizado', result?.message || 'El seguimiento se actualizó correctamente.')
-        await getCotizaciones()
-      } else {
-        showError('Error al actualizar el seguimiento', result?.message || 'No se pudo actualizar el seguimiento')
-      }
-    } catch (error: any) {
-      showError('Error al actualizar el seguimiento', error?.data?.message || error?.message || 'No se pudo actualizar el seguimiento')
-    }
-  })
+  setDescartePendiente(id, false)
+  if (value === guardado) return
+  await guardarSeguimiento(id, value === SIN_SELECCIONAR ? null : value)
 }
 
 const handleEstadoChange = (id: string, value: string) => {
@@ -657,6 +734,7 @@ watch(
 )
 
 onMounted(async () => {
+  loadRazones()
   if (!parseIdCalculadoraQuery(route.query.idCalculadora)) {
     await getCotizaciones()
   }
