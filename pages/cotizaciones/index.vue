@@ -256,7 +256,7 @@ const columns: TableColumn<any>[] = [
     cell: ({ row }: { row: any }) => {
       const cotizador = row.original.nombre_creador || '-'
       const vendedor = row.original.nombre_vendedor || '-'
-      return h('div', { class: 'py-1 whitespace-normal' }, [
+      return h('div', { class: 'py-1 whitespace-normal min-w-48' }, [
         h('div', { class: 'font-medium' }, cotizador),
         h('div', { class: 'text-sm text-gray-500' }, vendedor)
       ])
