@@ -45,6 +45,8 @@
                 </div>
             </template>
             <template #actions>
+                <ReporteMarketingButton v-if="puedeReporteMarketing" :id-contenedor="Number(id)" :carga="carga"
+                    :tipos="tiposReporteMarketing" />
                 <UButton v-if="puedeCrearProspecto" icon="i-heroicons-plus" class="py-3 md:flex hidden"
                     label="Crear Prospecto" @click="handleAddProspecto" />
             </template>
@@ -110,6 +112,8 @@
 
                     </div>
                 </div>
+                <ReporteMarketingButton v-if="puedeReporteMarketing" :id-contenedor="Number(id)" :carga="carga"
+                    :tipos="tiposReporteMarketing" />
                 <UButton v-if="puedeCrearProspecto" icon="i-heroicons-plus" label="Crear Prospecto"
                     @click="handleAddProspecto" class="py-3 md:flex hidden" />
                 <UButton v-if="(currentRole === ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole)) || (currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.ADMINISTRACION)" icon="i-heroicons-arrow-down-tray" color="success"
@@ -140,6 +144,8 @@
                 </div>
             </template>
             <template #actions>
+                <ReporteMarketingButton v-if="puedeReporteMarketing" :id-contenedor="Number(id)" :carga="carga"
+                    :tipos="tiposReporteMarketing" />
                 <UButton v-if="puedeCrearProspecto" icon="i-heroicons-plus" label="Crear Prospecto"
                     @click="handleAddProspecto" class="py-3" />
             </template>
@@ -179,6 +185,7 @@ import CreatePagoModal from '~/components/commons/CreatePagoModal.vue'
 import ModalPreview from '~/components/commons/ModalPreview.vue'
 import AdelantoPreviewModal from '~/components/commons/AdelantoPreviewModal.vue'
 import SectionHeader from '~/components/commons/SectionHeader.vue'
+import ReporteMarketingButton from '~/components/cargaconsolidada/consolidado/ReporteMarketingButton.vue'
 import { wrapChinaColumnGroup } from '~/utils/cargaconsolidada/chinaColumnGroup'
 import CustomersKpiCards from '~/components/cargaconsolidada/customers/CustomersKpiCards.vue'
 import { useCotizacionPagos } from '~/composables/cargaconsolidada/useCotizacionPagos'
@@ -494,6 +501,12 @@ const isOrgNoAdmin = computed(() => {
 const puedeCrearProspecto = computed(() => !props.scope && (currentRole.value === ROLES.COTIZADOR || isSocio.value))
 const basePath = computed(() => props.basePath)
 const backBasePath = computed(() => props.backBasePath || props.basePath)
+// Reporte de marketing: abiertos solo cotización preliminar; completados preliminar y final.
+const puedeReporteMarketing = computed(() => !props.scope
+    && (currentRole.value === ROLES.MARKETING || currentRole.value === ROLES.JEFE_MARKETING))
+const tiposReporteMarketing = computed<Array<'preliminar' | 'final'>>(() => (
+    String(basePath.value || '').includes('/completados') ? ['preliminar', 'final'] : ['preliminar']
+))
 const tabs = ref([])
 import SimpleUploadFileModal from '~/components/commons/SimpleUploadFile.vue'
 import StatusOptionsModal from '~/components/cargaconsolidada/cotizaciones/StatusOptionsModal/index.vue'
