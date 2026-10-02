@@ -35,6 +35,7 @@
                 <div
                     ref="scrollerRef"
                     class="kpi-track"
+                    :class="{ 'kpi-track--grid': grid }"
                     @scroll="updateScrollState"
                 >
                     <article
@@ -152,7 +153,10 @@ const props = withDefaults(defineProps<{
     showTitleSkeleton?: boolean
     size?: 'compact' | 'comfortable'
     breakdownCols?: 1 | 2 | 3
+    /** Cards en grilla que ocupa todo el ancho (auto-fit, mín. 220px) en vez de carrusel */
+    grid?: boolean
 }>(), {
+    grid: false,
     title: null,
     loading: false,
     skeletonCount: 8,
@@ -277,6 +281,16 @@ onUnmounted(() => {
 .kpi-card {
     flex: 1 0 calc((100% - 84px) / 8);
     min-width: max(140px, calc((100% - 84px) / 8));
+}
+
+.kpi-track--grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    overflow: visible;
+}
+
+.kpi-track--grid .kpi-card {
+    min-width: 0;
 }
 
 .kpi-card--comfortable {
