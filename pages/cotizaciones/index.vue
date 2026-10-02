@@ -86,7 +86,7 @@ import { useRoute } from 'vue-router'
 import { useCalculadoraImportacion } from '~/composables/useCalculadoraImportacion'
 import SectionHeader from '~/components/commons/SectionHeader.vue'
 import type { Header } from '~/types/data-table'
-const { cotizaciones, loading, error, pagination, headers, tab, seguimientoFilter, search, itemsPerPage, totalPages, totalRecords, currentPage, filters, filterOptions, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, getCotizaciones, estadoCotizaciones, deleteCotizacionCalculadora, duplicateCotizacionCalculadora, changeEstadoCotizacionCalculadora, vincularCotizacionCalculadora, exportCotizacionesList, getRazonesDescarte, createRazonDescarte, deleteRazonDescarte, updateSeguimientoCotizacion } = useCalculadoraImportacion()
+const { cotizaciones, loading, error, pagination, headers, tab, seguimientoFilter, search, itemsPerPage, totalPages, totalRecords, currentPage, filters, filterOptions, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, getCotizaciones, estadoCotizaciones, deleteCotizacionCalculadora, duplicateCotizacionCalculadora, changeEstadoCotizacionCalculadora, exportCotizacionesList, getRazonesDescarte, createRazonDescarte, deleteRazonDescarte, updateSeguimientoCotizacion } = useCalculadoraImportacion()
 import MotivosDescarteModal from '~/components/calculadora/MotivosDescarteModal/index.vue'
 import type { TableColumn } from '@nuxt/ui'
 import { UButton, USelect, UBadge } from '#components'
@@ -314,35 +314,6 @@ const columns: TableColumn<any>[] = [
           const base = tab.value === 'embarcados' ? '/cargaconsolidada/completados' : '/cargaconsolidada/abiertos'
           navigateTo(`${base}/cotizaciones/${idContenedor}?idCotizacion=${idCotizacion}`)
         }
-      })
-    }
-  },
-  {
-    accessorKey: 'proveedores_vinculados',
-    header: 'Proveedores vinculados',
-    cell: ({ row }: { row: any }) => {
-      const proveedores = (row.original?.proveedores ?? []) as any[]
-      const tieneProveedorSinVinculo = proveedores.some((p: any) => {
-        const codeSupplierOk = p?.code_supplier != null && String(p.code_supplier).trim().length > 0
-        const idProveedorOk = p?.id_proveedor != null && String(p.id_proveedor).toString().length > 0
-        return !codeSupplierOk || !idProveedorOk
-      })
-
-      if (!tieneProveedorSinVinculo) {
-        return h(UBadge, { label: 'Sí', color: 'success', variant: 'soft', size: 'sm' })
-      }
-
-      const canVincular = !!row.original?.url_cotizacion && !!row.original?.id_carga_consolidada_contenedor
-
-      return h(UButton, {
-        color: 'primary',
-        size: 'sm',
-        variant: 'ghost',
-        icon: 'i-heroicons-link',
-        label: '',
-        title: 'Vincular proveedores (cotización)',
-        disabled: !canVincular,
-        onClick: () => handleVincularCotizacion(row.original.id)
       })
     }
   },
@@ -642,33 +613,6 @@ const handleDocumentos = (idCotizacion: string | number, idCalculadoraFila: stri
       ...(idCalc > 0 ? { idCalculadora: String(idCalc) } : {})
     }
   })
-}
-
-const handleVincularCotizacion = (idCalculadora: string | number) => {
-  const id = Number(idCalculadora)
-  if (!id) return
-
-  showConfirmation(
-    'Vincular cotización',
-    '¿Estás seguro de que deseas vincular/crear la cotización en carga consolidada? Se habilitarán los documentos asociados.',
-    async () => {
-      await withSpinner(async () => {
-        try {
-          const result = await vincularCotizacionCalculadora(id)
-          if (result?.success) {
-            showSuccess('Cotización vinculada', 'La cotización ya quedó asociada. Los documentos deberían habilitarse.')
-          } else {
-            showError('Error al vincular', result?.message || 'No se pudo vincular la cotización.')
-          }
-        } catch (error: any) {
-          showError('Error al vincular', error?.message || 'No se pudo vincular la cotización.')
-        }
-      }, 'Vinculando cotización...')
-    },
-    () => {
-      // cancel
-    }
-  )
 }
 
 const handleDuplicate = (id: string) => {
