@@ -125,6 +125,7 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
 import CreateConsolidadoModal from '~/components/cargaconsolidada/consolidado/CreateConsolidadoModal/index.vue'
 import TextModal from '~/components/commons/TextModal.vue'
+import ReporteMarketingButton from '~/components/cargaconsolidada/consolidado/ReporteMarketingButton.vue'
 import { USelect } from '#components'
 import { CUSTOMIZED_ICONS_URL, STATUS_BG_CLASSES } from '~/constants/ui'
 import type { CargaConsolidadaCompletadosProps, ConsolidadoFormData } from './types'
@@ -152,6 +153,7 @@ const { showSuccess, showConfirmation, showError } = useModal()
 const isCoordinacion = computed(() => props.role === ROLES.COORDINACION)
 const isAlmacen = computed(() => props.role === ROLES.CONTENEDOR_ALMACEN)
 const isFinanzas = computed(() => props.role === ROLES.FINANZAS)
+const isMarketing = computed(() => props.role === ROLES.MARKETING || props.role === ROLES.JEFE_MARKETING)
 const isOrgAdmin = computed(() => {
   const user = getUserData()
   return Number(user?.raw?.organizacion?.id || user?.organizacion?.id || 0) === ID_ORGANIZACION_ADMIN
@@ -590,6 +592,9 @@ const documentacionColumns: TableColumn<any>[] = [
           variant: 'ghost',
           onClick: () => handleViewSteps(row.original.id),
         }),
+        isMarketing.value
+          ? h(ReporteMarketingButton, { idContenedor: row.original.id, carga: row.original.carga })
+          : null,
         row.original.observaciones
           ? h(UButton, {
               size: 'xs',

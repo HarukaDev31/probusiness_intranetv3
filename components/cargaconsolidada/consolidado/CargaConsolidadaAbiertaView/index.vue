@@ -140,6 +140,7 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
 import CreateConsolidadoModal from '~/components/cargaconsolidada/consolidado/CreateConsolidadoModal/index.vue'
 import PartirConsolidadoModal from '~/components/cargaconsolidada/consolidado/PartirConsolidadoModal/index.vue'
+import ReporteMarketingButton from '~/components/cargaconsolidada/consolidado/ReporteMarketingButton.vue'
 import { USelect } from '#components'
 import { CUSTOMIZED_ICONS_URL, STATUS_BG_CLASSES } from '~/constants/ui'
 import type { CargaConsolidadaAbiertaProps, ConsolidadoFormData } from './types'
@@ -165,6 +166,7 @@ const { showSuccess, showConfirmation, showError } = useModal()
 const isCoordinacion = computed(() => props.role === ROLES.COORDINACION)
 const isAlmacen = computed(() => props.role === ROLES.CONTENEDOR_ALMACEN)
 const isFinanzas = computed(() => props.role === ROLES.FINANZAS)
+const isMarketing = computed(() => props.role === ROLES.MARKETING || props.role === ROLES.JEFE_MARKETING)
 // Socio (org ≠ 1) gestiona sus consolidados igual que Coordinación: crear, editar, partir y eliminar.
 const puedeGestionarConsolidado = computed(() => isCoordinacion.value || esRolSocio(props.role))
 const isOrgAdmin = computed(() => {
@@ -449,6 +451,9 @@ const columns: TableColumn<any>[] = [
           onClick: () => handleViewSteps(original.id),
         }),
       ]
+      if (isMarketing.value) {
+        actions.push(h(ReporteMarketingButton, { idContenedor: original.id, carga: (original as any).carga }))
+      }
       if (puedeGestionarConsolidado.value) {
         actions.push(
           h(UButton, {

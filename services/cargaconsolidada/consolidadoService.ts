@@ -56,6 +56,22 @@ export class ConsolidadoService extends BaseService {
         }
     }
 
+    /** Reporte de marketing (Excel) de un contenedor: logística de cotización preliminar o final. */
+    static async downloadReporteMarketing(id: number, tipo: 'preliminar' | 'final'): Promise<Blob> {
+        try {
+            return await this.apiCall<Blob>(`${this.baseUrl}/${id}/reporte-marketing?tipo=${tipo}`, {
+                method: 'GET',
+                responseType: 'blob',
+                headers: {
+                    Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                }
+            })
+        } catch (error) {
+            console.error('Error en ConsolidadoService.downloadReporteMarketing:', error)
+            throw error
+        }
+    }
+
     static async getConsolidadoData(params: ConsolidadoParams = {}): Promise<ContenedorResponse> {
         try {
             // Validar y limpiar parámetros
