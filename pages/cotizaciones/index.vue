@@ -252,13 +252,15 @@ const columns: TableColumn<any>[] = [
   },
   {
     accessorKey: 'cotizador',
-    header: 'Cotizador',
-    cell: ({ row }: { row: any }) => row.original.nombre_creador || '-'
-  },
-  {
-    accessorKey: 'vendedor',
-    header: 'Vendedor',
-    cell: ({ row }: { row: any }) => row.original.nombre_vendedor || '-'
+    header: 'Cotizador / Vendedor',
+    cell: ({ row }: { row: any }) => {
+      const cotizador = row.original.nombre_creador || '-'
+      const vendedor = row.original.nombre_vendedor || '-'
+      return h('div', { class: 'py-1 whitespace-normal' }, [
+        h('div', { class: 'font-medium' }, cotizador),
+        h('div', { class: 'text-sm text-gray-500' }, vendedor)
+      ])
+    }
   },
   {
     accessorKey: 'cotizacion',
