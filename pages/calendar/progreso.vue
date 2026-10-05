@@ -78,6 +78,19 @@
             class="w-48 min-w-0"
             @update:model-value="applyFilters()"
           />
+
+          <UButton
+            v-if="isJefeImportaciones"
+            icon="i-heroicons-arrow-down-tray"
+            label="Exportar Excel"
+            color="success"
+            variant="outline"
+            size="sm"
+            class="ml-auto"
+            :loading="exporting"
+            :disabled="loading"
+            @click="exportExcel"
+          />
         </div>
 
         <div class="overflow-x-auto overflow-y-visible pt-4">
@@ -159,6 +172,7 @@ import { computed, onMounted, ref, shallowRef } from 'vue'
 import { useCalendarStore } from '~/composables/useCalendarStore'
 import { useCalendarListFilters } from '~/composables/calendar/useCalendarListFilters'
 import { useModal } from '~/composables/commons/useModal'
+import { CalendarService } from '~/services/calendar/calendarService'
 import type {
   CalendarEvent,
   CalendarEventCharge,
@@ -190,6 +204,7 @@ const {
   usaConsolidado,
   isJefeImportaciones,
   currentUserId,
+  currentRoleGroupId,
   getEvents,
   updateEventStatus,
   updateChargeStatus,
@@ -251,6 +266,40 @@ const applyFilters = async (force = false, resetPage = true) => {
 const goToPage = (p: number) => {
   page.value = p
   applyFilters(true, false)
+}
+
+// ============================================
+// EXPORTAR (jefe del grupo)
+// ============================================
+
+const exporting = ref(false)
+
+/** Descarga todas las filas con los filtros activos; el Excel lo arma el backend. */
+const exportExcel = async () => {
+  if (exporting.value) return
+  exporting.value = true
+  try {
+    const filters: CalendarFilters = { ...buildFilters(usaConsolidado.value), has_charges: 1, order_desc: 1 }
+    if (status.value) filters.status = status.value
+    if (priority.value !== null) filters.priority = priority.value
+    if (eventId.value !== null) filters.event_id = eventId.value
+    if (currentRoleGroupId.value != null) filters.role_group_id = currentRoleGroupId.value
+
+    const blob = await CalendarService.exportProgress(filters)
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `progreso_calendario_${new Date().toISOString().split('T')[0]}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+    showSuccess('Exportado', 'El Excel se descargó correctamente')
+  } catch (error: any) {
+    showError('Error al exportar', error?.data?.message || error?.message || 'No se pudo exportar el progreso')
+  } finally {
+    exporting.value = false
+  }
 }
 
 // ============================================
