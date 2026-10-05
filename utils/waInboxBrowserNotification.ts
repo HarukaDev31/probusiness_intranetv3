@@ -7,7 +7,7 @@ import {
 } from '~/utils/soporteTiBrowserNotification'
 
 const ICONO_NOTIFICACION =
-  'https://intranet.probusiness.pe/assets/img/logos/probusiness.png'
+  'https://cdn.probusiness.pe/assets/img/logos/probusiness.png'
 
 const MAX_CUERPO = 220
 

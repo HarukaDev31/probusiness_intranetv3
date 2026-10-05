@@ -9,7 +9,7 @@
     <!-- Hero Section -->
     <div ref="heroRef" class="hero-section relative h-100 bg-cover bg-center bg-no-repeat mb-4 rounded-xl overflow-hidden opacity-0 translate-y-4 transition-all duration-700"
          :class="{ 'opacity-100 translate-y-0': heroVisible }"
-         style="background-image: url('https://intranet.probusiness.pe/assets/img/backgrounds/inicioview.png');">
+         style="background-image: url('https://cdn.probusiness.pe/assets/img/backgrounds/inicioview.png');">
       <div class="absolute inset-0 bg-gradient-to-r from-black/40 to-black/10"></div>
       <div class="container relative flex items-center mx-4 h-full">
         <div class="text-white lg:text-5xl sm:text-4xl text-4xl xl:py-5 main-text font-normal z-10">

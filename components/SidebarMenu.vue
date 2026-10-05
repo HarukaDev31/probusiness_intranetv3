@@ -6,7 +6,7 @@
     <!-- Top: centered logo -->
     <div class="py-3 px-3 flex items-center gap-3" :class="[collapsed ? 'justify-center' : 'justify-start']">
       <NuxtLink to="/" class="flex items-center gap-3" no-prefetch>
-        <img src="https://intranet.probusiness.pe/assets/img/logos/probusiness.png" 
+        <img src="https://cdn.probusiness.pe/assets/img/logos/probusiness.png" 
           :alt="collapsed ? 'Logo Probusiness' : ''"
           width="40" height="40" class="w-10 h-auto" />
         <h1 v-if="!collapsed" class="text-2xl font-bold text-gray-900 dark:text-white">probusiness</h1>
