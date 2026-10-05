@@ -124,6 +124,17 @@ export class CalendarService extends BaseService {
     return this.apiCall<CalendarEventsResponse>(`${this.baseUrl}/events${qs}`, { method: 'GET' })
   }
 
+  /** Excel de la tabla de progreso con los mismos filtros (sin paginar). Solo jefe del grupo. */
+  static async exportProgress(filters: CalendarFilters): Promise<Blob> {
+    const { page: _page, per_page: _perPage, ...rest } = filters
+    const qs = buildQueryString({ ...rest })
+    return this.apiCall<Blob>(`${this.baseUrl}/progress/export${qs}`, {
+      method: 'GET',
+      responseType: 'blob',
+      headers: { Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }
+    })
+  }
+
   /** Orden manual de eventos en la vista mes (drag & drop). */
   static async reorderEvents(ids: number[]): Promise<ApiMessageResponse> {
     return this.apiCall<ApiMessageResponse>(`${this.baseUrl}/events/reorder`, { method: 'POST', body: { ids } })
