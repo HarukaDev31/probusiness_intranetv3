@@ -98,7 +98,7 @@
               </div>
               <div class="mt-2 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-300">
                 <div class="flex items-center gap-2">
-                  <img :src="isOrgAdmin ? flagUrlFromPais(row.pais) : ECUADOR_FLAG_URL" alt="" class="w-4 h-2.5 object-contain">
+                  <img :src="flagUrlFromConsolidado(row)" alt="" class="w-4 h-2.5 object-contain">
                   <span class="whitespace-nowrap">{{ safeCbm(row, 'cbm_total_peru') }}</span>
                 </div>
                 <div class="flex items-center gap-2">
@@ -208,12 +208,15 @@ const flagUrlFromPais = (pais?: { Nu_Codigo_Sunat_ISO?: string, No_Pais?: string
 
 const ECUADOR_FLAG_URL = 'https://flagcdn.com/w40/ec.png'
 
-// Org ≠ 1 (socios): CBM destino siempre con bandera de Ecuador.
-const destinoCbmFlag = computed(() =>
-  isOrgAdmin.value
-    ? flagUrlFromPais(consolidadoData.value?.[0]?.pais)
-    : ECUADOR_FLAG_URL
-)
+// País del consolidado (pais_flags.iso2); sin dato: admin deduce por catálogo, socio cae en Ecuador.
+const flagUrlFromConsolidado = (c?: { pais_iso2?: string | null, pais?: { Nu_Codigo_Sunat_ISO?: string, No_Pais?: string } | null } | null) => {
+  const iso2 = String(c?.pais_iso2 || '').trim().toLowerCase()
+  if (iso2.length === 2) return `https://flagcdn.com/w40/${iso2}.png`
+  return isOrgAdmin.value ? flagUrlFromPais(c?.pais) : ECUADOR_FLAG_URL
+}
+
+// CBM destino: bandera del país del consolidado principal.
+const destinoCbmFlag = computed(() => flagUrlFromConsolidado(consolidadoData.value?.[0]))
 
 const cbmFlagHeader = (flagSrc: { value: string } | string) => () => h('div', { class: 'inline-flex items-center gap-1.5' }, [
   h('img', {
