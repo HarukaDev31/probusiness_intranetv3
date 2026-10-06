@@ -1,4 +1,5 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { descargarRotuladoSiAplica } from '../../utils/descargaRotulado'
 import { CotizacionProveedorService } from '../../services/cargaconsolidada/cotizacion-proveedorService'
 import type {
     CotizacionProveedor,
@@ -526,6 +527,7 @@ export const    useCotizacionProveedor = () => {
         error.value = null
         try {
             const response = await CotizacionProveedorService.sendRotulado(data)
+            descargarRotuladoSiAplica(response)
             return response
         }
         catch (error: any) {

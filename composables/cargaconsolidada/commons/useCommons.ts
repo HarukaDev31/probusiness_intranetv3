@@ -1,3 +1,4 @@
+import { descargarRotuladoSiAplica } from '../../../utils/descargaRotulado'
 import type { forceSendRequest, forceMoveRequest } from "~/services/cargaconsolidada/commons/commonsService"
 import { CommonsService } from "~/services/cargaconsolidada/commons/commonsService"
 export const useCommons = () => {
@@ -7,6 +8,7 @@ export const useCommons = () => {
     }
     const forceSendRotulado = async (data: forceSendRequest) => {
         const response = await CommonsService.forceSendRotulado(data)
+        descargarRotuladoSiAplica(response)
         return response
     }
     const forceSendCobranza = async (data: forceSendRequest) => {
