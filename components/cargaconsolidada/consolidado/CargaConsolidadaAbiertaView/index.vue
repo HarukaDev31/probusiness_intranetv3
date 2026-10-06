@@ -212,7 +212,11 @@ const ECUADOR_FLAG_URL = 'https://flagcdn.com/w40/ec.png'
 const flagUrlFromConsolidado = (c?: { pais_iso2?: string | null, pais?: { Nu_Codigo_Sunat_ISO?: string, No_Pais?: string } | null } | null) => {
   const iso2 = String(c?.pais_iso2 || '').trim().toLowerCase()
   if (iso2.length === 2) return `https://flagcdn.com/w40/${iso2}.png`
-  return isOrgAdmin.value ? flagUrlFromPais(c?.pais) : ECUADOR_FLAG_URL
+  if (isOrgAdmin.value) return flagUrlFromPais(c?.pais)
+  // Sin consolidados (tabla vacía): país de la organización del socio.
+  const user = getUserData()
+  const orgIso2 = String(user?.raw?.organizacion?.pais_iso2 || user?.organizacion?.pais_iso2 || '').trim().toLowerCase()
+  return orgIso2.length === 2 ? `https://flagcdn.com/w40/${orgIso2}.png` : ECUADOR_FLAG_URL
 }
 
 // CBM destino: bandera del país del consolidado principal.
