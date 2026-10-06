@@ -1,6 +1,7 @@
 import type { WaInboxWsMessageCreatedPayload } from '~/types/whatsapp-inbox-ws'
 import type { WaInboxMessage } from '~/types/whatsapp-inbox'
 import { hasWhatsappInboxMenuFromStorage } from '~/constants/whatsappInboxAccess'
+import { resolveWaInboxMetaPropio } from '~/constants/whatsappInboxWs'
 import { getWaInboxViewingConversationId } from '~/composables/whatsapp-inbox/waInboxRealtimeSync'
 import { isWaInboxReactionNoise } from '~/composables/whatsapp-inbox/waInboxMessageUtils'
 import {
@@ -40,6 +41,8 @@ function nombreContacto(payload: WaInboxWsMessageCreatedPayload): string {
 function debeNotificarSonido(convId: number, msg: WaInboxMessage): boolean {
   if (!import.meta.client) return false
   if (!usuarioTieneAccesoWaInbox()) return false
+  // Org sin Meta propio: sus hilos usan el número de otra org, no se avisa.
+  if (!resolveWaInboxMetaPropio()) return false
   if (msg.direction !== 'in') return false
   if (isWaInboxReactionNoise(msg)) return false
 
