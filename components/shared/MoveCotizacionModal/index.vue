@@ -51,6 +51,7 @@
 import { ref, onMounted } from 'vue'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
 import { useModal } from '~/composables/commons/useModal'
+import { cargaConParte } from '~/utils/consolidado'
 import type { MoveCotizacionModalProps } from './types'
 
 const props = withDefaults(defineProps<MoveCotizacionModalProps>(), {
@@ -103,7 +104,7 @@ const loadConsolidados = async () => {
       .filter((item: any) => !idPais || Number(item.id_pais) === idPais)
       .map((item: any) => ({
         value: item.id,
-        label: `Contenedor #${item.carga}`
+        label: `Contenedor #${cargaConParte(item)}`
       }))
   } catch (error) {
     showError('No se pudieron cargar los consolidados', 'Intenta nuevamente.')

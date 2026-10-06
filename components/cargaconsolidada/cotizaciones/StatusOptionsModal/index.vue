@@ -68,6 +68,7 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 import { useCotizacionProveedor } from '~/composables/cargaconsolidada/useCotizacionProveedor'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
 import { useModal } from '~/composables/commons/useModal'
+import { cargaConParte } from '~/utils/consolidado'
 import { useCommons } from '~/composables/cargaconsolidada/commons/useCommons'
 import { useReminderInicial } from '~/composables/cargaconsolidada/commons/useReminderInicial'
 import ReminderInicialModal from '~/components/cargaconsolidada/cotizaciones/ReminderInicialModal/index.vue'
@@ -129,14 +130,14 @@ const getContenedores = async () => {
             contenedores.value = [
                 { label: 'Todos', value: 'TODOS' ,disabled: true},
                 ...response.map((contenedor: any) => ({
-                    label: `Contenedor #${contenedor.carga}`,
+                    label: `Contenedor #${cargaConParte(contenedor)}`,
                     value: contenedor.id
                 }))
             ]
             contenedoresPago.value = [
                 { label: 'Todos', value: 'TODOS' ,disabled: true},
                 ...response.map((contenedor: any) => ({
-                label: `Contenedor pago #${contenedor.carga}`,
+                label: `Contenedor pago #${cargaConParte(contenedor)}`,
                 value: contenedor.id
             }))]
            

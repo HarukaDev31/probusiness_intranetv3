@@ -1,6 +1,17 @@
 import type { ConsolidadoItem, PagoDetalle } from '../types/pagos/consolidado-pagos'
 
 /**
+ * Carga con la parte si el consolidado está partido (19 + A → "19A"). Sin duplicar la parte
+ * cuando la carga ya la trae al final.
+ */
+export const cargaConParte = (item: { carga?: string | number | null; parte?: string | null }): string => {
+  const carga = String(item?.carga ?? '').trim()
+  const parte = String(item?.parte ?? '').trim()
+  if (!parte || carga.endsWith(parte)) return carga
+  return `${carga}${parte}`
+}
+
+/**
  * Obtiene el color del badge según el estado de pago
  */
 export const getEstadoColor = (estado: string): string => {
