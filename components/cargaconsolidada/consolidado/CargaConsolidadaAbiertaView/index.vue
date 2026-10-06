@@ -342,9 +342,10 @@ const filterConfig = computed<FilterConfig[]>(() => {
       label: 'Estado',
       key: 'estado_china',
       type: 'select',
-      options: [
-        ...CHINA_STATUS_OPTIONS,
-      ],
+      // En abiertos nunca hay COMPLETADO; el socio solo ve pendiente y recibiendo.
+      options: esRolSocio(props.role)
+        ? CHINA_STATUS_OPTIONS.filter(o => o.value !== 'COMPLETADO')
+        : [...CHINA_STATUS_OPTIONS],
       placeholder: 'Selecciona un estado',
     })
   }
