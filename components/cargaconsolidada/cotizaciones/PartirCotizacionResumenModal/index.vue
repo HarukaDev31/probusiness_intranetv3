@@ -61,6 +61,7 @@ import { useCotizacionResumen } from '~/composables/cargaconsolidada/cotizacion-
 import { useCotizacionProveedor } from '~/composables/cargaconsolidada/useCotizacionProveedor'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
 import { useModal } from '~/composables/commons/useModal'
+import { cargaConParte } from '~/utils/consolidado'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import type { PartirCotizacionResumenModalProps } from './types'
 
@@ -119,7 +120,7 @@ async function loadContenedores() {
       .filter((item: any) => !idPais || Number(item.id_pais) === idPais)
       .map((item: any) => ({
         value: Number(item.id),
-        label: `Consolidado #${item.carga}`,
+        label: `Consolidado #${cargaConParte(item)}`,
       }))
   } catch {
     showError('No se pudieron cargar los consolidados', 'Intenta nuevamente.')
