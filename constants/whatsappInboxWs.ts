@@ -20,6 +20,23 @@ export function resolveWaInboxOrganizacionId(): number {
   }
 }
 
+/** false solo si el login indicó que la org no tiene Meta propio (sesiones viejas: true). */
+export function resolveWaInboxMetaPropio(): boolean {
+  if (typeof localStorage === 'undefined') return true
+  try {
+    const raw = localStorage.getItem('auth_user')
+    if (!raw) return true
+    const user = JSON.parse(raw) as {
+      raw?: { organizacion?: { whatsapp_meta_propio?: boolean } }
+      organizacion?: { whatsapp_meta_propio?: boolean }
+    }
+    const flag = user.raw?.organizacion?.whatsapp_meta_propio ?? user.organizacion?.whatsapp_meta_propio
+    return flag !== false
+  } catch {
+    return true
+  }
+}
+
 export function resolveWaInboxWsChannel(): string {
   const orgId = resolveWaInboxOrganizacionId()
   return orgId > 0 ? waInboxWsChannel(orgId) : WA_INBOX_WS_CHANNEL
