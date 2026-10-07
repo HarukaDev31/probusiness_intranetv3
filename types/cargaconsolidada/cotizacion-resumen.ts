@@ -170,6 +170,15 @@ export interface CotizacionResumenRow {
   logistica: number
   impuesto: number
   tarifa: number
+  /** Solo formato Bolivia: fob/giro/logística en USD; impuestos/despacho/comisión Genuino en Bs. */
+  bolivia?: {
+    fob_usd: number
+    comision_giro_usd: number
+    logistica_usd: number
+    impuesto_bs: number
+    despacho_bs: number
+    comision_genuino_bs: number
+  } | null
   descuento: number
   cod_cotizacion: string | null
   cod_contract: string | null
@@ -182,6 +191,7 @@ export interface CotizacionResumenRow {
 
 export interface CotizacionResumenListResponse {
   success: boolean
+  formato?: 'default' | 'bolivia'
   data: CotizacionResumenRow[]
   message?: string
   headers?: Record<string, Header>

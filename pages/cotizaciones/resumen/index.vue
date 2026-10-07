@@ -180,6 +180,7 @@ async function loadCotizaciones(page = pagination.value.current_page) {
   })
   if (res.success) {
     cotizaciones.value = res.data
+    formato.value = res.formato === 'bolivia' ? 'bolivia' : 'default'
     headers.value = res.headers ?? {}
     if (res.pagination) {
       pagination.value = {
@@ -339,7 +340,79 @@ function handleDelete(row: CotizacionResumenRow) {
   )
 }
 
-const columns: TableColumn<CotizacionResumenRow>[] = [
+// Bolivia: sin ISD ni tarifa; columnas de la proforma (USD y Bs). El resto de países no cambia.
+const formato = ref<'default' | 'bolivia'>('default')
+
+const formatBs = (amount: number | null | undefined) =>
+  'Bs ' + new Intl.NumberFormat('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(amount) || 0)
+
+const columnasMontosDefault: TableColumn<CotizacionResumenRow>[] = [
+  {
+    accessorKey: 'fob',
+    header: 'Fob',
+    cell: ({ row }) => formatCurrency(row.original.fob || 0)
+  },
+  {
+    accessorKey: 'isd',
+    header: 'ISD',
+    cell: ({ row }) => formatCurrency(row.original.isd || 0)
+  },
+  {
+    accessorKey: 'logistica',
+    header: 'Logistica',
+    cell: ({ row }) => formatCurrency(row.original.logistica || 0)
+  },
+  {
+    accessorKey: 'impuesto',
+    header: 'Impuesto',
+    cell: ({ row }) => formatCurrency(row.original.impuesto || 0)
+  },
+  {
+    accessorKey: 'tarifa',
+    header: 'Tarifa',
+    cell: ({ row }) => formatCurrency(row.original.tarifa || 0)
+  }
+]
+
+const columnasMontosBolivia: TableColumn<CotizacionResumenRow>[] = [
+  {
+    accessorKey: 'fob',
+    header: 'Fob',
+    cell: ({ row }) => formatCurrency(row.original.bolivia?.fob_usd ?? row.original.fob ?? 0)
+  },
+  {
+    accessorKey: 'comision_giro',
+    header: 'Comisión giro / Alibaba',
+    cell: ({ row }) => formatCurrency(row.original.bolivia?.comision_giro_usd ?? 0)
+  },
+  {
+    accessorKey: 'logistica',
+    header: 'Transporte',
+    cell: ({ row }) => formatCurrency(row.original.bolivia?.logistica_usd ?? row.original.logistica ?? 0)
+  },
+  {
+    accessorKey: 'impuesto',
+    header: 'Impuestos aduana (Bs)',
+    cell: ({ row }) => formatBs(row.original.bolivia?.impuesto_bs ?? 0)
+  },
+  {
+    accessorKey: 'despacho',
+    header: 'Despacho (Bs)',
+    cell: ({ row }) => formatBs(row.original.bolivia?.despacho_bs ?? 0)
+  },
+  {
+    accessorKey: 'comision_genuino',
+    header: 'Comisión (Bs)',
+    cell: ({ row }) => formatBs(row.original.bolivia?.comision_genuino_bs ?? 0)
+  }
+]
+
+const columns = computed<TableColumn<CotizacionResumenRow>[]>(() => {
+  const montos = formato.value === 'bolivia' ? columnasMontosBolivia : columnasMontosDefault
+  return columnasBase.flatMap((col) => ((col as { accessorKey?: string }).accessorKey === 'fob' ? montos : [col]))
+})
+
+const columnasBase: TableColumn<CotizacionResumenRow>[] = [
   {
     accessorKey: 'id',
     header: 'ID',
@@ -371,30 +444,10 @@ const columns: TableColumn<CotizacionResumenRow>[] = [
     header: 'Vol',
     cell: ({ row }) => h('div', { class: 'py-2 w-10 whitespace-nowrap' }, Number(row.original.total_cbm || 0).toFixed(2))
   },
+  // Marcador: aquí se insertan las columnas de montos según el formato (ver `columns`).
   {
     accessorKey: 'fob',
-    header: 'Fob',
-    cell: ({ row }) => formatCurrency(row.original.fob || 0)
-  },
-  {
-    accessorKey: 'isd',
-    header: 'ISD',
-    cell: ({ row }) => formatCurrency(row.original.isd || 0)
-  },
-  {
-    accessorKey: 'logistica',
-    header: 'Logistica',
-    cell: ({ row }) => formatCurrency(row.original.logistica || 0)
-  },
-  {
-    accessorKey: 'impuesto',
-    header: 'Impuesto',
-    cell: ({ row }) => formatCurrency(row.original.impuesto || 0)
-  },
-  {
-    accessorKey: 'tarifa',
-    header: 'Tarifa',
-    cell: ({ row }) => formatCurrency(row.original.tarifa || 0)
+    header: 'Fob'
   },
   {
     accessorKey: 'descuento',
