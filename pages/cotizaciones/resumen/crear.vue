@@ -480,6 +480,7 @@ function canGoToStep(step: number) {
 function handleStepClick(step: number) {
   if (!canGoToStep(step)) return
   currentStep.value = step
+  if (step === 2) ajustarFilasProveedores()
 }
 
 // ─── Paso 1: documento + IA ────────────────────────────────────────────────
@@ -1041,9 +1042,20 @@ const canFinalizar = computed(() => {
   return true
 })
 
+// Paso 2: tantas filas como Qty Proveedores (las del documento primero, el resto vacías).
+// Si el documento trae más ítems que la cantidad indicada, se muestran todos.
+function ajustarFilasProveedores() {
+  if (esEdicion.value) return
+  const qty = Math.floor(Number(qtyProveedores.value) || 0)
+  while (providers.value.length < qty) {
+    providers.value.push(crearProveedor())
+  }
+}
+
 function nextStep() {
   if (!canGoNext.value || currentStep.value >= totalSteps) return
   currentStep.value += 1
+  if (currentStep.value === 2) ajustarFilasProveedores()
   maxStepReached.value = Math.max(maxStepReached.value, currentStep.value)
 }
 
