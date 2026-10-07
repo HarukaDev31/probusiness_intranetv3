@@ -282,6 +282,25 @@
           <UButton class="mt-4" color="success" size="sm" icon="i-heroicons-plus" @click="addProvider">
             Agregar Proveedor
           </UButton>
+
+          <!-- Bolivia: desglose del documento (solo USD) -->
+          <div
+            v-if="esBolivia && costosDocumento.length"
+            class="mt-8 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+          >
+            <h3 class="text-sm font-semibold mb-1">Desglose de la proforma (USD)</h3>
+            <p class="text-xs text-gray-500 mb-3">
+              Solo el valor FOB, el transporte marítimo/terrestre y los impuestos a la Aduana Nacional entran al cálculo.
+            </p>
+            <table class="w-full text-sm">
+              <tbody>
+                <tr v-for="c in costosDocumento" :key="c.id" class="border-t border-gray-100 dark:border-gray-800">
+                  <td class="py-1.5 pr-4">{{ c.concepto }}</td>
+                  <td class="py-1.5 text-right font-medium whitespace-nowrap">$ {{ Number(c.valor).toFixed(2) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <!-- Paso 3: Terminar -->
@@ -737,6 +756,7 @@ async function procesarArchivo(file: File) {
       camposEscaneados.value = {}
     }
 
+    formato.value = res.formato === 'bolivia' ? 'bolivia' : 'default'
     proveedoresExtraidos.value = res.data?.proveedores ?? []
     aplicarExtraidosAProveedores()
     if (!esEdicion.value) {
@@ -785,6 +805,8 @@ interface CostoResumen {
   id: number
   concepto: string
   valor: number
+  valorBs?: number | null
+  tasaCambio?: number | null
 }
 
 interface ProveedorResumen {
@@ -804,8 +826,8 @@ interface ProveedorResumen {
 let nextProviderId = 1
 let nextCostoId = 1
 
-function crearCosto(concepto = '', valor = 0): CostoResumen {
-  return { id: nextCostoId++, concepto, valor }
+function crearCosto(concepto = '', valor = 0, valorBs: number | null = null, tasaCambio: number | null = null): CostoResumen {
+  return { id: nextCostoId++, concepto, valor, valorBs, tasaCambio }
 }
 
 function crearProveedor(): ProveedorResumen {
@@ -825,7 +847,12 @@ function crearProveedor(): ProveedorResumen {
 function mapCostosExtraidos(extraidos?: CotizacionResumenCosto[] | null): CostoResumen[] {
   return (extraidos || [])
     .filter((c) => (c.concepto || '').trim() !== '')
-    .map((c) => crearCosto(c.concepto.trim(), Number(c.valor) || 0))
+    .map((c) => crearCosto(
+      c.concepto.trim(),
+      Number(c.valor) || 0,
+      c.valor_bs != null ? Number(c.valor_bs) : null,
+      c.tasa_cambio != null ? Number(c.tasa_cambio) : null
+    ))
 }
 
 const proveedoresExtraidos = ref<CotizacionResumenProveedorExtraido[]>([])
@@ -891,6 +918,11 @@ function quitarCostosDocumentoDuplicados() {
 }
 
 const qtyProveedores = ref<number | null>(null)
+
+// Formato del documento según el país de la organización (Bolivia: proforma USD + Bs).
+const formato = ref<'default' | 'bolivia'>('default')
+const esBolivia = computed(() => formato.value === 'bolivia')
+const costosDocumento = computed(() => providers.value.flatMap((p) => p.costos))
 
 function onQtyProveedores(v: string | number | null | undefined) {
   if (v === '' || v === null || v === undefined) {
@@ -991,6 +1023,7 @@ async function cargarEdicion(id: number) {
         size: 0
       }
     }
+    formato.value = d.formato === 'bolivia' ? 'bolivia' : 'default'
     providers.value = (d.proveedores.length ? d.proveedores : []).map((p) => ({
       id: nextProviderId++,
       idProveedor: p.id,
@@ -1090,7 +1123,12 @@ function payloadWizard() {
       incoterm: p.incoterm || undefined,
       costos: p.costos
         .filter((c) => c.concepto.trim() !== '' && Number(c.valor) > 0)
-        .map((c) => ({ concepto: c.concepto.trim(), valor: Number(c.valor) }))
+        .map((c) => ({
+          concepto: c.concepto.trim(),
+          valor: Number(c.valor),
+          ...(c.valorBs != null ? { valor_bs: c.valorBs } : {}),
+          ...(c.tasaCambio != null ? { tasa_cambio: c.tasaCambio } : {})
+        }))
     })),
     descuento: Number(descuento.value) || 0,
     qty_proveedores: Number(qtyProveedores.value) >= 1

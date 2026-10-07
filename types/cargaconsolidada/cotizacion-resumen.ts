@@ -3,6 +3,9 @@ import type { Header } from '~/types/data-table'
 export interface CotizacionResumenCosto {
   concepto: string
   valor: number | null
+  /** Formato Bolivia: valor del concepto en Bs y tasa del documento (solo se guardan; el front muestra USD). */
+  valor_bs?: number | null
+  tasa_cambio?: number | null
 }
 
 export interface CotizacionResumenClienteExtraido {
@@ -37,6 +40,8 @@ export interface CotizacionResumenArchivo {
 export interface ExtraerDocumentoResponse {
   success: boolean
   extracted_by_ai: boolean
+  /** 'bolivia' según el país de la organización; 'default' para el resto. */
+  formato?: 'default' | 'bolivia'
   message: string | null
   data: {
     cliente: CotizacionResumenClienteExtraido
@@ -76,7 +81,7 @@ export interface CrearCotizacionResumenRequest {
     unidades?: number
     incoterm?: string
     moneda?: string
-    costos?: { concepto: string; valor: number }[]
+    costos?: { concepto: string; valor: number; valor_bs?: number | null; tasa_cambio?: number | null }[]
   }[]
   qty_proveedores?: number
   descuento?: number
@@ -85,6 +90,7 @@ export interface CrearCotizacionResumenRequest {
 
 export interface CotizacionResumenDetalle {
   id: number
+  formato?: 'default' | 'bolivia'
   estado: CotizacionResumenEstado
   id_contenedor: number | null
   id_usuario: number | null
