@@ -261,7 +261,7 @@
             <div v-if="editingOrganizacion" class="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
               <p class="text-sm font-medium">Imágenes de rotulado</p>
               <p class="text-xs text-gray-500">
-                Pasos 1 y 2 van en la misma foto. El paso 3 es la etiqueta del consolidado (PDF).
+                La cabecera es la imagen que va arriba del PDF de rotulado (si no subes una se usa la de Probusiness). Se aplica al enviar y al descargar.
               </p>
               <div class="grid gap-3 sm:grid-cols-2">
                 <div v-for="slot in rotuladoSlots" :key="slot.key" class="space-y-2">
@@ -510,7 +510,7 @@ function setFlujo(key: string, on: boolean) {
 const esOrgAdminEditada = computed(() => editingOrganizacion.value?.id === 1)
 
 const rotuladoSlots = [
-  { key: 'paso1' as const, label: 'Pasos 1 y 2 (foto)' },
+  { key: 'paso1' as const, label: 'Cabecera del rotulado (PDF)' },
   { key: 'direccion' as const, label: 'Dirección almacén' },
 ]
 const imagenInput = ref<HTMLInputElement | null>(null)
