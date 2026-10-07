@@ -282,25 +282,6 @@
           <UButton class="mt-4" color="success" size="sm" icon="i-heroicons-plus" @click="addProvider">
             Agregar Proveedor
           </UButton>
-
-          <!-- Bolivia: desglose del documento (solo USD) -->
-          <div
-            v-if="esBolivia && costosDocumento.length"
-            class="mt-8 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
-          >
-            <h3 class="text-sm font-semibold mb-1">Desglose de la proforma (USD)</h3>
-            <p class="text-xs text-gray-500 mb-3">
-              Solo el valor FOB, el transporte marítimo/terrestre y los impuestos a la Aduana Nacional entran al cálculo.
-            </p>
-            <table class="w-full text-sm">
-              <tbody>
-                <tr v-for="c in costosDocumento" :key="c.id" class="border-t border-gray-100 dark:border-gray-800">
-                  <td class="py-1.5 pr-4">{{ c.concepto }}</td>
-                  <td class="py-1.5 text-right font-medium whitespace-nowrap">$ {{ Number(c.valor).toFixed(2) }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
         </div>
 
         <!-- Paso 3: Terminar -->
@@ -756,7 +737,6 @@ async function procesarArchivo(file: File) {
       camposEscaneados.value = {}
     }
 
-    formato.value = res.formato === 'bolivia' ? 'bolivia' : 'default'
     proveedoresExtraidos.value = res.data?.proveedores ?? []
     aplicarExtraidosAProveedores()
     if (!esEdicion.value) {
@@ -919,11 +899,6 @@ function quitarCostosDocumentoDuplicados() {
 
 const qtyProveedores = ref<number | null>(null)
 
-// Formato del documento según el país de la organización (Bolivia: proforma USD + Bs).
-const formato = ref<'default' | 'bolivia'>('default')
-const esBolivia = computed(() => formato.value === 'bolivia')
-const costosDocumento = computed(() => providers.value.flatMap((p) => p.costos))
-
 function onQtyProveedores(v: string | number | null | undefined) {
   if (v === '' || v === null || v === undefined) {
     qtyProveedores.value = null
@@ -1023,7 +998,6 @@ async function cargarEdicion(id: number) {
         size: 0
       }
     }
-    formato.value = d.formato === 'bolivia' ? 'bolivia' : 'default'
     providers.value = (d.proveedores.length ? d.proveedores : []).map((p) => ({
       id: nextProviderId++,
       idProveedor: p.id,
