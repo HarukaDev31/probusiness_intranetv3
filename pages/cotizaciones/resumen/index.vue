@@ -387,7 +387,7 @@ const columnasMontosBolivia: TableColumn<CotizacionResumenRow>[] = [
   },
   {
     accessorKey: 'logistica',
-    header: 'Transporte',
+    header: 'Logistica',
     cell: ({ row }) => formatCurrency(row.original.bolivia?.logistica_usd ?? row.original.logistica ?? 0)
   },
   {
