@@ -1740,11 +1740,11 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                         }
                     })
                 }
-                return h('div', { class: 'products-scroll w-44 max-w-44', style: { overflowX: 'auto', overflowY: 'hidden' } }, [
+                return h('div', { class: 'relative' }, [h('div', { class: 'products-scroll w-44 max-w-44', style: { overflowX: 'auto', overflowY: 'hidden' } }, [
                     h('span', {
                         class: 'inline-block min-w-max whitespace-nowrap px-2 py-1 text-sm text-gray-700 dark:text-gray-200'
                     }, String(value || ''))
-                ])
+                ])])
             }))
             return div
         }
@@ -2195,11 +2195,11 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                         }
                     })
                 }
-                return h('div', { class: 'products-scroll w-44 max-w-44', style: { overflowX: 'auto', overflowY: 'hidden' } }, [
+                return h('div', { class: 'relative' }, [h('div', { class: 'products-scroll w-44 max-w-44', style: { overflowX: 'auto', overflowY: 'hidden' } }, [
                     h('span', {
                         class: 'inline-block min-w-max whitespace-nowrap px-2 py-1 text-sm text-gray-700 dark:text-gray-200'
                     }, String(value || ''))
-                ])
+                ])])
             }))
             return div
         }
@@ -2581,11 +2581,11 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                         }
                     })
                 }
-                return h('div', { class: 'products-scroll w-44 max-w-44', style: { overflowX: 'auto', overflowY: 'hidden' } }, [
+                return h('div', { class: 'relative' }, [h('div', { class: 'products-scroll w-44 max-w-44', style: { overflowX: 'auto', overflowY: 'hidden' } }, [
                     h('span', {
                         class: 'inline-block min-w-max whitespace-nowrap px-2 py-1 text-sm text-gray-700 dark:text-gray-200'
                     }, String(value || ''))
-                ])
+                ])])
             }))
             return div
         }
@@ -4037,17 +4037,26 @@ onUnmounted(() => {
     background-color: #64748b;
 }
 
-/* Embarque: con más de un proveedor por cotización, una línea separa cada proveedor
-   (todas las celdas por proveedor la llevan, así las filas siguen alineadas). */
+/* Embarque: con más de un proveedor por cotización, una línea separa cada proveedor.
+   Es un pseudo-elemento en el hueco entre proveedores: no cambia el tamaño de los controles
+   y todas las columnas la dibujan a la misma altura (filas alineadas, línea continua). */
 .embarque-tabla :deep(td > div.flex.flex-col.gap-2 > *:not(:first-child)) {
-    box-sizing: content-box;
-    border-top: 1px solid #d1d5db;
-    padding-top: 6px;
+    position: relative;
 }
 
-:deep(.dark .embarque-tabla td > div.flex.flex-col.gap-2 > *:not(:first-child)),
-.dark .embarque-tabla :deep(td > div.flex.flex-col.gap-2 > *:not(:first-child)) {
-    border-top-color: #4b5563;
+.embarque-tabla :deep(td > div.flex.flex-col.gap-2 > *:not(:first-child))::before {
+    content: '';
+    position: absolute;
+    left: -0.75rem;
+    right: -0.75rem;
+    top: -4px;
+    height: 1px;
+    background-color: #d1d5db;
+    pointer-events: none;
+}
+
+.dark .embarque-tabla :deep(td > div.flex.flex-col.gap-2 > *:not(:first-child))::before {
+    background-color: #4b5563;
 }
 </style>
 
