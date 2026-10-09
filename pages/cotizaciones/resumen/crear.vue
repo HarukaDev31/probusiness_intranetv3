@@ -75,7 +75,7 @@
               <FileUploader
                 :model-files="archivo ? [archivo] : []"
                 :accepted-types="['.pdf', '.xlsx', '.xls', '.csv']"
-                custom-message="Arrastra el archivo aquí o usa «Subir archivo» (Excel o PDF, hasta 10 MB)"
+                custom-message="Arrastra el archivo aquí o haz clic para seleccionarlo (Excel o PDF, hasta 10 MB)"
                 @files-selected="onArchivoSeleccionado"
                 @file-removed="onArchivoRemovido"
               />
