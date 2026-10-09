@@ -3149,6 +3149,47 @@ const PROSPECTOS_SOCIO_HEADERS: Record<string, string> = {
     action: 'Acciones',
 }
 
+// Bolivia: sin ISD ni Tarifa; Fob, Comision, Logistica (USD) e Impuestos, Despacho, Genuino (Bs).
+const formatBsMonto = (amount: unknown) =>
+    'Bs ' + new Intl.NumberFormat('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(amount) || 0)
+
+const esFormatoBolivia = computed(() =>
+    kpiRows.value === 2 || (cotizaciones.value || []).some((c: any) => c?.bolivia)
+)
+
+const prospectosBoliviaColumns = (): TableColumn<any>[] => [
+    {
+        accessorKey: 'fob',
+        header: 'Fob',
+        cell: ({ row }: { row: any }) => formatCurrency(Number(row.original.bolivia?.fob_usd ?? row.original.fob) || 0, 'USD'),
+    },
+    {
+        accessorKey: 'comision_giro',
+        header: 'Comision',
+        cell: ({ row }: { row: any }) => formatCurrency(Number(row.original.bolivia?.comision_giro_usd) || 0, 'USD'),
+    },
+    {
+        accessorKey: 'logistica',
+        header: 'Logistica',
+        cell: ({ row }: { row: any }) => formatCurrency(Number(row.original.bolivia?.logistica_usd ?? row.original.monto) || 0, 'USD'),
+    },
+    {
+        accessorKey: 'impuestos',
+        header: 'Impuestos',
+        cell: ({ row }: { row: any }) => formatBsMonto(row.original.bolivia?.impuesto_bs),
+    },
+    {
+        accessorKey: 'despacho',
+        header: 'Despacho',
+        cell: ({ row }: { row: any }) => formatBsMonto(row.original.bolivia?.despacho_bs),
+    },
+    {
+        accessorKey: 'genuino',
+        header: 'Genuino',
+        cell: ({ row }: { row: any }) => formatBsMonto(row.original.bolivia?.comision_genuino_bs),
+    },
+]
+
 const toProspectosSocioColumns = (columns: TableColumn<any>[]) => {
     const allowed = new Set(Object.keys(PROSPECTOS_SOCIO_HEADERS))
     const mapped = columns
@@ -3229,6 +3270,14 @@ const toProspectosSocioColumns = (columns: TableColumn<any>[]) => {
                 header: PROSPECTOS_SOCIO_HEADERS[column.accessorKey] ?? column.header,
             }
         })
+
+    if (esFormatoBolivia.value) {
+        const montos = new Set(['fob', 'isd', 'logistica', 'impuestos', 'tarifa'])
+        const sinMontos = mapped.filter((column: any) => !montos.has(String(column?.accessorKey ?? '')))
+        const volumenIndex = sinMontos.findIndex((column: any) => column.accessorKey === 'volumen')
+        sinMontos.splice(volumenIndex === -1 ? sinMontos.length : volumenIndex + 1, 0, ...prospectosBoliviaColumns())
+        return sinMontos
+    }
 
     const isdColumn: TableColumn<any> = {
         accessorKey: 'isd',
