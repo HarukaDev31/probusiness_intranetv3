@@ -4,7 +4,14 @@
         <div v-if="showDropZone">
             <div
                 class="flex items-center justify-between gap-3 p-4 border-2 border-dashed rounded-lg transition-colors select-none"
-                :class="isDragOver ? 'border-primary-400 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700'"
+                :class="[
+                    isDragOver ? 'border-primary-400 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700',
+                    disabled ? '' : 'cursor-pointer hover:border-primary-300'
+                ]"
+                :role="disabled ? undefined : 'button'"
+                :tabindex="disabled ? undefined : 0"
+                @click="!disabled && handleSelectFiles()"
+                @keydown.enter.prevent="!disabled && handleSelectFiles()"
                 @dragenter.prevent="handleDragEnter"
                 @dragover.prevent="handleDragOver"
                 @dragleave.prevent="handleDragLeave"
@@ -12,7 +19,7 @@
             >
                 <div class="min-w-0 pointer-events-none">
                     <p class="text-sm font-medium" :class="isDragOver ? 'text-primary-600 dark:text-primary-400' : 'text-gray-700 dark:text-gray-300'">
-                        {{ isDragOver ? 'Suelta el archivo aquí' : (customMessage || 'Arrastra un archivo aquí o haz clic en «Subir»') }}
+                        {{ isDragOver ? 'Suelta el archivo aquí' : (customMessage || 'Arrastra un archivo aquí o haz clic para seleccionarlo') }}
                     </p>
                     <p class="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5" :title="acceptedTypesText">{{ acceptedTypesText }}</p>
                 </div>
