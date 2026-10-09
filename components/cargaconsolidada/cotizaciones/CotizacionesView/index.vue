@@ -15,7 +15,7 @@
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
                     <slot v-if="scope" name="tabs" />
-                    <SectionHeader v-if="!scope" :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
+                    <SectionHeader v-if="!scope" :title="`Contenedor #${carga}`" :headers="headersCotizaciones" :rows="kpiRows"
                         :loading="loadingCotizaciones || loadingHeaders" />
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <div class="flex flex-wrap items-center gap-3 min-w-0">
@@ -73,7 +73,7 @@
                     <SectionHeader
                         v-else
                         :title="`Contenedor #${carga}`"
-                        :headers="headersCotizaciones"
+                        :headers="headersCotizaciones" :rows="kpiRows"
                         :loading="loading || loadingHeaders"
                     />
                     <div class="flex items-center gap-4">
@@ -3647,6 +3647,9 @@ const getEmbarqueSocioColumns = (): TableColumn<any>[] => {
         },
     ]
 }
+
+// Bolivia trae 10 KPI: se reparten en dos filas (mitad arriba, mitad abajo) en vez de una sola fila estirada.
+const kpiRows = computed<1 | 2>(() => (headersCotizaciones.value || []).some((h: any) => h?.label === 'Genuino') ? 2 : 1)
 
 const getEmbarqueColumns = () => {
     if (isOrgNoAdmin.value) return getEmbarqueSocioColumns()
