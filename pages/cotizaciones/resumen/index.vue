@@ -382,7 +382,7 @@ const columnasMontosBolivia: TableColumn<CotizacionResumenRow>[] = [
   },
   {
     accessorKey: 'comision_giro',
-    header: 'Comisión giro / Alibaba',
+    header: 'Comision',
     cell: ({ row }) => formatCurrency(row.original.bolivia?.comision_giro_usd ?? 0)
   },
   {
@@ -392,17 +392,17 @@ const columnasMontosBolivia: TableColumn<CotizacionResumenRow>[] = [
   },
   {
     accessorKey: 'impuesto',
-    header: 'Impuestos aduana (Bs)',
+    header: 'Impuestos',
     cell: ({ row }) => formatBs(row.original.bolivia?.impuesto_bs ?? 0)
   },
   {
     accessorKey: 'despacho',
-    header: 'Despacho (Bs)',
+    header: 'Despacho',
     cell: ({ row }) => formatBs(row.original.bolivia?.despacho_bs ?? 0)
   },
   {
     accessorKey: 'comision_genuino',
-    header: 'Comisión (Bs)',
+    header: 'Genuino',
     cell: ({ row }) => formatBs(row.original.bolivia?.comision_genuino_bs ?? 0)
   }
 ]
