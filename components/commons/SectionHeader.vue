@@ -35,7 +35,8 @@
                 <div
                     ref="scrollerRef"
                     class="kpi-track"
-                    :class="{ 'kpi-track--grid': grid }"
+                    :class="{ 'kpi-track--grid': grid, 'kpi-track--two-rows': twoRows }"
+                    :style="twoRows ? { gridTemplateColumns: `repeat(${Math.ceil(headers.length / 2)}, minmax(0, 1fr))` } : undefined"
                     @scroll="updateScrollState"
                 >
                     <article
@@ -142,7 +143,7 @@
 </template>
 <script setup lang="ts">
 import type { Header, HeaderCountryRow } from '~/types/data-table'
-import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useModal } from '~/composables/commons/useModal'
 
 const props = withDefaults(defineProps<{
@@ -155,8 +156,11 @@ const props = withDefaults(defineProps<{
     breakdownCols?: 1 | 2 | 3
     /** Cards en grilla que ocupa todo el ancho (auto-fit, mín. 220px) en vez de carrusel */
     grid?: boolean
+    /** 2 = reparte los KPI en dos filas (mitad arriba, mitad abajo) en vez de una sola fila con scroll */
+    rows?: 1 | 2
 }>(), {
     grid: false,
+    rows: 1,
     title: null,
     loading: false,
     skeletonCount: 8,
@@ -169,6 +173,7 @@ const emit = defineEmits<{
     'click-header': [header: Header]
 }>()
 
+const twoRows = computed(() => props.rows === 2 && props.headers.length > 1)
 const scrollerRef = ref<HTMLElement | null>(null)
 const canScrollLeft = ref(false)
 const canScrollRight = ref(false)
@@ -289,8 +294,14 @@ onUnmounted(() => {
     overflow: visible;
 }
 
-.kpi-track--grid .kpi-card {
+.kpi-track--grid .kpi-card,
+.kpi-track--two-rows .kpi-card {
     min-width: 0;
+}
+
+.kpi-track--two-rows {
+    display: grid;
+    overflow: visible;
 }
 
 .kpi-card--comfortable {
