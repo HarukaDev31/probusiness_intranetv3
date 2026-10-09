@@ -206,21 +206,24 @@
               </UButton>
             </div>
 
-            <div class="flex items-center justify-between py-4">
-              <div v-if="!collapsed" class="flex items-center gap-3">
-                <UIcon name="i-heroicons-moon" class="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                <div class="text-sm text-gray-700 dark:text-gray-300">{{ uiLabels.darkMode }}</div>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" class="sr-only peer" :checked="isDark" @change="toggleDarkMode" />
-                <div class="w-9 h-5 bg-gray-200 rounded-full peer-checked:bg-primary-600 transition-colors"></div>
-                <div
-                  class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transform peer-checked:translate-x-4 transition-transform" />
-              </label>
-            </div>
-            
           </div>
           
+        </div>
+
+        <!-- Tema oscuro: visible para todos los roles (Preferencias solo lo ven algunos) -->
+        <div class="px-2" :class="showPreferences ? '' : 'border-t border-gray-100 dark:border-gray-700'">
+          <div class="flex items-center justify-between py-4">
+            <div v-if="!collapsed" class="flex items-center gap-3">
+              <UIcon name="i-heroicons-moon" class="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <div class="text-sm text-gray-700 dark:text-gray-300">{{ uiLabels.darkMode }}</div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" class="sr-only peer" :checked="isDark" @change="toggleDarkMode" />
+              <div class="w-9 h-5 bg-gray-200 rounded-full peer-checked:bg-primary-600 transition-colors"></div>
+              <div
+                class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transform peer-checked:translate-x-4 transition-transform" />
+            </label>
+          </div>
         </div>
       </div>
     </nav>

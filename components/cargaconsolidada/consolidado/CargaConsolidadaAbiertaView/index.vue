@@ -21,16 +21,6 @@
       </UButton>
     </div>
 
-    <!-- Almacén: interruptor de tema oscuro -->
-    <div v-if="isAlmacen" class="mb-3 flex justify-end">
-      <USwitch
-        v-model="isDarkMode"
-        label="Tema oscuro"
-        unchecked-icon="i-heroicons-sun"
-        checked-icon="i-heroicons-moon"
-      />
-    </div>
-
     <div v-if="isDesktop || role === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(role) || role === ROLES.FINANZAS">
       <DataTable
         title="Carga Consolidada Abierta"
@@ -175,11 +165,6 @@ const { showSuccess, showConfirmation, showError } = useModal()
 
 const isCoordinacion = computed(() => props.role === ROLES.COORDINACION)
 const isAlmacen = computed(() => props.role === ROLES.CONTENEDOR_ALMACEN)
-const colorMode = useColorMode()
-const isDarkMode = computed({
-  get: () => colorMode.value === 'dark',
-  set: (value: boolean) => { colorMode.preference = value ? 'dark' : 'light' },
-})
 const isFinanzas = computed(() => props.role === ROLES.FINANZAS)
 // Socio (org ≠ 1) gestiona sus consolidados igual que Coordinación: crear, editar, partir y eliminar.
 const puedeGestionarConsolidado = computed(() => isCoordinacion.value || esRolSocio(props.role))
