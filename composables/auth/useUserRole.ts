@@ -18,6 +18,11 @@ interface UserCompany {
 interface UserOrganization {
   id: number
   nombre: string
+  phone_code?: string | null
+  /** ISO2 del país de la organización (pais_flags), para la bandera por defecto. */
+  pais_iso2?: string | null
+  /** false si la org no tiene Meta propio (el inbox no avisa). */
+  whatsapp_meta_propio?: boolean
 }
 
 /** Org/empresa reales del login (`raw.organizacion.id` / `raw.empresa.id`). */

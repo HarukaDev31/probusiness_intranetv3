@@ -21,6 +21,16 @@
       </UButton>
     </div>
 
+    <!-- Almacén: interruptor de tema oscuro -->
+    <div v-if="isAlmacen" class="mb-3 flex justify-end">
+      <USwitch
+        v-model="isDarkMode"
+        label="Tema oscuro"
+        unchecked-icon="i-heroicons-sun"
+        checked-icon="i-heroicons-moon"
+      />
+    </div>
+
     <div v-if="isDesktop || role === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(role) || role === ROLES.FINANZAS">
       <DataTable
         title="Carga Consolidada Abierta"
@@ -98,7 +108,8 @@
               </div>
               <div class="mt-2 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-300">
                 <div class="flex items-center gap-2">
-                  <img :src="flagUrlFromConsolidado(row)" alt="" class="w-4 h-2.5 object-contain">
+                  <img v-if="!isAlmacen" :src="flagUrlFromConsolidado(row)" alt="" class="w-4 h-2.5 object-contain">
+                  <span v-else class="font-semibold">LATAM CBM</span>
                   <span class="whitespace-nowrap">{{ safeCbm(row, 'cbm_total_peru') }}</span>
                 </div>
                 <div class="flex items-center gap-2">
@@ -164,6 +175,11 @@ const { showSuccess, showConfirmation, showError } = useModal()
 
 const isCoordinacion = computed(() => props.role === ROLES.COORDINACION)
 const isAlmacen = computed(() => props.role === ROLES.CONTENEDOR_ALMACEN)
+const colorMode = useColorMode()
+const isDarkMode = computed({
+  get: () => colorMode.value === 'dark',
+  set: (value: boolean) => { colorMode.preference = value ? 'dark' : 'light' },
+})
 const isFinanzas = computed(() => props.role === ROLES.FINANZAS)
 // Socio (org ≠ 1) gestiona sus consolidados igual que Coordinación: crear, editar, partir y eliminar.
 const puedeGestionarConsolidado = computed(() => isCoordinacion.value || esRolSocio(props.role))
@@ -650,9 +666,13 @@ const getColumns = () => {
       result = finanzasColumns
       break
     case ROLES.CONTENEDOR_ALMACEN:
-      result = columns.map((col) => (
-        (col as { accessorKey?: string }).accessorKey === 'limite_cbm_imo' ? cbmImoColumn : col
-      ))
+      result = columns.map((col) => {
+        const key = (col as { accessorKey?: string }).accessorKey
+        if (key === 'limite_cbm_imo') return cbmImoColumn
+        // Almacén: CBM de destino sin bandera, como "LATAM CBM".
+        if (key === 'cbm_total_peru') return { ...col, header: 'LATAM CBM' }
+        return col
+      })
       break
     default:
       result = columns
