@@ -51,7 +51,7 @@
                     label="Crear Prospecto" @click="handleAddProspecto" />
             </template>
         </DataTable>
-        <DataTable v-if="mountedTabs.embarque" v-show="tab === 'embarque'" title="" icon="" :data="cotizacionProveedor" :show-pagination="false"
+        <DataTable v-if="mountedTabs.embarque" v-show="tab === 'embarque'" class="embarque-tabla" title="" icon="" :data="cotizacionProveedor" :show-pagination="false"
             :columns="getEmbarqueColumns()" :loading="tabSwitching || loading || loadingHeaders" :current-page="currentPage" :total-pages="totalPages"
             :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
             :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()" :show-export="false"
@@ -4035,6 +4035,19 @@ onUnmounted(() => {
 
 :deep(.dark .products-scroll:hover::-webkit-scrollbar-thumb) {
     background-color: #64748b;
+}
+
+/* Embarque: con más de un proveedor por cotización, una línea separa cada proveedor
+   (todas las celdas por proveedor la llevan, así las filas siguen alineadas). */
+.embarque-tabla :deep(td > div.flex.flex-col.gap-2 > *:not(:first-child)) {
+    box-sizing: content-box;
+    border-top: 1px solid #d1d5db;
+    padding-top: 6px;
+}
+
+:deep(.dark .embarque-tabla td > div.flex.flex-col.gap-2 > *:not(:first-child)),
+.dark .embarque-tabla :deep(td > div.flex.flex-col.gap-2 > *:not(:first-child)) {
+    border-top-color: #4b5563;
 }
 </style>
 
