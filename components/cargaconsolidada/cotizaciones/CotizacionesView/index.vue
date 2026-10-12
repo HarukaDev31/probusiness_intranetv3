@@ -766,6 +766,23 @@ const filterConfigProspectosSocio = [
         type: 'date',
         placeholder: 'Selecciona una fecha',
         options: []
+    },
+    {
+        key: 'estado_china',
+        label: 'Estado Proveedor',
+        type: 'select',
+        placeholder: 'Seleccionar estado',
+        options: [
+            { label: 'Todos', value: 'todos', inrow: false },
+            { label: 'WAIT', value: 'WAIT', inrow: true },
+            { label: 'NC', value: 'NC', inrow: true },
+            { label: 'NP', value: 'NP', inrow: true },
+            { label: 'C', value: 'C', inrow: true },
+            { label: 'R', value: 'R', inrow: true },
+            { label: 'INSPECTION', value: 'INSPECTION', inrow: true },
+            { label: 'LOADED', value: 'LOADED', inrow: true },
+            { label: 'NO LOADED', value: 'NO LOADED', inrow: true }
+        ]
     }
 ]
 const filterConfigProspectosSocioConEstado = [
@@ -4037,26 +4054,5 @@ onUnmounted(() => {
     background-color: #64748b;
 }
 
-/* Embarque: con más de un proveedor por cotización, una línea separa cada proveedor.
-   Es un pseudo-elemento en el hueco entre proveedores: no cambia el tamaño de los controles
-   y todas las columnas la dibujan a la misma altura (filas alineadas, línea continua). */
-.embarque-tabla :deep(td > div.flex.flex-col.gap-2 > *:not(:first-child)) {
-    position: relative;
-}
-
-.embarque-tabla :deep(td > div.flex.flex-col.gap-2 > *:not(:first-child))::before {
-    content: '';
-    position: absolute;
-    left: -0.75rem;
-    right: -0.75rem;
-    top: -4px;
-    height: 1px;
-    background-color: #d1d5db;
-    pointer-events: none;
-}
-
-.dark .embarque-tabla :deep(td > div.flex.flex-col.gap-2 > *:not(:first-child))::before {
-    background-color: #4b5563;
-}
 </style>
 
