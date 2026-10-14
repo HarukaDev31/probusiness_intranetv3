@@ -1,6 +1,6 @@
 <template>
     <div class="">
-        <DataTable v-if="mountedTabs.prospectos" v-show="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()"
+        <DataTable v-if="mountedTabs.prospectos" v-show="tab === 'prospectos'" class="inputs-deshabilitados" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()"
             :show-pagination="true" :loading="tabSwitching || loadingCotizaciones" :current-page="currentPageCotizaciones"
             :total-pages="totalPagesCotizaciones" :total-records="totalRecordsCotizaciones"
             :items-per-page="itemsPerPageCotizaciones" :search-query-value="searchCotizaciones"
@@ -51,7 +51,7 @@
                     label="Crear Prospecto" @click="handleAddProspecto" />
             </template>
         </DataTable>
-        <DataTable v-if="mountedTabs.embarque" v-show="tab === 'embarque'" class="embarque-tabla" title="" icon="" :data="cotizacionProveedor" :show-pagination="false"
+        <DataTable v-if="mountedTabs.embarque" v-show="tab === 'embarque'" class="embarque-tabla inputs-deshabilitados" title="" icon="" :data="cotizacionProveedor" :show-pagination="false"
             :columns="getEmbarqueColumns()" :loading="tabSwitching || loading || loadingHeaders" :current-page="currentPage" :total-pages="totalPages"
             :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
             :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()" :show-export="false"
@@ -120,7 +120,7 @@
                     label="Descargar Embarque" @click="handleDownloadEmbarque" class="py-3 hidden md:flex" />
             </template>
         </DataTable>
-        <DataTable v-if="mountedTabs.pagos" v-show="tab === 'pagos'" title="" icon="" :data="cotizacionPagos" :columns="getPagosColumns()"
+        <DataTable v-if="mountedTabs.pagos" v-show="tab === 'pagos'" class="inputs-deshabilitados" title="" icon="" :data="cotizacionPagos" :columns="getPagosColumns()"
             :show-pagination="false" :loading="tabSwitching || loadingPagos || loadingHeaders" :current-page="currentPagePagos"
             :total-pages="totalPagesPagos" :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
             :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="(currentRole === ROLES.CONTABILIDAD || currentRole === ROLES.ADMINISTRACION)"
@@ -4048,14 +4048,14 @@ onUnmounted(() => {
 }
 
 
-/* Embarque: los inputs deshabilitados (solo lectura) se distinguen de los editables. */
-.embarque-tabla :deep(input:disabled) {
+/* Prospectos, Embarque y Pagos (todos los roles): los inputs deshabilitados (solo lectura) se distinguen de los editables. */
+.inputs-deshabilitados :deep(input:disabled) {
     background-color: #f3f4f6;
     color: #6b7280;
     cursor: not-allowed;
 }
 
-.dark .embarque-tabla :deep(input:disabled) {
+.dark .inputs-deshabilitados :deep(input:disabled) {
     background-color: #1f2937;
     color: #9ca3af;
 }
