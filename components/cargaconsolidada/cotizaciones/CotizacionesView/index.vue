@@ -2592,7 +2592,6 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                     return h(UInput as any, {
                         modelValue: value,
                         class: 'w-full w-40',
-                        variant: 'none',
                         'onUpdate:modelValue': (newValue: any) => {
                             proveedor.products = newValue
                         }
@@ -2618,7 +2617,6 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.qty_box,
                     class: 'w-full w-10',
-                    variant: 'none',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.qty_box = value
@@ -2639,7 +2637,6 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: cbmTotalConImo(proveedor),
                     class: 'w-full',
-                    variant: 'none',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total = value
@@ -2660,7 +2657,6 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.peso,
                     class: 'w-full',
-                    variant: 'none',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.peso = value
@@ -2682,7 +2678,6 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.supplier,
                     class: 'w-full',
-                    variant: 'none',
                     disabled: (currentRole.value !== ROLES.COORDINACION && !roleEsComoJefeImportacion(currentRole.value)) && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION) && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
                     'onUpdate:modelValue': (value: string) => {
                         proveedor.supplier = value
@@ -2703,7 +2698,6 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.code_supplier,
                     class: 'w-full',
-                    variant: 'none',
                     disabled: (currentRole.value !== ROLES.COORDINACION && !roleEsComoJefeImportacion(currentRole.value)) && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.code_supplier = value
@@ -2724,7 +2718,6 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.supplier_phone,
                     class: 'w-full',
-                    variant: 'none',
                     disabled: (currentRole.value !== ROLES.COORDINACION && !roleEsComoJefeImportacion(currentRole.value)) && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION) && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier_phone = value
