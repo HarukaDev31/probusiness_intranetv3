@@ -1,6 +1,7 @@
 <template>
   <div>
     <DataTable
+      class="customers-tabla"
       title="Clientes"
       icon=""
       :data="customers"
@@ -354,3 +355,38 @@ onMounted(async () => {
   await getCustomers()
 })
 </script>
+
+<style scoped>
+/* Con más de un proveedor por cliente, una línea separa cada proveedor (pseudo-elemento en el hueco
+   entre proveedores: no cambia el tamaño de los controles y todas las columnas la dibujan a la misma altura). */
+.customers-tabla :deep(td > div.flex.flex-col.gap-2 > *:not(:first-child)) {
+  position: relative;
+}
+
+.customers-tabla :deep(td > div.flex.flex-col.gap-2 > *:not(:first-child))::before {
+  content: '';
+  position: absolute;
+  left: -0.75rem;
+  right: -0.75rem;
+  top: -4px;
+  height: 1px;
+  background-color: #d1d5db;
+  pointer-events: none;
+}
+
+.dark .customers-tabla :deep(td > div.flex.flex-col.gap-2 > *:not(:first-child))::before {
+  background-color: #4b5563;
+}
+
+/* Inputs deshabilitados (solo lectura) se distinguen de los editables. */
+.customers-tabla :deep(input:disabled) {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.dark .customers-tabla :deep(input:disabled) {
+  background-color: #1f2937;
+  color: #9ca3af;
+}
+</style>
