@@ -4047,5 +4047,17 @@ onUnmounted(() => {
     background-color: #64748b;
 }
 
+
+/* Embarque: los inputs deshabilitados (solo lectura) se distinguen de los editables. */
+.embarque-tabla :deep(input:disabled) {
+    background-color: #f3f4f6;
+    color: #6b7280;
+    cursor: not-allowed;
+}
+
+.dark .embarque-tabla :deep(input:disabled) {
+    background-color: #1f2937;
+    color: #9ca3af;
+}
 </style>
 
