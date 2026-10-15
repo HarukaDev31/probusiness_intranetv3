@@ -1,31 +1,75 @@
 import { ref } from 'vue'
 import { WhatsappInboxConfigService } from '~/services/whatsappInbox/whatsappInboxConfigService'
-import type { WaInboxOrgConfig, WaInboxOrgConfigPayload } from '~/types/whatsapp-inbox'
+import type { WaInboxConfigIndex, WaInboxLinea, WaInboxLineaPayload, WaInboxRoleOption } from '~/types/whatsapp-inbox'
 
-function emptyForm(): WaInboxOrgConfigPayload {
+export interface WaInboxLineaForm {
+  id: number | null
+  nombre: string
+  is_default: boolean
+  enabled: boolean
+  phone_number_id: string
+  display_number: string
+  waba_id: string
+  graph_api_version: string
+  default_language: string
+  roles: string[]
+  access_token: string
+  app_secret: string
+  webhook_verify_token: string
+  access_token_set: boolean
+  app_secret_set: boolean
+  webhook_verify_token_set: boolean
+}
+
+const ROL_COORDINACION = 'Coordinación'
+
+function lineaVacia(): WaInboxLineaForm {
   return {
+    id: null,
+    nombre: '',
+    is_default: false,
     enabled: false,
     phone_number_id: '',
-    waba_id: '',
     display_number: '',
+    waba_id: '',
     graph_api_version: 'v19.0',
     default_language: 'es_PE',
-    webhook_verify_token: '',
+    roles: [ROL_COORDINACION],
     access_token: '',
     app_secret: '',
-    legacy_fallback: true,
-    preview_from_template: true,
-    session_when_window_open: true,
+    webhook_verify_token: '',
+    access_token_set: false,
+    app_secret_set: false,
+    webhook_verify_token_set: false,
+  }
+}
+
+function desdeLinea(linea: WaInboxLinea): WaInboxLineaForm {
+  return {
+    id: linea.id,
+    nombre: linea.nombre || '',
+    is_default: linea.is_default,
+    enabled: linea.enabled,
+    phone_number_id: linea.phone_number_id || '',
+    display_number: linea.display_number || '',
+    waba_id: linea.waba_id || '',
+    graph_api_version: linea.graph_api_version || 'v19.0',
+    default_language: linea.default_language || 'es_PE',
+    roles: linea.roles?.length ? [...linea.roles] : [],
+    access_token: '',
+    app_secret: '',
+    webhook_verify_token: '',
+    access_token_set: linea.access_token_set,
+    app_secret_set: linea.app_secret_set,
+    webhook_verify_token_set: linea.webhook_verify_token_set,
   }
 }
 
 export function useWhatsappInboxConfig() {
   const loading = ref(false)
-  const config = ref<WaInboxOrgConfig | null>(null)
-  const form = ref<WaInboxOrgConfigPayload>(emptyForm())
-  const tokenSet = ref(false)
-  const secretSet = ref(false)
-  const verifyTokenSet = ref(false)
+  const organizacionNombre = ref('')
+  const roles = ref<WaInboxRoleOption[]>([])
+  const lineas = ref<WaInboxLineaForm[]>([])
 
   async function load() {
     loading.value = true
@@ -34,47 +78,49 @@ export function useWhatsappInboxConfig() {
       if (!res.success || !res.data) {
         throw new Error(res.message || 'No se pudo cargar la configuración')
       }
-      applyConfig(res.data)
+      applyIndex(res.data)
       return { ok: true as const }
     } finally {
       loading.value = false
     }
   }
 
-  async function save() {
-    const payload: WaInboxOrgConfigPayload = { ...form.value }
-    if (!payload.access_token?.trim()) delete payload.access_token
-    if (!payload.app_secret?.trim()) delete payload.app_secret
-    if (!payload.webhook_verify_token?.trim()) delete payload.webhook_verify_token
+  function applyIndex(data: WaInboxConfigIndex, conservarBorrador = false) {
+    organizacionNombre.value = data.organizacion_nombre || ''
+    roles.value = data.roles || []
+    const guardadas = (data.lineas || []).map(desdeLinea)
+    const borrador = conservarBorrador ? lineas.value.find((l) => l.id == null) : undefined
+    lineas.value = borrador ? [...guardadas, borrador] : guardadas
+  }
 
-    const res = await WhatsappInboxConfigService.saveConfig(payload)
+  function agregarLinea() {
+    if (lineas.value.some((l) => l.id == null)) return
+    lineas.value = [...lineas.value, lineaVacia()]
+  }
+
+  async function saveLinea(form: WaInboxLineaForm) {
+    const payload: WaInboxLineaPayload = {
+      nombre: form.nombre.trim(),
+      is_default: form.is_default,
+      enabled: form.enabled,
+      phone_number_id: form.phone_number_id.trim(),
+      waba_id: form.waba_id.trim(),
+      display_number: form.display_number.trim(),
+      graph_api_version: form.graph_api_version.trim() || 'v19.0',
+      default_language: form.default_language.trim() || 'es_PE',
+      roles: [...form.roles],
+    }
+    if (form.access_token.trim()) payload.access_token = form.access_token.trim()
+    if (form.app_secret.trim()) payload.app_secret = form.app_secret.trim()
+    if (form.webhook_verify_token.trim()) payload.webhook_verify_token = form.webhook_verify_token.trim()
+
+    const res = await WhatsappInboxConfigService.saveLinea(form.id, payload)
     if (!res.success || !res.data) {
       throw new Error(res.message || 'No se pudo guardar')
     }
-    applyConfig(res.data)
+    applyIndex(res.data, form.id != null)
     return { ok: true as const }
   }
 
-  function applyConfig(data: WaInboxOrgConfig) {
-    config.value = data
-    tokenSet.value = data.access_token_set
-    secretSet.value = data.app_secret_set
-    verifyTokenSet.value = data.webhook_verify_token_set
-    form.value = {
-      enabled: data.enabled,
-      phone_number_id: data.phone_number_id || '',
-      waba_id: data.waba_id || '',
-      display_number: data.display_number || '',
-      graph_api_version: data.graph_api_version || 'v19.0',
-      default_language: data.default_language || 'es_PE',
-      webhook_verify_token: '',
-      access_token: '',
-      app_secret: '',
-      legacy_fallback: data.legacy_fallback,
-      preview_from_template: data.preview_from_template,
-      session_when_window_open: data.session_when_window_open,
-    }
-  }
-
-  return { loading, config, form, tokenSet, secretSet, verifyTokenSet, load, save }
+  return { loading, organizacionNombre, roles, lineas, load, agregarLinea, saveLinea }
 }
