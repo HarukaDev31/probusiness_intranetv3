@@ -80,7 +80,7 @@
           />
 
           <UButton
-            v-if="isJefeImportaciones"
+            v-if="canExportProgress"
             icon="i-heroicons-arrow-down-tray"
             label="Exportar Excel"
             color="success"
@@ -172,7 +172,6 @@ import { computed, onMounted, ref, shallowRef } from 'vue'
 import { useCalendarStore } from '~/composables/useCalendarStore'
 import { useCalendarListFilters } from '~/composables/calendar/useCalendarListFilters'
 import { useModal } from '~/composables/commons/useModal'
-import { CalendarService } from '~/services/calendar/calendarService'
 import type {
   CalendarEvent,
   CalendarEventCharge,
@@ -191,6 +190,8 @@ import type { NewSubtask } from '~/components/calendar/CreateSubtasksModal.vue'
 import ProgressStatsBar from '~/components/calendar/progreso/ProgressStatsBar.vue'
 import ProgressActivityRow from '~/components/calendar/progreso/ProgressActivityRow.vue'
 import ActivityNotesModal from '~/components/calendar/progreso/ActivityNotesModal.vue'
+import { isCoord2DocsEmail } from '~/components/cargaconsolidada/clientes/ClientesView/constants'
+import { useUserRole } from '~/composables/auth/useUserRole'
 
 const {
   visibleActivities,
@@ -206,6 +207,7 @@ const {
   currentUserId,
   currentRoleGroupId,
   getEvents,
+  exportProgress,
   updateEventStatus,
   updateChargeStatus,
   updateEventPriority,
@@ -216,8 +218,13 @@ const {
 } = useCalendarStore()
 
 const { showSuccess, showError } = useModal()
+const { getUserData, fetchCurrentUser } = useUserRole()
+fetchCurrentUser()
 const route = useRoute()
 const router = useRouter()
+
+/** Jefe del grupo y coordinación 2. Coordinación 2 descarga el equipo completo. */
+const canExportProgress = computed(() => isJefeImportaciones.value || isCoord2DocsEmail(getUserData()))
 
 const { startDate, endDate, responsableIds, contenedorIds, page, perPage, buildFilters } = useCalendarListFilters(25)
 
@@ -269,14 +276,14 @@ const goToPage = (p: number) => {
 }
 
 // ============================================
-// EXPORTAR (jefe del grupo)
+// EXPORTAR (jefe del grupo y coordinación 2)
 // ============================================
 
 const exporting = ref(false)
 
 /** Descarga todas las filas con los filtros activos; el Excel lo arma el backend. */
 const exportExcel = async () => {
-  if (exporting.value) return
+  if (exporting.value || !canExportProgress.value) return
   exporting.value = true
   try {
     const filters: CalendarFilters = { ...buildFilters(usaConsolidado.value), has_charges: 1, order_desc: 1 }
@@ -284,8 +291,10 @@ const exportExcel = async () => {
     if (priority.value !== null) filters.priority = priority.value
     if (eventId.value !== null) filters.event_id = eventId.value
     if (currentRoleGroupId.value != null) filters.role_group_id = currentRoleGroupId.value
+    // Coordinación 2 entra con el filtro "Yo"; el Excel debe traer el equipo completo, igual que el jefe.
+    if (!isJefeImportaciones.value) delete filters.responsable_ids
 
-    const blob = await CalendarService.exportProgress(filters)
+    const blob = await exportProgress(filters)
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url

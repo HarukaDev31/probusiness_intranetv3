@@ -124,7 +124,7 @@ export class CalendarService extends BaseService {
     return this.apiCall<CalendarEventsResponse>(`${this.baseUrl}/events${qs}`, { method: 'GET' })
   }
 
-  /** Excel de la tabla de progreso con los mismos filtros (sin paginar). Solo jefe del grupo. */
+  /** Excel de la tabla de progreso con los mismos filtros (sin paginar). Jefe del grupo y coordinación 2. */
   static async exportProgress(filters: CalendarFilters): Promise<Blob> {
     const { page: _page, per_page: _perPage, ...rest } = filters
     const qs = buildQueryString({ ...rest })

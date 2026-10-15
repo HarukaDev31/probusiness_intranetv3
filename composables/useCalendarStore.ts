@@ -424,6 +424,9 @@ export const useCalendarStore = () => {
   // EVENTOS
   // ============================================
 
+  /** Excel de la tabla de progreso (sin paginar). */
+  const exportProgress = (filters: CalendarFilters): Promise<Blob> => CalendarService.exportProgress(filters)
+
   /**
    * Carga eventos con los filtros del store + los recibidos.
    * Si la consulta es la misma y está fresca, no vuelve a pedirla (salvo force).
@@ -762,6 +765,7 @@ export const useCalendarStore = () => {
 
     // Eventos
     getEvents,
+    exportProgress,
     createActivity,
     updateActivity,
     deleteActivity,
