@@ -16,6 +16,49 @@ export interface WaInboxSession {
   phone_code?: string | null
 }
 
+export interface WaInboxRoleOption {
+  label: string
+  value: string
+}
+
+export interface WaInboxLinea {
+  id: number
+  nombre: string
+  is_default: boolean
+  enabled: boolean
+  phone_number_id: string
+  waba_id: string
+  display_number: string
+  graph_api_version: string
+  default_language: string
+  roles: string[]
+  access_token_set: boolean
+  app_secret_set: boolean
+  webhook_verify_token_set: boolean
+}
+
+export interface WaInboxLineaPayload {
+  nombre: string
+  is_default: boolean
+  enabled: boolean
+  phone_number_id: string
+  waba_id: string
+  display_number: string
+  graph_api_version: string
+  default_language: string
+  roles: string[]
+  access_token?: string
+  app_secret?: string
+  webhook_verify_token?: string
+}
+
+export interface WaInboxConfigIndex {
+  organizacion_id: number
+  organizacion_nombre: string
+  roles: WaInboxRoleOption[]
+  lineas: WaInboxLinea[]
+}
+
 export interface WaInboxOrgConfig {
   organizacion_id: number
   organizacion_nombre: string
