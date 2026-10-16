@@ -64,12 +64,42 @@ const WA_INBOX_BASE_PATH = '/coordinacion/whatsapp-inbox'
 
 /** Evita peticiones duplicadas en paralelo (varios watchers / init / select). */
 const inflight = {
+  owner: '' as string,
   session: null as Promise<void> | null,
   templates: null as Promise<void> | null,
   assignable: null as Promise<void> | null,
   conversationsKey: '' as string,
   conversations: null as Promise<void> | null,
   messages: new Map<number, Promise<void>>()
+}
+
+function resetInflight() {
+  inflight.owner = ''
+  inflight.session = null
+  inflight.templates = null
+  inflight.assignable = null
+  inflight.conversationsKey = ''
+  inflight.conversations = null
+  inflight.messages.clear()
+}
+
+function claimInflight(owner: string) {
+  if (inflight.owner === owner) return
+  resetInflight()
+  inflight.owner = owner
+}
+
+if (import.meta.client) {
+  const g = globalThis as typeof globalThis & { __waInboxAuthCacheBound?: boolean }
+  if (!g.__waInboxAuthCacheBound) {
+    g.__waInboxAuthCacheBound = true
+    const dropInboxCache = () => {
+      resetInflight()
+      useWaInboxCache().invalidateAll()
+    }
+    window.addEventListener('auth-login', dropInboxCache)
+    window.addEventListener('auth-logout', dropInboxCache)
+  }
 }
 
 /** PATCH /read agrupado; no dispara recargas de UI. */
@@ -103,6 +133,7 @@ export function useWhatsappInbox() {
 
   const session = ref<WaInboxSession | null>(null)
   const allConversations = ref<WaInboxConversation[]>([])
+  const listOwner = ref('')
   const messages = ref<WaInboxMessage[]>([])
   const templates = ref<WaInboxTemplate[]>([])
   const assignableUsers = ref<WaInboxAssignableUser[]>([])
@@ -166,8 +197,8 @@ export function useWhatsappInbox() {
     const cachedAssignable = cache.getAssignable()
     if (cachedAssignable) assignableUsers.value = cachedAssignable
 
-    const cachedConvs = cache.getAllConversations() ?? cache.getConversationsSnapshot()
-    if (cachedConvs.length > 0) {
+    const cachedConvs = cache.peekConversations()
+    if (cachedConvs && cachedConvs.length > 0) {
       allConversations.value = [...cachedConvs]
       ensureSelectedConversation()
     }
@@ -743,19 +774,22 @@ export function useWhatsappInbox() {
   }
 
   async function loadSession(options: { background?: boolean; force?: boolean } = {}) {
+    const owner = cache.captureOwner()
+    claimInflight(owner)
     const cached = !options.force ? cache.getSession() : null
-    if (cached) {
+    if (cached && cache.isCurrentOwner(owner)) {
       session.value = cached
       if (!options.force) return
     }
 
-    if (inflight.session && !options.force) {
+    if (inflight.session && inflight.owner === owner && !options.force) {
       await inflight.session
       return
     }
 
     const run = async () => {
       const res = await WhatsappInboxService.getSession()
+      if (!cache.isCurrentOwner(owner)) return
       session.value = res?.data ?? null
       cache.setSession(session.value)
     }
@@ -771,19 +805,21 @@ export function useWhatsappInbox() {
   ) {
     const page = options.page ?? 1
     const append = options.append ?? false
+    const owner = cache.captureOwner()
+    claimInflight(owner)
     const useCache = !options.force && !append && page === 1 && !search.value.trim()
 
     if (useCache) {
       const cached = cache.getAllConversations()
-      if (cached) {
+      if (cached && cache.isCurrentOwner(owner)) {
         allConversations.value = cached
         ensureSelectedConversation()
         if (!options.force) return
       }
     }
 
-    const convKey = `${filter.value}|${search.value.trim()}|${page}|${append ? 1 : 0}`
-    if (inflight.conversations && inflight.conversationsKey === convKey && !options.force) {
+    const convKey = `${owner}|${filter.value}|${search.value.trim()}|${page}|${append ? 1 : 0}`
+    if (inflight.conversations && inflight.owner === owner && inflight.conversationsKey === convKey && !options.force) {
       await inflight.conversations
       return
     }
@@ -810,7 +846,19 @@ export function useWhatsappInbox() {
           page,
           include_id: includeId
         })
+        if (!cache.isCurrentOwner(owner)) return
         const rows = Array.isArray(res?.data) ? res.data : []
+        if (!append && listOwner.value !== owner) {
+          allConversations.value = []
+          selectedConversationMeta.value = null
+          if (
+            selectedConversationId.value
+            && !rows.some((row) => row.id === selectedConversationId.value)
+          ) {
+            selectedConversationId.value = null
+          }
+          listOwner.value = owner
+        }
         if (append) {
           const seen = new Set(allConversations.value.map((c) => c.id))
           const merged = [...allConversations.value]
@@ -900,8 +948,10 @@ export function useWhatsappInbox() {
     conversationId: number,
     options: { background?: boolean; force?: boolean } = {}
   ) {
+    const owner = cache.captureOwner()
+    claimInflight(owner)
     const pending = inflight.messages.get(conversationId)
-    if (pending && !options.force) {
+    if (pending && inflight.owner === owner && !options.force) {
       await pending
       if (selectedConversationId.value === conversationId && messagesConversationId.value !== conversationId) {
         hydrateMessagesFromCache(conversationId)
@@ -937,6 +987,7 @@ export function useWhatsappInbox() {
       try {
         const { messages: rows, conversation: convPatch, total, fullHistory } =
           await fetchWaInboxMessagesHistory(conversationId)
+        if (!cache.isCurrentOwner(owner)) return
         const cachedList = cache.getMessagesEntry(conversationId)?.messages ?? []
         const localList =
           selectedConversationId.value === conversationId
@@ -1363,13 +1414,15 @@ export function useWhatsappInbox() {
   }
 
   async function loadTemplates(options: { background?: boolean; force?: boolean } = {}) {
+    const owner = cache.captureOwner()
+    claimInflight(owner)
     const cached = !options.force ? cache.getTemplates() : null
-    if (cached?.length) {
+    if (cached?.length && cache.isCurrentOwner(owner)) {
       templates.value = cached
       if (!options.force) return
     }
 
-    if (inflight.templates && !options.force) {
+    if (inflight.templates && inflight.owner === owner && !options.force) {
       await inflight.templates
       return
     }
@@ -1381,6 +1434,7 @@ export function useWhatsappInbox() {
     const run = async () => {
       try {
         const res = await WhatsappInboxService.getTemplates()
+        if (!cache.isCurrentOwner(owner)) return
         templates.value = Array.isArray(res?.data) ? res.data : []
         cache.setTemplates(templates.value)
       } catch {
@@ -1399,19 +1453,22 @@ export function useWhatsappInbox() {
   }
 
   async function loadAssignableUsers(options: { background?: boolean; force?: boolean } = {}) {
+    const owner = cache.captureOwner()
+    claimInflight(owner)
     const cached = !options.force ? cache.getAssignable() : null
-    if (cached) {
+    if (cached && cache.isCurrentOwner(owner)) {
       assignableUsers.value = cached
       if (!options.force) return
     }
 
-    if (inflight.assignable && !options.force) {
+    if (inflight.assignable && inflight.owner === owner && !options.force) {
       await inflight.assignable
       return
     }
 
     const run = async () => {
       const res = await WhatsappInboxService.getAssignableUsers()
+      if (!cache.isCurrentOwner(owner)) return
       assignableUsers.value = Array.isArray(res?.data) ? res.data : []
       cache.setAssignable(assignableUsers.value)
     }
