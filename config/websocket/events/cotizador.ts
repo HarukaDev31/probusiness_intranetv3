@@ -16,8 +16,8 @@ function esUsuarioQueDisparo(data: { usuario_id?: number | string }): boolean {
 
 function refreshUnreadBadge() {
   try {
-    const { fetchUnreadCount } = useNotifications()
-    void fetchUnreadCount()
+    const { bumpUnreadCount } = useNotifications()
+    bumpUnreadCount()
   } catch (e) {
     console.error('Error refrescando conteo de notificaciones:', e)
   }

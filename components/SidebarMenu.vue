@@ -423,8 +423,6 @@ const logout = async () => {
 }
 
 const openNotifications = async () => {
-  // Refrescar contador antes de navegar
-  await fetchUnreadCount()
   await navigateTo('/notificaciones')
   hideSidebarOnMobile()
 }
@@ -552,9 +550,10 @@ onMounted(async () => {
     }
   }
 
-  // Conteos: login + WS (sin polling). Solo si el cargo tiene notificaciones activas.
+  // El conteo queda en la sesión del login. Recargar el chat no vuelve a pedirlo.
+  // Si esta pestaña todavía no lo tiene, se pide una sola vez.
   if (notificationsEnabledForRole.value) {
-    await fetchUnreadCount()
+    void fetchUnreadCount()
   }
 
   // Expandir ruta activa inicial
