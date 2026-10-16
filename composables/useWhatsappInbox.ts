@@ -104,6 +104,14 @@ if (import.meta.client) {
 
 /** PATCH /read agrupado; no dispara recargas de UI. */
 const markReadDebounce = new Map<number, ReturnType<typeof setTimeout>>()
+/** Marcado a mano: no se limpia al seguir mirando el chat, solo al abrirlo de nuevo o marcarlo leído. */
+const manualUnreadIds = new Set<number>()
+
+function cancelScheduledMarkRead(conversationId: number) {
+  const prev = markReadDebounce.get(conversationId)
+  if (prev) clearTimeout(prev)
+  markReadDebounce.delete(conversationId)
+}
 
 function scheduleMarkReadApi(conversationId: number) {
   const prev = markReadDebounce.get(conversationId)
@@ -112,6 +120,7 @@ function scheduleMarkReadApi(conversationId: number) {
     conversationId,
     setTimeout(() => {
       markReadDebounce.delete(conversationId)
+      if (manualUnreadIds.has(conversationId)) return
       WhatsappInboxService.markRead(conversationId).catch(() => {})
     }, 400)
   )
@@ -435,17 +444,21 @@ export function useWhatsappInbox() {
 
     syncConversationsFromStore()
 
+    const unread = Math.max(0, Number(payload.conversation?.unread_count ?? 0) || 0)
+    if (unread > 0) manualUnreadIds.add(convId)
+    else manualUnreadIds.delete(convId)
+
     const idx = allConversations.value.findIndex((c) => c.id === convId)
     if (idx >= 0) {
       allConversations.value[idx] = {
         ...allConversations.value[idx],
-        unread_count: 0
+        unread_count: unread
       }
     }
     if (selectedConversationMeta.value?.id === convId) {
       selectedConversationMeta.value = {
         ...selectedConversationMeta.value,
-        unread_count: 0
+        unread_count: unread
       }
     }
   }
@@ -563,7 +576,7 @@ export function useWhatsappInbox() {
     applyMessagesForConversation(conversationId, mergedCached)
     if (cachedEntry.conversationPatch) {
       const patch = { ...cachedEntry.conversationPatch }
-      if (selectedConversationId.value === conversationId) {
+      if (selectedConversationId.value === conversationId && !manualUnreadIds.has(conversationId)) {
         patch.unread_count = 0
       }
       cache.patchConversation(conversationId, patch)
@@ -754,7 +767,26 @@ export function useWhatsappInbox() {
   /**
    * Bandeja compartida: al abrir el chat, limpia badge local y avisa al servidor (todos los agentes).
    */
+  function patchConversationUnread(conversationId: number, unreadCount: number) {
+    const count = Math.max(0, unreadCount)
+    const idx = allConversations.value.findIndex((x) => x.id === conversationId)
+    if (idx >= 0) {
+      allConversations.value[idx] = {
+        ...allConversations.value[idx],
+        unread_count: count
+      }
+    }
+    if (selectedConversationMeta.value?.id === conversationId) {
+      selectedConversationMeta.value = {
+        ...selectedConversationMeta.value,
+        unread_count: count
+      }
+    }
+    cache.patchConversation(conversationId, { unread_count: count })
+  }
+
   function markConversationRead(conversationId: number) {
+    if (manualUnreadIds.has(conversationId)) return
     const idx = allConversations.value.findIndex((x) => x.id === conversationId)
 
     if (idx >= 0) {
@@ -771,6 +803,47 @@ export function useWhatsappInbox() {
     }
     cache.patchConversation(conversationId, { unread_count: 0 })
     scheduleMarkReadApi(conversationId)
+  }
+
+  async function markConversationUnread(conversationId: number) {
+    manualUnreadIds.add(conversationId)
+    cancelScheduledMarkRead(conversationId)
+    const fromList = allConversations.value.find((c) => c.id === conversationId)?.unread_count
+    const fromMeta = selectedConversationMeta.value?.id === conversationId
+      ? selectedConversationMeta.value.unread_count
+      : 0
+    const previous = Number(fromList ?? fromMeta) || 0
+    patchConversationUnread(conversationId, Math.max(1, previous))
+    try {
+      const res = await WhatsappInboxService.markUnread(conversationId)
+      if (!res?.success) {
+        throw new Error(res?.message || 'No se pudo marcar como no leído')
+      }
+      const unread = Number(res?.data?.unread_count)
+      if (Number.isFinite(unread)) {
+        patchConversationUnread(conversationId, Math.max(1, unread))
+      }
+    } catch (e) {
+      manualUnreadIds.delete(conversationId)
+      patchConversationUnread(conversationId, previous)
+      throw e
+    }
+  }
+
+  async function markConversationReadNow(conversationId: number) {
+    manualUnreadIds.delete(conversationId)
+    cancelScheduledMarkRead(conversationId)
+    const current = allConversations.value.find((c) => c.id === conversationId)?.unread_count ?? 0
+    patchConversationUnread(conversationId, 0)
+    try {
+      const res = await WhatsappInboxService.markRead(conversationId)
+      if (!res?.success) {
+        throw new Error(res?.message || 'No se pudo marcar como leído')
+      }
+    } catch (e) {
+      patchConversationUnread(conversationId, current)
+      throw e
+    }
   }
 
   async function loadSession(options: { background?: boolean; force?: boolean } = {}) {
@@ -1002,8 +1075,10 @@ export function useWhatsappInbox() {
         applyMessagesForConversation(conversationId, merged)
         if (convPatch) {
           const patch = { ...convPatch } as Partial<WaInboxConversation>
-          if (stillSelected()) {
+          if (stillSelected() && !manualUnreadIds.has(conversationId)) {
             patch.unread_count = 0
+          } else if (manualUnreadIds.has(conversationId)) {
+            patch.unread_count = Math.max(1, Number(patch.unread_count) || 0)
           }
           cache.patchConversation(conversationId, patch)
           const idx = allConversations.value.findIndex((c) => c.id === conversationId)
@@ -1094,6 +1169,7 @@ export function useWhatsappInbox() {
     rememberSelectedConversation(convId)
     selectedConversationId.value = convId
     setWaInboxViewingConversationId(convId)
+    manualUnreadIds.delete(convId)
     markConversationRead(convId)
     pinSelectedConversationInList()
     hydrateMessagesFromCache(convId)
@@ -1705,6 +1781,8 @@ export function useWhatsappInbox() {
     disconnectWebSocket,
     loadAllConversations,
     selectConversation,
+    markConversationUnread,
+    markConversationReadNow,
     clearConversationSelection,
     sendComposerMessage,
     sendTemplateMessage,
