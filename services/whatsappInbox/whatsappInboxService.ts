@@ -138,6 +138,12 @@ export class WhatsappInboxService extends BaseService {
     })
   }
 
+  static async markUnread(conversationId: number) {
+    return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/unread`, {
+      method: 'PATCH'
+    })
+  }
+
   static async getTemplates() {
     return await this.apiCall<any>(`${this.baseUrl}/templates`, { method: 'GET' })
   }

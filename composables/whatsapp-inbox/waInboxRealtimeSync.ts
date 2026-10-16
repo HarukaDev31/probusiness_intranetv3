@@ -251,9 +251,10 @@ export function applyConversationReadToStore(payload: WaInboxWsConversationReadP
   if (!convId) return
 
   const cache = useWaInboxCache()
+  const unread = Math.max(0, Number(payload.conversation?.unread_count ?? 0) || 0)
   const patch: Partial<WaInboxConversation> = payload.conversation
-    ? { ...payload.conversation, unread_count: 0 }
-    : { unread_count: 0 }
+    ? { ...payload.conversation, unread_count: unread }
+    : { unread_count: unread }
 
   cache.patchConversation(convId, patch)
   waInboxLog('store.conversationRead', { convId, viewing: viewingConversationId === convId })

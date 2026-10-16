@@ -97,13 +97,15 @@
             Cargando…
           </p>
           <p v-else-if="!conversations.length" class="p-4 text-center text-xs text-muted">Sin conversaciones</p>
-          <button
+          <div
             v-for="c in conversations"
             :key="c.id"
-            type="button"
-            class="flex w-full gap-2 border-b border-default px-3 py-2.5 text-left transition-colors"
+            role="button"
+            tabindex="0"
+            class="group flex w-full gap-2 border-b border-default px-3 py-2.5 text-left transition-colors"
             :class="convRowClass(c)"
-            @click.stop="onSelectConversation(c.id)"
+            @click="onSelectConversation(c.id)"
+            @keydown.enter.prevent="onSelectConversation(c.id)"
           >
             <div class="relative shrink-0">
               <UAvatar
@@ -117,14 +119,33 @@
               />
             </div>
             <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-medium text-highlighted">{{ c.contact_name }}</p>
+              <p
+                class="truncate text-sm text-highlighted"
+                :class="c.unread_count ? 'font-semibold' : 'font-medium'"
+              >
+                {{ c.contact_name }}
+              </p>
               <WhatsappInboxSidebarPreview :conversation="c" />
             </div>
-            <div class="flex shrink-0 flex-col items-end gap-1">
+            <div class="flex shrink-0 flex-col items-end gap-1" @click.stop>
               <span class="text-[10px] text-muted">{{ formatConversationTime(c) }}</span>
-              <UBadge v-if="c.unread_count" color="primary" size="xs">{{ c.unread_count }}</UBadge>
+              <div class="flex items-center gap-1">
+                <UBadge v-if="c.unread_count" color="primary" size="xs">{{ c.unread_count }}</UBadge>
+                <UDropdownMenu :items="conversationMenuItems(c)">
+                  <UButton
+                    type="button"
+                    color="neutral"
+                    variant="ghost"
+                    size="xs"
+                    icon="i-heroicons-chevron-down"
+                    class="!size-6 min-w-6 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+                    aria-label="Opciones de la conversación"
+                    @click.stop
+                  />
+                </UDropdownMenu>
+              </div>
             </div>
-          </button>
+          </div>
           <p
             v-if="loadingMoreConversations"
             class="py-3 text-center text-xs text-muted"
@@ -512,6 +533,8 @@ const {
   init,
   refreshInbox,
   selectConversation,
+  markConversationUnread,
+  markConversationReadNow,
   clearConversationSelection,
   sendComposerMessage,
   sendTemplateMessage,
@@ -788,6 +811,39 @@ const assignSelectItems = computed(() => [
   { label: 'Sin asignar', value: 0 },
   ...assignableUsers.value.map((u) => ({ label: u.name, value: u.id }))
 ])
+
+function conversationMenuItems(c: WaInboxConversation) {
+  const unread = (c.unread_count || 0) > 0
+  return [[
+    unread
+      ? {
+          label: 'Marcar como leído',
+          icon: 'i-heroicons-envelope-open',
+          onSelect: () => onMarkRead(c.id)
+        }
+      : {
+          label: 'Marcar como no leído',
+          icon: 'i-heroicons-envelope',
+          onSelect: () => onMarkUnread(c.id)
+        }
+  ]]
+}
+
+async function onMarkUnread(id: number) {
+  try {
+    await markConversationUnread(id)
+  } catch (e) {
+    showModalError('No se pudo marcar', e instanceof Error ? e.message : 'Inténtalo de nuevo.')
+  }
+}
+
+async function onMarkRead(id: number) {
+  try {
+    await markConversationReadNow(id)
+  } catch (e) {
+    showModalError('No se pudo marcar', e instanceof Error ? e.message : 'Inténtalo de nuevo.')
+  }
+}
 
 async function onSelectConversation(id: number) {
   try {
