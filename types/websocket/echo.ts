@@ -16,6 +16,10 @@ export interface EchoConfig {
     endpoint: string
     transport: 'ajax' | 'jsonp'
     headers?: Record<string, string>
+    customHandler?: (
+      params: { socketId: string; channelName: string },
+      callback: (error: Error | null, data: { auth: string } | null) => void
+    ) => void
   }
   auth?: {
     headers: {
