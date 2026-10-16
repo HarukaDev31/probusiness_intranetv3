@@ -25,7 +25,7 @@
           to="/admin/whatsapp"
         />
         <UCard
-          v-if="session"
+          v-if="session?.phone_number_id"
           variant="subtle"
           :ui="{ body: 'flex items-center gap-2 px-2.5 py-1.5 sm:py-1.5' }"
         >
@@ -33,7 +33,7 @@
             class="size-1.5 shrink-0 rounded-full"
             :class="refreshing ? 'animate-pulse bg-warning' : 'bg-success'"
           />
-          <span class="max-w-[8rem] truncate text-xs text-muted sm:max-w-none">{{ session.display_number || session.label }}</span>
+          <span class="max-w-[14rem] truncate text-xs text-muted sm:max-w-none">{{ etiquetaNumero }}</span>
         </UCard>
         <UButton
           icon="i-heroicons-arrow-path"
@@ -525,6 +525,13 @@ const {
   savingRename,
   ensureMessageByMetaId
 } = useWhatsappInbox()
+
+const etiquetaNumero = computed(() => {
+  const nombre = session.value?.label?.trim() || ''
+  const numero = session.value?.display_number?.trim() || ''
+  if (nombre && numero && nombre !== numero) return `${nombre} · ${numero}`
+  return numero || nombre
+})
 
 const { isDesktop } = useWindowSize()
 
