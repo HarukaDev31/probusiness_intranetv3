@@ -1,4 +1,5 @@
 import type { EchoConfig } from '~/types/websocket/echo'
+import { createBroadcastAuthBatchHandler } from '~/utils/broadcastAuthBatch'
 
 export type EchoClientConfig = EchoConfig & {
   bearerToken?: string | null
@@ -8,6 +9,10 @@ export type EchoClientConfig = EchoConfig & {
     endpoint: string
     transport: 'ajax' | 'jsonp'
     headers?: Record<string, string>
+    customHandler?: (
+      params: { socketId: string; channelName: string },
+      callback: (error: Error | null, data: { auth: string } | null) => void
+    ) => void
   }
 }
 
@@ -69,7 +74,8 @@ export function buildEchoClientConfig(authToken: string | null): EchoClientConfi
     channelAuthorization: {
       endpoint: authEndpoint,
       transport: 'ajax',
-      headers: { ...headers }
+      headers: { ...headers },
+      customHandler: createBroadcastAuthBatchHandler(authEndpoint, headers)
     }
   }
 
