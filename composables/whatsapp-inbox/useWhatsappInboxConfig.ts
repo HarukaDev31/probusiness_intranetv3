@@ -108,7 +108,10 @@ export function useWhatsappInboxConfig() {
       display_number: form.display_number.trim(),
       graph_api_version: form.graph_api_version.trim() || 'v19.0',
       default_language: form.default_language.trim() || 'es_PE',
-      roles: [...form.roles],
+      roles: form.roles
+        .map((rol) => (typeof rol === 'string' ? rol : (rol as { value?: string })?.value || ''))
+        .map((rol) => rol.trim())
+        .filter((rol) => rol !== ''),
     }
     if (form.access_token.trim()) payload.access_token = form.access_token.trim()
     if (form.app_secret.trim()) payload.app_secret = form.app_secret.trim()
