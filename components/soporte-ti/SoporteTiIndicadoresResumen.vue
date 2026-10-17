@@ -211,7 +211,7 @@ const cards = computed(() => {
       valor: r.cierre_pct == null ? '—' : `${r.cierre_pct}%`,
       estado: r.cierre_estado,
       etiqueta: etiqueta(r.cierre_estado),
-      detalle: r.cierre_total ? `${r.cierre_operativas} de ${r.cierre_total} operativas` : 'Sin solicitudes'
+      detalle: r.cierre_total ? `${r.cierre_operativas} de ${r.cierre_total} completadas` : 'Sin solicitudes'
     }
   ]
 })

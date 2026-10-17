@@ -63,6 +63,7 @@ import {
   type ChartOptions,
   type ChartData
 } from 'chart.js'
+import { chartPalette, paintChartTheme } from '~/utils/chartTheme'
 
 // Registrar componentes de Chart.js
 ChartJS.register(
@@ -215,7 +216,9 @@ const chartOptions: ChartOptions<'line'> = {
             }
           })
 
-          return groupedLabels.length ? groupedLabels : labels
+          const ink = chartPalette().ink
+          const chosen = groupedLabels.length ? groupedLabels : labels
+          return chosen.map((label) => ({ ...label, fontColor: ink }))
         }
       }
     },
@@ -308,6 +311,7 @@ const createChart = () => {
     data: chartData.value,
     options: chartOptions
   })
+  paintChartTheme(chartInstance)
 }
 
 const updateChart = () => {
@@ -348,6 +352,9 @@ watch(() => props.data, () => {
 watch(currentPage, () => {
   updateChart()
 })
+
+const colorMode = useColorMode()
+watch(() => colorMode.value, () => paintChartTheme(chartInstance))
 
 // Lifecycle
 onMounted(() => {

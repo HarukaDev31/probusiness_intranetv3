@@ -62,6 +62,7 @@ import {
   type ChartOptions,
   type ChartData
 } from 'chart.js'
+import { paintChartTheme } from '~/utils/chartTheme'
 
 // Registrar componentes de Chart.js
 ChartJS.register(
@@ -266,6 +267,7 @@ const createChart = () => {
       data: chartData.value,
       options: chartOptions
     })
+    paintChartTheme(chartInstance)
   })
 }
 
@@ -305,6 +307,9 @@ watch(() => props.data, () => {
 watch(currentPage, () => {
   updateChart()
 })
+
+const colorMode = useColorMode()
+watch(() => colorMode.value, () => paintChartTheme(chartInstance))
 
 // ResizeObserver para manejar cambios de tamaño
 let resizeObserver: ResizeObserver | null = null
