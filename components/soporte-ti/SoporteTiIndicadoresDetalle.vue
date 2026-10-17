@@ -171,7 +171,7 @@ function armar(titulo: string, bloque: SoporteTiIndicadorBloqueTipo, enCurso: st
       {
         label: 'Cierre',
         valor: bloque.cierre_pct == null ? '—' : `${bloque.cierre_pct}%`,
-        detalle: `${bloque.operativas} operativas`
+        detalle: `${bloque.operativas} completadas`
       },
       {
         label: enCurso,

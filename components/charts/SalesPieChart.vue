@@ -16,6 +16,7 @@ import {
   type ChartOptions,
   type ChartData
 } from 'chart.js'
+import { chartPalette, paintChartTheme } from '~/utils/chartTheme'
 
 // Registrar componentes de Chart.js
 ChartJS.register(
@@ -112,7 +113,7 @@ const chartOptions: ChartOptions<'pie'> = {
                 lineWidth: dataset.borderWidth as number,
                 hidden: false,
                 index: i,
-                pointStyle: 'circle'
+                fontColor: chartPalette().ink,
               }
             })
           }
@@ -147,6 +148,7 @@ const createChart = () => {
     data: chartData.value,
     options: chartOptions
   })
+  paintChartTheme(chartInstance)
 }
 
 const updateChart = () => {
@@ -160,6 +162,9 @@ const updateChart = () => {
 watch(() => props.data, () => {
   updateChart()
 }, { deep: true })
+
+const colorMode = useColorMode()
+watch(() => colorMode.value, () => paintChartTheme(chartInstance))
 
 // Lifecycle
 onMounted(() => {
