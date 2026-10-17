@@ -81,7 +81,7 @@ interface Props {
     labels: string[]
     datasets: Array<{
       label: string
-      data: number[]
+      data: Array<number | null>
       backgroundColor: string
       borderColor: string
       borderWidth: number
@@ -94,11 +94,17 @@ interface Props {
   } | null
   height?: number
   daysPerPage?: number
+  xAxisTitle?: string
+  yAxisTitle?: string
+  showRightAxis?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   height: 400,
-  daysPerPage: 15
+  daysPerPage: 15,
+  xAxisTitle: 'Fecha',
+  yAxisTitle: 'Cotizaciones',
+  showRightAxis: true
 })
 
 const chartCanvas = ref<HTMLCanvasElement | null>(null)
@@ -201,10 +207,15 @@ const chartOptions: ChartOptions<'line'> = {
                 ...cotizacionesLabel,
                 text: vendedor
               })
+            } else if (cbmLabel) {
+              groupedLabels.push({
+                ...cbmLabel,
+                text: vendedor
+              })
             }
           })
-          
-          return groupedLabels
+
+          return groupedLabels.length ? groupedLabels : labels
         }
       }
     },
@@ -213,7 +224,7 @@ const chartOptions: ChartOptions<'line'> = {
       intersect: false,
       callbacks: {
         title: function(context) {
-          return `Fecha: ${context[0].label}`
+          return `${props.xAxisTitle}: ${context[0].label}`
         },
         label: function(context) {
           const label = context.dataset.label || ''
@@ -235,7 +246,7 @@ const chartOptions: ChartOptions<'line'> = {
       display: true,
       title: {
         display: true,
-        text: 'Fecha'
+        text: props.xAxisTitle
       },
       grid: {
         display: false
@@ -251,7 +262,7 @@ const chartOptions: ChartOptions<'line'> = {
       position: 'left',
       title: {
         display: true,
-        text: 'Cotizaciones'
+        text: props.yAxisTitle
       },
       beginAtZero: true,
       grid: {
@@ -266,7 +277,7 @@ const chartOptions: ChartOptions<'line'> = {
     },
     y1: {
       type: 'linear',
-      display: true,
+      display: props.showRightAxis,
       position: 'right',
       title: {
         display: true,

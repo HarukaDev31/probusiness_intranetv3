@@ -8,7 +8,7 @@
     <!-- Controles de paginación con altura fija -->
     <div v-if="totalPages > 1" class="flex items-center justify-between mt-4 px-4 h-10 flex-shrink-0">
       <div class="text-sm text-gray-600 dark:text-gray-400">
-        Mostrando {{ startIndex + 1 }}-{{ endIndex }} de {{ totalItems }} contenedores
+          Mostrando {{ startIndex + 1 }}-{{ endIndex }} de {{ totalItems }} {{ itemNoun }}
       </div>
       
       <div class="flex items-center gap-2">
@@ -84,11 +84,33 @@ interface VolumeData {
 interface Props {
   data: VolumeData[]
   itemsPerPage?: number
+  unit?: string
+  decimals?: number
+  itemNoun?: string
+  labelChina?: string
+  labelVendido?: string
+  labelPendiente?: string
+  showChina?: boolean
+  showVendido?: boolean
+  showPendiente?: boolean
+  selectable?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  itemsPerPage: 10
+  itemsPerPage: 10,
+  unit: 'm³',
+  decimals: 2,
+  itemNoun: 'contenedores',
+  labelChina: 'Volumen China',
+  labelVendido: 'Volumen Vendido',
+  labelPendiente: 'Volumen Pendiente',
+  showChina: true,
+  showVendido: true,
+  showPendiente: true,
+  selectable: false
 })
+
+const emit = defineEmits<{ select: [label: string] }>()
 
 const chartCanvas = ref<HTMLCanvasElement | null>(null)
 let chartInstance: ChartJS | null = null
@@ -125,32 +147,45 @@ const visiblePages = computed(() => {
   return pages
 })
 
-const chartData = computed((): ChartData<'bar'> => ({
-  labels: paginatedData.value.map(item => item.contenedor),
-  datasets: [
-    {
-      label: 'Volumen China',
+const chartData = computed((): ChartData<'bar'> => {
+  const datasets: ChartData<'bar'>['datasets'] = []
+  if (props.showChina) {
+    datasets.push({
+      label: props.labelChina,
       data: paginatedData.value.map(item => item.volumenChina),
       backgroundColor: 'rgba(59, 130, 246, 0.8)',
       borderColor: 'rgba(59, 130, 246, 1)',
       borderWidth: 1
-    },
-    {
-      label: 'Volumen Vendido',
+    })
+  }
+  if (props.showVendido) {
+    datasets.push({
+      label: props.labelVendido,
       data: paginatedData.value.map(item => item.volumenVendido),
       backgroundColor: 'rgba(16, 185, 129, 0.8)',
       borderColor: 'rgba(16, 185, 129, 1)',
       borderWidth: 1
-    },
-    {
-      label: 'Volumen Pendiente',
+    })
+  }
+  if (props.showPendiente) {
+    datasets.push({
+      label: props.labelPendiente,
       data: paginatedData.value.map(item => item.volumenPendiente),
       backgroundColor: 'rgba(245, 158, 11, 0.8)',
       borderColor: 'rgba(245, 158, 11, 1)',
       borderWidth: 1
-    }
-  ]
-}))
+    })
+  }
+  return {
+    labels: paginatedData.value.map(item => item.contenedor),
+    datasets
+  }
+})
+
+function formatValue(value: number) {
+  const text = value.toFixed(props.decimals)
+  return props.unit ? `${text} ${props.unit}` : text
+}
 
 const chartOptions: ChartOptions<'bar'> = {
   responsive: true,
@@ -170,7 +205,7 @@ const chartOptions: ChartOptions<'bar'> = {
     tooltip: {
       callbacks: {
         label: function(context) {
-          return `${context.dataset.label}: ${context.parsed.y.toFixed(2)} m³`
+          return `${context.dataset.label}: ${formatValue(context.parsed.y)}`
         }
       }
     }
@@ -192,7 +227,8 @@ const chartOptions: ChartOptions<'bar'> = {
       },
       ticks: {
         callback: function(value) {
-          return `${value} m³`
+          const n = typeof value === 'number' ? value : Number(value)
+          return formatValue(Number.isFinite(n) ? n : 0)
         }
       }
     }
@@ -200,6 +236,11 @@ const chartOptions: ChartOptions<'bar'> = {
   interaction: {
     intersect: false,
     mode: 'index'
+  },
+  onClick: (_event, elements) => {
+    if (!props.selectable || !elements.length) return
+    const item = paginatedData.value[elements[0].index]
+    if (item) emit('select', item.contenedor)
   }
 }
 
