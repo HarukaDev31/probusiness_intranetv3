@@ -49,6 +49,14 @@
       >
         Detalle operativo
       </button>
+      <button
+        type="button"
+        class="border-b-2 px-3 py-2 text-sm font-medium"
+        :class="tab === 'tiempos' ? 'border-primary text-highlighted' : 'border-transparent text-muted'"
+        @click="tab = 'tiempos'"
+      >
+        Tiempos y SLA
+      </button>
     </div>
 
     <p v-if="data" class="text-xs text-muted">Actualizado {{ data.actualizado_en }}</p>
@@ -59,6 +67,7 @@
       @filtrar-area="filtrarArea"
     />
     <SoporteTiIndicadoresDetalle v-else-if="data && tab === 'detalle'" :data="data" />
+    <SoporteTiIndicadoresTiempos v-else-if="data && tab === 'tiempos'" :data="data" />
   </div>
 </template>
 
@@ -72,6 +81,7 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
 import SoporteTiIndicadoresResumen from '~/components/soporte-ti/SoporteTiIndicadoresResumen.vue'
 import SoporteTiIndicadoresDetalle from '~/components/soporte-ti/SoporteTiIndicadoresDetalle.vue'
+import SoporteTiIndicadoresTiempos from '~/components/soporte-ti/SoporteTiIndicadoresTiempos.vue'
 
 definePageMeta({
   middleware: 'auth'
@@ -82,7 +92,7 @@ const { data, error, cargar } = useSoporteTiIndicadores()
 const { withSpinner } = useSpinner()
 const { showError } = useModal()
 
-const tab = ref<'resumen' | 'detalle'>('resumen')
+const tab = ref<'resumen' | 'detalle' | 'tiempos'>('resumen')
 
 const mesesItems = computed(() =>
   (data.value?.meses || []).map((mes) => ({ label: mes.label, value: mes.value }))

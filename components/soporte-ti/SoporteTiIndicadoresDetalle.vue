@@ -97,51 +97,6 @@
     </section>
 
     <section class="rounded-xl border border-default bg-default p-4">
-      <h2 class="text-sm font-semibold">Finalización</h2>
-      <p class="mt-1 text-xs text-muted">
-        Fecha en que quedaron Desplegadas u Operativas. El tiempo es el del horario laboral.
-        El plazo es el que tenía cada solicitud: si pasó de 3 h a 2 h, las anteriores siguen en 3 h.
-      </p>
-      <div v-if="finalizadas.length" class="mt-3 overflow-x-auto">
-        <table class="w-full min-w-[860px] text-sm">
-          <thead>
-            <tr class="border-b border-default text-left text-xs text-muted">
-              <th class="py-2 pr-3">Código</th>
-              <th class="py-2 pr-3">Solicitud</th>
-              <th class="py-2 pr-3">Complejidad</th>
-              <th class="py-2 pr-3">Finalizó</th>
-              <th class="py-2 pr-3 text-right">Tiempo</th>
-              <th class="py-2 pr-3 text-right">Plazo</th>
-              <th class="py-2">Resultado</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in finalizadas" :key="item.id" class="border-b border-default last:border-0">
-              <td class="py-2 pr-3 font-medium">{{ item.codigo }}</td>
-              <td class="py-2 pr-3">
-                <p>{{ item.titulo }}</p>
-                <p class="text-xs text-muted">{{ item.area }} · {{ item.estado }}</p>
-              </td>
-              <td class="py-2 pr-3">{{ item.complejidad }}</td>
-              <td class="py-2 pr-3 tabular-nums">{{ item.finalizado_en }}</td>
-              <td class="py-2 pr-3 text-right tabular-nums">{{ horas(item.horas) }}</td>
-              <td class="py-2 pr-3 text-right tabular-nums">{{ item.sla_horas > 0 ? `${item.sla_horas} h` : '—' }}</td>
-              <td class="py-2">
-                <span
-                  class="rounded-full px-2 py-0.5 text-xs font-medium"
-                  :class="item.a_tiempo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
-                >
-                  {{ item.sla_horas > 0 ? (item.a_tiempo ? 'A tiempo' : 'Fuera de plazo') : 'Sin plazo' }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <p v-else class="mt-4 text-sm text-muted">Ninguna solicitud se finalizó en este mes.</p>
-    </section>
-
-    <section class="rounded-xl border border-default bg-default p-4">
       <h2 class="text-sm font-semibold">Resumen de los últimos meses</h2>
       <div class="mt-3 overflow-x-auto">
         <table class="w-full min-w-[640px] text-sm">
@@ -178,8 +133,6 @@ const VolumeBarChart = defineAsyncComponent(() => import('~/components/charts/Vo
 
 const props = defineProps<{ data: SoporteTiIndicadores }>()
 
-const finalizadas = computed(() => props.data.detalle.finalizadas || [])
-
 const pieTipo = computed(() =>
   props.data.detalle.por_tipo.map((tipo) => ({
     vendedor: tipo.nombre,
@@ -213,7 +166,7 @@ function armar(titulo: string, bloque: SoporteTiIndicadorBloqueTipo, enCurso: st
       {
         label: 'Vencidas',
         valor: String(bloque.vencidas),
-        detalle: bloque.abiertas ? `${bloque.vencidas_pct}% de ${bloque.abiertas}` : 'Sin abiertas'
+        detalle: bloque.abiertas ? `${bloque.vencidas_pct}% de ${bloque.abiertas} en progreso o hecho` : 'Sin solicitudes en progreso o hecho'
       },
       {
         label: 'Cierre',
