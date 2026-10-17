@@ -73,6 +73,19 @@ export interface SoporteTiIndicadorBloqueTipo {
   por_estado: SoporteTiIndicadorEstadoFila[]
 }
 
+export interface SoporteTiIndicadorTiempo {
+  id: number
+  codigo: string
+  titulo: string
+  area: string
+  tipo: 'A' | 'B'
+  estado: string
+  complejidad: string
+  horas: number
+  sla_horas: number
+  vencida: boolean
+}
+
 export interface SoporteTiIndicadorFinalizada {
   id: number
   codigo: string
@@ -145,6 +158,7 @@ export interface SoporteTiIndicadores {
     tipo_a: SoporteTiIndicadorBloqueTipo
     tipo_b: SoporteTiIndicadorBloqueTipo
     atencion: SoporteTiIndicadorAtencion[]
+    tiempos: SoporteTiIndicadorTiempo[]
     finalizadas: SoporteTiIndicadorFinalizada[]
     mensual: SoporteTiIndicadorEvolucion[]
   }

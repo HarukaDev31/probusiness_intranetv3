@@ -204,7 +204,7 @@ const cards = computed(() => {
       valor: String(r.vencidas),
       estado: r.vencidas_estado,
       etiqueta: etiqueta(r.vencidas_estado),
-      detalle: r.abiertas ? `${r.vencidas_pct}% de ${r.abiertas} abiertas` : 'Sin abiertas'
+      detalle: r.abiertas ? `${r.vencidas_pct}% de ${r.abiertas} en progreso o hecho` : 'Sin solicitudes en progreso o hecho'
     },
     {
       label: 'Tasa de cierre',
