@@ -37,11 +37,15 @@ interface Props {
   data: SalesData[]
   width?: number
   height?: number
+  unit?: string
+  decimals?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
   width: 400,
-  height: 200
+  height: 200,
+  unit: 'm³',
+  decimals: 2
 })
 
 const chartCanvas = ref<HTMLCanvasElement | null>(null)
@@ -123,7 +127,8 @@ const chartOptions: ChartOptions<'pie'> = {
           const value = context.parsed
           const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0)
           const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0'
-          return `${label}: ${value.toFixed(2)} m³ (${percentage}%)`
+          const unidad = props.unit ? ` ${props.unit}` : ''
+          return `${label}: ${value.toFixed(props.decimals)}${unidad} (${percentage}%)`
         }
       }
     }

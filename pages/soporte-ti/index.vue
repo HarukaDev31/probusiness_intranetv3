@@ -17,6 +17,14 @@
       empty-state-message="No hay solicitudes que coincidan con los filtros." @update:primary-search="onPrimarySearch"
       @filter-change="onFilterChange" @clear-filters="onClearFilters" @row-click="onRowClick" @kanban-move="onKanbanMove">
       <template #actions>
+        <UButton
+          v-if="rolActivo !== 'Solicitante'"
+          size="sm"
+          variant="outline"
+          icon="i-heroicons-chart-bar"
+          label="Indicadores"
+          @click="navigateTo('/soporte-ti/indicadores')"
+        />
         <UDropdownMenu v-if="rolActivo !== 'Solicitante'" :items="itemsConfig">
           <UButton
             size="sm"

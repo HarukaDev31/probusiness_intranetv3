@@ -1,4 +1,5 @@
 import { BaseService } from '~/services/base/BaseService'
+import type { SoporteTiIndicadores } from '~/types/soporteTiIndicadores'
 import type {
   SoporteTiActualizarEstadoPayload,
   SoporteTiCambiarEstadoPayload,
@@ -141,6 +142,19 @@ export class SoporteTiService extends BaseService {
   static adaptWsSolicitudCreada(p: SoporteTiWsSolicitudCreadaPayload): SoporteTiSolicitud | null {
     if (!p?.solicitud) return null
     return adaptSolicitud(p.solicitud)
+  }
+
+  static async indicadores(params?: {
+    mes?: string | null
+    area?: string | null
+  }): Promise<{ success: boolean; data?: SoporteTiIndicadores; message?: string }> {
+    const q = new URLSearchParams()
+    if (params?.mes) q.set('mes', params.mes)
+    if (params?.area) q.set('area', params.area)
+    const qs = q.toString()
+    return this.apiCall<{ success: boolean; data?: SoporteTiIndicadores; message?: string }>(
+      qs ? `/api/soporte-ti/indicadores?${qs}` : '/api/soporte-ti/indicadores'
+    )
   }
 
   static async list(filters?: SoporteTiListFilters): Promise<SoporteTiListResult> {
