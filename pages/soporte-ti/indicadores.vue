@@ -210,32 +210,40 @@ async function recargarDesdeQuery() {
   }
 }
 
+function pedir(partial: {
+  tab?: IndicadoresTab
+  mes?: string | null
+  area?: string | null
+  page?: number | null
+  pageFin?: number | null
+}) {
+  loading.value = true
+  void escribirQuery(partial).then(() => recargarDesdeQuery())
+}
+
 function setTab(value: IndicadoresTab) {
   if (value === tab.value) return
-  void escribirQuery({ tab: value }).then(() => recargarDesdeQuery())
+  pedir({ tab: value })
 }
 
 function onMes(value: unknown) {
-  const mes = String(value || '') || null
-  void escribirQuery({ mes, page: 1, pageFin: 1 }).then(() => recargarDesdeQuery())
+  pedir({ mes: String(value || '') || null, page: 1, pageFin: 1 })
 }
 
 function onArea(value: unknown) {
-  const area = String(value || '') || null
-  void escribirQuery({ area, page: 1, pageFin: 1 }).then(() => recargarDesdeQuery())
+  pedir({ area: String(value || '') || null, page: 1, pageFin: 1 })
 }
 
 function filtrarArea(area: string) {
-  const siguiente = data.value?.area === area ? null : area
-  void escribirQuery({ area: siguiente, page: 1, pageFin: 1 }).then(() => recargarDesdeQuery())
+  pedir({ area: data.value?.area === area ? null : area, page: 1, pageFin: 1 })
 }
 
 function onPagina(page: number) {
-  void escribirQuery({ page }).then(() => recargarDesdeQuery())
+  pedir({ page })
 }
 
 function onPaginaFin(page: number) {
-  void escribirQuery({ pageFin: page }).then(() => recargarDesdeQuery())
+  pedir({ pageFin: page })
 }
 
 watch(vistaClave, () => {
