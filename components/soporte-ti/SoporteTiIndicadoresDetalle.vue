@@ -63,7 +63,7 @@
       <p class="mt-1 text-xs text-muted">
         Solicitudes con el reloj en marcha que ya consumieron el 75% o más de su plazo.
       </p>
-      <div v-if="data.detalle.atencion.length" class="mt-3 overflow-x-auto">
+      <div v-if="atencion.length" class="mt-3 overflow-x-auto">
         <table class="w-full min-w-[720px] text-sm">
           <thead>
             <tr class="border-b border-default text-left text-xs text-muted">
@@ -76,7 +76,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in data.detalle.atencion" :key="item.id" class="border-b border-default last:border-0">
+            <tr v-for="item in atencion" :key="item.id" class="border-b border-default last:border-0">
               <td class="py-2 pr-3 font-medium">{{ item.codigo }}</td>
               <td class="py-2 pr-3">
                 <p>{{ item.titulo }}</p>
@@ -98,28 +98,9 @@
 
     <section class="rounded-xl border border-default bg-default p-4">
       <h2 class="text-sm font-semibold">Resumen de los últimos meses</h2>
-      <div class="mt-3 overflow-x-auto">
-        <table class="w-full min-w-[640px] text-sm">
-          <thead>
-            <tr class="border-b border-default text-left text-xs text-muted">
-              <th class="py-2 pr-3">Mes</th>
-              <th class="py-2 pr-3 text-right">Solicitudes</th>
-              <th class="py-2 pr-3 text-right">SLA</th>
-              <th class="py-2 pr-3 text-right">Vencidas</th>
-              <th class="py-2 text-right">Cierre</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="fila in data.detalle.mensual" :key="fila.mes" class="border-b border-default last:border-0">
-              <td class="py-2 pr-3">{{ fila.label }}</td>
-              <td class="py-2 pr-3 text-right tabular-nums">{{ fila.total }}</td>
-              <td class="py-2 pr-3 text-right tabular-nums">{{ pct(fila.sla_pct) }}</td>
-              <td class="py-2 pr-3 text-right tabular-nums">{{ fila.vencidas }}</td>
-              <td class="py-2 text-right tabular-nums">{{ pct(fila.cierre_pct) }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <p class="mt-1 text-xs text-muted">Barras: solicitudes y vencidas. Líneas: SLA y cierre.</p>
+      <SoporteTiIndicadoresMensualChart v-if="mensual.length" class="mt-3" :filas="mensual" />
+      <p v-else class="mt-4 text-sm text-muted">No hay meses para mostrar.</p>
     </section>
   </div>
 </template>
@@ -130,6 +111,9 @@ import type { SoporteTiIndicadorBloqueTipo, SoporteTiIndicadores } from '~/types
 
 const SalesPieChart = defineAsyncComponent(() => import('~/components/charts/SalesPieChart.vue'))
 const VolumeBarChart = defineAsyncComponent(() => import('~/components/charts/VolumeBarChart.vue'))
+const SoporteTiIndicadoresMensualChart = defineAsyncComponent(
+  () => import('~/components/soporte-ti/SoporteTiIndicadoresMensualChart.vue')
+)
 
 const props = defineProps<{ data: SoporteTiIndicadores }>()
 
@@ -141,6 +125,9 @@ const pieTipo = computed(() =>
     volumenPendiente: 0
   }))
 )
+
+const atencion = computed(() => props.data.detalle.atencion || [])
+const mensual = computed(() => props.data.detalle.mensual || [])
 
 const bloques = computed(() => [
   armar('Proyectos', props.data.detalle.tipo_a, 'En curso'),

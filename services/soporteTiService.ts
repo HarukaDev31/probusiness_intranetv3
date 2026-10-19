@@ -147,10 +147,18 @@ export class SoporteTiService extends BaseService {
   static async indicadores(params?: {
     mes?: string | null
     area?: string | null
+    tab?: 'resumen' | 'detalle' | 'tiempos' | null
+    page?: number | null
+    pageFin?: number | null
+    perPage?: number | null
   }): Promise<{ success: boolean; data?: SoporteTiIndicadores; message?: string }> {
     const q = new URLSearchParams()
     if (params?.mes) q.set('mes', params.mes)
     if (params?.area) q.set('area', params.area)
+    if (params?.tab) q.set('tab', params.tab)
+    if (params?.page && params.page > 1) q.set('page', String(params.page))
+    if (params?.pageFin && params.pageFin > 1) q.set('page_fin', String(params.pageFin))
+    if (params?.perPage) q.set('per_page', String(params.perPage))
     const qs = q.toString()
     return this.apiCall<{ success: boolean; data?: SoporteTiIndicadores; message?: string }>(
       qs ? `/api/soporte-ti/indicadores?${qs}` : '/api/soporte-ti/indicadores'

@@ -73,6 +73,13 @@ export interface SoporteTiIndicadorBloqueTipo {
   por_estado: SoporteTiIndicadorEstadoFila[]
 }
 
+export interface SoporteTiIndicadorPaginacion {
+  page: number
+  per_page: number
+  total: number
+  last_page: number
+}
+
 export interface SoporteTiIndicadorTiempo {
   id: number
   codigo: string
@@ -123,6 +130,7 @@ export interface SoporteTiIndicadorTipoConteo {
 }
 
 export interface SoporteTiIndicadores {
+  tab?: 'resumen' | 'detalle' | 'tiempos'
   mes: string
   mes_label: string
   area: string | null
@@ -157,9 +165,11 @@ export interface SoporteTiIndicadores {
     por_tipo: SoporteTiIndicadorTipoConteo[]
     tipo_a: SoporteTiIndicadorBloqueTipo
     tipo_b: SoporteTiIndicadorBloqueTipo
-    atencion: SoporteTiIndicadorAtencion[]
-    tiempos: SoporteTiIndicadorTiempo[]
-    finalizadas: SoporteTiIndicadorFinalizada[]
-    mensual: SoporteTiIndicadorEvolucion[]
+    atencion?: SoporteTiIndicadorAtencion[]
+    tiempos?: SoporteTiIndicadorTiempo[]
+    tiempos_paginacion?: SoporteTiIndicadorPaginacion
+    finalizadas?: SoporteTiIndicadorFinalizada[]
+    finalizadas_paginacion?: SoporteTiIndicadorPaginacion
+    mensual?: SoporteTiIndicadorEvolucion[]
   }
 }
