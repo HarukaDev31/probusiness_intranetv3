@@ -108,12 +108,21 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent } from 'vue'
 import type { SoporteTiIndicadorBloqueTipo, SoporteTiIndicadores } from '~/types/soporteTiIndicadores'
+import SoporteTiChartSkeleton from '~/components/soporte-ti/SoporteTiChartSkeleton.vue'
 
-const SalesPieChart = defineAsyncComponent(() => import('~/components/charts/SalesPieChart.vue'))
-const VolumeBarChart = defineAsyncComponent(() => import('~/components/charts/VolumeBarChart.vue'))
-const SoporteTiIndicadoresMensualChart = defineAsyncComponent(
-  () => import('~/components/soporte-ti/SoporteTiIndicadoresMensualChart.vue')
-)
+const graficoAsync = { loadingComponent: SoporteTiChartSkeleton, delay: 0, suspensible: false }
+const SalesPieChart = defineAsyncComponent({
+  loader: () => import('~/components/charts/SalesPieChart.vue'),
+  ...graficoAsync
+})
+const VolumeBarChart = defineAsyncComponent({
+  loader: () => import('~/components/charts/VolumeBarChart.vue'),
+  ...graficoAsync
+})
+const SoporteTiIndicadoresMensualChart = defineAsyncComponent({
+  loader: () => import('~/components/soporte-ti/SoporteTiIndicadoresMensualChart.vue'),
+  ...graficoAsync
+})
 
 const props = defineProps<{ data: SoporteTiIndicadores }>()
 

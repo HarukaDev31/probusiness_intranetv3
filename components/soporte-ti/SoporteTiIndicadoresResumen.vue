@@ -112,10 +112,21 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent } from 'vue'
 import type { SoporteTiIndicadorEstado, SoporteTiIndicadores } from '~/types/soporteTiIndicadores'
+import SoporteTiChartSkeleton from '~/components/soporte-ti/SoporteTiChartSkeleton.vue'
 
-const VolumeBarChart = defineAsyncComponent(() => import('~/components/charts/VolumeBarChart.vue'))
-const SalesPieChart = defineAsyncComponent(() => import('~/components/charts/SalesPieChart.vue'))
-const DailyProgressChart = defineAsyncComponent(() => import('~/components/charts/DailyProgressChart.vue'))
+const graficoAsync = { loadingComponent: SoporteTiChartSkeleton, delay: 0, suspensible: false }
+const VolumeBarChart = defineAsyncComponent({
+  loader: () => import('~/components/charts/VolumeBarChart.vue'),
+  ...graficoAsync
+})
+const SalesPieChart = defineAsyncComponent({
+  loader: () => import('~/components/charts/SalesPieChart.vue'),
+  ...graficoAsync
+})
+const DailyProgressChart = defineAsyncComponent({
+  loader: () => import('~/components/charts/DailyProgressChart.vue'),
+  ...graficoAsync
+})
 
 const props = defineProps<{ data: SoporteTiIndicadores }>()
 defineEmits<{ 'filtrar-area': [area: string] }>()
