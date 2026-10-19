@@ -14,17 +14,21 @@
       </div>
       <div v-if="data" class="flex flex-wrap items-center gap-2">
         <USelect
-          :model-value="data.mes"
+          :model-value="textoQuery('mes') || data.mes"
           :items="mesesItems"
           class="w-44"
           @update:model-value="onMes"
         />
         <USelect
-          :model-value="data.area || ''"
+          :model-value="textoQuery('area')"
           :items="areasItems"
           class="w-52"
           @update:model-value="onArea"
         />
+      </div>
+      <div v-else class="flex gap-2">
+        <USkeleton class="h-9 w-44" />
+        <USkeleton class="h-9 w-52" />
       </div>
     </div>
 
@@ -32,7 +36,7 @@
       <p class="text-sm">{{ error }}</p>
     </UCard>
 
-    <div v-if="data" class="flex gap-2 border-b border-default">
+    <div class="flex gap-2 border-b border-default">
       <button
         type="button"
         class="border-b-2 px-3 py-2 text-sm font-medium"
@@ -59,15 +63,21 @@
       </button>
     </div>
 
-    <p v-if="data" class="text-xs text-muted">Actualizado {{ data.actualizado_en }}</p>
+    <p v-if="data && !loading" class="text-xs text-muted">Actualizado {{ data.actualizado_en }}</p>
 
+    <SoporteTiIndicadoresSkeleton v-if="loading" :tab="tab" />
     <SoporteTiIndicadoresResumen
-      v-if="data && tab === 'resumen'"
+      v-else-if="data?.resumen && tab === 'resumen'"
       :data="data"
       @filtrar-area="filtrarArea"
     />
-    <SoporteTiIndicadoresDetalle v-else-if="data && tab === 'detalle'" :data="data" />
-    <SoporteTiIndicadoresTiempos v-else-if="data && tab === 'tiempos'" :data="data" />
+    <SoporteTiIndicadoresDetalle v-else-if="data?.detalle?.tipo_a && tab === 'detalle'" :data="data" />
+    <SoporteTiIndicadoresTiempos
+      v-else-if="data?.detalle && tab === 'tiempos'"
+      :data="data"
+      @pagina="onPagina"
+      @pagina-fin="onPaginaFin"
+    />
   </div>
 </template>
 
@@ -77,11 +87,11 @@ import { navigateTo, useRoute, useRouter } from '#imports'
 import { roleEsPmSoporteTi } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useSoporteTiIndicadores } from '~/composables/useSoporteTiIndicadores'
-import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
 import SoporteTiIndicadoresResumen from '~/components/soporte-ti/SoporteTiIndicadoresResumen.vue'
 import SoporteTiIndicadoresDetalle from '~/components/soporte-ti/SoporteTiIndicadoresDetalle.vue'
 import SoporteTiIndicadoresTiempos from '~/components/soporte-ti/SoporteTiIndicadoresTiempos.vue'
+import SoporteTiIndicadoresSkeleton from '~/components/soporte-ti/SoporteTiIndicadoresSkeleton.vue'
 
 definePageMeta({
   middleware: 'auth'
@@ -93,8 +103,7 @@ type IndicadoresTab = (typeof TABS)[number]
 const route = useRoute()
 const router = useRouter()
 const { fetchCurrentUser, currentRole } = useUserRole()
-const { data, error, cargar } = useSoporteTiIndicadores()
-const { withSpinner } = useSpinner()
+const { data, error, loading, cargar } = useSoporteTiIndicadores()
 const { showError } = useModal()
 
 /** Cambios de mes/área hechos desde esta página: el watch no debe volver a cargar. */
@@ -115,7 +124,27 @@ const tab = computed<IndicadoresTab>(() => {
   return esTab(value) ? value : 'resumen'
 })
 
-const filtrosClave = computed(() => `${textoQuery('mes')}|${textoQuery('area')}`)
+function paginaQuery(key: string): number {
+  const n = Number(textoQuery(key))
+  return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1
+}
+
+function claveDe(query: Record<string, string>) {
+  const nextTab = esTab(query.tab || '') ? query.tab : 'resumen'
+  const page = nextTab === 'tiempos' ? Number(query.page || 1) : 1
+  const pageFin = nextTab === 'tiempos' ? Number(query.page_fin || 1) : 1
+  return `${nextTab}|${query.mes || ''}|${query.area || ''}|${page}|${pageFin}`
+}
+
+const vistaClave = computed(() =>
+  claveDe({
+    tab: tab.value,
+    mes: textoQuery('mes'),
+    area: textoQuery('area'),
+    page: textoQuery('page'),
+    page_fin: textoQuery('page_fin')
+  })
+)
 
 const mesesItems = computed(() =>
   (data.value?.meses || []).map((mes) => ({ label: mes.label, value: mes.value }))
@@ -125,25 +154,44 @@ const areasItems = computed(() => [
   ...(data.value?.areas || []).map((area) => ({ label: area, value: area }))
 ])
 
-function armarQuery(partial: { tab?: IndicadoresTab; mes?: string | null; area?: string | null }) {
+function armarQuery(partial: {
+  tab?: IndicadoresTab
+  mes?: string | null
+  area?: string | null
+  page?: number | null
+  pageFin?: number | null
+}) {
+  const nextTab = partial.tab ?? tab.value
   const mes = partial.mes !== undefined ? partial.mes : (textoQuery('mes') || null)
   const area = partial.area !== undefined ? partial.area : (textoQuery('area') || null)
-  const query: Record<string, string> = { tab: partial.tab ?? tab.value }
+  const page = partial.page !== undefined ? partial.page || 1 : paginaQuery('page')
+  const pageFin = partial.pageFin !== undefined ? partial.pageFin || 1 : paginaQuery('page_fin')
+  const query: Record<string, string> = { tab: nextTab }
   if (mes) query.mes = mes
   if (area) query.area = area
+  if (nextTab === 'tiempos') {
+    if (page > 1) query.page = String(page)
+    if (pageFin > 1) query.page_fin = String(pageFin)
+  }
   return query
 }
 
-async function escribirQuery(partial: { tab?: IndicadoresTab; mes?: string | null; area?: string | null }) {
+async function escribirQuery(partial: {
+  tab?: IndicadoresTab
+  mes?: string | null
+  area?: string | null
+  page?: number | null
+  pageFin?: number | null
+}) {
   const query = armarQuery(partial)
-  const mesCambia = (query.mes || '') !== textoQuery('mes')
-  const areaCambia = (query.area || '') !== textoQuery('area')
   const igual =
-    textoQuery('tab') === query.tab &&
-    !mesCambia &&
-    !areaCambia
+    textoQuery('tab') === (query.tab || '') &&
+    textoQuery('mes') === (query.mes || '') &&
+    textoQuery('area') === (query.area || '') &&
+    textoQuery('page') === (query.page || '') &&
+    textoQuery('page_fin') === (query.page_fin || '')
   if (igual) return
-  if (mesCambia || areaCambia) saltosWatchFiltros += 1
+  if (claveDe(query) !== vistaClave.value) saltosWatchFiltros += 1
   await router.replace({ path: route.path, query })
 }
 
@@ -151,7 +199,7 @@ async function recargarDesdeQuery() {
   const mes = textoQuery('mes') || null
   const area = textoQuery('area') || null
   try {
-    await withSpinner(() => cargar(mes, area), 'Cargando indicadores...')
+    await cargar(mes, area, tab.value, paginaQuery('page'), paginaQuery('page_fin'))
   } catch (e: unknown) {
     showError('Indicadores', e instanceof Error ? e.message : 'No se pudieron cargar los indicadores.')
     return
@@ -163,25 +211,34 @@ async function recargarDesdeQuery() {
 }
 
 function setTab(value: IndicadoresTab) {
-  void escribirQuery({ tab: value })
+  if (value === tab.value) return
+  void escribirQuery({ tab: value }).then(() => recargarDesdeQuery())
 }
 
 function onMes(value: unknown) {
   const mes = String(value || '') || null
-  void escribirQuery({ mes }).then(() => recargarDesdeQuery())
+  void escribirQuery({ mes, page: 1, pageFin: 1 }).then(() => recargarDesdeQuery())
 }
 
 function onArea(value: unknown) {
   const area = String(value || '') || null
-  void escribirQuery({ area }).then(() => recargarDesdeQuery())
+  void escribirQuery({ area, page: 1, pageFin: 1 }).then(() => recargarDesdeQuery())
 }
 
 function filtrarArea(area: string) {
   const siguiente = data.value?.area === area ? null : area
-  void escribirQuery({ area: siguiente }).then(() => recargarDesdeQuery())
+  void escribirQuery({ area: siguiente, page: 1, pageFin: 1 }).then(() => recargarDesdeQuery())
 }
 
-watch(filtrosClave, () => {
+function onPagina(page: number) {
+  void escribirQuery({ page }).then(() => recargarDesdeQuery())
+}
+
+function onPaginaFin(page: number) {
+  void escribirQuery({ pageFin: page }).then(() => recargarDesdeQuery())
+}
+
+watch(vistaClave, () => {
   if (saltosWatchFiltros > 0) {
     saltosWatchFiltros -= 1
     return

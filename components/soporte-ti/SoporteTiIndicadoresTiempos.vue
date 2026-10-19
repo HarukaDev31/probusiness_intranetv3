@@ -5,7 +5,7 @@
       <p class="mt-1 text-xs text-muted">
         Tiempo del horario laboral y el plazo guardado en cada solicitud. Vencida solo si está en uno de estos estados y ya superó su plazo.
       </p>
-      <div v-if="tiempos.length" class="mt-3 overflow-x-auto">
+      <div v-if="tiempos.length" class="mt-3 space-y-3 overflow-x-auto">
         <table class="w-full min-w-[820px] text-sm">
           <thead>
             <tr class="border-b border-default text-left text-xs text-muted">
@@ -37,6 +37,14 @@
             </tr>
           </tbody>
         </table>
+        <div v-if="paginacionTiempos.total > paginacionTiempos.per_page" class="flex justify-end">
+          <UPagination
+            :model-value="paginacionTiempos.page"
+            :total="paginacionTiempos.total"
+            :items-per-page="paginacionTiempos.per_page"
+            @update:page="emit('pagina', $event)"
+          />
+        </div>
       </div>
       <p v-else class="mt-4 text-sm text-muted">No hay solicitudes en progreso o hecho en este mes.</p>
     </section>
@@ -46,7 +54,7 @@
       <p class="mt-1 text-xs text-muted">
         Fecha en que quedaron Desplegadas u Operativas. El plazo es el que tenía cada solicitud: si pasó de 3 h a 2 h, las anteriores siguen en 3 h.
       </p>
-      <div v-if="finalizadas.length" class="mt-3 overflow-x-auto">
+      <div v-if="finalizadas.length" class="mt-3 space-y-3 overflow-x-auto">
         <table class="w-full min-w-[860px] text-sm">
           <thead>
             <tr class="border-b border-default text-left text-xs text-muted">
@@ -81,6 +89,14 @@
             </tr>
           </tbody>
         </table>
+        <div v-if="paginacionFinalizadas.total > paginacionFinalizadas.per_page" class="flex justify-end">
+          <UPagination
+            :model-value="paginacionFinalizadas.page"
+            :total="paginacionFinalizadas.total"
+            :items-per-page="paginacionFinalizadas.per_page"
+            @update:page="emit('pagina-fin', $event)"
+          />
+        </div>
       </div>
       <p v-else class="mt-4 text-sm text-muted">Ninguna solicitud se finalizó en este mes.</p>
     </section>
@@ -89,12 +105,21 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { SoporteTiIndicadorTiempo, SoporteTiIndicadores } from '~/types/soporteTiIndicadores'
+import type {
+  SoporteTiIndicadorPaginacion,
+  SoporteTiIndicadorTiempo,
+  SoporteTiIndicadores
+} from '~/types/soporteTiIndicadores'
 
 const props = defineProps<{ data: SoporteTiIndicadores }>()
+const emit = defineEmits<{ pagina: [page: number]; 'pagina-fin': [page: number] }>()
+
+const vacia: SoporteTiIndicadorPaginacion = { page: 1, per_page: 15, total: 0, last_page: 1 }
 
 const tiempos = computed(() => props.data.detalle.tiempos || [])
 const finalizadas = computed(() => props.data.detalle.finalizadas || [])
+const paginacionTiempos = computed(() => props.data.detalle.tiempos_paginacion || vacia)
+const paginacionFinalizadas = computed(() => props.data.detalle.finalizadas_paginacion || vacia)
 
 function horas(value: number) {
   return `${value} h`
