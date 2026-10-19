@@ -39,7 +39,7 @@
         </table>
         <div v-if="paginacionTiempos.total > paginacionTiempos.per_page" class="flex justify-end">
           <UPagination
-            :model-value="paginacionTiempos.page"
+            :page="paginacionTiempos.page"
             :total="paginacionTiempos.total"
             :items-per-page="paginacionTiempos.per_page"
             @update:page="emit('pagina', $event)"
@@ -91,7 +91,7 @@
         </table>
         <div v-if="paginacionFinalizadas.total > paginacionFinalizadas.per_page" class="flex justify-end">
           <UPagination
-            :model-value="paginacionFinalizadas.page"
+            :page="paginacionFinalizadas.page"
             :total="paginacionFinalizadas.total"
             :items-per-page="paginacionFinalizadas.per_page"
             @update:page="emit('pagina-fin', $event)"
