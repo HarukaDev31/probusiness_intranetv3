@@ -309,6 +309,7 @@ function onClearFilters() {
 type SoporteTiTablaFila = SoporteTiSolicitud & {
   tipoSolicitud: string
   fechaRegistroCompleta: string
+  fechaRegistroTs: number
   fechaFinEstimadoFmt: string
   estadoLabel: string
 }
@@ -318,6 +319,7 @@ const filasTabla = computed<SoporteTiTablaFila[]>(() =>
     ...s,
     tipoSolicitud: s.tipo === 'A' ? 'A' : s.subtipoB || 'B',
     fechaRegistroCompleta: formatSoporteTiRegistro(s.fechaRegistroIso ?? s.fechaRegistro),
+    fechaRegistroTs: Date.parse(s.fechaRegistroIso ?? '') || 0,
     fechaFinEstimadoFmt: s.gestion.terminoEstimado,
     estadoLabel: s.estado || s.estadoCodigo
   }))
@@ -638,6 +640,15 @@ function columnaRol(): TableColumn<SoporteTiTablaFila> {
   }
 }
 
+/** Ordena por la fecha real (ISO); el texto formateado ("21 oct 10:55") no ordena bien como string. */
+function columnaFechaRegistro(): TableColumn<SoporteTiTablaFila> {
+  return {
+    accessorKey: 'fechaRegistroCompleta',
+    header: sortableHeader('Fecha de registro'),
+    sortingFn: (a, b) => a.original.fechaRegistroTs - b.original.fechaRegistroTs
+  }
+}
+
 function columnaTitulo(header: string): TableColumn<SoporteTiTablaFila> {
   const cap = 'min-w-0 max-w-[14rem] sm:max-w-[18rem] lg:max-w-[22rem] align-top'
   return {
@@ -685,7 +696,7 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
       { accessorKey: 'tipoSolicitud', header: sortableHeader('Tipo solicitud') },
       columnaTitulo('Nombre'),
       columnaLink(),
-      { accessorKey: 'fechaRegistroCompleta', header: sortableHeader('Fecha de registro') },
+      columnaFechaRegistro(),
       { accessorKey: 'fechaFinEstimadoFmt', header: sortableHeader('Término estimado') },
       colEstado,
       colVer
@@ -864,7 +875,7 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
     columnaTitulo('Título'),
     columnaLink(),
     colArea,
-    { accessorKey: 'fechaRegistroCompleta', header: sortableHeader('Fecha de registro') },
+    columnaFechaRegistro(),
     ...(rolActivo.value === 'PM' || rolActivo.value === 'Analista'
       ? [colPrioridad]
       : []),
