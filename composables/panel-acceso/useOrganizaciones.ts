@@ -44,6 +44,10 @@ export function useOrganizaciones() {
     return await OrganizacionService.uploadRotuladoImagen(id, slot, file)
   }
 
+  async function generarRotuladoPrueba(id: number) {
+    return await OrganizacionService.descargarRotuladoPrueba(id)
+  }
+
   async function guardarPortal(org: Organizacion, data: PortalPayload) {
     return await OrganizacionService.updateOrganizacion(org.id, {
       id_empresa: org.id_empresa,
@@ -64,5 +68,5 @@ export function useOrganizaciones() {
     return await OrganizacionService.deleteOrganizacion(id)
   }
 
-  return { listar, listarEmpresas, listarPaises, crear, actualizar, subirImagenRotulado, guardarPortal, desactivar }
+  return { listar, listarEmpresas, listarPaises, crear, actualizar, subirImagenRotulado, generarRotuladoPrueba, guardarPortal, desactivar }
 }
