@@ -177,6 +177,38 @@ export class OrganizacionService extends BaseService {
       return { success: false, message: e.message }
     }
   }
+
+  static async descargarRotuladoPrueba(id: number): Promise<Blob> {
+    const raw = await this.apiCall<Blob | ArrayBuffer | Uint8Array>(
+      `/api/panel-acceso/organizaciones/${id}/rotulado-prueba`,
+      {
+        method: 'GET',
+        responseType: 'blob',
+        headers: { Accept: 'application/pdf' },
+      },
+    )
+
+    const blob = raw instanceof Blob
+      ? raw
+      : new Blob([raw as BlobPart], { type: 'application/pdf' })
+
+    const headBuf = await blob.slice(0, 5).arrayBuffer()
+    const head = String.fromCharCode(...new Uint8Array(headBuf))
+    if (head.startsWith('%PDF')) {
+      return blob.type === 'application/pdf'
+        ? blob
+        : new Blob([blob], { type: 'application/pdf' })
+    }
+
+    const text = await blob.text()
+    try {
+      const parsed = JSON.parse(text)
+      throw new Error(parsed?.message || 'No se pudo generar el rotulado de prueba')
+    } catch (e: any) {
+      if (e?.message && !String(e.message).includes('JSON')) throw e
+      throw new Error('La respuesta no es un PDF válido')
+    }
+  }
 }
 
 export default OrganizacionService

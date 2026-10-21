@@ -78,6 +78,15 @@
                 <div class="flex justify-center gap-2">
                   <UButton
                     size="xs"
+                    icon="i-heroicons-document-arrow-down"
+                    color="neutral"
+                    variant="ghost"
+                    aria-label="Rotulado de prueba"
+                    title="Rotulado de prueba"
+                    @click="descargarRotuladoPrueba(o)"
+                  />
+                  <UButton
+                    size="xs"
                     icon="i-heroicons-pencil"
                     color="primary"
                     variant="ghost"
@@ -291,6 +300,18 @@
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 @change="onImagenSeleccionada"
               />
+              <div class="flex flex-wrap items-center gap-3">
+                <UButton
+                  size="sm"
+                  variant="outline"
+                  icon="i-heroicons-document-arrow-down"
+                  label="Generar rotulado de prueba"
+                  @click="editingOrganizacion && descargarRotuladoPrueba(editingOrganizacion)"
+                />
+                <p class="text-xs text-gray-500">
+                  Usa la cabecera subida aquí. Si no hay imagen, sale la de Probusiness.
+                </p>
+              </div>
             </div>
 
             <p v-if="formError" class="text-red-500 text-sm">{{ formError }}</p>
@@ -470,7 +491,7 @@ const showDeleteModal = ref(false)
 const deletingOrganizacion = ref<Organizacion | null>(null)
 const deleting = ref(false)
 
-const { listar, listarEmpresas, listarPaises, crear, actualizar, subirImagenRotulado, guardarPortal, desactivar } = useOrganizaciones()
+const { listar, listarEmpresas, listarPaises, crear, actualizar, subirImagenRotulado, generarRotuladoPrueba, guardarPortal, desactivar } = useOrganizaciones()
 const { withSpinner } = useSpinner()
 const { showSuccess, showError } = useModal()
 
@@ -722,6 +743,24 @@ async function copiarKey(key: string) {
 function confirmDelete(organizacion: Organizacion) {
   deletingOrganizacion.value = organizacion
   showDeleteModal.value = true
+}
+
+async function descargarRotuladoPrueba(org: Organizacion) {
+  try {
+    const blob = await withSpinner(
+      () => generarRotuladoPrueba(org.id),
+      'Generando rotulado…',
+    )
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `Rotulado_prueba_${org.no_organizacion}.pdf`
+    link.click()
+    URL.revokeObjectURL(url)
+    showSuccess('Rotulado de prueba', 'Se descargó el PDF con la cabecera de esta organización.')
+  } catch (e) {
+    showError('No se pudo generar', e instanceof Error ? e.message : 'Inténtalo de nuevo.')
+  }
 }
 
 function imagenUrl(slot: 'paso1' | 'paso2' | 'direccion') {
