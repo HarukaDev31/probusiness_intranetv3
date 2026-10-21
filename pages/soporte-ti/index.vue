@@ -335,7 +335,9 @@ function filtrosLista(): SoporteTiListFilters {
       : undefined,
     areas: filtroAreas.value.length ? filtroAreas.value : undefined,
     creadorUserId: creadorId != null && creadorId > 0 ? creadorId : undefined,
-    soloMias: filtroSoloMias.value || undefined
+    soloMias: filtroSoloMias.value || undefined,
+    sortBy: sortBy.value,
+    sortDir: sortBy.value ? sortDir.value : undefined
   }
 }
 
@@ -357,9 +359,30 @@ const UIcon = resolveComponent('UIcon')
 const USelect = resolveComponent('USelect')
 const UButton = resolveComponent('UButton')
 
-function sortableHeader(label: string) {
+/**
+ * Orden del listado: lo resuelve el back (sort_by / sort_dir). Las columnas sin `serverKey`
+ * mantienen el orden local de la tabla.
+ */
+const sortBy = ref<string | undefined>(undefined)
+const sortDir = ref<'asc' | 'desc'>('asc')
+
+function onServerSort(serverKey: string) {
+  if (sortBy.value === serverKey) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortBy.value = serverKey
+    sortDir.value = 'asc'
+  }
+  void cargarLista(filtrosLista())
+}
+
+function sortableHeader(label: string, serverKey?: string) {
   return ({ column }: { column: any }) => {
-    const sorted = column.getIsSorted() as false | 'asc' | 'desc'
+    const sorted = (serverKey
+      ? sortBy.value === serverKey
+        ? sortDir.value
+        : false
+      : column.getIsSorted()) as false | 'asc' | 'desc'
     const icon =
       sorted === 'asc'
         ? 'i-heroicons-bars-arrow-up'
@@ -376,6 +399,10 @@ function sortableHeader(label: string) {
       trailingIcon: undefined,
       onClick: (e: MouseEvent) => {
         e.stopPropagation()
+        if (serverKey) {
+          onServerSort(serverKey)
+          return
+        }
         column.toggleSorting(sorted === 'asc')
       }
     })
@@ -591,7 +618,7 @@ function columnaCreador(): TableColumn<SoporteTiTablaFila> {
   return {
     id: 'creador',
     accessorKey: 'solicitante',
-    header: sortableHeader('Creador'),
+    header: sortableHeader('Creador', 'creador'),
     meta: {
       class: {
         th: cap,
@@ -642,7 +669,7 @@ function columnaTitulo(header: string): TableColumn<SoporteTiTablaFila> {
   const cap = 'min-w-0 max-w-[14rem] sm:max-w-[18rem] lg:max-w-[22rem] align-top'
   return {
     accessorKey: 'titulo',
-    header: sortableHeader(header),
+    header: sortableHeader(header, 'titulo'),
     meta: {
       class: {
         th: cap,
@@ -681,11 +708,11 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
 
   if (rolActivo.value === 'Solicitante') {
     return [
-      { accessorKey: 'codigo', header: sortableHeader('Código') },
-      { accessorKey: 'tipoSolicitud', header: sortableHeader('Tipo solicitud') },
+      { accessorKey: 'codigo', header: sortableHeader('Código', 'codigo') },
+      { accessorKey: 'tipoSolicitud', header: sortableHeader('Tipo solicitud', 'tipo_solicitud') },
       columnaTitulo('Nombre'),
       columnaLink(),
-      { accessorKey: 'fechaRegistroCompleta', header: sortableHeader('Fecha de registro') },
+      { accessorKey: 'fechaRegistroCompleta', header: sortableHeader('Fecha de registro', 'fecha_registro') },
       { accessorKey: 'fechaFinEstimadoFmt', header: sortableHeader('Término estimado') },
       colEstado,
       colVer
@@ -710,7 +737,7 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
 
   const colArea: TableColumn<SoporteTiTablaFila> = {
     accessorKey: 'area',
-    header: sortableHeader('Área'),
+    header: sortableHeader('Área', 'area'),
     cell: ({ row }) =>
       h(
         'span',
@@ -768,7 +795,7 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
   const colPrioridad: TableColumn<SoporteTiTablaFila> = {
     id: 'prioridad',
     accessorKey: 'prioridad',
-    header: sortableHeader('Prioridad'),
+    header: sortableHeader('Prioridad', 'prioridad'),
     meta: { class: { th: tdSelectAnalista, td: tdSelectAnalista } },
     cell: ({ row }) => {
       const t = row.original
@@ -857,14 +884,14 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
   }
 
   return [
-    { accessorKey: 'codigo', header: sortableHeader('Código') },
-    { accessorKey: 'tipoSolicitud', header: sortableHeader('Tipo') },
+    { accessorKey: 'codigo', header: sortableHeader('Código', 'codigo') },
+    { accessorKey: 'tipoSolicitud', header: sortableHeader('Tipo', 'tipo_solicitud') },
     columnaCreador(),
     columnaRol(),
     columnaTitulo('Título'),
     columnaLink(),
     colArea,
-    { accessorKey: 'fechaRegistroCompleta', header: sortableHeader('Fecha de registro') },
+    { accessorKey: 'fechaRegistroCompleta', header: sortableHeader('Fecha de registro', 'fecha_registro') },
     ...(rolActivo.value === 'PM' || rolActivo.value === 'Analista'
       ? [colPrioridad]
       : []),
