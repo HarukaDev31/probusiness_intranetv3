@@ -1128,6 +1128,17 @@ const getColumnsDocumentacionSocio = (): TableColumn<any>[] => [
         },
     },
     {
+        accessorKey: 'proveedor',
+        header: 'Proveedor',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores || []
+            if (!proveedores.length) return '—'
+            return h('div', { class: 'flex flex-col gap-2 max-w-40 whitespace-normal break-words' }, proveedores.map((proveedor: any) =>
+                h('div', { class: 'text-sm' }, proveedor.supplier || proveedor.code_supplier || '—')
+            ))
+        },
+    },
+    {
         accessorKey: 'name',
         header: 'T. Cliente',
         cell: ({ row }: { row: any }) => row.getValue('name'),
