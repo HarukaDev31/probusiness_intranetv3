@@ -6,6 +6,7 @@ export const CUSTOMERS_STATUS_OPTIONS = [
   { label: 'WAIT', value: 'WAIT' },
   { label: 'NC', value: 'NC' },
   { label: 'NP', value: 'NP' },
+  { label: 'WN', value: 'WN' },
   { label: 'C', value: 'C' },
   { label: 'NS', value: 'NS' },
   { label: 'R', value: 'R' },

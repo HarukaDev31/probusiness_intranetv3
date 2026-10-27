@@ -20,6 +20,7 @@ export const STATUS_BG_CLASSES = {
     WAIT:'bg-gray-500 text-white dark:bg-gray-500 dark:text-white',
     NC: 'bg-blue-300 text-white dark:bg-blue-300 dark:text-white',
     NP: 'bg-red-500 text-white dark:bg-red-500 dark:text-white',
+    WN: 'bg-red-500 text-white dark:bg-red-500 dark:text-white',
     NS: 'bg-red-500 text-white dark:bg-red-500 dark:text-white',
     C: 'bg-yellow-500 text-white dark:bg-yellow-500 dark:text-white',
     R: 'bg-green-500 text-white dark:bg-green-500 dark:text-white',
