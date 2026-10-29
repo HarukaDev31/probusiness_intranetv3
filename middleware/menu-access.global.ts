@@ -54,6 +54,7 @@ export default defineNuxtRouteMiddleware((to) => {
   if (to.path === '/preferencias-notificaciones') return
   if (to.path === '/perfil') return
   if (to.path === '/copiloto') return
+  if (to.path.startsWith('/pago-proveedor/formulario-tt')) return
 
   const token = localStorage.getItem('auth_token')
   const user = localStorage.getItem('auth_user')
