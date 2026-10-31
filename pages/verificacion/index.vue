@@ -47,6 +47,13 @@
               ]">
                 Boletín Químico
               </button>
+              <button v-if="isAdministracion" type="button" @click="activeTab = 'supplier-payment'" :class="[
+                'px-4 py-2 rounded-md text-sm font-medium transition',
+                activeTab === 'supplier-payment' ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
+              ]">
+                Pago a Proveedor
+                <span v-if="supplierPaymentPending" class="ml-1 rounded bg-orange-500 px-1.5 text-xs text-white">{{ supplierPaymentPending }}</span>
+              </button>
             </div>
           </div>
         </template>
@@ -103,6 +110,13 @@
               ]">
                 Boletín Químico
               </button>
+              <button v-if="isAdministracion" type="button" @click="activeTab = 'supplier-payment'" :class="[
+                'px-4 py-2 rounded-md text-sm font-medium transition',
+                activeTab === 'supplier-payment' ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
+              ]">
+                Pago a Proveedor
+                <span v-if="supplierPaymentPending" class="ml-1 rounded bg-orange-500 px-1.5 text-xs text-white">{{ supplierPaymentPending }}</span>
+              </button>
             </div>
           </div>
         </template>
@@ -132,6 +146,7 @@
               <button type="button" @click="activeTab = 'delivery'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isDelivery ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Delivery</button>
               <button type="button" @click="activeTab = 'permisos'" :class="['px-4 py-2 rounded-md text-sm font-medium transition', isPermisos ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600']">Permisos</button>
               <button type="button" @click="activeTab = 'boletin-quimico'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isBoletinQuimico ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Boletín Químico</button>
+              <button v-if="isAdministracion" type="button" @click="activeTab = 'supplier-payment'" :class="['px-4 py-2 rounded-md text-sm font-medium transition', activeTab === 'supplier-payment' ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600']">Pago a Proveedor <span v-if="supplierPaymentPending" class="ml-1 rounded bg-orange-500 px-1.5 text-xs text-white">{{ supplierPaymentPending }}</span></button>
             </div>
           </div>
         </template>
@@ -187,6 +202,13 @@
               ]">
                 Boletín Químico
               </button>
+              <button v-if="isAdministracion" type="button" @click="activeTab = 'supplier-payment'" :class="[
+                'px-4 py-2 rounded-md text-sm font-medium transition',
+                activeTab === 'supplier-payment' ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
+              ]">
+                Pago a Proveedor
+                <span v-if="supplierPaymentPending" class="ml-1 rounded bg-orange-500 px-1.5 text-xs text-white">{{ supplierPaymentPending }}</span>
+              </button>
             </div>
           </div>
         </template>
@@ -228,10 +250,15 @@
               <button type="button" @click="activeTab = 'delivery'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isDelivery ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Delivery</button>
               <button v-if="isAdministracion" type="button" @click="activeTab = 'permisos'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isPermisos ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Permisos</button>
               <button type="button" @click="activeTab = 'boletin-quimico'" :class="['px-4 py-2 rounded-md text-sm font-medium transition', isBoletinQuimico ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600']">Boletín Químico</button>
+              <button v-if="isAdministracion" type="button" @click="activeTab = 'supplier-payment'" :class="['px-4 py-2 rounded-md text-sm font-medium transition', activeTab === 'supplier-payment' ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600']">Pago a Proveedor <span v-if="supplierPaymentPending" class="ml-1 rounded bg-orange-500 px-1.5 text-xs text-white">{{ supplierPaymentPending }}</span></button>
             </div>
           </div>
         </template>
       </DataTable>
+    </div>
+
+    <div v-else-if="activeTab === 'supplier-payment' && isAdministracion">
+      <SupplierPaymentDeposits @change-tab="activeTab = $event" @pending-count="supplierPaymentPending = $event" />
     </div>
   </div>
 
@@ -262,6 +289,8 @@ import type { TramiteAduana, TramiteAduanaTipoPermisoItem } from '~/types/baseda
 import { TRAMITE_ESTADOS } from '~/types/basedatos/tramiteAduana'
 import { formatDateTimeToDmy } from '~/utils/formatters'
 import { BoletinQuimicoService } from '~/services/basedatos/boletinQuimicoService'
+import { PagoProveedorService } from '~/services/pagoProveedorService'
+import { DEPOSIT_STATUS } from '~/constants/supplierPayment'
 import type { BoletinQuimicoRow } from '~/services/basedatos/boletinQuimicoService'
 import type { PagosDetails } from '~/types/cargaconsolidada/clientes/pagos'
 
@@ -281,6 +310,7 @@ const tabs = computed(() => {
 })
 
 const activeTab = ref('consolidado')
+const supplierPaymentPending = ref(0)
 
 const isConsolidado = computed(() => activeTab.value === 'consolidado')
 const isCursos = computed(() => activeTab.value === 'cursos')
@@ -1369,6 +1399,11 @@ onMounted(async () => {
     await loadPermisosVerificacion({ page: 1 })
   } else if (activeTab.value === 'boletin-quimico') {
     await loadBoletin()
+  } else if (activeTab.value === 'supplier-payment' && isAdministracion.value) {
+    await loadSupplierPaymentPending()
+  }
+  if (isAdministracion.value && activeTab.value !== 'supplier-payment') {
+    await loadSupplierPaymentPending()
   }
 })
 watch(activeTab, async (newTab, oldTab) => {
@@ -1399,6 +1434,16 @@ watch(activeTab, async (newTab, oldTab) => {
     navigateTo(`/verificacion?tab=boletin-quimico`)
     try { searchBoletin.value = '' } catch (e) { /* ignore */ }
     await loadBoletin()
+  } else if (newTab === 'supplier-payment') {
+    navigateTo(`/verificacion?tab=supplier-payment`)
   }
 })
+
+async function loadSupplierPaymentPending() {
+  if (!isAdministracion.value) return
+  try {
+    const response = await PagoProveedorService.listDeposits({ status: DEPOSIT_STATUS.PENDING, page: 1, per_page: 1 })
+    supplierPaymentPending.value = response.pending_count || 0
+  } catch (e) { /* el listado de la pestaña muestra el error */ }
+}
 </script>

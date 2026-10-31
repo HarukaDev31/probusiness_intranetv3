@@ -36,6 +36,10 @@
             <input v-model.number="horasVigencia" type="number" min="1" max="240" class="mt-1 block w-28 rounded-md border border-gray-300 px-3 py-2 text-sm" />
           </label>
           <UButton size="sm" color="primary" variant="soft" :loading="guardandoVigencia" @click="guardarVigencia">Guardar vigencia</UButton>
+          <label class="text-sm text-gray-600">
+            Resaltar desde (días)
+            <input v-model.number="highlightAfterDays" type="number" min="1" class="mt-1 block w-28 rounded-md border border-gray-300 px-3 py-2 text-sm" placeholder="Sin definir" />
+          </label>
         </div>
       </template>
     </DataTable>
@@ -77,15 +81,15 @@ const filtrosConfig: FilterConfig[] = [
 const dinero = (valor: number) => `$${Number(valor || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 const columns: TableColumn<PagoProveedorCotizacion>[] = [
-  { accessorKey: 'codigo', header: 'N.°' },
-  { accessorKey: 'creado_en', header: 'Fecha', cell: ({ row }) => formatearFecha(row.original.creado_en) },
+  { accessorKey: 'codigo', header: 'Cotización' },
+  { accessorKey: 'creado_en', header: 'Fecha', cell: ({ row }) => formatDate(row.original.creado_en) },
+  { accessorKey: 'antiguedad', header: 'Antigüedad', cell: ({ row }) => ageLabel(row.original) },
   { accessorKey: 'vigencia_texto', header: 'Vigencia' },
-  { accessorKey: 'cliente_nombre', header: 'Cliente' },
   { accessorKey: 'consolidado', header: 'Consolidado' },
-  { accessorKey: 'cod_cotizacion_cc', header: 'Cotización C.C.' },
-  { accessorKey: 'proveedores_cantidad', header: 'Proveedores' },
-  { accessorKey: 'total', header: 'Total', cell: ({ row }) => dinero(row.original.total) },
-  { accessorKey: 'tipo_cambio', header: 'T.C.', cell: ({ row }) => row.original.tipo_cambio ?? '—' },
+  { accessorKey: 'cliente_nombre', header: 'Cliente' },
+  { accessorKey: 'proveedores', header: 'Proveedores', cell: ({ row }) => supplierSummary(row.original) },
+  { accessorKey: 'total_ahora', header: 'Total a pagar', cell: ({ row }) => dinero(row.original.total_ahora || row.original.total) },
+  { accessorKey: 'tipo_cambio', header: 'T.C. usado', cell: ({ row }) => row.original.tipo_cambio ?? '—' },
   {
     accessorKey: 'estado',
     header: 'Estado',
@@ -98,18 +102,56 @@ const columns: TableColumn<PagoProveedorCotizacion>[] = [
   {
     accessorKey: 'acciones',
     header: 'Acciones',
-    cell: ({ row }) => h('div', { class: 'flex gap-1' }, [
-      h(UButton, { icon: 'i-heroicons-eye', size: 'xs', color: 'primary', variant: 'ghost', onClick: () => navigateTo(`/pago-proveedor/cotizaciones/${row.original.id}`) }),
-      row.original.puede_eliminar
-        ? h(UButton, { icon: 'i-heroicons-trash', size: 'xs', color: 'error', variant: 'ghost', onClick: () => confirmarEliminar(row.original) })
-        : null
-    ])
+    cell: ({ row }) => h('div', { class: 'flex flex-wrap gap-1' }, quoteActions(row.original))
   }
 ]
 
-function formatearFecha(valor: string | null) {
-  if (!valor) return '—'
-  return new Date(valor).toLocaleString('es-PE', { dateStyle: 'short', timeStyle: 'short' })
+const highlightAfterDays = ref<number | null>(null)
+
+function formatDate(value: string | null) {
+  if (!value) return '—'
+  return new Date(value).toLocaleDateString('es-PE')
+}
+
+function ageDays(createdAt: string | null) {
+  if (!createdAt) return 0
+  return Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000))
+}
+
+function ageLabel(quote: PagoProveedorCotizacion) {
+  if (quote.estado !== 'pendiente') return '—'
+  const days = ageDays(quote.creado_en)
+  const text = days === 0 ? 'hoy' : days === 1 ? 'hace 1 día' : `hace ${days} días`
+  const marked = highlightAfterDays.value && days >= highlightAfterDays.value
+  return marked ? `${text} · seguimiento` : text
+}
+
+function supplierSummary(quote: PagoProveedorCotizacion) {
+  return (quote.proveedores || []).map((provider) => {
+    const payment = provider.moneda === 'RMB' ? 'RMB / Transferencia' : 'USD / T-T'
+    const name = provider.nombre_proveedor ? ` · ${provider.nombre_proveedor}` : ''
+    return `${provider.code_supplier || 'Sin código'}${name} · ${payment}`
+  }).join(' · ') || '—'
+}
+
+function quoteActions(quote: PagoProveedorCotizacion) {
+  const open = () => navigateTo(`/pago-proveedor/cotizaciones/${quote.id}`)
+  const buttons = [
+    h(UButton, { icon: 'i-heroicons-pencil-square', size: 'xs', color: 'neutral', variant: 'ghost', title: 'Editar', onClick: open })
+  ]
+  if (quote.puede_enviar) {
+    buttons.push(h(UButton, { icon: 'i-heroicons-chat-bubble-left-right', size: 'xs', color: 'success', variant: 'ghost', title: 'Vista previa de WhatsApp', onClick: () => previewWhatsapp(quote) }))
+    buttons.push(h(UButton, { icon: 'i-heroicons-document-arrow-down', size: 'xs', color: 'neutral', variant: 'ghost', title: 'Descargar PDF', onClick: () => downloadPdf(quote) }))
+  }
+  if (quote.puede_eliminar) {
+    buttons.push(h(UButton, { icon: 'i-heroicons-trash', size: 'xs', color: 'error', variant: 'ghost', title: 'Eliminar', onClick: () => confirmDelete(quote) }))
+  }
+  if (quote.puede_renovar) {
+    buttons.push(h(UButton, { size: 'xs', color: 'primary', label: 'Renovar', onClick: () => renewQuote(quote) }))
+  } else if (quote.puede_crear_solicitud) {
+    buttons.push(h(UButton, { size: 'xs', color: 'primary', label: 'Crear solicitud', onClick: () => createRequest(quote) }))
+  }
+  return buttons
 }
 
 async function cargar() {
@@ -156,11 +198,58 @@ function alFiltrar(clave: string, valor: unknown) {
   cargar()
 }
 
-function confirmarEliminar(cotizacion: PagoProveedorCotizacion) {
-  showConfirmation('Eliminar cotización', `Se eliminará ${cotizacion.codigo}. Esta acción no se puede deshacer.`, async () => {
+async function previewWhatsapp(quote: PagoProveedorCotizacion) {
+  try {
+    const response = await PagoProveedorService.vistaPreviaWhatsapp(quote.id)
+    showSuccess('Vista previa de WhatsApp', response.data.texto || 'Mensaje listo.')
+  } catch (error: any) {
+    showError('WhatsApp', error.message || 'No se pudo armar el mensaje.')
+  }
+}
+
+async function downloadPdf(quote: PagoProveedorCotizacion) {
+  try {
+    const response = await PagoProveedorService.descargarPdf(quote.id)
+    const binary = atob(response.data.base64)
+    const bytes = new Uint8Array(binary.length)
+    for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index)
+    const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = response.data.filename
+    link.click()
+    URL.revokeObjectURL(url)
+  } catch (error: any) {
+    showError('PDF', error.message || 'No se pudo generar el resumen.')
+  }
+}
+
+async function renewQuote(quote: PagoProveedorCotizacion) {
+  try {
+    await PagoProveedorService.renovarCotizacion(quote.id, null)
+    showSuccess('Cotización renovada', 'Confirma el tipo de cambio del día y reenvía el resumen.')
+    await cargar()
+  } catch (error: any) {
+    showError('Renovar', error.message || 'No se pudo renovar.')
+  }
+}
+
+function createRequest(quote: PagoProveedorCotizacion) {
+  showConfirmation('Crear solicitud', `Se confirma ${quote.codigo} y se abre la solicitud.`, async () => {
     try {
-      await PagoProveedorService.eliminarCotizacion(cotizacion.id)
-      showSuccess('Cotización eliminada', cotizacion.codigo)
+      const response = await PagoProveedorService.crearSolicitud(quote.id)
+      await navigateTo(`/pago-proveedor/solicitudes/${response.data.id}`)
+    } catch (error: any) {
+      showError('Solicitud', error.message || 'Faltan datos para crear la solicitud.')
+    }
+  })
+}
+
+function confirmDelete(quote: PagoProveedorCotizacion) {
+  showConfirmation('Eliminar cotización', `Se eliminará ${quote.codigo}. Esta acción no se puede deshacer.`, async () => {
+    try {
+      await PagoProveedorService.eliminarCotizacion(quote.id)
+      showSuccess('Cotización eliminada', quote.codigo)
       await cargar()
     } catch (error: any) {
       showError('No se pudo eliminar', error.message || 'Inténtalo de nuevo.')
