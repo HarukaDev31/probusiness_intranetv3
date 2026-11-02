@@ -255,8 +255,9 @@ const handleUploadCotizacionFinal = (idCotizacion: any) => {
         const result = await uploadCotizacionFinalFile(formData, idCotizacion)
         if (result && (result as any).success) {
           showSuccess('Éxito', 'Cotizacion final subida correctamente')
-          //reload table general
           await getGeneral(Number(id))
+          await getPagos(Number(id))
+          await getHeaders(Number(id))
         } else {
           showError('Error', (result as any)?.message || 'Error al subir la plantilla final')
         }
