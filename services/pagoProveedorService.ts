@@ -1,6 +1,7 @@
 import { BaseService } from './base/BaseService'
 import type {
   PagoProveedorBusquedaCc,
+  PagoProveedorSugerenciaCc,
   PagoProveedorCotizacion,
   PagoProveedorPaginacion,
   PagoProveedorSolicitud,
@@ -36,6 +37,14 @@ export class PagoProveedorService extends BaseService {
     if (params.page) query.append('page', String(params.page))
     if (params.per_page) query.append('per_page', String(params.per_page))
     return this.apiCall<Lista<PagoProveedorCotizacion>>(`${this.baseUrl}/cotizaciones?${query.toString()}`)
+  }
+
+  static async sugerirConsolidada(params: { q: string; page?: number; per_page?: number }) {
+    const query = new URLSearchParams()
+    query.append('q', params.q)
+    if (params.page) query.append('page', String(params.page))
+    if (params.per_page) query.append('per_page', String(params.per_page))
+    return this.apiCall<Lista<PagoProveedorSugerenciaCc>>(`${this.baseUrl}/cotizaciones-cc?${query.toString()}`)
   }
 
   static async buscarConsolidada(codigo: string) {

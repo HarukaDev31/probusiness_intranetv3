@@ -5,6 +5,13 @@ export interface PagoProveedorCodigoCc {
   nombre?: string | null
 }
 
+export interface PagoProveedorSugerenciaCc {
+  cod_cotizacion_cc: string
+  cliente_nombre: string | null
+  cliente_documento: string | null
+  consolidado: string | null
+}
+
 export interface PagoProveedorBusquedaCc {
   cod_cotizacion_cc: string
   calculadora_importacion_id: number

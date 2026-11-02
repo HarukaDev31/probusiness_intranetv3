@@ -16,19 +16,45 @@
       <input
         v-model="codigo"
         type="text"
-        maxlength="10"
-        placeholder="Ej: CO10261583"
-        class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 uppercase"
+        placeholder="Código, cliente o documento"
+        class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+        autocomplete="off"
+        @focus="listaAbierta = true"
         @input="alEscribir"
-        @keyup.enter="buscar"
       />
     </label>
-    <p v-if="!codigo.trim()" class="text-xs text-gray-500">Escribe el número completo, por ejemplo CO10261583. De ahí se trae la información del cliente.</p>
+    <div v-if="listaAbierta && codigo.trim().length >= 2" class="overflow-hidden rounded-xl border border-gray-200 bg-white">
+      <div v-if="buscandoLista" class="space-y-2 p-3">
+        <USkeleton class="h-8 w-full" />
+        <USkeleton class="h-8 w-full" />
+        <USkeleton class="h-8 w-3/4" />
+      </div>
+      <p v-else-if="!sugerencias.length" class="px-3 py-4 text-sm text-gray-500">No hay cotizaciones con ese texto.</p>
+      <ul v-else class="max-h-56 overflow-y-auto">
+        <li v-for="item in sugerencias" :key="item.cod_cotizacion_cc">
+          <button type="button" class="flex w-full items-start justify-between gap-3 px-3 py-2 text-left hover:bg-primary-50" @click="elegir(item)">
+            <span>
+              <span class="block text-sm font-bold text-gray-900">{{ item.cod_cotizacion_cc }}</span>
+              <span class="block text-xs text-gray-500">{{ item.cliente_nombre || 'Sin nombre' }}<span v-if="item.cliente_documento"> · {{ item.cliente_documento }}</span></span>
+            </span>
+            <span class="shrink-0 text-xs text-gray-400">{{ item.consolidado || '—' }}</span>
+          </button>
+        </li>
+      </ul>
+      <div v-if="paginacion.last_page > 1" class="flex items-center justify-between border-t border-gray-100 px-3 py-2 text-xs text-gray-500">
+        <span>{{ paginacion.current_page }} de {{ paginacion.last_page }}</span>
+        <span class="flex gap-2">
+          <button type="button" class="font-semibold text-primary-600 disabled:text-gray-300" :disabled="paginacion.current_page <= 1 || buscandoLista" @click="irPagina(paginacion.current_page - 1)">Anterior</button>
+          <button type="button" class="font-semibold text-primary-600 disabled:text-gray-300" :disabled="paginacion.current_page >= paginacion.last_page || buscandoLista" @click="irPagina(paginacion.current_page + 1)">Siguiente</button>
+        </span>
+      </div>
+    </div>
+    <p v-if="codigo.trim().length < 2" class="text-xs text-gray-500">Escribe al menos 2 letras o números. Puedes buscar por el código, el cliente o el documento.</p>
     <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
 
     <div v-if="!resultado && !error" class="rounded-2xl border border-dashed border-gray-200 bg-white px-4 py-6 text-sm text-gray-500">
       <p class="font-semibold text-gray-800">Aquí verás al cliente</p>
-      <p class="mt-1">Su nombre, documento, el consolidado y sus proveedores aparecen al escribir un número válido.</p>
+      <p class="mt-1">Su nombre, documento, el consolidado y sus proveedores aparecen al elegir una cotización de la lista.</p>
     </div>
 
     <div v-if="resultado" class="rounded-2xl border border-gray-200 bg-white p-4">
@@ -59,17 +85,23 @@
 import { computed, ref, watch } from 'vue'
 import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
 import { PagoProveedorService } from '~/services/pagoProveedorService'
-import type { PagoProveedorBusquedaCc } from '~/types/pago-proveedor'
+import type { PagoProveedorBusquedaCc, PagoProveedorPaginacion, PagoProveedorSugerenciaCc } from '~/types/pago-proveedor'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ close: []; created: [id: number] }>()
 
 const codigo = ref('')
 const buscando = ref(false)
+const buscandoLista = ref(false)
 const creando = ref(false)
+const listaAbierta = ref(false)
 const error = ref('')
 const resultado = ref<PagoProveedorBusquedaCc | null>(null)
+const sugerencias = ref<PagoProveedorSugerenciaCc[]>([])
+const paginacion = ref<PagoProveedorPaginacion>({ current_page: 1, last_page: 1, per_page: 8, total: 0 })
 let secuencia = 0
+let listaSecuencia = 0
+let espera: ReturnType<typeof setTimeout> | undefined
 
 const puedeAceptar = computed(() => !!resultado.value && resultado.value.proveedores.length > 0 && !creando.value)
 
@@ -78,19 +110,55 @@ watch(() => props.open, (abierto) => {
   codigo.value = ''
   error.value = ''
   resultado.value = null
+  sugerencias.value = []
+  listaAbierta.value = false
+  paginacion.value = { current_page: 1, last_page: 1, per_page: 8, total: 0 }
 })
 
 function alEscribir() {
   error.value = ''
   resultado.value = null
-  const limpio = codigo.value.trim().toUpperCase()
-  if (/^CO\d{8}$/.test(limpio)) buscar()
+  listaAbierta.value = true
+  if (espera) clearTimeout(espera)
+  espera = setTimeout(() => cargarSugerencias(1), 250)
+}
+
+function irPagina(page: number) {
+  cargarSugerencias(page)
+}
+
+async function cargarSugerencias(page: number) {
+  const texto = codigo.value.trim()
+  if (texto.length < 2) {
+    sugerencias.value = []
+    return
+  }
+  const actual = ++listaSecuencia
+  buscandoLista.value = true
+  try {
+    const respuesta = await PagoProveedorService.sugerirConsolidada({ q: texto, page, per_page: 8 })
+    if (actual !== listaSecuencia) return
+    sugerencias.value = respuesta.data || []
+    paginacion.value = respuesta.pagination
+  } catch (err: any) {
+    if (actual !== listaSecuencia) return
+    sugerencias.value = []
+    error.value = err?.data?.message || err?.message || 'No se pudo buscar.'
+  } finally {
+    if (actual === listaSecuencia) buscandoLista.value = false
+  }
+}
+
+function elegir(item: PagoProveedorSugerenciaCc) {
+  codigo.value = item.cod_cotizacion_cc
+  listaAbierta.value = false
+  buscar()
 }
 
 async function buscar() {
   const limpio = codigo.value.trim().toUpperCase()
   if (!/^CO\d{8}$/.test(limpio)) {
-    error.value = limpio ? 'El número debe tener el formato CO y 8 dígitos.' : ''
+    error.value = 'Elige una cotización de la lista.'
     resultado.value = null
     return
   }
