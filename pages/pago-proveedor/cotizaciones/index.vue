@@ -23,7 +23,7 @@
       empty-state-message="No hay cotizaciones de pago a proveedor."
       :show-new-button="true"
       new-button-label="Nueva cotización"
-      :on-new-button-click="() => navigateTo('/pago-proveedor/cotizaciones/nueva')"
+      :on-new-button-click="() => nuevaAbierta = true"
       @update:primary-search="alBuscar"
       @page-change="alCambiarPagina"
       @items-per-page-change="alCambiarTamano"
@@ -31,11 +31,7 @@
     >
       <template #body-top>
         <div class="my-3 flex flex-wrap items-end gap-3">
-          <label class="text-sm text-gray-600">
-            Vigencia de cotizaciones (horas hábiles)
-            <input v-model.number="horasVigencia" type="number" min="1" max="240" class="mt-1 block w-28 rounded-md border border-gray-300 px-3 py-2 text-sm" />
-          </label>
-          <UButton size="sm" color="primary" variant="soft" :loading="guardandoVigencia" @click="guardarVigencia">Guardar vigencia</UButton>
+          <UButton size="sm" color="neutral" variant="soft" @click="vigenciaAbierta = true">Vigencia de cotizaciones</UButton>
           <label class="text-sm text-gray-600">
             Resaltar desde (días)
             <input v-model.number="highlightAfterDays" type="number" min="1" class="mt-1 block w-28 rounded-md border border-gray-300 px-3 py-2 text-sm" placeholder="Sin definir" />
@@ -43,6 +39,23 @@
         </div>
       </template>
     </DataTable>
+
+    <NuevaCotizacionModal :open="nuevaAbierta" @close="nuevaAbierta = false" @created="abrirFormulario" />
+
+    <SupplierPaymentWindow
+      :open="vigenciaAbierta"
+      title="Vigencia de cotizaciones"
+      subtitle="Se cuenta desde que se crea la cotización. Al vencer, hay que renovarla para crear la solicitud."
+      @close="vigenciaAbierta = false"
+    >
+      <label class="text-sm text-gray-600">Vigencia (horas hábiles, sin sábados ni domingos)
+        <input v-model.number="horasVigencia" type="number" min="1" max="240" class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-900" />
+      </label>
+      <template #footer>
+        <UButton color="neutral" variant="outline" @click="vigenciaAbierta = false">Cancelar</UButton>
+        <UButton color="primary" :loading="guardandoVigencia" @click="guardarVigencia">Guardar</UButton>
+      </template>
+    </SupplierPaymentWindow>
   </div>
 </template>
 
@@ -54,6 +67,8 @@ import type { PagoProveedorCotizacion, PagoProveedorPaginacion } from '~/types/p
 import { PagoProveedorService } from '~/services/pagoProveedorService'
 import { useModal } from '~/composables/commons/useModal'
 import { UBadge, UButton } from '#components'
+import NuevaCotizacionModal from '~/components/pago-proveedor/NuevaCotizacionModal.vue'
+import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
 
 const { showSuccess, showError, showConfirmation } = useModal()
 const filas = ref<PagoProveedorCotizacion[]>([])
@@ -63,6 +78,8 @@ const filtros = ref<Record<string, string>>({ estado: 'todos' })
 const paginacion = ref<PagoProveedorPaginacion>({ current_page: 1, last_page: 1, per_page: 15, total: 0 })
 const horasVigencia = ref(48)
 const guardandoVigencia = ref(false)
+const nuevaAbierta = ref(false)
+const vigenciaAbierta = ref(false)
 
 const filtrosConfig: FilterConfig[] = [
   {
@@ -257,10 +274,15 @@ function confirmDelete(quote: PagoProveedorCotizacion) {
   })
 }
 
+function abrirFormulario(id: number) {
+  navigateTo(`/pago-proveedor/cotizaciones/${id}`)
+}
+
 async function guardarVigencia() {
   guardandoVigencia.value = true
   try {
     await PagoProveedorService.guardarVigencia(horasVigencia.value)
+    vigenciaAbierta.value = false
     showSuccess('Vigencia actualizada', `Las cotizaciones nuevas vencen a las ${horasVigencia.value} horas hábiles.`)
   } catch (error: any) {
     showError('Vigencia', error.message || 'No se pudo guardar.')

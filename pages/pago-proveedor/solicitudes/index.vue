@@ -1,10 +1,17 @@
 <template>
   <div class="md:p-6">
-    <header v-if="profile !== SUPPLIER_PAYMENT_PROFILE.WAREHOUSE" class="mb-4">
-      <h1 class="text-xl font-bold text-gray-800">Pago a Proveedor</h1>
-      <p v-if="profile === SUPPLIER_PAYMENT_PROFILE.ADMINISTRATION" class="mt-1 text-sm text-gray-500">Primero se valida el depósito. Después se aprueba el pago y, si es en dólares, se transfiere al proveedor.</p>
-      <p v-else-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" class="mt-1 text-sm text-gray-500">Lo que te toca hacer está en Mis pendientes. El resto del pago lo ves en el detalle, en solo lectura.</p>
+    <header v-if="profile !== SUPPLIER_PAYMENT_PROFILE.WAREHOUSE" class="mb-4 flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h1 class="text-xl font-bold text-gray-800">Pago a Proveedor</h1>
+        <p v-if="profile === SUPPLIER_PAYMENT_PROFILE.ADMINISTRATION" class="mt-1 text-sm text-gray-500">Primero se valida el depósito. Después se aprueba el pago y, si es en dólares, se transfiere al proveedor.</p>
+        <p v-else-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" class="mt-1 text-sm text-gray-500">Lo que te toca hacer está en Mis pendientes. El resto del pago lo ves en el detalle, en solo lectura.</p>
+      </div>
+      <div v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" class="flex gap-2">
+        <UButton color="neutral" variant="soft" to="/pago-proveedor/cotizaciones">Cotizaciones</UButton>
+        <UButton color="primary" @click="nuevaCotizacion = true">Nueva cotización</UButton>
+      </div>
     </header>
+    <NuevaCotizacionModal v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" :open="nuevaCotizacion" @close="nuevaCotizacion = false" @created="(id) => navigateTo(`/pago-proveedor/cotizaciones/${id}`)" />
     <div v-if="profile === SUPPLIER_PAYMENT_PROFILE.ADMINISTRATION">
       <div class="mb-4 flex gap-1.5 border-b border-gray-200">
         <button
@@ -171,6 +178,7 @@ import SupplierPaymentExecutions from '~/components/pago-proveedor/SupplierPayme
 import SupplierPaymentRefunds from '~/components/pago-proveedor/SupplierPaymentRefunds.vue'
 import SupplierPaymentYuan from '~/components/pago-proveedor/SupplierPaymentYuan.vue'
 import SupplierPaymentSteps from '~/components/pago-proveedor/SupplierPaymentSteps.vue'
+import NuevaCotizacionModal from '~/components/pago-proveedor/NuevaCotizacionModal.vue'
 import { UButton } from '#components'
 
 interface RequestLine {
@@ -190,6 +198,7 @@ const search = ref('')
 const tab = ref<typeof INBOX_TAB[keyof typeof INBOX_TAB]>(INBOX_TAB.PENDING)
 const adminTab = ref<typeof ADMIN_TAB[keyof typeof ADMIN_TAB]>(ADMIN_TAB.APPROVAL)
 const taskFilter = ref<typeof SALES_TASK[keyof typeof SALES_TASK]>(SALES_TASK.ALL)
+const nuevaCotizacion = ref(false)
 const pagination = ref<PagoProveedorPaginacion>({ current_page: 1, last_page: 1, per_page: 15, total: 0 })
 
 const lines = computed<RequestLine[]>(() => requests.value.flatMap((request) => (request.providers || []).map((provider) => ({
