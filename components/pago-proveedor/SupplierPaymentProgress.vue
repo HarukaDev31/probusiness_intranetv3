@@ -75,8 +75,8 @@
       <div v-if="progress.confirmation.can_request_refund" class="mt-3">
         <UButton size="sm" color="primary" :loading="saving" @click="requestRefund">Solicitar reembolso</UButton>
       </div>
-      <form v-if="progress.confirmation.can_register_exchange" class="mt-3 space-y-2" @submit.prevent="saveDifference">
-        <p>Diferencia por cobrar ${{ money(progress.confirmation.exchange_due_usd) }}. Administración la valida en Verificación.</p>
+      <form v-if="progress.confirmation.can_register_exchange" class="mt-3 space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-3" @submit.prevent="saveDifference">
+        <p class="font-semibold text-amber-900">Diferencia por cobrar ${{ money(progress.confirmation.exchange_due_usd) }}. Administración la valida en Verificación.</p>
         <div class="flex flex-wrap items-end gap-2">
           <label>Importe
             <input v-model.number="difference.importe" type="number" min="0" step="0.01" class="mt-1 block rounded-md border border-gray-300 px-2 py-1.5" />
@@ -97,7 +97,7 @@
           <UButton type="submit" size="sm" color="primary" :loading="saving">Registrar voucher</UButton>
         </div>
       </form>
-      <form v-if="progress.confirmation.exchange_rate_pending" class="mt-3 flex flex-wrap items-end gap-2" @submit.prevent="saveRate">
+      <form v-if="progress.confirmation.exchange_rate_pending" class="mt-3 flex flex-wrap items-end gap-2 rounded-xl border border-primary-100 bg-primary-50 p-3" @submit.prevent="saveRate">
         <label class="text-sm">Tipo de cambio del día
           <input v-model.number="rate" type="number" min="0" step="0.0001" class="mt-1 block rounded-md border border-gray-300 px-2 py-1.5" />
         </label>

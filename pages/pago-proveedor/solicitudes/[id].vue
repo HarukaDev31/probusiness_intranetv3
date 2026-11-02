@@ -1,7 +1,15 @@
 <template>
   <div class="mx-auto max-w-5xl space-y-4 p-6">
     <button type="button" class="inline-flex items-center rounded-lg border border-primary-500 bg-primary-50 px-3.5 py-1.5 text-xs font-semibold text-primary-600" @click="navigateTo('/pago-proveedor/solicitudes')">← Regresar al listado</button>
-    <div v-if="cargando" class="py-12 text-center text-gray-500">Cargando solicitud…</div>
+    <div v-if="cargando" class="space-y-4">
+      <USkeleton class="h-8 w-72" />
+      <USkeleton class="h-36 w-full rounded-2xl" />
+      <div class="grid gap-3 sm:grid-cols-3">
+        <USkeleton class="h-24 rounded-2xl" />
+        <USkeleton class="h-24 rounded-2xl" />
+        <USkeleton class="h-24 rounded-2xl" />
+      </div>
+    </div>
 
     <template v-else-if="solicitud">
       <header class="space-y-4">
@@ -31,15 +39,24 @@
           </dl>
         </section>
 
-        <div class="flex flex-wrap gap-2">
-          <UButton color="primary" variant="soft" @click="pedirDatos">Pedir datos del proveedor</UButton>
-          <UButton color="neutral" variant="soft" @click="enviarCuentas">Cuentas bancarias</UButton>
-          <UButton v-if="proveedoresConSaldo.length" color="primary" @click="abrirAbono()">Registrar comprobante</UButton>
+        <div v-if="(solicitud.saldo_pendiente || 0) > 0" class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary-200 bg-primary-50 px-4 py-3">
+          <div>
+            <p class="text-sm font-bold text-primary-800">Hay saldo por cobrar</p>
+            <p class="text-sm text-primary-700">${{ dinero(solicitud.saldo_pendiente || 0) }} · {{ proveedoresConSaldo.length }} proveedor{{ proveedoresConSaldo.length === 1 ? '' : 'es' }}</p>
+          </div>
+          <UButton color="primary" @click="abrirAbono()">Registrar comprobante</UButton>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">Avisos</span>
+          <UButton size="sm" color="neutral" variant="soft" @click="pedirDatos">Pedir datos del proveedor</UButton>
+          <UButton size="sm" color="neutral" variant="ghost" @click="enviarCuentas">Cuentas bancarias</UButton>
         </div>
       </header>
 
       <article v-for="proveedor in solicitud.proveedores || []" :key="proveedor.id" class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-        <div class="flex flex-wrap items-start justify-between gap-3">
+        <SupplierPaymentSteps labeled :current="proveedor.etapa" />
+        <div class="mt-4 flex flex-wrap items-start justify-between gap-3">
           <div>
             <p class="text-xs uppercase tracking-wide text-gray-400">Proveedor {{ proveedor.orden }}</p>
             <h2 class="text-lg font-semibold">{{ proveedor.titulo }}</h2>
@@ -49,11 +66,19 @@
           <span :class="pillEstado(proveedor.estado)">{{ proveedor.etapa_nombre }} · {{ proveedor.estado_nombre }}</span>
         </div>
 
-        <p class="mt-3 text-sm">A abonar ahora ${{ dinero(proveedor.importe_requerido) }} · Abonado ${{ dinero(proveedor.importe_abonado) }} · <span class="font-semibold text-primary-700">Pendiente ${{ dinero(proveedor.saldo) }}</span></p>
+        <div v-if="siguientePaso(proveedor)" class="mt-4 rounded-xl border border-primary-100 bg-primary-50 px-4 py-3">
+          <p class="text-[11px] font-bold uppercase tracking-wide text-primary-700">Siguiente paso</p>
+          <p class="mt-1 text-sm font-semibold text-gray-900">{{ siguientePaso(proveedor) }}</p>
+        </div>
+
+        <dl class="mt-4 grid grid-cols-3 gap-2 text-sm">
+          <div class="rounded-xl bg-gray-50 px-3 py-2"><dt class="text-xs text-gray-500">A abonar</dt><dd class="font-bold">${{ dinero(proveedor.importe_requerido) }}</dd></div>
+          <div class="rounded-xl bg-gray-50 px-3 py-2"><dt class="text-xs text-gray-500">Abonado</dt><dd class="font-bold">${{ dinero(proveedor.importe_abonado) }}</dd></div>
+          <div class="rounded-xl bg-primary-50 px-3 py-2"><dt class="text-xs text-primary-700">Pendiente</dt><dd class="font-bold text-primary-700">${{ dinero(proveedor.saldo) }}</dd></div>
+        </dl>
         <p v-if="proveedor.puede_registrar_diferencia" class="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
           Administración dejó este pago por cobrar. Registra el comprobante de la diferencia.
         </p>
-        <SupplierPaymentProgress v-if="solicitud.id" :solicitud-id="solicitud.id" :proveedor="proveedor" @saved="cargar" />
 
         <section v-if="proveedor.moneda === 'RMB' && proveedor.puede_editar_etapa1" class="mt-4 rounded-lg bg-gray-50 p-4">
           <h3 class="text-sm font-semibold">Datos del proveedor</h3>
@@ -103,6 +128,8 @@
           </form>
         </section>
 
+        <SupplierPaymentProgress v-if="solicitud.id" :solicitud-id="solicitud.id" :proveedor="proveedor" @saved="cargar" />
+
         <div v-if="proveedor.puede_editar_etapa1" class="mt-4">
           <button type="button" class="text-sm text-red-600" @click="anularProveedor(proveedor)">Anular proveedor</button>
         </div>
@@ -142,48 +169,53 @@
         <p class="mt-2 text-sm text-gray-500">{{ vistaPrevia.nota }}</p>
       </section>
 
-      <form v-if="abonoAbierto" class="rounded-xl border border-orange-200 bg-orange-50 p-5" @submit.prevent="guardarAbono">
-        <h2 class="font-semibold">Registrar comprobante de pago</h2>
-        <div class="mt-3 grid gap-3 md:grid-cols-2">
-          <label class="text-sm">Importe recibido (USD)
-            <input v-model.number="abono.importe" type="number" min="0" step="0.01" class="campo" />
-          </label>
-          <label class="text-sm">Fecha de pago
-            <input v-model="abono.fecha" type="date" class="campo" />
-          </label>
-          <label class="text-sm">N.° de operación
-            <input v-model="abono.operacion" class="campo" />
-          </label>
-          <label class="text-sm">Banco receptor
-            <select v-model="abono.banco" class="campo">
-              <option value="bcp">BCP</option>
-              <option value="interbank">Interbank</option>
-            </select>
-          </label>
-          <label class="text-sm md:col-span-2">Comprobante
-            <input type="file" accept=".pdf,.jpg,.jpeg,.png" class="mt-1 block text-sm" @change="elegirVoucher" />
-          </label>
-          <label class="flex items-center gap-2 text-sm md:col-span-2">
-            <input v-model="abono.interbancaria" type="checkbox" />
-            Transferencia interbancaria o depósito en cajero
-          </label>
-        </div>
-        <div class="mt-4 space-y-2">
-          <div class="flex items-center justify-between">
-            <h3 class="text-sm font-semibold">Aplicar el abono a</h3>
-            <button type="button" class="text-sm text-orange-700" @click="distribuir">Distribuir automáticamente</button>
+      <SupplierPaymentWindow
+        :open="abonoAbierto"
+        title="Registrar comprobante de pago"
+        subtitle="El abono se aplica a los proveedores con saldo."
+        @close="abonoAbierto = false"
+      >
+        <form id="abono-form" class="space-y-4" @submit.prevent="guardarAbono">
+          <div class="grid gap-3 rounded-2xl border border-gray-200 bg-white p-4 md:grid-cols-2">
+            <label class="text-sm text-gray-500">Importe recibido (USD)
+              <input v-model.number="abono.importe" type="number" min="0" step="0.01" class="campo" />
+            </label>
+            <label class="text-sm text-gray-500">Fecha de pago
+              <input v-model="abono.fecha" type="date" class="campo" />
+            </label>
+            <label class="text-sm text-gray-500">N.° de operación
+              <input v-model="abono.operacion" class="campo" />
+            </label>
+            <label class="text-sm text-gray-500">Banco receptor
+              <select v-model="abono.banco" class="campo">
+                <option value="bcp">BCP</option>
+                <option value="interbank">Interbank</option>
+              </select>
+            </label>
+            <label class="text-sm text-gray-500 md:col-span-2">Comprobante
+              <input type="file" accept=".pdf,.jpg,.jpeg,.png" class="mt-1 block text-sm text-gray-800" @change="elegirVoucher" />
+            </label>
+            <label class="flex items-center gap-2 text-sm text-gray-800 md:col-span-2">
+              <input v-model="abono.interbancaria" type="checkbox" />
+              Transferencia interbancaria o depósito en cajero
+            </label>
           </div>
-          <label v-for="proveedor in proveedoresConSaldo" :key="proveedor.id" class="flex items-center justify-between gap-3 text-sm">
-            <span>{{ proveedor.code_supplier }} · pendiente ${{ dinero(proveedor.saldo) }}</span>
-            <input v-model.number="abono.montos[proveedor.id]" type="number" min="0" step="0.01" class="campo w-32" />
-          </label>
-          <p class="text-sm">Recibido ${{ dinero(abono.importe || 0) }} · Aplicado ${{ dinero(aplicado) }} · Sin asignar ${{ dinero(sinAsignar) }}</p>
-        </div>
-        <div class="mt-4 flex gap-2">
-          <UButton type="submit" color="primary" :disabled="aplicado <= 0" :loading="guardandoAbono">Registrar</UButton>
-          <UButton type="button" color="neutral" variant="ghost" @click="abonoAbierto = false">Cancelar</UButton>
-        </div>
-      </form>
+          <div class="space-y-2 rounded-2xl border border-gray-200 bg-white p-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-bold">Aplicar el abono a</h3>
+              <button type="button" class="text-sm font-semibold text-primary-600" @click="distribuir">Distribuir automáticamente</button>
+            </div>
+            <label v-for="proveedor in proveedoresConSaldo" :key="proveedor.id" class="flex items-center justify-between gap-3 text-sm">
+              <span>{{ proveedor.code_supplier }} · pendiente ${{ dinero(proveedor.saldo) }}</span>
+              <input v-model.number="abono.montos[proveedor.id]" type="number" min="0" step="0.01" class="campo w-32" />
+            </label>
+            <p class="text-sm">Recibido ${{ dinero(abono.importe || 0) }} · Aplicado ${{ dinero(aplicado) }} · Sin asignar ${{ dinero(sinAsignar) }}</p>
+          </div>
+        </form>
+        <template #footer>
+          <UButton type="submit" form="abono-form" color="primary" :disabled="aplicado <= 0" :loading="guardandoAbono">Registrar comprobante</UButton>
+        </template>
+      </SupplierPaymentWindow>
     </template>
   </div>
 </template>
@@ -194,7 +226,9 @@ import type { PagoProveedorSolicitud, PagoProveedorSolicitudProveedor } from '~/
 import { PagoProveedorService } from '~/services/pagoProveedorService'
 import { useModal } from '~/composables/commons/useModal'
 import FormularioBancario from '~/components/pago-proveedor/FormularioBancario.vue'
+import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
 import SupplierPaymentProgress from '~/components/pago-proveedor/SupplierPaymentProgress.vue'
+import SupplierPaymentSteps from '~/components/pago-proveedor/SupplierPaymentSteps.vue'
 
 const route = useRoute()
 const { showSuccess, showError, showConfirmation } = useModal()
@@ -342,6 +376,18 @@ function anularProveedor(proveedor: PagoProveedorSolicitudProveedor) {
       showError('Anular', error.message || 'No se pudo anular.')
     }
   })
+}
+
+function siguientePaso(proveedor: PagoProveedorSolicitudProveedor) {
+  if (proveedor.observacion_china) return 'Corrige el vendedor o el WeChat y levanta la observación.'
+  if (proveedor.puede_registrar_diferencia) return 'Administración dejó una diferencia por cobrar. Registra ese comprobante.'
+  if (proveedor.puede_editar_etapa1 && proveedor.moneda === 'RMB' && !proveedor.datos.wechat) return 'Completa el vendedor y el WeChat del proveedor.'
+  if (proveedor.puede_editar_etapa1 && proveedor.moneda === 'USD' && proveedor.datos.estado !== 'autorizado') return 'Faltan los datos bancarios. Envía el formulario o llénalo aquí; el cliente tiene que autorizarlos.'
+  if (proveedor.saldo > 0 && proveedor.etapa <= 1) return 'Registra el comprobante del cliente. Administración lo valida después.'
+  if (proveedor.etapa === 2) return 'El depósito está con Administración. Aquí no hay nada que hacer hasta que lo aprueben o lo observen.'
+  if (proveedor.etapa === 3) return proveedor.moneda === 'RMB' ? 'China registra el pago en yuanes.' : 'Administración transfiere al proveedor.'
+  if (proveedor.etapa === 4 && proveedor.estado !== 'completado') return 'Revisa la confirmación: lo que falta está marcado abajo.'
+  return ''
 }
 
 function abrirAbono() {

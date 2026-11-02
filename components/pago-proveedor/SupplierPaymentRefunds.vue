@@ -1,5 +1,6 @@
 <template>
   <div>
+    <p class="mb-3 text-sm text-gray-500">El dinero sale fuera de la intranet. Aquí solo apruebas el reembolso y dejas el voucher.</p>
     <div class="overflow-x-auto rounded-lg border border-gray-200 bg-white">
       <table class="w-full border-collapse text-sm">
         <thead>
@@ -13,12 +14,15 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-if="loading">
-            <td colspan="6" class="px-3.5 py-8 text-center text-gray-400">Cargando reembolsos…</td>
-          </tr>
+          <template v-if="loading">
+            <tr v-for="row in 4" :key="`sk-${row}`">
+              <td v-for="col in 6" :key="col" class="px-3.5 py-3"><USkeleton class="h-4 w-full" /></td>
+            </tr>
+          </template>
           <tr v-else-if="!rows.length">
             <td colspan="6" class="px-3.5 py-8 text-center text-gray-400">No hay reembolsos solicitados.</td>
           </tr>
+          <template v-else>
           <tr v-for="row in rows" :key="row.id" class="border-t border-gray-100">
             <td class="px-3.5 py-3 font-semibold">{{ row.origin_label }}</td>
             <td class="px-3.5 py-3">{{ row.client_name || '—' }}<div class="text-xs text-gray-400">{{ row.consolidation }}</div></td>
@@ -33,39 +37,67 @@
               <span v-else class="rounded bg-gray-100 px-2 py-1 text-[11px] font-bold text-gray-600">{{ row.status_label }}</span>
             </td>
           </tr>
+          </template>
         </tbody>
       </table>
     </div>
 
-    <UModal v-model:open="opened" :ui="{ content: 'max-w-lg' }">
-      <template #header><h2 class="text-lg font-semibold">Voucher del reembolso</h2></template>
-      <template #body>
-        <form class="space-y-3 text-sm" @submit.prevent="approve">
-          <label class="block">Importe
-            <input v-model.number="form.importe" type="number" min="0" step="0.01" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5" />
-          </label>
-          <label class="block">Fecha
-            <input v-model="form.fecha" type="date" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5" />
-          </label>
-          <label class="block">Banco
-            <select v-model="form.banco" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5">
-              <option value="bcp">BCP</option>
-              <option value="interbank">Interbank</option>
-            </select>
-          </label>
-          <label class="block">N.° de operación (opcional)
-            <input v-model="form.operacion" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5" />
-          </label>
-          <input type="file" accept=".pdf,.jpg,.jpeg,.png" @change="onFile" />
-          <UButton type="submit" color="primary" :loading="saving">Registrar voucher</UButton>
-        </form>
+    <SupplierPaymentWindow
+      :open="opened"
+      title="Aprobar reembolso"
+      :subtitle="selected ? `${selected.client_name || 'Cliente'} · ${selected.consolidation || 'Sin consolidado'}` : ''"
+      hint="El reembolso se hace fuera de la intranet: al aprobarlo, registras su voucher."
+      wide
+      @close="opened = false"
+    >
+      <div v-if="selected" class="grid gap-4 lg:grid-cols-3">
+        <SupplierPaymentCard title="Solicitud">
+          <SupplierPaymentFact label="Cliente" :value="selected.client_name || '—'" />
+          <SupplierPaymentFact label="Consolidado" :value="selected.consolidation || '—'" />
+          <SupplierPaymentFact label="Proveedor" :value="selected.supplier_code || '—'" />
+          <SupplierPaymentFact label="Origen" :value="selected.origin_label" />
+        </SupplierPaymentCard>
+        <SupplierPaymentCard title="Reembolso">
+          <p class="text-3xl font-bold text-primary-700">${{ money(selected.amount) }}</p>
+          <p v-if="selected.reason" class="text-sm text-gray-600">{{ selected.reason }}</p>
+        </SupplierPaymentCard>
+        <SupplierPaymentCard title="Cómo se calcula">
+          <p class="text-sm text-gray-700">{{ selected.calculation }}</p>
+        </SupplierPaymentCard>
+      </div>
+      <form id="refund-voucher" class="grid gap-3 rounded-2xl border border-gray-200 bg-white p-4 text-sm sm:grid-cols-2" @submit.prevent="approve">
+        <h4 class="text-[15px] font-bold text-gray-900 sm:col-span-2">Voucher del reembolso</h4>
+        <label class="text-gray-500">Importe
+          <input v-model.number="form.importe" type="number" min="0" step="0.01" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-semibold text-gray-900" />
+        </label>
+        <label class="text-gray-500">Fecha
+          <input v-model="form.fecha" type="date" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-semibold text-gray-900" />
+        </label>
+        <label class="text-gray-500">Banco
+          <select v-model="form.banco" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-semibold text-gray-900">
+            <option value="bcp">BCP</option>
+            <option value="interbank">Interbank</option>
+          </select>
+        </label>
+        <label class="text-gray-500">N.° de operación (opcional)
+          <input v-model="form.operacion" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-semibold text-gray-900" />
+        </label>
+        <label class="text-gray-500 sm:col-span-2">Comprobante
+          <input type="file" accept=".pdf,.jpg,.jpeg,.png" class="mt-1 block text-gray-800" @change="onFile" />
+        </label>
+      </form>
+      <template #footer>
+        <UButton type="submit" form="refund-voucher" color="primary" :loading="saving">Registrar voucher</UButton>
       </template>
-    </UModal>
+    </SupplierPaymentWindow>
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
+import SupplierPaymentCard from '~/components/pago-proveedor/SupplierPaymentCard.vue'
+import SupplierPaymentFact from '~/components/pago-proveedor/SupplierPaymentFact.vue'
+import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
 import { useModal } from '~/composables/commons/useModal'
 import { PagoProveedorService } from '~/services/pagoProveedorService'
 import type { SupplierPaymentRefund } from '~/types/pago-proveedor'

@@ -1,94 +1,85 @@
 <template>
-  <UModal :open="payment !== null" class="w-full max-w-3xl" @update:open="(open) => !open && emit('close')">
-    <template #header>
-      <div>
-        <h3 class="text-lg font-semibold text-gray-900">{{ payment?.can_register ? 'Ejecución de pago' : 'Pago ejecutado' }}</h3>
-        <p class="text-sm text-gray-500">
-          {{ payment?.client_name || 'Cliente' }} · {{ payment?.consolidation || 'Sin consolidado' }}
-          <span v-if="payment?.installment_label"> · {{ payment.installment_label }}</span>
-          <span v-if="payment?.request_code"> · {{ payment.request_code }}</span>
-        </p>
-      </div>
+  <SupplierPaymentWindow
+    :open="payment !== null"
+    :title="payment?.can_register ? 'Ejecución de pago' : 'Pago ejecutado'"
+    :subtitle="subtitle"
+    :code="payment?.request_code"
+    hint="El aviso al cliente por WhatsApp queda para el final. Con la constancia y la comisión real ya se puede registrar la transferencia."
+    wide
+    @close="emit('close')"
+  >
+    <template #pill>
+      <span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-800">USD / T-T</span>
     </template>
 
-    <template #body>
-      <div v-if="payment" class="space-y-4">
-        <div class="grid gap-3 sm:grid-cols-2">
-          <div class="rounded-lg border border-gray-200 p-4 text-sm">
-            <h4 class="font-semibold text-gray-800">Solicitud</h4>
-            <p class="mt-2">{{ supplier }}</p>
-            <p class="text-gray-600">{{ payment.product || '—' }} · USD / T-T</p>
-            <p v-if="payment.supplier_payment_label" class="text-gray-500">{{ payment.supplier_payment_label }}</p>
-          </div>
-          <div class="rounded-lg border border-gray-200 p-4">
-            <p class="text-xs uppercase tracking-wide text-gray-500">Importe a pagar al proveedor</p>
-            <p class="mt-1 text-2xl font-semibold">${{ money(payment.cargo_amount) }}</p>
-            <p class="mt-1 text-xs text-gray-500">Valor de la carga, sin comisiones.</p>
-          </div>
-        </div>
+    <div v-if="payment" class="grid gap-4 lg:grid-cols-3">
+      <SupplierPaymentCard title="Solicitud">
+        <SupplierPaymentFact label="Cliente" :value="payment.client_name || '—'" />
+        <SupplierPaymentFact label="Consolidado" :value="payment.consolidation || '—'" />
+        <SupplierPaymentFact label="Proveedor" :value="supplier" />
+        <SupplierPaymentFact label="Producto" :value="payment.product || '—'" />
+        <SupplierPaymentFact v-if="payment.supplier_payment_label" label="Pago" :value="payment.supplier_payment_label" />
+        <SupplierPaymentFact v-if="payment.installment_label" label="Cuota" :value="payment.installment_label" />
+      </SupplierPaymentCard>
 
-        <div class="rounded-lg border border-gray-200 p-4">
-          <div class="flex items-center justify-between gap-3">
-            <h4 class="text-sm font-semibold text-gray-800">Datos bancarios del proveedor</h4>
-            <UButton size="xs" color="neutral" variant="soft" @click="copy(payment.bank_copy_text)">Copiar datos</UButton>
-          </div>
-          <dl class="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-            <div v-for="field in bankFields" :key="field.label" class="flex items-start justify-between gap-2">
-              <div>
-                <dt class="text-gray-500">{{ field.label }}</dt>
-                <dd>{{ field.value || '—' }}</dd>
-              </div>
-              <button v-if="field.value" type="button" class="text-xs text-primary-600" @click="copy(field.value)">Copiar</button>
-            </div>
-          </dl>
-        </div>
+      <SupplierPaymentCard title="Importe al proveedor">
+        <p class="text-3xl font-bold text-primary-700">${{ money(payment.cargo_amount) }}</p>
+        <p class="text-xs text-gray-500">Valor de la carga, sin comisiones.</p>
+      </SupplierPaymentCard>
 
-        <div class="rounded-lg border border-gray-200 p-4 text-sm">
-          <h4 class="font-semibold text-gray-800">Comisiones del pago</h4>
-          <dl class="mt-3 grid gap-2 sm:grid-cols-2">
-            <div><dt class="text-gray-500">Bancaria cobrada</dt><dd>${{ money(payment.charged_bank_fee) }}</dd></div>
-            <div>
-              <dt class="text-gray-500">Bancaria real</dt>
-              <dd v-if="payment.can_register">
-                <input v-model.number="realFee" type="number" min="0" step="0.01" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5">
-              </dd>
-              <dd v-else>${{ money(payment.real_bank_fee || 0) }}</dd>
-            </div>
-            <div><dt class="text-gray-500">Administrativa</dt><dd>${{ money(payment.charged_admin_fee) }}</dd></div>
-            <div>
-              <dt class="text-gray-500">Ganancia de Pro Business</dt>
-              <dd class="font-semibold" :class="profitClass">${{ money(shownProfit) }}</dd>
-            </div>
-          </dl>
-          <p class="mt-2 text-gray-500">Diferencia bancaria ${{ money(shownDifference) }}. Positiva es ganancia.</p>
-        </div>
+      <SupplierPaymentCard title="Comisiones del pago">
+        <SupplierPaymentFact label="Bancaria cobrada" :value="`$${money(payment.charged_bank_fee)}`" />
+        <SupplierPaymentFact label="Bancaria real">
+          <input v-if="payment.can_register" v-model.number="realFee" type="number" min="0" step="0.01" class="w-28 rounded-lg border border-gray-300 px-2 py-1 text-right text-sm font-bold">
+          <template v-else>${{ money(payment.real_bank_fee || 0) }}</template>
+        </SupplierPaymentFact>
+        <SupplierPaymentFact label="Administrativa" :value="`$${money(payment.charged_admin_fee)}`" />
+        <SupplierPaymentFact label="Diferencia bancaria" :value="`$${money(shownDifference)}`" />
+        <SupplierPaymentFact label="Ganancia de Pro Business" :value="`$${money(shownProfit)}`" :value-class="profitClass" />
+        <p class="text-xs text-gray-500">La diferencia positiva es ganancia.</p>
+      </SupplierPaymentCard>
+    </div>
 
-        <div class="rounded-lg border border-gray-200 p-4 text-sm">
-          <h4 class="font-semibold text-gray-800">Constancia del pago</h4>
-          <a v-if="payment.receipt_url" :href="payment.receipt_url" target="_blank" rel="noopener" class="mt-2 block text-primary-600">
-            {{ payment.receipt_name || 'Ver constancia' }}
-          </a>
-          <label v-else class="mt-2 block">
-            <input type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" class="text-sm" @change="onFile">
-          </label>
-          <p class="mt-2 text-gray-500">El aviso al cliente por WhatsApp queda para el final. Con la constancia y la comisión real ya se puede registrar la transferencia.</p>
+    <section v-if="payment" class="rounded-2xl border border-gray-200 bg-white p-4">
+      <div class="mb-2 flex items-center justify-between gap-3">
+        <h4 class="text-[15px] font-bold text-gray-900">Datos bancarios del proveedor</h4>
+        <UButton size="xs" color="neutral" variant="soft" @click="copy(payment.bank_copy_text)">Copiar datos</UButton>
+      </div>
+      <div class="grid gap-x-6 sm:grid-cols-2">
+        <div v-for="field in bankFields" :key="field.label" class="flex items-center justify-between gap-3 border-b border-gray-100 py-1.5">
+          <span class="text-xs text-gray-500">{{ field.label }}</span>
+          <span class="flex items-center gap-2 text-right text-sm font-bold text-gray-900">
+            {{ field.value || '—' }}
+            <button v-if="field.value" type="button" class="text-xs font-semibold text-primary-600" @click="copy(field.value)">Copiar</button>
+          </span>
         </div>
       </div>
-    </template>
+    </section>
+
+    <section v-if="payment" class="rounded-2xl border border-gray-200 bg-white p-4">
+      <h4 class="text-[15px] font-bold text-gray-900">Constancia del pago</h4>
+      <a v-if="payment.receipt_url" :href="payment.receipt_url" target="_blank" rel="noopener" class="mt-2 block text-sm font-semibold text-primary-600">
+        {{ payment.receipt_name || 'Ver constancia' }}
+      </a>
+      <label v-else class="mt-2 block text-sm text-gray-500">
+        Adjuntar constancia
+        <input type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" class="mt-1 block text-sm text-gray-800" @change="onFile">
+      </label>
+    </section>
 
     <template #footer>
-      <div class="flex justify-end gap-2">
-        <UButton color="neutral" variant="ghost" @click="emit('close')">Cerrar</UButton>
-        <UButton v-if="payment?.can_register" color="primary" :loading="saving" :disabled="!canSave" @click="save">
-          Registrar pago
-        </UButton>
-      </div>
+      <UButton v-if="payment?.can_register" color="primary" :loading="saving" :disabled="!canSave" @click="save">
+        Registrar pago
+      </UButton>
     </template>
-  </UModal>
+  </SupplierPaymentWindow>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import SupplierPaymentCard from '~/components/pago-proveedor/SupplierPaymentCard.vue'
+import SupplierPaymentFact from '~/components/pago-proveedor/SupplierPaymentFact.vue'
+import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
 import { PagoProveedorService } from '~/services/pagoProveedorService'
 import type { SupplierPaymentExecution } from '~/types/pago-proveedor'
 import { useModal } from '~/composables/commons/useModal'
@@ -106,6 +97,13 @@ const supplier = computed(() => {
   return props.payment.supplier_name
     ? `${props.payment.supplier_code || ''} · ${props.payment.supplier_name}`
     : (props.payment.supplier_code || 'Proveedor')
+})
+
+const subtitle = computed(() => {
+  if (!props.payment) return ''
+  const parts = [props.payment.client_name || 'Cliente', props.payment.consolidation || 'Sin consolidado']
+  if (props.payment.installment_label) parts.push(props.payment.installment_label)
+  return parts.join(' · ')
 })
 
 const bankFields = computed(() => {

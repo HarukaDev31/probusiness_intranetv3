@@ -28,9 +28,8 @@
 
     <DataTable
       title="Aprobación de pagos"
-      subtitle="Pago a proveedor"
+      subtitle="Compara lo cobrado con lo que ingresó al banco."
       icon="i-heroicons-check-badge"
-      :show-title="true"
       :data="rows"
       :columns="columns"
       :loading="loading"
@@ -55,64 +54,58 @@
 
     <ApprovalReviewModal :payment="selected" @close="selected = null" @saved="load" />
 
-    <UModal :open="settingsOpen" class="w-full max-w-lg" @update:open="(open) => settingsOpen = open">
-      <template #header>
-        <h3 class="text-lg font-semibold">Tolerancia y plazos</h3>
-      </template>
-      <template #body>
-        <div class="grid gap-3 sm:grid-cols-2">
-          <label v-for="field in settingFields" :key="field.key" class="text-sm">
-            <span class="mb-1 block text-gray-500">{{ field.label }}</span>
-            <input v-model.number="settingsForm[field.key]" type="number" min="0" step="0.01" class="w-full rounded-md border border-gray-300 px-2 py-1.5">
-          </label>
-          <label class="flex items-center gap-2 text-sm sm:col-span-2">
-            <input v-model="settingsForm.auto_approve" type="checkbox">
-            Aprobar automáticamente los pagos dentro de la tolerancia
-          </label>
-        </div>
-      </template>
+    <SupplierPaymentWindow
+      :open="settingsOpen"
+      title="Tolerancia y plazos"
+      subtitle="Aplican a la comparación del importe cobrado contra el del banco."
+      @close="settingsOpen = false"
+    >
+      <div class="grid gap-3 rounded-2xl border border-gray-200 bg-white p-4 sm:grid-cols-2">
+        <label v-for="field in settingFields" :key="field.key" class="text-sm text-gray-500">
+          {{ field.label }}
+          <input v-model.number="settingsForm[field.key]" type="number" min="0" step="0.01" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-semibold text-gray-900">
+        </label>
+        <label class="flex items-center gap-2 text-sm text-gray-800 sm:col-span-2">
+          <input v-model="settingsForm.auto_approve" type="checkbox">
+          Aprobar automáticamente los pagos dentro de la tolerancia
+        </label>
+      </div>
       <template #footer>
-        <div class="flex justify-end gap-2">
-          <UButton color="neutral" variant="ghost" @click="settingsOpen = false">Cerrar</UButton>
-          <UButton color="primary" :loading="savingSettings" @click="saveSettings">Guardar</UButton>
-        </div>
+        <UButton color="primary" :loading="savingSettings" @click="saveSettings">Guardar</UButton>
       </template>
-    </UModal>
+    </SupplierPaymentWindow>
 
-    <UModal :open="tariffsOpen" class="w-full max-w-lg" @update:open="(open) => tariffsOpen = open">
-      <template #header>
-        <h3 class="text-lg font-semibold">Comisiones</h3>
-      </template>
-      <template #body>
-        <div class="space-y-3 text-sm">
-          <p class="text-gray-500">Tramos: menos de $3,000 · de $3,000 a $9,000 · más de $9,000.</p>
-          <div class="grid grid-cols-3 gap-2">
-            <label v-for="(label, index) in tariffLabels" :key="'usd'+index">USD {{ label }}
-              <input v-model.number="tariffs.usd[index]" type="number" min="0" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5" />
-            </label>
-          </div>
-          <div class="grid grid-cols-3 gap-2">
-            <label v-for="(label, index) in tariffLabels" :key="'rmb'+index">RMB {{ label }}
-              <input v-model.number="tariffs.rmb[index]" type="number" min="0" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5" />
-            </label>
-          </div>
-          <label>Administrativa
-            <input v-model.number="tariffs.admin" type="number" min="0" class="mt-1 block w-full rounded-md border border-gray-300 px-2 py-1.5" />
+    <SupplierPaymentWindow
+      :open="tariffsOpen"
+      title="Comisiones"
+      subtitle="Tramos: menos de $3,000 · de $3,000 a $9,000 · más de $9,000."
+      @close="tariffsOpen = false"
+    >
+      <div class="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 text-sm">
+        <div class="grid grid-cols-3 gap-2">
+          <label v-for="(label, index) in tariffLabels" :key="'usd'+index" class="text-gray-500">USD {{ label }}
+            <input v-model.number="tariffs.usd[index]" type="number" min="0" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-semibold text-gray-900" />
           </label>
         </div>
-      </template>
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <UButton color="neutral" variant="ghost" @click="tariffsOpen = false">Cerrar</UButton>
-          <UButton color="primary" :loading="savingTariffs" @click="saveTariffs">Guardar</UButton>
+        <div class="grid grid-cols-3 gap-2">
+          <label v-for="(label, index) in tariffLabels" :key="'rmb'+index" class="text-gray-500">RMB {{ label }}
+            <input v-model.number="tariffs.rmb[index]" type="number" min="0" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-semibold text-gray-900" />
+          </label>
         </div>
+        <label class="text-gray-500">Administrativa
+          <input v-model.number="tariffs.admin" type="number" min="0" class="mt-1 block w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-semibold text-gray-900" />
+        </label>
+      </div>
+      <template #footer>
+        <UButton color="primary" :loading="savingTariffs" @click="saveTariffs">Guardar</UButton>
       </template>
-    </UModal>
+    </SupplierPaymentWindow>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, h, onMounted, reactive, ref } from 'vue'
+import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
 import type { TableColumn } from '@nuxt/ui'
 import ApprovalReviewModal from '~/components/pago-proveedor/ApprovalReviewModal.vue'
 import { APPROVAL_BUCKET, APPROVAL_STATUS } from '~/constants/supplierPayment'

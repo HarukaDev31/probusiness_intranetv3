@@ -1,7 +1,11 @@
 <template>
   <div class="mx-auto max-w-5xl p-6">
     <button type="button" class="mb-4 text-sm text-gray-500" @click="navigateTo('/pago-proveedor/cotizaciones')">← Cotizaciones</button>
-    <div v-if="cargando" class="py-12 text-center text-gray-500">Cargando cotización…</div>
+    <div v-if="cargando" class="space-y-4">
+      <USkeleton class="h-8 w-64" />
+      <USkeleton class="h-40 w-full rounded-xl" />
+      <USkeleton class="h-56 w-full rounded-xl" />
+    </div>
 
     <form v-else-if="cotizacion" class="space-y-4" @submit.prevent="guardar">
       <header class="rounded-xl border border-gray-200 bg-white p-6">

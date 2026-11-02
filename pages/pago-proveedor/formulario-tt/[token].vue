@@ -3,7 +3,12 @@
     <div class="rounded-xl border border-gray-200 bg-white p-6">
       <p class="text-sm text-gray-500">Pro Business</p>
       <h1 class="text-2xl font-semibold">Datos bancarios para el pago</h1>
-      <div v-if="cargando" class="py-8 text-gray-500">Cargando formulario…</div>
+      <div v-if="cargando" class="mt-6 space-y-3">
+        <USkeleton class="h-4 w-48" />
+        <USkeleton class="h-10 w-full" />
+        <USkeleton class="h-10 w-full" />
+        <USkeleton class="h-10 w-2/3" />
+      </div>
       <p v-else-if="error" class="mt-4 text-red-600">{{ error }}</p>
       <template v-else-if="formulario">
         <p class="mt-2 text-sm text-gray-600">{{ formulario.proveedor }}<span v-if="formulario.nombre_proveedor"> · {{ formulario.nombre_proveedor }}</span> · {{ formulario.producto }}</p>

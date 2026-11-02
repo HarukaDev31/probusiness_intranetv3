@@ -28,9 +28,8 @@
 
     <DataTable
       title="Pagos en dólares"
-      subtitle="Listos para transferir"
+      subtitle="Listos para transferir al proveedor."
       icon="i-heroicons-banknotes"
-      :show-title="true"
       :data="rows"
       :columns="columns"
       :loading="loading"

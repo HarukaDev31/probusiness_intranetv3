@@ -10,7 +10,8 @@
     <div class="mb-3.5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <article v-for="card in cards" :key="card.label" class="rounded-2xl border border-gray-200 bg-white px-4 py-4">
         <p class="text-[11px] font-bold uppercase tracking-wider text-gray-500">{{ card.label }}</p>
-        <p class="mt-1 text-2xl font-bold" :class="card.danger ? 'text-red-600' : 'text-gray-900'">{{ card.value }}</p>
+        <USkeleton v-if="loading" class="mt-2 h-8 w-24" />
+        <p v-else class="mt-1 text-2xl font-bold" :class="card.danger ? 'text-red-600' : 'text-gray-900'">{{ card.value }}</p>
       </article>
     </div>
     <div class="mb-3.5 flex overflow-hidden rounded-2xl border border-gray-200 bg-white">
@@ -23,11 +24,11 @@
         @click="changeBucket(tab.key)"
       >
         {{ tab.label }}
-        <b class="mt-0.5 block text-2xl text-gray-900">{{ tabCount(tab.key) }}</b>
+        <USkeleton v-if="loading" class="mt-1 h-8 w-10" />
+        <b v-else class="mt-0.5 block text-2xl text-gray-900">{{ tabCount(tab.key) }}</b>
       </button>
     </div>
-    <p v-if="loading" class="text-sm text-gray-500">Cargando pagos en yuanes…</p>
-    <div v-else class="overflow-x-auto rounded-2xl border border-gray-200 bg-white">
+    <div class="overflow-x-auto rounded-2xl border border-gray-200 bg-white">
       <table class="w-full border-collapse text-sm">
         <thead>
           <tr class="text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400">
@@ -42,9 +43,15 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-if="!rows.length">
-            <td colspan="8" class="px-3.5 py-8 text-center text-gray-400">No hay pagos en esta pestaña.</td>
+          <template v-if="loading">
+            <tr v-for="row in 5" :key="`sk-${row}`">
+              <td v-for="col in 8" :key="col" class="px-3.5 py-3"><USkeleton class="h-4 w-full" /></td>
+            </tr>
+          </template>
+          <tr v-else-if="!rows.length">
+            <td colspan="8" class="px-3.5 py-8 text-center text-sm text-gray-400">No hay pagos en esta pestaña. Los RMB que Ventas deja en ejecución aparecen en Pendiente.</td>
           </tr>
+          <template v-else>
           <tr v-for="row in rows" :key="row.provider_id" class="border-t border-gray-100">
             <td class="px-3.5 py-3">
               <p class="font-semibold">{{ row.supplier_code || 'Sin código' }}</p>
@@ -67,74 +74,103 @@
               <a v-else-if="row.receipt_url" :href="row.receipt_url" target="_blank" rel="noopener" class="text-sm font-semibold text-primary-600">Constancia</a>
             </td>
           </tr>
+          </template>
         </tbody>
       </table>
     </div>
 
-    <UModal v-model:open="opened" :ui="{ content: 'max-w-lg' }">
-      <template #header><h2 class="text-lg font-semibold">Pago en yuanes</h2></template>
-      <template #body>
-        <div v-if="selected" class="space-y-3 text-sm">
-          <p>{{ selected.supplier_code }} · {{ selected.client_name }} · {{ selected.consolidation }}</p>
-          <p>WeChat {{ selected.wechat || '—' }} · vendedor {{ selected.seller_name || '—' }}</p>
-          <p>A pagar <span class="font-semibold text-orange-600">¥{{ money(selected.yuan_amount) }}</span> · T.C. cotizado {{ selected.quoted_rate }}</p>
-          <a v-if="selected.proforma_url" :href="selected.proforma_url" target="_blank" rel="noopener" class="text-primary-600">Ver proforma</a>
-          <label class="block">T.C. real (¥ por $)
-            <input v-model.number="rate" type="number" min="0" step="0.0001" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5" />
+    <SupplierPaymentWindow
+      :open="opened"
+      title="Pago en yuanes"
+      :subtitle="selected ? `${selected.client_name || 'Cliente'} · ${selected.consolidation || 'Sin consolidado'}` : ''"
+      :code="selected?.request_code"
+      hint="La constancia queda registrada. El aviso al cliente por WhatsApp queda para el final y no bloquea el registro."
+      wide
+      @close="opened = false"
+    >
+      <div v-if="selected" class="grid gap-4 lg:grid-cols-3">
+        <SupplierPaymentCard title="Solicitud">
+          <SupplierPaymentFact label="Cliente" :value="selected.client_name || '—'" />
+          <SupplierPaymentFact label="Consolidado" :value="selected.consolidation || '—'" />
+          <SupplierPaymentFact label="Socio" :value="selected.partner" />
+          <SupplierPaymentFact label="Vendedor" :value="selected.seller_name || '—'" />
+          <a v-if="selected.proforma_url" :href="selected.proforma_url" target="_blank" rel="noopener" class="text-sm font-semibold text-primary-600">Ver proforma</a>
+        </SupplierPaymentCard>
+        <SupplierPaymentCard title="Proveedor">
+          <SupplierPaymentFact label="Código" :value="selected.supplier_code || '—'" />
+          <SupplierPaymentFact label="Nombre" :value="selected.supplier_name || '—'" />
+          <SupplierPaymentFact label="Producto" :value="selected.product || '—'" />
+          <SupplierPaymentFact label="WeChat" :value="selected.wechat || '—'" />
+        </SupplierPaymentCard>
+        <SupplierPaymentCard title="Importes">
+          <p class="text-3xl font-bold text-primary-700">¥{{ money(selected.yuan_amount) }}</p>
+          <SupplierPaymentFact label="USD" :value="`$${money(selected.usd_amount)}`" />
+          <SupplierPaymentFact label="T.C. cotizado" :value="String(selected.quoted_rate)" />
+        </SupplierPaymentCard>
+      </div>
+      <section v-if="selected" class="rounded-2xl border border-gray-200 bg-white p-4">
+        <h4 class="mb-2 text-[15px] font-bold text-gray-900">Registro del pago</h4>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <label class="text-sm text-gray-500">T.C. real (¥ por $)
+            <input v-model.number="rate" type="number" min="0" step="0.0001" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm font-semibold text-gray-900" />
           </label>
-          <label class="block">Yuanes pagados
-            <input v-model.number="yuanPaid" type="number" min="0" step="0.01" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5" />
+          <label class="text-sm text-gray-500">Yuanes pagados
+            <input v-model.number="yuanPaid" type="number" min="0" step="0.01" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm font-semibold text-gray-900" />
           </label>
-          <p>Obtenidos ¥{{ money(obtained) }} · diferencia ${{ money(differenceUsd) }} · {{ differenceText }}</p>
-          <label class="block">Constancia
-            <input type="file" accept=".pdf,.jpg,.jpeg,.png" class="mt-1 block" @change="onFile" />
+          <label class="text-sm text-gray-500 sm:col-span-2">Constancia
+            <input type="file" accept=".pdf,.jpg,.jpeg,.png" class="mt-1 block text-sm text-gray-800" @change="onFile" />
           </label>
-          <p class="text-gray-500">La constancia queda registrada. El aviso al cliente por WhatsApp queda para el final y no bloquea el registro.</p>
-          <label class="block">Observar
-            <select v-model="reason" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5">
-              <option value="">Sin observación</option>
-              <option v-for="item in reasons" :key="item.code" :value="item.code">{{ item.label }}</option>
-              <option value="other">Otro motivo</option>
-            </select>
-          </label>
-          <input v-if="reason === 'other'" v-model="newReason" placeholder="Nuevo motivo" class="w-full rounded-md border border-gray-300 px-2 py-1.5" />
-          <input v-if="reason" v-model="detail" placeholder="Detalle opcional" class="w-full rounded-md border border-gray-300 px-2 py-1.5" />
         </div>
-      </template>
+        <p class="mt-2 text-sm text-gray-700">Obtenidos ¥{{ money(obtained) }} · diferencia ${{ money(differenceUsd) }} · {{ differenceText }}</p>
+      </section>
+      <section v-if="selected" class="rounded-2xl border border-red-100 bg-white p-4">
+        <h4 class="mb-2 text-[15px] font-bold text-gray-900">Observar</h4>
+        <select v-model="reason" class="w-full rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm">
+          <option value="">Sin observación</option>
+          <option v-for="item in reasons" :key="item.code" :value="item.code">{{ item.label }}</option>
+          <option value="other">Otro motivo</option>
+        </select>
+        <input v-if="reason === 'other'" v-model="newReason" placeholder="Nuevo motivo" class="mt-2 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm" />
+        <input v-if="reason" v-model="detail" placeholder="Detalle opcional" class="mt-2 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm" />
+      </section>
       <template #footer>
-        <div class="flex justify-end gap-2">
-          <UButton color="neutral" variant="ghost" @click="opened = false">Cancelar</UButton>
-          <UButton v-if="reason" color="warning" :loading="saving" @click="observe">Observar</UButton>
-          <UButton color="primary" :loading="saving" :disabled="!canSave" @click="save">Registrar pago</UButton>
-        </div>
+        <UButton v-if="reason" color="error" variant="soft" :loading="saving" @click="observe">Observar</UButton>
+        <UButton color="primary" :loading="saving" :disabled="!canSave" @click="save">Registrar pago</UButton>
       </template>
-    </UModal>
+    </SupplierPaymentWindow>
 
-    <UModal v-model:open="manualOpen" :ui="{ content: 'max-w-lg' }">
-      <template #header><h2 class="text-lg font-semibold">Nueva solicitud</h2></template>
-      <template #body>
-        <form class="grid gap-2 text-sm sm:grid-cols-2" @submit.prevent="createManual">
-          <label>Socio<input v-model="manual.partner" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5" /></label>
-          <label>Cliente<input v-model="manual.client_name" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5" /></label>
-          <label>Consolidado<input v-model="manual.consolidation" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5" /></label>
-          <label>Producto<input v-model="manual.product" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5" /></label>
-          <label>Código proveedor<input v-model="manual.supplier_code" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5" /></label>
-          <label>Nombre proveedor<input v-model="manual.supplier_name" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5" /></label>
-          <label>Vendedor<input v-model="manual.seller_name" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5" /></label>
-          <label>WeChat<input v-model="manual.wechat" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5" /></label>
-          <label>USD<input v-model.number="manual.usd_amount" type="number" min="0" step="0.01" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5" /></label>
-          <label>RMB<input v-model.number="manual.yuan_amount" type="number" min="0" step="0.01" class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5" /></label>
-          <p class="sm:col-span-2 text-gray-600">Tipo de cambio {{ manualRate }}</p>
-          <label class="sm:col-span-2">Proforma (opcional)<input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" @change="onProforma" /></label>
-          <div class="sm:col-span-2 flex justify-end"><UButton type="submit" color="primary" :loading="saving">Crear</UButton></div>
-        </form>
+    <SupplierPaymentWindow
+      :open="manualOpen"
+      title="Nueva solicitud"
+      subtitle="Queda en pendientes para registrar el pago."
+      @close="manualOpen = false"
+    >
+      <form id="yuan-manual" class="grid gap-3 text-sm sm:grid-cols-2" @submit.prevent="createManual">
+        <label class="text-gray-500">Socio<input v-model="manual.partner" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-semibold text-gray-900" /></label>
+        <label class="text-gray-500">Cliente<input v-model="manual.client_name" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-semibold text-gray-900" /></label>
+        <label class="text-gray-500">Consolidado<input v-model="manual.consolidation" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-semibold text-gray-900" /></label>
+        <label class="text-gray-500">Producto<input v-model="manual.product" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-semibold text-gray-900" /></label>
+        <label class="text-gray-500">Código proveedor<input v-model="manual.supplier_code" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-semibold text-gray-900" /></label>
+        <label class="text-gray-500">Nombre proveedor<input v-model="manual.supplier_name" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-semibold text-gray-900" /></label>
+        <label class="text-gray-500">Vendedor<input v-model="manual.seller_name" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-semibold text-gray-900" /></label>
+        <label class="text-gray-500">WeChat<input v-model="manual.wechat" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-semibold text-gray-900" /></label>
+        <label class="text-gray-500">USD<input v-model.number="manual.usd_amount" type="number" min="0" step="0.01" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-semibold text-gray-900" /></label>
+        <label class="text-gray-500">RMB<input v-model.number="manual.yuan_amount" type="number" min="0" step="0.01" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-semibold text-gray-900" /></label>
+        <p class="text-gray-600 sm:col-span-2">Tipo de cambio {{ manualRate }}</p>
+        <label class="text-gray-500 sm:col-span-2">Proforma (opcional)<input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" class="mt-1 block text-gray-800" @change="onProforma" /></label>
+      </form>
+      <template #footer>
+        <UButton type="submit" form="yuan-manual" color="primary" :loading="saving">Crear</UButton>
       </template>
-    </UModal>
+    </SupplierPaymentWindow>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
+import SupplierPaymentCard from '~/components/pago-proveedor/SupplierPaymentCard.vue'
+import SupplierPaymentFact from '~/components/pago-proveedor/SupplierPaymentFact.vue'
+import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
 import { YUAN_BUCKET } from '~/constants/supplierPayment'
 import { PagoProveedorService } from '~/services/pagoProveedorService'
 import type { SupplierPaymentObservationReason, SupplierPaymentYuan, SupplierPaymentYuanIndicators } from '~/types/pago-proveedor'

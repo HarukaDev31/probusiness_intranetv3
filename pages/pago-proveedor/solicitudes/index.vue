@@ -1,6 +1,10 @@
 <template>
   <div class="md:p-6">
-    <h1 v-if="profile !== SUPPLIER_PAYMENT_PROFILE.WAREHOUSE" class="mb-4 text-xl font-bold text-gray-800">Pago a Proveedor</h1>
+    <header v-if="profile !== SUPPLIER_PAYMENT_PROFILE.WAREHOUSE" class="mb-4">
+      <h1 class="text-xl font-bold text-gray-800">Pago a Proveedor</h1>
+      <p v-if="profile === SUPPLIER_PAYMENT_PROFILE.ADMINISTRATION" class="mt-1 text-sm text-gray-500">Primero se valida el depósito. Después se aprueba el pago y, si es en dólares, se transfiere al proveedor.</p>
+      <p v-else-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" class="mt-1 text-sm text-gray-500">Lo que te toca hacer está en Mis pendientes. El resto del pago lo ves en el detalle, en solo lectura.</p>
+    </header>
     <div v-if="profile === SUPPLIER_PAYMENT_PROFILE.ADMINISTRATION">
       <div class="mb-4 flex gap-1.5 border-b border-gray-200">
         <button
@@ -58,47 +62,61 @@
     <div v-if="tab === INBOX_TAB.PENDING" class="space-y-3">
       <div class="flex flex-wrap gap-2">
         <button
-          v-for="chip in taskChips"
+          v-for="chip in visibleChips"
           :key="chip.key"
           type="button"
           class="rounded-full border px-3 py-1 text-xs"
-          :class="taskFilter === chip.key ? 'border-primary-500 bg-primary-50 text-gray-900' : 'border-gray-200 bg-white text-gray-700'"
+          :class="taskFilter === chip.key ? 'border-primary-500 bg-primary-50 font-semibold text-gray-900' : 'border-gray-200 bg-white text-gray-700'"
           @click="taskFilter = chip.key"
         >
           {{ chip.label }} <b class="ml-1 text-primary-600">{{ chip.count }}</b>
         </button>
       </div>
-      <p v-if="loading" class="text-sm text-gray-500">Cargando pendientes…</p>
-      <p v-else-if="!visiblePending.length" class="rounded-lg border border-dashed border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-400">
+      <div v-if="loading" class="space-y-2">
+        <div v-for="row in 4" :key="row" class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-3.5 py-3">
+          <div class="flex-1 space-y-2">
+            <USkeleton class="h-4 w-2/3" />
+            <USkeleton class="h-3 w-1/2" />
+          </div>
+          <USkeleton class="h-8 w-16 rounded-md" />
+        </div>
+      </div>
+      <p v-else-if="!visiblePending.length" class="rounded-2xl border border-dashed border-gray-200 bg-white px-4 py-10 text-center text-sm text-gray-500">
         No tienes pendientes{{ taskFilter !== SALES_TASK.ALL ? ' en este grupo' : '' }}.
+        <span class="mt-1 block text-gray-400">Cuando un pago necesite datos, un comprobante o una confirmación, aparece aquí.</span>
       </p>
-      <article
+      <NuxtLink
         v-for="row in visiblePending"
         :key="`${row.requestId}-${row.provider.id}`"
-        class="mb-2 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 border-l-4 bg-white px-3.5 py-3"
+        :to="`/pago-proveedor/solicitudes/${row.requestId}`"
+        class="mb-2 block rounded-xl border border-gray-200 border-l-4 bg-white px-4 py-3.5 transition hover:border-primary-300 hover:shadow-sm"
         :class="row.provider.sales_task === SALES_TASK.OBSERVED ? 'border-l-red-600' : 'border-l-primary-500'"
       >
-        <div class="min-w-0 flex-1">
-          <p class="text-sm">
-            <strong>{{ row.clientName || 'Cliente' }}</strong>
-            <span class="text-[11.5px] text-gray-400"> · {{ row.consolidation || 'Sin consolidado' }} · {{ supplierLabel(row.provider) }} · {{ paymentLabel(row.provider) }}</span>
-          </p>
-          <p class="mt-1 text-[12.5px] font-semibold">{{ taskText(row.provider) }}</p>
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-semibold text-gray-900">{{ taskText(row.provider) }}</p>
+            <p class="mt-1 text-xs text-gray-500">
+              {{ row.clientName || 'Cliente' }} · {{ row.consolidation || 'Sin consolidado' }} · {{ supplierLabel(row.provider) }} · {{ paymentLabel(row.provider) }}
+            </p>
+          </div>
+          <span class="whitespace-nowrap rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-600">{{ stageLabel(row.provider.stage) }}</span>
         </div>
-        <div class="flex items-center gap-2.5">
-          <span class="whitespace-nowrap rounded bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-blue-700">{{ row.provider.stage }}. {{ stageLabel(row.provider.stage) }}</span>
-          <UButton size="sm" color="primary" @click="navigateTo(`/pago-proveedor/solicitudes/${row.requestId}`)">Abrir</UButton>
+        <SupplierPaymentSteps class="mt-3" :current="row.provider.stage" />
+      </NuxtLink>
+      <section v-if="otherAreaRows.length" class="pt-2">
+        <h2 class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">En curso en otras áreas · solo lectura</h2>
+        <div class="space-y-2">
+          <NuxtLink
+            v-for="row in otherAreaRows"
+            :key="`other-${row.provider.id}`"
+            :to="`/pago-proveedor/solicitudes/${row.requestId}`"
+            class="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm hover:border-gray-300"
+          >
+            <span><strong class="text-gray-800">{{ row.clientName }}</strong> <span class="text-gray-500">· {{ supplierLabel(row.provider) }} · {{ stageLabel(row.provider.stage) }}</span></span>
+            <span class="text-xs font-semibold text-primary-600">Ver</span>
+          </NuxtLink>
         </div>
-      </article>
-      <details v-if="otherAreaRows.length" class="text-sm text-gray-500">
-        <summary class="cursor-pointer font-semibold">En curso en otras áreas — solo lectura ({{ otherAreaRows.length }})</summary>
-        <div class="mt-2 space-y-2">
-          <article v-for="row in otherAreaRows" :key="`other-${row.provider.id}`" class="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-3">
-            <p><strong class="text-gray-800">{{ row.clientName }}</strong> · {{ supplierLabel(row.provider) }}</p>
-            <UButton size="xs" color="neutral" variant="soft" @click="navigateTo(`/pago-proveedor/solicitudes/${row.requestId}`)">Ver</UButton>
-          </article>
-        </div>
-      </details>
+      </section>
     </div>
 
     <DataTable
@@ -152,6 +170,7 @@ import SupplierPaymentApprovals from '~/components/pago-proveedor/SupplierPaymen
 import SupplierPaymentExecutions from '~/components/pago-proveedor/SupplierPaymentExecutions.vue'
 import SupplierPaymentRefunds from '~/components/pago-proveedor/SupplierPaymentRefunds.vue'
 import SupplierPaymentYuan from '~/components/pago-proveedor/SupplierPaymentYuan.vue'
+import SupplierPaymentSteps from '~/components/pago-proveedor/SupplierPaymentSteps.vue'
 import { UButton } from '#components'
 
 interface RequestLine {
@@ -194,6 +213,7 @@ const taskChips = computed(() => [
   { key: SALES_TASK.OBSERVED, label: 'Observado', count: pendingRows.value.filter((line) => line.provider.sales_task === SALES_TASK.OBSERVED).length },
   { key: SALES_TASK.CONFIRMATION, label: 'Confirmación', count: pendingRows.value.filter((line) => line.provider.sales_task === SALES_TASK.CONFIRMATION).length }
 ])
+const visibleChips = computed(() => taskChips.value.filter((chip) => chip.key === SALES_TASK.ALL || chip.count > 0 || chip.key === taskFilter.value))
 
 function supplierLabel(provider: SupplierPaymentProviderRow) {
   return provider.supplier_name ? `${provider.supplier_code} · ${provider.supplier_name}` : (provider.supplier_code || 'Sin código')
