@@ -332,6 +332,17 @@ export class PagoProveedorService extends BaseService {
     }>(`${this.baseUrl}/ejecuciones?${query.toString()}`)
   }
 
+  static async executionNoticeText(providerId: number, amount: number) {
+    return this.apiCall<Uno<{ message: string }>>(`${this.baseUrl}/ejecuciones/${providerId}/aviso?amount=${encodeURIComponent(String(amount))}`)
+  }
+
+  static async confirmExecutionNotice(providerId: number, amount: number) {
+    return this.apiCall<Uno<{ message: string }>>(`${this.baseUrl}/ejecuciones/${providerId}/aviso`, {
+      method: 'POST',
+      body: { amount }
+    })
+  }
+
   static async registerExecution(providerId: number, realBankFee: number, receipt: File) {
     const form = new FormData()
     form.append('real_bank_fee', String(realBankFee))
@@ -349,17 +360,39 @@ export class PagoProveedorService extends BaseService {
     })
   }
 
-  static async listYuan(params: { bucket?: string; search?: string; page?: number; per_page?: number }) {
+  static async listYuan(params: { bucket?: string; search?: string; partner?: string; page?: number; per_page?: number }) {
     const query = new URLSearchParams()
     if (params.bucket) query.append('bucket', params.bucket)
     if (params.search) query.append('search', params.search)
+    if (params.partner) query.append('partner', params.partner)
     if (params.page) query.append('page', String(params.page))
     if (params.per_page) query.append('per_page', String(params.per_page))
     return this.apiCall<Lista<SupplierPaymentYuan> & {
       pending_count: number
       indicators: SupplierPaymentYuanIndicators
+      counts: { all: number; pending: number; observed: number; paid: number }
+      partners: string[]
       reasons: SupplierPaymentObservationReason[]
     }>(`${this.baseUrl}/yuanes?${query.toString()}`)
+  }
+
+  static async yuanNoticeText(providerId: number) {
+    return this.apiCall<Uno<{ message: string }>>(`${this.baseUrl}/yuanes/${providerId}/aviso`)
+  }
+
+  static async confirmYuanNotice(providerId: number, yuanPaid: number) {
+    return this.apiCall<Uno<SupplierPaymentYuan>>(`${this.baseUrl}/yuanes/${providerId}/aviso`, {
+      method: 'POST',
+      body: { yuan_paid: yuanPaid }
+    })
+  }
+
+  static async liftManualYuan(providerId: number) {
+    return this.apiCall<Uno<SupplierPaymentYuan>>(`${this.baseUrl}/yuanes/${providerId}/levantar`, { method: 'POST' })
+  }
+
+  static async deleteManualYuan(providerId: number) {
+    return this.apiCall<Uno<{ message: string }>>(`${this.baseUrl}/yuanes/${providerId}`, { method: 'DELETE' })
   }
 
   static async registerYuan(providerId: number, realRate: number, yuanPaid: number, receipt: File) {
@@ -378,6 +411,12 @@ export class PagoProveedorService extends BaseService {
     return this.apiCall<Uno<PagoProveedorSolicitud>>(`${this.baseUrl}/solicitudes/${solicitudId}/proveedores/${proveedorId}/pago-2`, {
       method: 'POST',
       body: { choice, reason: reason || null }
+    })
+  }
+
+  static async enviarBalance(solicitudId: number, proveedorId: number) {
+    return this.apiCall<Uno<PagoProveedorSolicitud>>(`${this.baseUrl}/solicitudes/${solicitudId}/proveedores/${proveedorId}/balance`, {
+      method: 'POST'
     })
   }
 
@@ -425,6 +464,10 @@ export class PagoProveedorService extends BaseService {
 
   static async createManualYuan(form: FormData) {
     return this.apiCall<Uno<SupplierPaymentYuan>>(`${this.baseUrl}/yuanes/manual`, { method: 'POST', body: form })
+  }
+
+  static async updateManualYuan(providerId: number, form: FormData) {
+    return this.apiCall<Uno<SupplierPaymentYuan>>(`${this.baseUrl}/yuanes/${providerId}/editar`, { method: 'POST', body: form })
   }
 
   static async levantarChina(solicitudId: number, proveedorId: number, vendedor: string, wechat: string) {

@@ -209,6 +209,7 @@ export interface SupplierPaymentProgress {
     second_installment_choice: string | null
     second_payment_choice: string | null
     can_register_exchange: boolean
+    can_send_balance: boolean
     can_request_refund: boolean
     exchange_due_usd: number
     decision_due_at: string | null
@@ -434,12 +435,14 @@ export interface SupplierPaymentYuan {
   client_name: string | null
   consolidation: string | null
   partner: string
+  manual: boolean
   usd_amount: number
   quoted_rate: number
   yuan_amount: number
   yuan_obtained: number | null
   yuan_paid: number | null
   real_exchange_rate: number | null
+  difference_yuan: number | null
   difference_usd: number | null
   difference_result: string | null
   difference_label: string | null
@@ -451,6 +454,8 @@ export interface SupplierPaymentYuan {
   supplier_payments: number
   can_register: boolean
   can_observe: boolean
+  can_edit: boolean
+  can_lift: boolean
   observation_reason: string | null
   observation_label: string | null
   observation_detail: string | null
@@ -464,6 +469,7 @@ export interface SupplierPaymentYuanIndicators {
   yuan_obtained: number
   yuan_paid: number
   to_collect: number
+  to_collect_yuan: number
 }
 
 export interface SupplierPaymentApprovalSettings {

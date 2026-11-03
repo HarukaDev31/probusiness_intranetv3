@@ -4,7 +4,7 @@
     :title="payment?.can_register ? 'Ejecución de pago' : 'Pago ejecutado'"
     :subtitle="subtitle"
     :code="payment?.request_code"
-    hint="El aviso al cliente por WhatsApp queda para el final. Con la constancia y la comisión real ya se puede registrar la transferencia."
+    hint="Primero envía el aviso al cliente. Después adjunta la constancia y registra la transferencia."
     wide
     @close="emit('close')"
   >
@@ -56,6 +56,17 @@
       </div>
     </section>
 
+    <section v-if="payment?.can_register" class="rounded-2xl border border-gray-200 bg-white p-4">
+      <div class="mb-2 flex items-center justify-between gap-3">
+        <h4 class="text-[15px] font-bold text-gray-900">Aviso al cliente</h4>
+        <UButton size="xs" color="neutral" variant="soft" @click="copy(notice)">Copiar</UButton>
+      </div>
+      <pre class="whitespace-pre-wrap rounded-xl bg-gray-50 p-3 text-sm text-gray-800">{{ notice || 'Cargando aviso…' }}</pre>
+      <UButton class="mt-3" size="sm" color="primary" variant="soft" :loading="saving" :disabled="noticeReady" @click="sendNotice">
+        {{ noticeReady ? 'Aviso enviado' : 'Enviar aviso al cliente' }}
+      </UButton>
+    </section>
+
     <section v-if="payment" class="rounded-2xl border border-gray-200 bg-white p-4">
       <h4 class="text-[15px] font-bold text-gray-900">Constancia del pago</h4>
       <a v-if="payment.receipt_url" :href="payment.receipt_url" target="_blank" rel="noopener" class="mt-2 block text-sm font-semibold text-primary-600">
@@ -91,6 +102,8 @@ const { showSuccess, showError } = useModal()
 const realFee = ref<number | null>(null)
 const receipt = ref<File | null>(null)
 const saving = ref(false)
+const notice = ref('')
+const noticeReady = ref(false)
 
 const supplier = computed(() => {
   if (!props.payment) return 'Proveedor'
@@ -147,11 +160,20 @@ const shownProfit = computed(() => {
 })
 
 const profitClass = computed(() => shownProfit.value > 0.004 ? 'text-green-700' : (shownProfit.value < -0.004 ? 'text-red-600' : 'text-gray-800'))
-const canSave = computed(() => props.payment?.can_register && receipt.value !== null && realFee.value !== null && realFee.value >= 0 && !Number.isNaN(realFee.value))
+const canSave = computed(() => props.payment?.can_register && noticeReady.value && receipt.value !== null && realFee.value !== null && realFee.value >= 0 && !Number.isNaN(realFee.value))
 
-watch(() => props.payment?.provider_id, () => {
+watch(() => props.payment?.provider_id, async () => {
   realFee.value = props.payment?.real_bank_fee ?? null
   receipt.value = null
+  notice.value = ''
+  noticeReady.value = false
+  if (!props.payment?.can_register) return
+  try {
+    const response = await PagoProveedorService.executionNoticeText(props.payment.provider_id, props.payment.cargo_amount)
+    notice.value = response.data?.message || ''
+  } catch {
+    notice.value = ''
+  }
 })
 
 function money(value: number) {
@@ -171,6 +193,20 @@ async function copy(value: string | null) {
 function onFile(event: Event) {
   const input = event.target as HTMLInputElement
   receipt.value = input.files?.[0] || null
+}
+
+async function sendNotice() {
+  if (!props.payment || noticeReady.value) return
+  saving.value = true
+  try {
+    await PagoProveedorService.confirmExecutionNotice(props.payment.provider_id, props.payment.cargo_amount)
+    noticeReady.value = true
+    showSuccess('Aviso', 'Listo. Ya puedes registrar la transferencia.')
+  } catch (error: any) {
+    showError('Aviso', error?.data?.message || 'No se pudo guardar el aviso.')
+  } finally {
+    saving.value = false
+  }
 }
 
 async function save() {

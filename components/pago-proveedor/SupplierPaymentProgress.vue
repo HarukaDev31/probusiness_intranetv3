@@ -75,6 +75,9 @@
       <div v-if="progress.confirmation.can_request_refund" class="mt-3">
         <UButton size="sm" color="primary" :loading="saving" @click="requestRefund">Solicitar reembolso</UButton>
       </div>
+      <div v-if="progress.confirmation.can_send_balance" class="mt-3">
+        <UButton size="sm" color="primary" variant="soft" :loading="saving" @click="sendBalance">Enviar balance al cliente</UButton>
+      </div>
       <form v-if="progress.confirmation.can_register_exchange" class="mt-3 space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-3" @submit.prevent="saveDifference">
         <p class="font-semibold text-amber-900">Diferencia por cobrar ${{ money(progress.confirmation.exchange_due_usd) }}. Administración la valida en Verificación.</p>
         <div class="flex flex-wrap items-end gap-2">
@@ -172,6 +175,19 @@ async function choosePayment(choice: string) {
 function onDifferenceFile(event: Event) {
   const input = event.target as HTMLInputElement
   differenceFile.value = input.files?.[0] || null
+}
+
+async function sendBalance() {
+  saving.value = true
+  try {
+    await PagoProveedorService.enviarBalance(props.solicitudId, props.proveedor.id)
+    showSuccess('Balance', 'El mensaje quedó listo para el cliente.')
+    emit('saved')
+  } catch (error: any) {
+    showError('Balance', error?.data?.message || 'No se pudo enviar el balance.')
+  } finally {
+    saving.value = false
+  }
 }
 
 async function saveDifference() {
