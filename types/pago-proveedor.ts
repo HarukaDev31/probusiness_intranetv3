@@ -250,6 +250,9 @@ export interface PagoProveedorAbono {
   estado_nombre: string
   excedente: number
   excedente_decision: string | null
+  excedente_decide_until?: string | null
+  excedente_decide_overdue?: boolean
+  excedente_decide_text?: string | null
   operacion_repetida: boolean
   puede_editar: boolean
   puede_elegir_continuacion?: boolean
@@ -272,8 +275,11 @@ export interface SupplierPaymentRefund {
   approved_amount: number | null
   reason: string | null
   calculation: string
+  calculation_lines: string[]
+  requested_at: string | null
   paid_on: string | null
   bank: string | null
+  bank_label: string | null
   operation_number: string | null
   voucher_name: string | null
   voucher_url: string | null

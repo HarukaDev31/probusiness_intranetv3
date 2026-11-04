@@ -165,7 +165,15 @@
               <p>{{ abono.voucher_nombre }} · ${{ dinero(abono.importe) }} · {{ abono.banco.toUpperCase() }} · {{ abono.numero_operacion }}</p>
               <span class="rounded-full bg-gray-100 px-2 py-1 text-xs">{{ abono.estado_nombre }}</span>
             </div>
-            <p v-if="abono.excedente > 0" class="mt-1 text-amber-700">Excedente ${{ dinero(abono.excedente) }} · {{ textoExcedente(abono.excedente_decision) }}</p>
+            <p v-if="abono.excedente > 0" class="mt-1 text-amber-700">
+              Excedente ${{ dinero(abono.excedente) }} · {{ textoExcedente(abono.excedente_decision) }}
+              <span v-if="abono.excedente_decide_text" :class="abono.excedente_decide_overdue ? 'font-semibold text-red-700' : 'text-amber-800'">
+                · {{ abono.excedente_decide_text }}
+              </span>
+            </p>
+            <p v-if="abono.excedente_decision === 'reembolso_solicitado'" class="mt-1 text-sm text-blue-800">
+              Administración ya puede registrar el voucher del reembolso. Pide las cuentas bancarias al cliente.
+            </p>
             <p v-if="abono.operacion_repetida" class="text-amber-700">El número de operación ya estaba registrado.</p>
             <div class="mt-2 flex flex-wrap gap-2">
               <a v-if="abono.voucher_url" :href="abono.voucher_url" target="_blank" class="font-semibold text-primary-600">Ver voucher</a>
@@ -358,7 +366,7 @@ function etiquetaDatos(estado: string) {
 function textoExcedente(decision: string | null) {
   return {
     aplicado_cuota: 'se aplica a la cuota 2',
-    no_devuelve: 'no se devuelve (hasta $1)',
+    no_devuelve: 'no se devuelve (dentro de la tolerancia)',
     por_consultar: 'por consultar al cliente',
     reembolso_solicitado: 'reembolso solicitado'
   }[decision || ''] || decision
@@ -648,8 +656,14 @@ async function decidir(abonoId: number, decision: string) {
   try {
     const respuesta = await PagoProveedorService.decidirExcedente(solicitud.value!.id, abonoId, decision)
     aplicar(respuesta.data)
+    showSuccess(
+      'Excedente',
+      decision === 'aplicado_cuota'
+        ? 'El excedente se aplicará a la cuota 2.'
+        : 'Reembolso solicitado. Administración registra el voucher.'
+    )
   } catch (error: any) {
-    showError('Excedente', error.message || 'No se pudo registrar la decisión.')
+    showError('Excedente', error?.data?.message || error.message || 'No se pudo registrar la decisión.')
   }
 }
 
