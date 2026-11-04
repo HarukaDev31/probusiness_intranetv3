@@ -188,6 +188,12 @@
       <section v-if="vistaPrevia" class="rounded-xl border border-gray-200 bg-white p-5">
         <h2 class="font-semibold">Vista previa</h2>
         <p v-if="vistaPrevia.enlace" class="mt-2 break-all text-sm text-orange-700">{{ vistaPrevia.enlace }}</p>
+        <img
+          v-if="vistaPrevia.imagen"
+          :src="vistaPrevia.imagen"
+          alt="Cuentas bancarias oficiales"
+          class="mt-3 max-h-80 w-full rounded-lg border border-gray-200 object-contain bg-gray-50"
+        >
         <pre class="mt-3 whitespace-pre-wrap text-sm">{{ vistaPrevia.texto }}</pre>
         <p class="mt-2 text-sm text-gray-500">{{ vistaPrevia.nota }}</p>
       </section>
@@ -311,7 +317,7 @@ const pedirDatosAbierto = ref(false)
 const candidatosDatos = ref<Array<{ id: number; titulo: string; moneda: string; incompleto: boolean }>>([])
 const candidatosElegidos = ref<number[]>([])
 const voucher = ref<File | null>(null)
-const vistaPrevia = ref<{ enlace?: string; texto: string; nota?: string } | null>(null)
+const vistaPrevia = ref<{ enlace?: string; texto: string; nota?: string; imagen?: string; tipo?: string } | null>(null)
 const continuacion = reactive<Record<number, number[]>>({})
 const abono = reactive({
   importe: 0,
@@ -425,7 +431,10 @@ async function descargarResumen() {
 async function enviarCuentas() {
   try {
     const respuesta = await PagoProveedorService.cuentas(solicitud.value!.id)
-    vistaPrevia.value = respuesta.data
+    vistaPrevia.value = {
+      ...respuesta.data,
+      imagen: respuesta.data.imagen || '/images/pago-proveedor/cuentas-bancarias.jpg'
+    }
   } catch (error: any) {
     showError('Cuentas', error?.data?.message || error.message || 'No se pudo preparar el mensaje.')
   }
