@@ -276,6 +276,20 @@ export class PagoProveedorService extends BaseService {
     })
   }
 
+  static async extendDepositObservation(id: number, body: { reason: string; days?: number }) {
+    return this.apiCall<Uno<SupplierPaymentDeposit>>(`${this.baseUrl}/verificacion/depositos/${id}/extender`, {
+      method: 'POST',
+      body
+    })
+  }
+
+  static async cancelDepositPayment(id: number, reason: string) {
+    return this.apiCall<Uno<SupplierPaymentDeposit>>(`${this.baseUrl}/verificacion/depositos/${id}/anular-pago`, {
+      method: 'POST',
+      body: { reason }
+    })
+  }
+
   static async listApprovals(params: {
     bucket?: string
     status?: string
@@ -313,8 +327,11 @@ export class PagoProveedorService extends BaseService {
     })
   }
 
-  static async extendCollect(id: number) {
-    return this.apiCall<Uno<SupplierPaymentApproval>>(`${this.baseUrl}/aprobaciones/${id}/extender`, { method: 'POST' })
+  static async extendCollect(id: number, body: { reason: string; days?: number }) {
+    return this.apiCall<Uno<SupplierPaymentApproval>>(`${this.baseUrl}/aprobaciones/${id}/extender`, {
+      method: 'POST',
+      body
+    })
   }
 
   static async cancelPayment(id: number, reason: string) {

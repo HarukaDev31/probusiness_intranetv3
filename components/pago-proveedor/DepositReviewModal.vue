@@ -24,7 +24,7 @@
           <p v-else class="px-4 py-6 text-sm text-gray-500">Sin comprobante.</p>
         </div>
         <p v-if="deposit.deadline_text" class="text-sm" :class="deposit.deadline_overdue ? 'font-semibold text-red-600' : 'text-gray-500'">
-          Plazo para validar: {{ deposit.deadline_text }}
+          {{ deposit.status === DEPOSIT_STATUS.OBSERVED ? 'Plazo para subsanar' : 'Plazo para validar' }}: {{ deposit.deadline_text }}
         </p>
       </SupplierPaymentCard>
 
@@ -94,12 +94,35 @@
         <textarea v-model="detail" rows="2" class="w-full rounded-lg border border-gray-300 px-2.5 py-1.5" />
       </label>
     </div>
+    <div v-if="extending" class="space-y-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+      <h4 class="text-sm font-bold text-amber-900">Extender el plazo de la observación</h4>
+      <label class="block text-sm">
+        <span class="mb-1 block font-semibold text-amber-900">Días adicionales</span>
+        <input v-model.number="extendDays" type="number" min="1" max="60" class="w-full rounded-lg border border-amber-200 bg-white px-2.5 py-1.5">
+      </label>
+      <label class="block text-sm">
+        <span class="mb-1 block font-semibold text-amber-900">Motivo</span>
+        <textarea v-model="extendReason" rows="2" class="w-full rounded-lg border border-amber-200 bg-white px-2.5 py-1.5" />
+      </label>
+    </div>
+    <div v-if="cancelling" class="space-y-3 rounded-2xl border border-red-200 bg-white p-4">
+      <h4 class="text-sm font-bold text-red-700">Anular el pago</h4>
+      <p class="text-sm text-gray-600">El pago deja de continuar. Indica el motivo.</p>
+      <label class="block text-sm">
+        <span class="mb-1 block font-semibold text-red-700">Motivo</span>
+        <textarea v-model="cancelReason" rows="2" class="w-full rounded-lg border border-gray-300 px-2.5 py-1.5" />
+      </label>
+    </div>
 
     <template #footer>
       <UButton v-if="deposit?.can_validate && !editing" color="neutral" variant="outline" @click="startEdit">Editar</UButton>
       <UButton v-if="editing" color="primary" variant="soft" :loading="saving" @click="saveDetails">Guardar cambios</UButton>
       <UButton v-if="editing" color="neutral" variant="ghost" @click="editing = false">Cancelar edición</UButton>
-      <UButton v-if="deposit?.can_undo" color="neutral" variant="soft" :loading="saving" @click="undo">
+      <UButton v-if="deposit?.can_extend && !extending && !cancelling" color="neutral" variant="soft" @click="extending = true">Extender plazo</UButton>
+      <UButton v-if="extending" color="primary" :loading="saving" @click="extendObservation">Confirmar extensión</UButton>
+      <UButton v-if="deposit?.can_cancel_payment && !cancelling && !extending" color="error" variant="soft" @click="cancelling = true">Anular pago</UButton>
+      <UButton v-if="cancelling" color="error" :loading="saving" @click="cancelPayment">Confirmar anulación</UButton>
+      <UButton v-if="deposit?.can_undo && !extending && !cancelling" color="neutral" variant="soft" :loading="saving" @click="undo">
         Deshacer{{ deposit.undo_notifies_sales ? ' y avisar a Ventas' : '' }}
       </UButton>
       <UButton v-if="deposit?.can_validate && !observing" color="error" variant="soft" @click="observing = true">Observar</UButton>
@@ -114,7 +137,7 @@ import { computed, ref, watch } from 'vue'
 import SupplierPaymentCard from '~/components/pago-proveedor/SupplierPaymentCard.vue'
 import SupplierPaymentFact from '~/components/pago-proveedor/SupplierPaymentFact.vue'
 import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
-import { DEPOSIT_BANK } from '~/constants/supplierPayment'
+import { DEPOSIT_BANK, DEPOSIT_STATUS } from '~/constants/supplierPayment'
 import { PagoProveedorService } from '~/services/pagoProveedorService'
 import type { SupplierPaymentDeposit, SupplierPaymentObservationReason } from '~/types/pago-proveedor'
 import { useModal } from '~/composables/commons/useModal'
@@ -129,18 +152,28 @@ const { showError, showSuccess } = useModal()
 
 const editing = ref(false)
 const observing = ref(false)
+const extending = ref(false)
+const cancelling = ref(false)
 const saving = ref(false)
 const bankAmount = ref(0)
 const reason = ref('')
 const newLabel = ref('')
 const detail = ref('')
+const extendReason = ref('')
+const extendDays = ref(7)
+const cancelReason = ref('')
 const form = ref({ bank: DEPOSIT_BANK.BCP, paid_on: '', operation_number: '' })
 
 watch(() => props.deposit, (deposit) => {
   editing.value = false
   observing.value = false
+  extending.value = false
+  cancelling.value = false
   newLabel.value = ''
   detail.value = ''
+  extendReason.value = ''
+  extendDays.value = 7
+  cancelReason.value = ''
   reason.value = props.reasons[0]?.code || ''
   if (!deposit) return
   bankAmount.value = deposit.bank_amount ?? deposit.amount
@@ -223,6 +256,33 @@ function undo() {
   return run(
     () => PagoProveedorService.undoDeposit(props.deposit!.id).then(() => undefined),
     'La verificación quedó deshecha.'
+  )
+}
+
+function extendObservation() {
+  if (!props.deposit) return
+  if (!extendReason.value.trim()) {
+    showError('Extender plazo', 'Indica el motivo.')
+    return
+  }
+  return run(
+    () => PagoProveedorService.extendDepositObservation(props.deposit!.id, {
+      reason: extendReason.value.trim(),
+      days: Number(extendDays.value) || 7
+    }).then(() => undefined),
+    'Plazo extendido. Ventas puede seguir corrigiendo el voucher.'
+  )
+}
+
+function cancelPayment() {
+  if (!props.deposit) return
+  if (!cancelReason.value.trim()) {
+    showError('Anular pago', 'Indica el motivo.')
+    return
+  }
+  return run(
+    () => PagoProveedorService.cancelDepositPayment(props.deposit!.id, cancelReason.value.trim()).then(() => undefined),
+    'Pago anulado.'
   )
 }
 </script>

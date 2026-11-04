@@ -313,12 +313,15 @@ export interface SupplierPaymentDeposit {
   deadline_overdue: boolean
   observation_reason: string | null
   observation_detail: string | null
+  observe_until: string | null
   corrected_by_admin: boolean
   verified_at: string | null
   providers: SupplierPaymentDepositProvider[]
   shared: boolean
   can_validate: boolean
   can_undo: boolean
+  can_extend: boolean
+  can_cancel_payment: boolean
   undo_notifies_sales: boolean
 }
 
