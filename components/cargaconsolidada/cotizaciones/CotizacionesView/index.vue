@@ -865,8 +865,8 @@ const uploadPackingList = () => {
     showUploadPanel.value = false
     simpleUploadFileModal.open({
         title: 'Subir Packing List',
-        // PL China puede superar 90MB; SimpleUploadFile default es 30MB
-        maxFileSize: 200 * 1024 * 1024,
+        // PL China puede superar 300MB; el tope del servidor PHP es 400M
+        maxFileSize: 400 * 1024 * 1024,
         onClose: () => simpleUploadFileModal.close(),
         onSave: async (data: { file: File }) => {
             const formData = new FormData()
