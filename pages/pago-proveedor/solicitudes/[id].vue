@@ -106,7 +106,12 @@
           <h3 class="font-semibold">Observación de China</h3>
           <p class="mt-1">{{ proveedor.observacion_china.label }}<span v-if="proveedor.observacion_china.detail"> · {{ proveedor.observacion_china.detail }}</span></p>
           <p class="mt-1" :class="proveedor.observacion_china.overdue ? 'font-semibold text-red-700' : 'text-gray-600'">
-            {{ proveedor.observacion_china.overdue ? 'El plazo de 48 h ya venció. Igual puedes corregir los datos.' : 'Corrige el vendedor o el WeChat para levantar la observación.' }}
+            <template v-if="proveedor.observacion_china.overdue">
+              El plazo ya venció{{ proveedor.observacion_china.until_text ? ` (${proveedor.observacion_china.until_text})` : '' }}. Igual puedes corregir los datos.
+            </template>
+            <template v-else>
+              Plazo: {{ proveedor.observacion_china.until_text || 'en curso' }} · corrige el vendedor o el WeChat para levantar la observación.
+            </template>
           </p>
           <div class="mt-3 grid gap-3 md:grid-cols-2">
             <label>Vendedor

@@ -30,18 +30,9 @@
         >
           Pagos en dólares
         </button>
-        <button
-          type="button"
-          class="border-b-2 px-3.5 py-2 text-sm font-semibold"
-          :class="adminTab === ADMIN_TAB.REFUNDS ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500'"
-          @click="adminTab = ADMIN_TAB.REFUNDS"
-        >
-          Reembolsos
-        </button>
       </div>
       <SupplierPaymentApprovals v-if="adminTab === ADMIN_TAB.APPROVAL" />
       <SupplierPaymentExecutions v-else-if="adminTab === ADMIN_TAB.USD" />
-      <SupplierPaymentRefunds v-else-if="adminTab === ADMIN_TAB.REFUNDS" />
     </div>
     <section v-else-if="profile === SUPPLIER_PAYMENT_PROFILE.WAREHOUSE">
       <SupplierPaymentYuan />
@@ -175,7 +166,6 @@ import { useModal } from '~/composables/commons/useModal'
 import { useSupplierPaymentProfile } from '~/composables/pago-proveedor/useSupplierPaymentProfile'
 import SupplierPaymentApprovals from '~/components/pago-proveedor/SupplierPaymentApprovals.vue'
 import SupplierPaymentExecutions from '~/components/pago-proveedor/SupplierPaymentExecutions.vue'
-import SupplierPaymentRefunds from '~/components/pago-proveedor/SupplierPaymentRefunds.vue'
 import SupplierPaymentYuan from '~/components/pago-proveedor/SupplierPaymentYuan.vue'
 import SupplierPaymentSteps from '~/components/pago-proveedor/SupplierPaymentSteps.vue'
 import NuevaCotizacionModal from '~/components/pago-proveedor/NuevaCotizacionModal.vue'
@@ -259,6 +249,9 @@ function statusLabel(status: string) {
 }
 
 function taskText(provider: SupplierPaymentProviderRow) {
+  const deadline = provider.decision_due_text || provider.observe_text
+  const withDeadline = (text: string) => (deadline ? `${text} · ${deadline}` : text)
+
   if (provider.approval_status === APPROVAL_STATUS.TO_COLLECT) {
     const amount = Number(provider.collect_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })
     return `Cobrar la diferencia de $${amount} al cliente y registrar el comprobante.`
@@ -266,9 +259,13 @@ function taskText(provider: SupplierPaymentProviderRow) {
   if (provider.approval_status === 'error_registro') {
     return 'Corrige el voucher o los datos: Administración marcó un error de registro.'
   }
+  if (provider.sales_task === SALES_TASK.OBSERVED) {
+    const reason = provider.observe_label ? `Observado por Operaciones China: ${provider.observe_label}` : 'Subsanar la observación.'
+    return withDeadline(reason)
+  }
   if (provider.sales_task === SALES_TASK.CONFIRMATION) {
     if (provider.stage === REQUEST_STAGE.CONFIRMATION && provider.currency === 'RMB' && provider.payment_shape === 'supplier_installments' && !provider.second_payment_choice) {
-      return 'Decide si el pago 2 al proveedor se va a realizar.'
+      return withDeadline('Decidir si el pago 2 se realizará')
     }
     if (provider.exchange_result === 'to_collect') return 'Registra el voucher de la diferencia de cambio.'
     if (provider.exchange_result === 'to_refund') return 'Hay diferencia de cambio a favor del cliente. El reembolso lo aprueba Administración.'
@@ -276,7 +273,7 @@ function taskText(provider: SupplierPaymentProviderRow) {
       return `La cuota 2 está comprometida para ${provider.second_installment_on}. Prepárate o confirma el tipo de cambio.`
     }
     return provider.stage === REQUEST_STAGE.CONFIRMATION
-      ? 'Decide si la cuota 2 se va a realizar.'
+      ? withDeadline('Resolver para cerrar la Confirmación: Decidir la cuota 2')
       : 'Confirma el tipo de cambio del día para cobrar la cuota 2.'
   }
   return {

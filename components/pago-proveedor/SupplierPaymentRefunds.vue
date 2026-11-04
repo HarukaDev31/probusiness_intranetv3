@@ -1,7 +1,7 @@
 <template>
   <div>
-    <p class="mb-3 text-sm text-gray-500">El dinero sale fuera de la intranet. Aquí solo apruebas el reembolso y dejas el voucher.</p>
-    <div class="mb-3 flex flex-wrap gap-2">
+    <p v-if="!embedded" class="mb-3 text-sm text-gray-500">El dinero sale fuera de la intranet. Aquí solo apruebas el reembolso y dejas el voucher.</p>
+    <div v-if="!embedded" class="mb-3 flex flex-wrap gap-2">
       <button
         type="button"
         class="rounded-lg px-3 py-1.5 text-sm font-semibold"
@@ -150,7 +150,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import SupplierPaymentCard from '~/components/pago-proveedor/SupplierPaymentCard.vue'
 import SupplierPaymentFact from '~/components/pago-proveedor/SupplierPaymentFact.vue'
 import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
@@ -158,8 +158,20 @@ import { useSupplierPaymentRefunds } from '~/composables/pago-proveedor/useSuppl
 import { useModal } from '~/composables/commons/useModal'
 import type { SupplierPaymentRefund } from '~/types/pago-proveedor'
 
+const props = withDefaults(defineProps<{
+  embedded?: boolean
+  forceBucket?: 'solicitado' | 'aprobado'
+}>(), {
+  embedded: false,
+  forceBucket: undefined
+})
+
 const { showError } = useModal()
 const { rows, loading, bucket, pendingCount, load, changeBucket, approve: approveRefund, reject: rejectRefund } = useSupplierPaymentRefunds()
+
+watch(() => props.forceBucket, (next) => {
+  if (next && next !== bucket.value) changeBucket(next)
+}, { immediate: true })
 
 const saving = ref(false)
 const opened = ref(false)

@@ -1,4 +1,3 @@
-import { ref } from 'vue'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { PagoProveedorService } from '~/services/pagoProveedorService'
@@ -8,10 +7,10 @@ export function useSupplierPaymentRefunds() {
   const { showSuccess, showError } = useModal()
   const { withSpinner } = useSpinner()
 
-  const rows = ref<SupplierPaymentRefund[]>([])
-  const loading = ref(false)
-  const bucket = ref<'solicitado' | 'aprobado'>('solicitado')
-  const pendingCount = ref(0)
+  const rows = useState<SupplierPaymentRefund[]>('supplier-payment-refunds-rows', () => [])
+  const loading = useState('supplier-payment-refunds-loading', () => false)
+  const bucket = useState<'solicitado' | 'aprobado'>('supplier-payment-refunds-bucket', () => 'solicitado')
+  const pendingCount = useState('supplier-payment-refunds-pending', () => 0)
 
   async function load() {
     loading.value = true

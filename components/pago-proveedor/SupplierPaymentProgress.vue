@@ -86,23 +86,49 @@
       <p v-if="!progress.confirmation.completed && progress.confirmation.missing.length" class="mt-2 text-gray-600">
         Falta: {{ progress.confirmation.missing.join(', ') }}
       </p>
+
+      <div
+        v-if="pendingRefund"
+        class="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-sm"
+      >
+        <div class="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <p class="font-semibold text-amber-950">Reembolso</p>
+            <p class="mt-0.5 text-amber-900">
+              Lo aprueba Administración<span v-if="pendingRefund.blocks_close"> · frena el cierre</span>
+            </p>
+            <p class="mt-1 text-xs text-amber-800">{{ pendingRefund.origin_label }}</p>
+          </div>
+          <span class="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-amber-900">
+            {{ pendingRefund.status_label }} ${{ money(pendingRefund.amount) }}
+          </span>
+        </div>
+      </div>
+
       <p v-if="progress.confirmation.can_decide_installment" class="mt-2" :class="progress.confirmation.decision_overdue ? 'font-semibold text-red-600' : 'text-gray-500'">
         {{ deadlineText }}
       </p>
       <div v-if="progress.confirmation.can_decide_installment" class="mt-3 flex flex-wrap gap-2">
-        <UButton size="sm" color="primary" :loading="saving" @click="choose(INSTALLMENT_CHOICE.PROCEED)">La cuota 2 se realizará</UButton>
+        <UButton size="sm" color="primary" :loading="saving" @click="choose(INSTALLMENT_CHOICE.PROCEED)">Se realizará</UButton>
         <UButton size="sm" color="neutral" variant="soft" :loading="saving" @click="choose(INSTALLMENT_CHOICE.CANCEL)">No se realizará</UButton>
       </div>
       <p v-else-if="progress.confirmation.second_installment_choice === INSTALLMENT_CHOICE.PROCEED" class="mt-2 text-gray-600">La cuota 2 se va a realizar.</p>
       <p v-else-if="progress.confirmation.second_installment_choice === INSTALLMENT_CHOICE.CANCEL" class="mt-2 text-gray-600">La cuota 2 no se realizará. No se cobra su comisión ni el segundo abono.</p>
       <div v-if="progress.confirmation.can_decide_payment" class="mt-3 space-y-3">
-        <UButton size="sm" color="primary" :loading="saving" @click="choosePayment(PAYMENT_CHOICE.PROCEED)">El pago 2 se realizará</UButton>
-        <div class="rounded-xl border border-red-100 bg-red-50 p-3">
+        <p class="text-sm text-gray-600">
+          Pago 2 de 2 · ¿Se va a realizar?
+          <span v-if="deadlineText" :class="progress.confirmation.decision_overdue ? 'font-semibold text-red-600' : 'text-amber-800'"> · {{ deadlineText }}</span>
+        </p>
+        <div class="flex flex-wrap gap-2">
+          <UButton size="sm" color="primary" :loading="saving" @click="choosePayment(PAYMENT_CHOICE.PROCEED)">Se realizará</UButton>
+          <UButton size="sm" color="neutral" variant="soft" :loading="saving" @click="showCancelPayment = true">No se realizará</UButton>
+        </div>
+        <div v-if="showCancelPayment" class="rounded-xl border border-red-100 bg-red-50 p-3">
           <p class="font-semibold text-red-800">Pago 2 de 2: no se realizará</p>
           <p v-if="progress.confirmation.payment_two_refund" class="mt-2 text-sm text-red-900">
-            A devolver: carga ${{ money(progress.confirmation.payment_two_refund.cargo) }}
-            + administrativa ${{ money(progress.confirmation.payment_two_refund.admin) }}
-            = ${{ money(progress.confirmation.payment_two_refund.total) }}.
+            Carga del pago 2 ${{ money(progress.confirmation.payment_two_refund.cargo) }}
+            · Comisión administrativa ${{ money(progress.confirmation.payment_two_refund.admin) }}
+            · Total a devolver ${{ money(progress.confirmation.payment_two_refund.total) }}.
           </p>
           <p class="mt-1 text-xs text-red-700">La comisión bancaria no se devuelve: el envío a China ya se hizo.</p>
           <input v-model="paymentReason" placeholder="Motivo" class="mt-2 w-full rounded-md border border-red-200 px-2 py-1.5" />
@@ -113,7 +139,6 @@
         </div>
       </div>
       <p v-else-if="progress.confirmation.second_payment_choice === PAYMENT_CHOICE.PROCEED" class="mt-2 text-gray-600">El pago 2 vuelve a ejecución.</p>
-      <p v-else-if="progress.confirmation.second_payment_choice === PAYMENT_CHOICE.REFUND" class="mt-2 text-gray-600">El pago 2 no se realizará. El reembolso queda pendiente de Administración.</p>
       <div v-if="progress.confirmation.can_request_refund" class="mt-3">
         <UButton size="sm" color="primary" :loading="saving" @click="requestRefund">Solicitar reembolso</UButton>
       </div>
@@ -156,19 +181,24 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { INSTALLMENT_CHOICE, PAYMENT_CHOICE } from '~/constants/supplierPayment'
-import { PagoProveedorService } from '~/services/pagoProveedorService'
 import type { PagoProveedorSolicitudProveedor } from '~/types/pago-proveedor'
 import { useModal } from '~/composables/commons/useModal'
+import { useSpinner } from '~/composables/commons/useSpinner'
+import { useSupplierPaymentProgress } from '~/composables/pago-proveedor/useSupplierPaymentProgress'
 
 const props = defineProps<{ solicitudId: number; proveedor: PagoProveedorSolicitudProveedor }>()
 const emit = defineEmits<{ saved: [] }>()
 const { showError, showSuccess } = useModal()
+const { withSpinner } = useSpinner()
+const api = useSupplierPaymentProgress()
 const saving = ref(false)
+const showCancelPayment = ref(false)
 const rate = ref<number | null>(null)
 const paymentReason = ref('')
 const differenceFile = ref<File | null>(null)
 const difference = reactive({ importe: null as number | null, fecha: '', banco: 'bcp', operacion: '' })
 const progress = computed(() => props.proveedor.progreso)
+const pendingRefund = computed(() => progress.value?.confirmation.pending_refund || null)
 
 const depositSummary = computed(() => {
   const deposits = progress.value?.verification.deposits || []
@@ -184,8 +214,10 @@ const pendingItems = computed(() => (progress.value?.confirmation.items || []).f
 
 const deadlineText = computed(() => {
   const confirmation = progress.value?.confirmation
-  if (!confirmation?.decision_due_at) return 'Plazo de 72 h para decidir la cuota 2.'
-  return confirmation.decision_overdue ? 'El plazo para decidir la cuota 2 ya venció. Igual puedes elegir.' : 'Tienes plazo para decidir la cuota 2.'
+  if (!confirmation) return ''
+  if (confirmation.decision_due_text) return confirmation.decision_due_text
+  if (!confirmation.decision_due_at) return 'Plazo de 72 h para decidir.'
+  return confirmation.decision_overdue ? 'El plazo ya venció. Igual puedes elegir.' : 'Tienes plazo para decidir.'
 })
 
 function money(value: number) {
@@ -195,7 +227,7 @@ function money(value: number) {
 async function choose(choice: string) {
   saving.value = true
   try {
-    await PagoProveedorService.decidirCuota(props.solicitudId, props.proveedor.id, choice)
+    await withSpinner(() => api.decideInstallment(props.solicitudId, props.proveedor.id, choice), 'Guardando…')
     showSuccess('Cuota 2', choice === INSTALLMENT_CHOICE.PROCEED ? 'La cuota 2 vuelve a etapa 1.' : 'La cuota 2 no se cobrará.')
     emit('saved')
   } catch (error: any) {
@@ -209,7 +241,8 @@ async function choosePayment(choice: string) {
   if (choice !== PAYMENT_CHOICE.PROCEED && !paymentReason.value.trim()) return
   saving.value = true
   try {
-    await PagoProveedorService.decidirPago2(props.solicitudId, props.proveedor.id, choice, paymentReason.value)
+    await withSpinner(() => api.decidePayment(props.solicitudId, props.proveedor.id, choice, paymentReason.value), 'Guardando…')
+    showCancelPayment.value = false
     showSuccess('Pago 2', choice === PAYMENT_CHOICE.PROCEED ? 'China puede registrar el segundo pago.' : 'El pago 2 no se realizará.')
     emit('saved')
   } catch (error: any) {
@@ -235,7 +268,7 @@ function savePdf(pdf?: { filename: string; base64: string } | null) {
 async function sendBalance() {
   saving.value = true
   try {
-    const response = await PagoProveedorService.enviarBalance(props.solicitudId, props.proveedor.id)
+    const response = await withSpinner(() => api.sendBalance(props.solicitudId, props.proveedor.id), 'Generando balance…')
     savePdf(response.pdf)
     showSuccess('Balance', 'El mensaje y el PDF quedaron listos para el cliente.')
     emit('saved')
@@ -249,7 +282,7 @@ async function sendBalance() {
 async function downloadBalance() {
   saving.value = true
   try {
-    const response = await PagoProveedorService.descargarBalance(props.solicitudId, props.proveedor.id)
+    const response = await withSpinner(() => api.downloadBalance(props.solicitudId, props.proveedor.id), 'Descargando…')
     savePdf(response.data)
     showSuccess('Balance', 'PDF descargado.')
   } catch (error: any) {
@@ -269,7 +302,7 @@ async function saveDifference() {
   form.append('voucher', differenceFile.value)
   saving.value = true
   try {
-    await PagoProveedorService.registrarDiferencia(props.solicitudId, props.proveedor.id, form)
+    await withSpinner(() => api.registerDifference(props.solicitudId, props.proveedor.id, form), 'Registrando…')
     showSuccess('Diferencia de cambio', 'El voucher quedó para que Administración lo valide.')
     emit('saved')
   } catch (error: any) {
@@ -282,7 +315,7 @@ async function saveDifference() {
 async function requestRefund() {
   saving.value = true
   try {
-    await PagoProveedorService.solicitarReembolso(props.solicitudId, props.proveedor.id)
+    await withSpinner(() => api.requestRefund(props.solicitudId, props.proveedor.id), 'Solicitando…')
     showSuccess('Reembolso', 'Administración ya puede registrar el voucher.')
     emit('saved')
   } catch (error: any) {
@@ -296,7 +329,7 @@ async function saveRate() {
   if (!rate.value || rate.value <= 0) return
   saving.value = true
   try {
-    await PagoProveedorService.confirmarTipoCambio(props.solicitudId, rate.value)
+    await withSpinner(() => api.confirmRate(props.solicitudId, rate.value!), 'Confirmando…')
     showSuccess('Tipo de cambio', 'Ya puedes registrar el abono de la cuota 2.')
     emit('saved')
   } catch (error: any) {

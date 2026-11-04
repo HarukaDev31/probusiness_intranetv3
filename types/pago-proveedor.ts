@@ -141,6 +141,11 @@ export interface SupplierPaymentProviderRow {
   exchange_result?: string | null
   second_payment_choice?: string | null
   second_installment_on?: string | null
+  decision_due_at?: string | null
+  decision_due_text?: string | null
+  observe_until?: string | null
+  observe_text?: string | null
+  observe_label?: string | null
 }
 
 export interface PagoProveedorSolicitudProveedor {
@@ -169,7 +174,14 @@ export interface PagoProveedorSolicitudProveedor {
   codigo_solicitud: string | null
   puede_editar_etapa1: boolean
   puede_registrar_diferencia?: boolean
-  observacion_china?: { reason: string; label: string; detail: string | null; until: string | null; overdue: boolean } | null
+  observacion_china?: {
+    reason: string
+    label: string
+    detail: string | null
+    until: string | null
+    until_text?: string | null
+    overdue: boolean
+  } | null
   progreso?: SupplierPaymentProgress
   modalidad_abono: string
   datos: {
@@ -233,6 +245,14 @@ export interface SupplierPaymentProgress {
     payment_two_refund: { cargo: number; admin: number; total: number } | null
     decision_due_at: string | null
     decision_overdue: boolean
+    decision_due_text?: string | null
+    pending_refund?: {
+      amount: number
+      status: string
+      status_label: string
+      origin_label: string
+      blocks_close: boolean
+    } | null
     exchange_rate_pending: boolean
   }
 }
@@ -489,6 +509,7 @@ export interface SupplierPaymentYuan {
   observation_label: string | null
   observation_detail: string | null
   observation_until: string | null
+  observation_until_text?: string | null
   observation_overdue: boolean
   tolerance: number
 }

@@ -106,7 +106,9 @@
               <td class="px-3 py-3">
                 <UBadge :color="statusColor(row.status)" variant="soft" :label="row.status_label" />
                 <p v-if="row.supplier_payments > 1" class="mt-1 text-xs text-gray-500">Pago {{ row.current_payment }} de {{ row.supplier_payments }}</p>
-                <p v-if="row.observation_label" class="mt-1 text-xs text-red-600">{{ row.observation_label }}</p>
+                <p v-if="row.observation_label" class="mt-1 text-xs text-red-600">
+                  {{ row.observation_label }}<span v-if="row.observation_until_text"> · {{ row.observation_until_text }}</span>
+                </p>
               </td>
               <td class="px-3 py-3 text-right">
                 <UButton v-if="row.can_register" size="sm" color="primary" @click="open(row, false)">Registrar</UButton>

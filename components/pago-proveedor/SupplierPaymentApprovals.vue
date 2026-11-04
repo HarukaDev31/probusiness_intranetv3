@@ -8,7 +8,7 @@
           :class="bucket === APPROVAL_BUCKET.PENDING ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500'"
           @click="changeBucket(APPROVAL_BUCKET.PENDING)"
         >
-          Por aprobar <span v-if="pendingCount" class="ml-1 rounded-full bg-primary-500 px-1.5 text-[11px] text-white">{{ pendingCount }}</span>
+          Por aprobar <span v-if="totalPending" class="ml-1 rounded-full bg-primary-500 px-1.5 text-[11px] text-white">{{ totalPending }}</span>
         </button>
         <button
           type="button"
@@ -26,9 +26,29 @@
       </div>
     </div>
 
+    <div class="mb-3 flex flex-wrap gap-2">
+      <button
+        v-for="chip in typeChips"
+        :key="chip.key"
+        type="button"
+        class="rounded-full border px-3 py-1 text-xs"
+        :class="typeFilter === chip.key ? 'border-primary-500 bg-primary-50 font-semibold text-gray-900' : 'border-gray-200 bg-white text-gray-700'"
+        @click="typeFilter = chip.key"
+      >
+        {{ chip.label }}
+      </button>
+    </div>
+
+    <div v-if="typeFilter !== 'pago'" class="mb-4">
+      <h3 class="mb-2 text-sm font-semibold text-gray-800">Reembolsos</h3>
+      <p class="mb-3 text-sm text-gray-500">El dinero sale fuera de la intranet. Aquí solo apruebas el reembolso y dejas el voucher.</p>
+      <SupplierPaymentRefunds :embedded="true" :force-bucket="refundBucket" />
+    </div>
+
     <DataTable
+      v-if="typeFilter !== 'reemb'"
       title="Aprobación de pagos"
-      subtitle="Compara lo cobrado con lo que ingresó al banco."
+      subtitle="Compara lo cobrado con lo que ingresó al banco. Los reembolsos solicitados también aparecen arriba."
       icon="i-heroicons-check-badge"
       :data="rows"
       :columns="columns"
@@ -106,21 +126,32 @@
 <script setup lang="ts">
 import { computed, h, onMounted, reactive, ref } from 'vue'
 import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
+import SupplierPaymentRefunds from '~/components/pago-proveedor/SupplierPaymentRefunds.vue'
 import type { TableColumn } from '@nuxt/ui'
 import ApprovalReviewModal from '~/components/pago-proveedor/ApprovalReviewModal.vue'
 import { APPROVAL_BUCKET, APPROVAL_STATUS } from '~/constants/supplierPayment'
 import { PagoProveedorService } from '~/services/pagoProveedorService'
 import type { PagoProveedorPaginacion, SupplierPaymentApproval, SupplierPaymentApprovalSettings } from '~/types/pago-proveedor'
 import { useModal } from '~/composables/commons/useModal'
+import { useSupplierPaymentRefunds } from '~/composables/pago-proveedor/useSupplierPaymentRefunds'
 import { UButton } from '#components'
 
 const { showError, showSuccess } = useModal()
+const { pendingCount: refundPendingCount, load: loadRefunds, changeBucket: changeRefundBucket } = useSupplierPaymentRefunds()
 const rows = ref<SupplierPaymentApproval[]>([])
 const selected = ref<SupplierPaymentApproval | null>(null)
 const loading = ref(false)
 const search = ref('')
 const pendingCount = ref(0)
+const typeFilter = ref<'todos' | 'pago' | 'reemb'>('todos')
 const bucket = ref<typeof APPROVAL_BUCKET[keyof typeof APPROVAL_BUCKET]>(APPROVAL_BUCKET.PENDING)
+const typeChips = [
+  { key: 'todos' as const, label: 'Todos' },
+  { key: 'pago' as const, label: 'Pago a proveedor' },
+  { key: 'reemb' as const, label: 'Reembolsos' }
+]
+const refundBucket = computed(() => (bucket.value === APPROVAL_BUCKET.APPROVED ? 'aprobado' : 'solicitado') as 'solicitado' | 'aprobado')
+const totalPending = computed(() => pendingCount.value + refundPendingCount.value)
 const pagination = ref<PagoProveedorPaginacion>({ current_page: 1, last_page: 1, per_page: 15, total: 0 })
 const filters = ref({ status: APPROVAL_STATUS.ALL })
 const settingsOpen = ref(false)
@@ -219,6 +250,7 @@ function changeBucket(next: typeof APPROVAL_BUCKET[keyof typeof APPROVAL_BUCKET]
   bucket.value = next
   filters.value = { status: APPROVAL_STATUS.ALL }
   pagination.value.current_page = 1
+  changeRefundBucket(next === APPROVAL_BUCKET.APPROVED ? 'aprobado' : 'solicitado')
   load()
 }
 
@@ -294,5 +326,7 @@ async function saveTariffs() {
   }
 }
 
-onMounted(load)
+onMounted(async () => {
+  await Promise.all([load(), loadRefunds()])
+})
 </script>
