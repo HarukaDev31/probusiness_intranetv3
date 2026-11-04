@@ -118,6 +118,7 @@ export interface PagoProveedorSolicitud {
   creado_en: string | null
   proveedores?: PagoProveedorSolicitudProveedor[]
   abonos?: PagoProveedorAbono[]
+  historial?: Array<{ accion: string; detalle: string | null; usuario: string; fecha: string | null }>
 }
 
 export interface SupplierPaymentProviderRow {

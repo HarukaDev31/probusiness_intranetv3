@@ -3,31 +3,47 @@
     <section v-if="proveedor.etapa >= 2" class="rounded-lg border border-gray-200 p-4 text-sm">
       <h3 class="font-semibold">Validación de pago</h3>
       <div class="mt-3 grid gap-3 md:grid-cols-3">
-        <div>
-          <p class="text-xs uppercase tracking-wide text-gray-500">Abonos del cliente</p>
-          <p v-if="!progress.verification.deposits.length" class="mt-1 text-gray-500">Sin abonos.</p>
-          <p v-for="deposit in progress.verification.deposits" :key="deposit.id" class="mt-1">
+        <div class="rounded-xl border border-gray-100 bg-gray-50 p-3">
+          <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Abonos del cliente</p>
+          <p v-if="!progress.verification.deposits.length" class="mt-2 text-gray-500">Sin abonos.</p>
+          <p v-for="deposit in progress.verification.deposits" :key="deposit.id" class="mt-2 font-medium">
             ${{ money(deposit.amount) }} · {{ deposit.status_label }}
           </p>
         </div>
-        <div>
-          <p class="text-xs uppercase tracking-wide text-gray-500">Verificación</p>
-          <p class="mt-1">{{ depositSummary }}</p>
+        <div class="rounded-xl border border-gray-100 bg-gray-50 p-3">
+          <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Verificación del pago</p>
+          <p class="mt-2 font-medium">{{ depositSummary }}</p>
         </div>
-        <div>
-          <p class="text-xs uppercase tracking-wide text-gray-500">Aprobación</p>
-          <p class="mt-1">{{ progress.verification.approval_label }}</p>
+        <div class="rounded-xl border border-gray-100 bg-gray-50 p-3">
+          <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Aprobación de pago</p>
+          <p class="mt-2 font-medium">{{ progress.verification.approval_label }}</p>
         </div>
       </div>
     </section>
 
     <section v-if="progress.executions.length" class="rounded-lg border border-gray-200 p-4 text-sm">
       <h3 class="font-semibold">Ejecución de pago</h3>
-      <article v-for="execution in progress.executions" :key="execution.id" class="mt-2 flex items-center justify-between gap-3">
-        <p>Pagado ${{ money(execution.cargo_amount) }} <span v-if="execution.executed_on">· {{ execution.executed_on }}</span></p>
-        <a v-if="execution.receipt_url" :href="execution.receipt_url" target="_blank" rel="noopener" class="text-primary-600">Ver constancia</a>
-      </article>
-      <p class="mt-2 text-gray-500">Constancia registrada. El aviso al cliente por WhatsApp queda para el final.</p>
+      <div class="mt-3 grid gap-3 md:grid-cols-3">
+        <div class="rounded-xl border border-gray-100 bg-gray-50 p-3">
+          <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Datos del proveedor</p>
+          <p class="mt-2 font-medium">{{ proveedor.titulo || proveedor.code_supplier || 'Proveedor' }}</p>
+          <p class="text-gray-500">{{ proveedor.producto || '—' }}</p>
+        </div>
+        <div class="rounded-xl border border-gray-100 bg-gray-50 p-3">
+          <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Importe pagado</p>
+          <p v-for="execution in progress.executions" :key="`amt-${execution.id}`" class="mt-2 text-lg font-bold">
+            ${{ money(execution.cargo_amount) }}
+          </p>
+        </div>
+        <div class="rounded-xl border border-gray-100 bg-gray-50 p-3">
+          <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Registro de pago</p>
+          <article v-for="execution in progress.executions" :key="execution.id" class="mt-2">
+            <p>{{ execution.executed_on || 'Sin fecha' }}</p>
+            <a v-if="execution.receipt_url" :href="execution.receipt_url" target="_blank" rel="noopener" class="font-semibold text-primary-600">Ver constancia</a>
+            <p v-else class="text-gray-500">Constancia pendiente</p>
+          </article>
+        </div>
+      </div>
     </section>
 
     <section v-if="progress.confirmation.visible" class="rounded-lg border border-gray-200 p-4 text-sm">
@@ -36,20 +52,37 @@
         <span v-if="progress.confirmation.completed" class="font-semibold text-green-700">Completado</span>
         <span v-else>{{ progress.confirmation.done_count }} de {{ progress.confirmation.total }}</span>
       </div>
-      <ul class="mt-3 space-y-1">
-        <li
-          v-for="item in progress.confirmation.items"
-          :key="item.key"
-          class="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm"
-          :class="!item.done && item.blocks ? 'border border-orange-200 bg-primary-50' : ''"
-        >
-          <span
-            class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
-            :class="item.done ? 'bg-green-600 text-white' : 'border border-gray-200 bg-white text-gray-400'"
-          >{{ item.done ? '✓' : '' }}</span>
-          <span :class="item.done ? 'text-gray-700' : (item.blocks ? 'font-semibold text-gray-900' : 'text-gray-500')">{{ item.label }}</span>
-        </li>
-      </ul>
+      <div class="mt-3 grid gap-3 md:grid-cols-3">
+        <div class="rounded-xl border border-gray-100 bg-gray-50 p-3">
+          <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Resumen de la operación</p>
+          <ul class="mt-2 space-y-1">
+            <li v-for="item in summaryItems" :key="item.key" class="flex items-center gap-2">
+              <span class="flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold" :class="item.done ? 'bg-green-600 text-white' : 'border border-gray-200 bg-white text-gray-400'">{{ item.done ? '✓' : '' }}</span>
+              <span :class="item.done ? 'text-gray-700' : 'text-gray-500'">{{ item.label }}</span>
+            </li>
+          </ul>
+        </div>
+        <div class="rounded-xl border border-gray-100 bg-gray-50 p-3">
+          <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Información al cliente</p>
+          <ul class="mt-2 space-y-1">
+            <li v-for="item in clientItems" :key="item.key" class="flex items-center gap-2">
+              <span class="flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold" :class="item.done ? 'bg-green-600 text-white' : 'border border-gray-200 bg-white text-gray-400'">{{ item.done ? '✓' : '' }}</span>
+              <span :class="item.done ? 'text-gray-700' : 'text-gray-500'">{{ item.label }}</span>
+            </li>
+            <li v-if="!clientItems.length" class="text-gray-400">Sin avisos pendientes.</li>
+          </ul>
+        </div>
+        <div class="rounded-xl border border-orange-100 bg-primary-50 p-3">
+          <p class="text-xs font-semibold uppercase tracking-wide text-primary-700">Por resolver</p>
+          <ul class="mt-2 space-y-1">
+            <li v-for="item in pendingItems" :key="item.key" class="flex items-center gap-2">
+              <span class="flex h-5 w-5 items-center justify-center rounded-full border border-orange-200 bg-white text-[11px] font-bold text-orange-500" />
+              <span class="font-semibold text-gray-900">{{ item.label }}</span>
+            </li>
+            <li v-if="!pendingItems.length" class="text-gray-500">Nada pendiente.</li>
+          </ul>
+        </div>
+      </div>
       <p v-if="!progress.confirmation.completed && progress.confirmation.missing.length" class="mt-2 text-gray-600">
         Falta: {{ progress.confirmation.missing.join(', ') }}
       </p>
@@ -144,6 +177,10 @@ const depositSummary = computed(() => {
   if (pending) return `${pending} por validar`
   return 'Depósitos revisados'
 })
+
+const summaryItems = computed(() => (progress.value?.confirmation.items || []).filter((item) => ['payment', 'receipt'].includes(item.key)))
+const clientItems = computed(() => (progress.value?.confirmation.items || []).filter((item) => ['client_notice', 'exchange'].includes(item.key)))
+const pendingItems = computed(() => (progress.value?.confirmation.items || []).filter((item) => !item.done && item.blocks))
 
 const deadlineText = computed(() => {
   const confirmation = progress.value?.confirmation

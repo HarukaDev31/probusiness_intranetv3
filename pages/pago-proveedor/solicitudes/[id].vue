@@ -48,8 +48,18 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-          <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">Avisos</span>
-          <UButton size="sm" color="neutral" variant="soft" @click="pedirDatos">Pedir datos del proveedor</UButton>
+          <UButton
+            v-if="solicitud.cotizacion_id"
+            size="sm"
+            color="neutral"
+            variant="soft"
+            :to="`/pago-proveedor/cotizaciones/${solicitud.cotizacion_id}`"
+          >
+            Formulario de la solicitud
+          </UButton>
+          <UButton v-if="solicitud.cotizacion_id" size="sm" color="neutral" variant="soft" :loading="guardandoAviso" @click="enviarResumen">Enviar resumen</UButton>
+          <UButton v-if="solicitud.cotizacion_id" size="sm" color="neutral" variant="ghost" :loading="guardandoAviso" @click="descargarResumen">Descargar PDF</UButton>
+          <UButton size="sm" color="neutral" variant="soft" @click="abrirPedirDatos">Pedir datos del proveedor</UButton>
           <UButton size="sm" color="neutral" variant="ghost" @click="enviarCuentas">Cuentas bancarias</UButton>
         </div>
       </header>
@@ -177,10 +187,50 @@
 
       <section v-if="vistaPrevia" class="rounded-xl border border-gray-200 bg-white p-5">
         <h2 class="font-semibold">Vista previa</h2>
-        <p class="mt-2 break-all text-sm text-orange-700">{{ vistaPrevia.enlace }}</p>
+        <p v-if="vistaPrevia.enlace" class="mt-2 break-all text-sm text-orange-700">{{ vistaPrevia.enlace }}</p>
         <pre class="mt-3 whitespace-pre-wrap text-sm">{{ vistaPrevia.texto }}</pre>
         <p class="mt-2 text-sm text-gray-500">{{ vistaPrevia.nota }}</p>
       </section>
+
+      <section v-if="(solicitud.historial || []).length" class="rounded-xl border border-gray-200 bg-white p-5">
+        <h2 class="font-semibold">Historial</h2>
+        <div class="mt-3 overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-xs uppercase tracking-wide text-gray-400">
+                <th class="pb-2 pr-3">Fecha</th>
+                <th class="pb-2 pr-3">Usuario</th>
+                <th class="pb-2">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(evento, index) in solicitud.historial" :key="`${evento.fecha}-${index}`" class="border-t border-gray-100">
+                <td class="py-2 pr-3 whitespace-nowrap text-gray-500">{{ evento.fecha ? new Date(evento.fecha).toLocaleString('es-PE') : '—' }}</td>
+                <td class="py-2 pr-3">{{ evento.usuario || '—' }}</td>
+                <td class="py-2">{{ evento.accion }}<span v-if="evento.detalle" class="text-gray-500"> · {{ evento.detalle }}</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <SupplierPaymentWindow
+        :open="pedirDatosAbierto"
+        title="Pedir datos del proveedor"
+        subtitle="Elige a quién le pides los datos."
+        @close="pedirDatosAbierto = false"
+      >
+        <p v-if="!candidatosDatos.length" class="text-sm text-gray-500">Todos los proveedores ya tienen sus datos.</p>
+        <div v-else class="space-y-2">
+          <label v-for="candidato in candidatosDatos" :key="candidato.id" class="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm">
+            <input v-model="candidatosElegidos" type="checkbox" :value="candidato.id" />
+            <span>{{ candidato.titulo }} · {{ candidato.moneda }}</span>
+          </label>
+        </div>
+        <template #footer>
+          <UButton color="primary" :disabled="!candidatosElegidos.length" :loading="guardandoAviso" @click="confirmarPedirDatos">Preparar aviso</UButton>
+        </template>
+      </SupplierPaymentWindow>
 
       <SupplierPaymentWindow
         :open="abonoAbierto"
@@ -249,6 +299,7 @@ const route = useRoute()
 const { showSuccess, showError, showConfirmation } = useModal()
 const cargando = ref(true)
 const guardandoAbono = ref(false)
+const guardandoAviso = ref(false)
 const solicitud = ref<PagoProveedorSolicitud | null>(null)
 const rmb = reactive<Record<number, { vendedor: string; wechat: string }>>({})
 const ttAbierto = ref<number | null>(null)
@@ -256,6 +307,9 @@ const ttSoloLectura = ref(false)
 const formularioTt = ref<Record<string, unknown>>({})
 const abonoAbierto = ref(false)
 const abonoEditandoId = ref<number | null>(null)
+const pedirDatosAbierto = ref(false)
+const candidatosDatos = ref<Array<{ id: number; titulo: string; moneda: string; incompleto: boolean }>>([])
+const candidatosElegidos = ref<number[]>([])
 const voucher = ref<File | null>(null)
 const vistaPrevia = ref<{ enlace?: string; texto: string; nota?: string } | null>(null)
 const continuacion = reactive<Record<number, number[]>>({})
@@ -309,13 +363,62 @@ async function cargar() {
   aplicar(respuesta.data)
 }
 
-async function pedirDatos() {
+async function abrirPedirDatos() {
   try {
-    const respuesta = await PagoProveedorService.pedirDatos(solicitud.value!.id)
+    const respuesta = await PagoProveedorService.candidatosPedirDatos(solicitud.value!.id)
+    candidatosDatos.value = respuesta.data || []
+    candidatosElegidos.value = candidatosDatos.value.map(item => item.id)
+    pedirDatosAbierto.value = true
+  } catch (error: any) {
+    showError('Pedir datos', error?.data?.message || error.message || 'No se pudo cargar los proveedores.')
+  }
+}
+
+async function confirmarPedirDatos() {
+  if (!candidatosElegidos.value.length) return
+  guardandoAviso.value = true
+  try {
+    const respuesta = await PagoProveedorService.pedirDatos(solicitud.value!.id, candidatosElegidos.value)
     vistaPrevia.value = respuesta.data
     aplicar(respuesta.data.solicitud)
+    pedirDatosAbierto.value = false
+    showSuccess('Pedir datos', 'Quedó la vista previa del aviso.')
   } catch (error: any) {
     showError('Pedir datos', error?.data?.message || error.message || 'No se pudo preparar el mensaje.')
+  } finally {
+    guardandoAviso.value = false
+  }
+}
+
+async function enviarResumen() {
+  if (!solicitud.value?.cotizacion_id) return
+  guardandoAviso.value = true
+  try {
+    const respuesta = await PagoProveedorService.vistaPreviaWhatsapp(solicitud.value.cotizacion_id)
+    vistaPrevia.value = { texto: respuesta.data.texto, nota: respuesta.data.nota, enlace: respuesta.data.destinatario || undefined }
+    showSuccess('Resumen', 'Quedó la vista previa para WhatsApp.')
+  } catch (error: any) {
+    showError('Resumen', error?.data?.message || error.message || 'No se pudo preparar el resumen.')
+  } finally {
+    guardandoAviso.value = false
+  }
+}
+
+async function descargarResumen() {
+  if (!solicitud.value?.cotizacion_id) return
+  guardandoAviso.value = true
+  try {
+    const respuesta = await PagoProveedorService.descargarPdf(solicitud.value.cotizacion_id)
+    const pdf = respuesta.data
+    const link = document.createElement('a')
+    link.href = `data:application/pdf;base64,${pdf.base64}`
+    link.download = pdf.filename || 'Resumen.pdf'
+    link.click()
+    showSuccess('PDF', 'Resumen descargado.')
+  } catch (error: any) {
+    showError('PDF', error?.data?.message || error.message || 'No se pudo descargar el PDF.')
+  } finally {
+    guardandoAviso.value = false
   }
 }
 

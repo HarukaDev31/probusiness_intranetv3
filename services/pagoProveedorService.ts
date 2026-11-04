@@ -129,10 +129,16 @@ export class PagoProveedorService extends BaseService {
     })
   }
 
-  static async pedirDatos(solicitudId: number) {
+  static async candidatosPedirDatos(solicitudId: number) {
+    return this.apiCall<Uno<Array<{ id: number; titulo: string; moneda: string; incompleto: boolean }>>>(
+      `${this.baseUrl}/solicitudes/${solicitudId}/pedir-datos`
+    )
+  }
+
+  static async pedirDatos(solicitudId: number, proveedores?: number[]) {
     return this.apiCall<Uno<{ texto: string; nota: string; solicitud: PagoProveedorSolicitud }>>(
       `${this.baseUrl}/solicitudes/${solicitudId}/pedir-datos`,
-      { method: 'POST' }
+      { method: 'POST', body: proveedores?.length ? { proveedores } : {} }
     )
   }
 

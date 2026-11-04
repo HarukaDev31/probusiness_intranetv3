@@ -62,7 +62,10 @@
           <p v-if="selected.reason" class="text-sm text-gray-600">{{ selected.reason }}</p>
         </SupplierPaymentCard>
         <SupplierPaymentCard title="Cómo se calcula">
-          <p class="text-sm text-gray-700">{{ selected.calculation }}</p>
+          <ul class="space-y-1 text-sm text-gray-700">
+            <li v-for="(line, index) in calculationLines" :key="index">{{ line }}</li>
+          </ul>
+          <p class="mt-2 text-xs text-gray-500">Total ${{ money(selected.amount) }}</p>
         </SupplierPaymentCard>
       </div>
       <form id="refund-voucher" class="grid gap-3 rounded-2xl border border-gray-200 bg-white p-4 text-sm sm:grid-cols-2" @submit.prevent="approve">
@@ -94,7 +97,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import SupplierPaymentCard from '~/components/pago-proveedor/SupplierPaymentCard.vue'
 import SupplierPaymentFact from '~/components/pago-proveedor/SupplierPaymentFact.vue'
 import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
@@ -112,6 +115,10 @@ const photo = ref<File | null>(null)
 const form = reactive({ importe: 0, fecha: '', banco: 'bcp', operacion: '' })
 
 const money = (value: number | null) => Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const calculationLines = computed(() => {
+  const text = selected.value?.calculation || ''
+  return text.split(' · ').map((line) => line.trim()).filter(Boolean)
+})
 
 const load = async () => {
   loading.value = true
