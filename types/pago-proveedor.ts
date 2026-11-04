@@ -139,6 +139,7 @@ export interface SupplierPaymentProviderRow {
   collect_amount?: number | null
   exchange_result?: string | null
   second_payment_choice?: string | null
+  second_installment_on?: string | null
 }
 
 export interface PagoProveedorSolicitudProveedor {
@@ -177,8 +178,23 @@ export interface PagoProveedorSolicitudProveedor {
     wechat: string | null
     correccion_solicitada: boolean
     beneficiario_nombre: string | null
+    beneficiario_cuenta?: string | null
+    beneficiario_direccion?: string | null
+    beneficiario_pais?: string | null
+    beneficiario_ciudad?: string | null
+    banco_tipo_codigo?: string | null
     banco_nombre: string | null
     banco_codigo: string | null
+    banco_direccion?: string | null
+    banco_pais?: string | null
+    banco_ciudad?: string | null
+    usa_intermediario?: boolean
+    inter_tipo_codigo?: string | null
+    inter_codigo?: string | null
+    inter_nombre?: string | null
+    inter_direccion?: string | null
+    inter_pais?: string | null
+    inter_ciudad?: string | null
   }
 }
 
@@ -210,8 +226,10 @@ export interface SupplierPaymentProgress {
     second_payment_choice: string | null
     can_register_exchange: boolean
     can_send_balance: boolean
+    can_download_balance: boolean
     can_request_refund: boolean
     exchange_due_usd: number
+    payment_two_refund: { cargo: number; admin: number; total: number } | null
     decision_due_at: string | null
     decision_overdue: boolean
     exchange_rate_pending: boolean
@@ -353,6 +371,7 @@ export interface SupplierPaymentApproval {
   deposits: SupplierPaymentApprovalDeposit[]
   can_approve: boolean
   can_collect: boolean
+  can_mark_registration_error: boolean
   can_extend: boolean
   can_cancel: boolean
   needs_reason: boolean

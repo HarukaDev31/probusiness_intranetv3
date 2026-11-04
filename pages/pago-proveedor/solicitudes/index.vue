@@ -11,7 +11,7 @@
         <UButton color="primary" @click="nuevaCotizacion = true">Nueva cotización</UButton>
       </div>
     </header>
-    <NuevaCotizacionModal v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" :open="nuevaCotizacion" @close="nuevaCotizacion = false" @created="(id) => navigateTo(`/pago-proveedor/cotizaciones/${id}`)" />
+    <NuevaCotizacionModal v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" :open="nuevaCotizacion" @close="nuevaCotizacion = false" @accepted="(codigo) => navigateTo({ path: '/pago-proveedor/cotizaciones/nueva', query: { cc: codigo } })" />
     <div v-if="profile === SUPPLIER_PAYMENT_PROFILE.ADMINISTRATION">
       <div class="mb-4 flex gap-1.5 border-b border-gray-200">
         <button
@@ -263,12 +263,18 @@ function taskText(provider: SupplierPaymentProviderRow) {
     const amount = Number(provider.collect_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })
     return `Cobrar la diferencia de $${amount} al cliente y registrar el comprobante.`
   }
+  if (provider.approval_status === 'error_registro') {
+    return 'Corrige el voucher o los datos: Administración marcó un error de registro.'
+  }
   if (provider.sales_task === SALES_TASK.CONFIRMATION) {
     if (provider.stage === REQUEST_STAGE.CONFIRMATION && provider.currency === 'RMB' && provider.payment_shape === 'supplier_installments' && !provider.second_payment_choice) {
       return 'Decide si el pago 2 al proveedor se va a realizar.'
     }
     if (provider.exchange_result === 'to_collect') return 'Registra el voucher de la diferencia de cambio.'
     if (provider.exchange_result === 'to_refund') return 'Hay diferencia de cambio a favor del cliente. El reembolso lo aprueba Administración.'
+    if (provider.stage !== REQUEST_STAGE.CONFIRMATION && provider.second_installment_on) {
+      return `La cuota 2 está comprometida para ${provider.second_installment_on}. Prepárate o confirma el tipo de cambio.`
+    }
     return provider.stage === REQUEST_STAGE.CONFIRMATION
       ? 'Decide si la cuota 2 se va a realizar.'
       : 'Confirma el tipo de cambio del día para cobrar la cuota 2.'

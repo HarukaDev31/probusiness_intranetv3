@@ -300,6 +300,13 @@ export class PagoProveedorService extends BaseService {
     return this.apiCall<Uno<SupplierPaymentApproval>>(`${this.baseUrl}/aprobaciones/${id}/cobrar`, { method: 'POST' })
   }
 
+  static async markRegistrationError(id: number, detail: string) {
+    return this.apiCall<Uno<SupplierPaymentApproval>>(`${this.baseUrl}/aprobaciones/${id}/error-registro`, {
+      method: 'POST',
+      body: { detail }
+    })
+  }
+
   static async extendCollect(id: number) {
     return this.apiCall<Uno<SupplierPaymentApproval>>(`${this.baseUrl}/aprobaciones/${id}/extender`, { method: 'POST' })
   }
@@ -415,9 +422,13 @@ export class PagoProveedorService extends BaseService {
   }
 
   static async enviarBalance(solicitudId: number, proveedorId: number) {
-    return this.apiCall<Uno<PagoProveedorSolicitud>>(`${this.baseUrl}/solicitudes/${solicitudId}/proveedores/${proveedorId}/balance`, {
+    return this.apiCall<Uno<PagoProveedorSolicitud> & { pdf?: { filename: string; base64: string } }>(`${this.baseUrl}/solicitudes/${solicitudId}/proveedores/${proveedorId}/balance`, {
       method: 'POST'
     })
+  }
+
+  static async descargarBalance(solicitudId: number, proveedorId: number) {
+    return this.apiCall<Uno<{ filename: string; base64: string }>>(`${this.baseUrl}/solicitudes/${solicitudId}/proveedores/${proveedorId}/balance`)
   }
 
   static async registrarDiferencia(solicitudId: number, proveedorId: number, form: FormData) {

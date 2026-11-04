@@ -79,11 +79,19 @@
         <textarea v-model="cancelReason" rows="2" class="w-full rounded-lg border border-gray-300 px-2.5 py-1.5" />
       </label>
     </div>
+    <div v-if="markingError" class="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+      <label class="block text-sm">
+        <span class="mb-1 block font-semibold text-amber-900">Qué debe corregir Ventas (error de registro)</span>
+        <textarea v-model="errorDetail" rows="2" class="w-full rounded-lg border border-amber-200 bg-white px-2.5 py-1.5" />
+      </label>
+    </div>
 
     <template #footer>
       <UButton v-if="payment?.can_extend" color="neutral" variant="soft" :loading="saving" @click="run('extend')">Extender plazo</UButton>
       <UButton v-if="payment?.can_cancel && !cancelling" color="error" variant="soft" @click="cancelling = true">Anular pago</UButton>
       <UButton v-if="cancelling" color="error" :loading="saving" @click="run('cancel')">Confirmar anulación</UButton>
+      <UButton v-if="payment?.can_mark_registration_error && !markingError" color="neutral" variant="soft" @click="markingError = true">Error de registro</UButton>
+      <UButton v-if="markingError" color="warning" :loading="saving" @click="run('registration_error')">Confirmar error de registro</UButton>
       <UButton v-if="payment?.can_collect" color="neutral" variant="soft" :loading="saving" @click="run('collect')">Por cobrar</UButton>
       <UButton v-if="payment?.can_approve" color="primary" :loading="saving" @click="run('approve')">
         {{ payment.needs_reason ? 'Aprobar asumiendo la diferencia' : 'Aprobar pago' }}
@@ -107,7 +115,9 @@ const { showSuccess, showError } = useModal()
 
 const reason = ref('')
 const cancelReason = ref('')
+const errorDetail = ref('')
 const cancelling = ref(false)
+const markingError = ref(false)
 const saving = ref(false)
 
 const supplier = computed(() => {
@@ -127,14 +137,16 @@ const subtitle = computed(() => {
 watch(() => props.payment?.id, () => {
   reason.value = ''
   cancelReason.value = ''
+  errorDetail.value = ''
   cancelling.value = false
+  markingError.value = false
 })
 
 function money(value: number) {
   return Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-async function run(action: 'approve' | 'collect' | 'extend' | 'cancel') {
+async function run(action: 'approve' | 'collect' | 'extend' | 'cancel' | 'registration_error') {
   if (!props.payment) return
   saving.value = true
   try {
@@ -142,6 +154,7 @@ async function run(action: 'approve' | 'collect' | 'extend' | 'cancel') {
     if (action === 'collect') await PagoProveedorService.collectPayment(props.payment.id)
     if (action === 'extend') await PagoProveedorService.extendCollect(props.payment.id)
     if (action === 'cancel') await PagoProveedorService.cancelPayment(props.payment.id, cancelReason.value)
+    if (action === 'registration_error') await PagoProveedorService.markRegistrationError(props.payment.id, errorDetail.value)
     showSuccess('Aprobación', 'El pago quedó actualizado.')
     emit('saved')
     emit('close')

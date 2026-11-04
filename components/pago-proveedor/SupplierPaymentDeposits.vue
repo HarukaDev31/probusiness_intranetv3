@@ -6,6 +6,14 @@
       :pending-count="pendingCount"
       @update:model-value="(tab) => emit('change-tab', tab)"
     />
+    <div v-if="overdueCount || observedCount" class="mb-3 flex flex-wrap gap-2">
+      <p v-if="overdueCount" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+        {{ overdueCount }} depósito{{ overdueCount === 1 ? '' : 's' }} con plazo vencido
+      </p>
+      <p v-if="observedCount" class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">
+        {{ observedCount }} depósito{{ observedCount === 1 ? '' : 's' }} observado{{ observedCount === 1 ? '' : 's' }}
+      </p>
+    </div>
     <DataTable
       title="Verificación"
       subtitle="Pago a proveedor"
@@ -59,6 +67,9 @@ const search = ref('')
 const pendingCount = ref(0)
 const pagination = ref<PagoProveedorPaginacion>({ current_page: 1, last_page: 1, per_page: 15, total: 0 })
 const filters = ref({ status: DEPOSIT_STATUS.PENDING, bank: DEPOSIT_BANK.ALL, consolidation: DEPOSIT_STATUS.ALL, paid_from: '', paid_to: '' })
+
+const overdueCount = computed(() => rows.value.filter((row) => row.deadline_overdue).length)
+const observedCount = computed(() => rows.value.filter((row) => row.status === DEPOSIT_STATUS.OBSERVED).length)
 
 const filterConfig = computed(() => [
   {

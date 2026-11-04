@@ -114,17 +114,29 @@
           <h3 class="text-sm font-semibold">Datos bancarios (T-T)</h3>
           <p class="mt-1 text-sm">Estado: {{ etiquetaDatos(proveedor.datos.estado) }}<span v-if="proveedor.datos.correccion_solicitada"> · corrección pedida</span></p>
           <p v-if="proveedor.datos.beneficiario_nombre" class="text-sm text-gray-600">{{ proveedor.datos.beneficiario_nombre }} · {{ proveedor.datos.banco_nombre }} {{ proveedor.datos.banco_codigo }}</p>
-          <div v-if="proveedor.puede_editar_etapa1" class="mt-3 flex flex-wrap gap-2">
-            <UButton size="sm" color="primary" @click="enviarFormulario(proveedor)">Enviar formulario</UButton>
-            <UButton size="sm" color="neutral" variant="soft" @click="abrirTt(proveedor.id)">Llenar por el cliente</UButton>
-            <UButton v-if="proveedor.datos.estado === 'recibido'" size="sm" color="neutral" variant="soft" @click="pedirValidacion(proveedor)">Solicitar validación de datos</UButton>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <template v-if="proveedor.puede_editar_etapa1">
+              <UButton size="sm" color="primary" @click="enviarFormulario(proveedor)">Enviar formulario</UButton>
+              <UButton size="sm" color="neutral" variant="soft" @click="abrirTt(proveedor.id, false)">Llenar por el cliente</UButton>
+              <UButton v-if="proveedor.datos.estado === 'recibido'" size="sm" color="neutral" variant="soft" @click="pedirValidacion(proveedor)">Solicitar validación de datos</UButton>
+            </template>
+            <UButton
+              v-if="proveedor.datos.beneficiario_nombre || proveedor.datos.estado === 'recibido' || proveedor.datos.estado === 'por_autorizar'"
+              size="sm"
+              color="neutral"
+              variant="ghost"
+              @click="abrirTt(proveedor.id, true)"
+            >
+              Ver
+            </UButton>
           </div>
           <form v-if="ttAbierto === proveedor.id" class="mt-4 space-y-3" @submit.prevent="llenarTt(proveedor)">
-            <FormularioBancario v-model="formularioTt" />
-            <div class="flex gap-2">
+            <FormularioBancario v-model="formularioTt" :bloqueado="ttSoloLectura" />
+            <div v-if="!ttSoloLectura" class="flex gap-2">
               <UButton type="submit" size="sm" color="primary">Guardar como por autorizar</UButton>
               <UButton type="button" size="sm" color="neutral" variant="ghost" @click="ttAbierto = null">Cancelar</UButton>
             </div>
+            <UButton v-else type="button" size="sm" color="neutral" variant="ghost" @click="ttAbierto = null">Cerrar</UButton>
           </form>
         </section>
 
@@ -147,6 +159,7 @@
             <p v-if="abono.operacion_repetida" class="text-amber-700">El número de operación ya estaba registrado.</p>
             <div class="mt-2 flex flex-wrap gap-2">
               <a v-if="abono.voucher_url" :href="abono.voucher_url" target="_blank" class="font-semibold text-primary-600">Ver voucher</a>
+              <button v-if="abono.puede_editar" type="button" class="font-semibold text-primary-600" @click="editarAbono(abono)">Editar</button>
               <button v-if="abono.puede_editar" type="button" class="text-red-600" @click="anularAbono(abono)">Anular</button>
               <button v-if="abono.excedente_decision === 'por_consultar'" type="button" class="font-semibold text-primary-600" @click="decidir(abono.id, 'reembolso_solicitado')">Solicitar reembolso</button>
               <template v-if="abono.puede_elegir_continuacion">
@@ -171,7 +184,7 @@
 
       <SupplierPaymentWindow
         :open="abonoAbierto"
-        title="Registrar comprobante de pago"
+        :title="abonoEditandoId ? 'Editar comprobante de pago' : 'Registrar comprobante de pago'"
         subtitle="El abono se aplica a los proveedores con saldo."
         @close="abonoAbierto = false"
       >
@@ -213,7 +226,9 @@
           </div>
         </form>
         <template #footer>
-          <UButton type="submit" form="abono-form" color="primary" :disabled="aplicado <= 0" :loading="guardandoAbono">Registrar comprobante</UButton>
+          <UButton type="submit" form="abono-form" color="primary" :disabled="aplicado <= 0" :loading="guardandoAbono">
+            {{ abonoEditandoId ? 'Guardar cambios' : 'Registrar comprobante' }}
+          </UButton>
         </template>
       </SupplierPaymentWindow>
     </template>
@@ -222,7 +237,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import type { PagoProveedorSolicitud, PagoProveedorSolicitudProveedor } from '~/types/pago-proveedor'
+import type { PagoProveedorAbono, PagoProveedorSolicitud, PagoProveedorSolicitudProveedor } from '~/types/pago-proveedor'
 import { PagoProveedorService } from '~/services/pagoProveedorService'
 import { useModal } from '~/composables/commons/useModal'
 import FormularioBancario from '~/components/pago-proveedor/FormularioBancario.vue'
@@ -237,8 +252,10 @@ const guardandoAbono = ref(false)
 const solicitud = ref<PagoProveedorSolicitud | null>(null)
 const rmb = reactive<Record<number, { vendedor: string; wechat: string }>>({})
 const ttAbierto = ref<number | null>(null)
+const ttSoloLectura = ref(false)
 const formularioTt = ref<Record<string, unknown>>({})
 const abonoAbierto = ref(false)
+const abonoEditandoId = ref<number | null>(null)
 const voucher = ref<File | null>(null)
 const vistaPrevia = ref<{ enlace?: string; texto: string; nota?: string } | null>(null)
 const continuacion = reactive<Record<number, number[]>>({})
@@ -362,8 +379,30 @@ async function pedirValidacion(proveedor: PagoProveedorSolicitudProveedor) {
   }
 }
 
-function abrirTt(proveedorId: number) {
-  formularioTt.value = { banco_tipo_codigo: 'SWIFT', inter_tipo_codigo: 'SWIFT', usa_intermediario: false }
+function abrirTt(proveedorId: number, soloLectura = false) {
+  const proveedor = solicitud.value?.proveedores.find(item => item.id === proveedorId)
+  const datos = proveedor?.datos
+  formularioTt.value = {
+    beneficiario_nombre: datos?.beneficiario_nombre || '',
+    beneficiario_cuenta: datos?.beneficiario_cuenta || '',
+    beneficiario_direccion: datos?.beneficiario_direccion || '',
+    beneficiario_pais: datos?.beneficiario_pais || '',
+    beneficiario_ciudad: datos?.beneficiario_ciudad || '',
+    banco_tipo_codigo: datos?.banco_tipo_codigo || 'SWIFT',
+    banco_codigo: datos?.banco_codigo || '',
+    banco_nombre: datos?.banco_nombre || '',
+    banco_direccion: datos?.banco_direccion || '',
+    banco_pais: datos?.banco_pais || '',
+    banco_ciudad: datos?.banco_ciudad || '',
+    usa_intermediario: Boolean(datos?.usa_intermediario),
+    inter_tipo_codigo: datos?.inter_tipo_codigo || 'SWIFT',
+    inter_codigo: datos?.inter_codigo || '',
+    inter_nombre: datos?.inter_nombre || '',
+    inter_direccion: datos?.inter_direccion || '',
+    inter_pais: datos?.inter_pais || '',
+    inter_ciudad: datos?.inter_ciudad || ''
+  }
+  ttSoloLectura.value = soloLectura
   ttAbierto.value = proveedorId
 }
 
@@ -391,8 +430,31 @@ function siguientePaso(proveedor: PagoProveedorSolicitudProveedor) {
 }
 
 function abrirAbono() {
+  abonoEditandoId.value = null
+  abono.importe = 0
+  abono.fecha = ''
+  abono.operacion = ''
+  abono.banco = 'bcp'
+  abono.interbancaria = false
+  voucher.value = null
   abono.montos = {}
   for (const proveedor of proveedoresConSaldo.value) abono.montos[proveedor.id] = 0
+  abonoAbierto.value = true
+}
+
+function editarAbono(abonoItem: PagoProveedorAbono) {
+  abonoEditandoId.value = abonoItem.id
+  abono.importe = abonoItem.importe
+  abono.fecha = abonoItem.fecha_pago
+  abono.operacion = abonoItem.numero_operacion
+  abono.banco = abonoItem.banco
+  abono.interbancaria = abonoItem.interbancaria
+  voucher.value = null
+  abono.montos = {}
+  for (const proveedor of solicitud.value?.proveedores || []) {
+    const aplicacion = abonoItem.aplicaciones.find(item => item.solicitud_proveedor_id === proveedor.id)
+    abono.montos[proveedor.id] = aplicacion ? Number(aplicacion.monto) : 0
+  }
   abonoAbierto.value = true
 }
 
@@ -410,7 +472,8 @@ function elegirVoucher(evento: Event) {
 }
 
 async function guardarAbono() {
-  if (!solicitud.value || !voucher.value) {
+  if (!solicitud.value) return
+  if (!abonoEditandoId.value && !voucher.value) {
     showError('Comprobante', 'Adjunta el voucher.')
     return
   }
@@ -422,16 +485,18 @@ async function guardarAbono() {
     form.append('numero_operacion', abono.operacion)
     form.append('banco', abono.banco)
     form.append('interbancaria', abono.interbancaria ? '1' : '0')
-    form.append('voucher', voucher.value)
+    if (voucher.value) form.append('voucher', voucher.value)
     form.append('aplicaciones', JSON.stringify(
-      proveedoresConSaldo.value
-        .filter(proveedor => Number(abono.montos[proveedor.id]) > 0)
-        .map(proveedor => ({ solicitud_proveedor_id: proveedor.id, monto: Number(abono.montos[proveedor.id]) }))
+      Object.entries(abono.montos)
+        .filter(([, monto]) => Number(monto) > 0)
+        .map(([id, monto]) => ({ solicitud_proveedor_id: Number(id), monto: Number(monto) }))
     ))
-    const respuesta = await PagoProveedorService.registrarAbono(solicitud.value.id, form)
+    const editando = Boolean(abonoEditandoId.value)
+    const respuesta = await PagoProveedorService.registrarAbono(solicitud.value.id, form, abonoEditandoId.value || undefined)
     aplicar(respuesta.data.solicitud)
     abonoAbierto.value = false
-    showSuccess('Comprobante registrado', respuesta.data.aviso_operacion_repetida || 'Quedó en validación.')
+    abonoEditandoId.value = null
+    showSuccess(editando ? 'Comprobante actualizado' : 'Comprobante registrado', respuesta.data.aviso_operacion_repetida || 'Quedó en validación.')
   } catch (error: any) {
     showError('Comprobante', error.message || 'No se pudo registrar.')
   } finally {

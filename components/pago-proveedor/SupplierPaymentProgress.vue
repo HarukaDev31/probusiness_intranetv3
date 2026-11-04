@@ -62,12 +62,21 @@
       </div>
       <p v-else-if="progress.confirmation.second_installment_choice === INSTALLMENT_CHOICE.PROCEED" class="mt-2 text-gray-600">La cuota 2 se va a realizar.</p>
       <p v-else-if="progress.confirmation.second_installment_choice === INSTALLMENT_CHOICE.CANCEL" class="mt-2 text-gray-600">La cuota 2 no se realizará. No se cobra su comisión ni el segundo abono.</p>
-      <div v-if="progress.confirmation.can_decide_payment" class="mt-3 space-y-2">
+      <div v-if="progress.confirmation.can_decide_payment" class="mt-3 space-y-3">
         <UButton size="sm" color="primary" :loading="saving" @click="choosePayment(PAYMENT_CHOICE.PROCEED)">El pago 2 se realizará</UButton>
-        <div class="flex flex-wrap items-end gap-2">
-          <input v-model="paymentReason" placeholder="Motivo si no se realizará" class="rounded-md border border-gray-300 px-2 py-1.5" />
-          <UButton size="sm" color="neutral" variant="soft" :loading="saving" @click="choosePayment(PAYMENT_CHOICE.CANCEL)">Solo anular</UButton>
-          <UButton size="sm" color="neutral" variant="soft" :loading="saving" @click="choosePayment(PAYMENT_CHOICE.REFUND)">Anular y solicitar reembolso</UButton>
+        <div class="rounded-xl border border-red-100 bg-red-50 p-3">
+          <p class="font-semibold text-red-800">Pago 2 de 2: no se realizará</p>
+          <p v-if="progress.confirmation.payment_two_refund" class="mt-2 text-sm text-red-900">
+            A devolver: carga ${{ money(progress.confirmation.payment_two_refund.cargo) }}
+            + administrativa ${{ money(progress.confirmation.payment_two_refund.admin) }}
+            = ${{ money(progress.confirmation.payment_two_refund.total) }}.
+          </p>
+          <p class="mt-1 text-xs text-red-700">La comisión bancaria no se devuelve: el envío a China ya se hizo.</p>
+          <input v-model="paymentReason" placeholder="Motivo" class="mt-2 w-full rounded-md border border-red-200 px-2 py-1.5" />
+          <div class="mt-2 flex flex-wrap gap-2">
+            <UButton size="sm" color="neutral" variant="soft" :loading="saving" @click="choosePayment(PAYMENT_CHOICE.CANCEL)">Solo anular</UButton>
+            <UButton size="sm" color="error" variant="soft" :loading="saving" @click="choosePayment(PAYMENT_CHOICE.REFUND)">Anular y solicitar reembolso</UButton>
+          </div>
         </div>
       </div>
       <p v-else-if="progress.confirmation.second_payment_choice === PAYMENT_CHOICE.PROCEED" class="mt-2 text-gray-600">El pago 2 vuelve a ejecución.</p>
@@ -75,8 +84,9 @@
       <div v-if="progress.confirmation.can_request_refund" class="mt-3">
         <UButton size="sm" color="primary" :loading="saving" @click="requestRefund">Solicitar reembolso</UButton>
       </div>
-      <div v-if="progress.confirmation.can_send_balance" class="mt-3">
-        <UButton size="sm" color="primary" variant="soft" :loading="saving" @click="sendBalance">Enviar balance al cliente</UButton>
+      <div v-if="progress.confirmation.can_send_balance || progress.confirmation.can_download_balance" class="mt-3 flex flex-wrap gap-2">
+        <UButton v-if="progress.confirmation.can_send_balance" size="sm" color="primary" variant="soft" :loading="saving" @click="sendBalance">Enviar balance al cliente</UButton>
+        <UButton v-if="progress.confirmation.can_download_balance" size="sm" color="neutral" variant="soft" :loading="saving" @click="downloadBalance">Descargar balance PDF</UButton>
       </div>
       <form v-if="progress.confirmation.can_register_exchange" class="mt-3 space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-3" @submit.prevent="saveDifference">
         <p class="font-semibold text-amber-900">Diferencia por cobrar ${{ money(progress.confirmation.exchange_due_usd) }}. Administración la valida en Verificación.</p>
@@ -177,14 +187,36 @@ function onDifferenceFile(event: Event) {
   differenceFile.value = input.files?.[0] || null
 }
 
+function savePdf(pdf?: { filename: string; base64: string } | null) {
+  if (!pdf?.base64) return
+  const link = document.createElement('a')
+  link.href = `data:application/pdf;base64,${pdf.base64}`
+  link.download = pdf.filename || 'Balance.pdf'
+  link.click()
+}
+
 async function sendBalance() {
   saving.value = true
   try {
-    await PagoProveedorService.enviarBalance(props.solicitudId, props.proveedor.id)
-    showSuccess('Balance', 'El mensaje quedó listo para el cliente.')
+    const response = await PagoProveedorService.enviarBalance(props.solicitudId, props.proveedor.id)
+    savePdf(response.pdf)
+    showSuccess('Balance', 'El mensaje y el PDF quedaron listos para el cliente.')
     emit('saved')
   } catch (error: any) {
     showError('Balance', error?.data?.message || 'No se pudo enviar el balance.')
+  } finally {
+    saving.value = false
+  }
+}
+
+async function downloadBalance() {
+  saving.value = true
+  try {
+    const response = await PagoProveedorService.descargarBalance(props.solicitudId, props.proveedor.id)
+    savePdf(response.data)
+    showSuccess('Balance', 'PDF descargado.')
+  } catch (error: any) {
+    showError('Balance', error?.data?.message || 'No se pudo descargar el balance.')
   } finally {
     saving.value = false
   }
