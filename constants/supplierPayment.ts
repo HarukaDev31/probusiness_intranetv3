@@ -15,6 +15,7 @@ export const SALES_TASK = {
   RECEIPT: 'receipt',
   OBSERVED: 'observed',
   CONFIRMATION: 'confirmation',
+  INSTALLMENT_2: 'installment_2',
 } as const
 
 export const INSTALLMENT_CHOICE = {

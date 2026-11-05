@@ -284,6 +284,7 @@ import { createLazyView } from '~/utils/lazyView'
 const DynamicModal = createLazyView(() => import('~/components/DynamicModal.vue'))
 import type { ModalData } from '~/composables/commons/useModal'
 import PagoGrid from '~/components/PagoGrid.vue'
+import SupplierPaymentDeposits from '~/components/pago-proveedor/SupplierPaymentDeposits.vue'
 import { STATUS_BG_CLASSES } from '~/constants/ui'
 import type { TramiteAduana, TramiteAduanaTipoPermisoItem } from '~/types/basedatos/tramiteAduana'
 import { TRAMITE_ESTADOS } from '~/types/basedatos/tramiteAduana'

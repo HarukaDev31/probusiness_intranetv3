@@ -30,13 +30,24 @@ interface Uno<T> {
 export class PagoProveedorService extends BaseService {
   private static baseUrl = '/api/pago-proveedor'
 
-  static async listarCotizaciones(params: { search?: string; estado?: string; page?: number; per_page?: number }) {
+  static async listarCotizaciones(params: {
+    search?: string
+    estado?: string
+    consolidado?: string
+    resaltar_desde?: number | null
+    page?: number
+    per_page?: number
+  }) {
     const query = new URLSearchParams()
     if (params.search) query.append('search', params.search)
     if (params.estado && params.estado !== 'todos') query.append('estado', params.estado)
+    if (params.consolidado && params.consolidado !== 'todos') query.append('consolidado', params.consolidado)
+    if (params.resaltar_desde && params.resaltar_desde > 0) query.append('resaltar_desde', String(params.resaltar_desde))
     if (params.page) query.append('page', String(params.page))
     if (params.per_page) query.append('per_page', String(params.per_page))
-    return this.apiCall<Lista<PagoProveedorCotizacion>>(`${this.baseUrl}/cotizaciones?${query.toString()}`)
+    return this.apiCall<Lista<PagoProveedorCotizacion> & { consolidados?: string[] }>(
+      `${this.baseUrl}/cotizaciones?${query.toString()}`
+    )
   }
 
   static async sugerirConsolidada(params: { q: string; page?: number; per_page?: number }) {
@@ -90,8 +101,15 @@ export class PagoProveedorService extends BaseService {
   }
 
   static async vistaPreviaWhatsapp(id: number) {
-    return this.apiCall<Uno<{ texto: string; destinatario: string | null; nota: string }>>(
+    return this.apiCall<Uno<{ texto: string; destinatario: string | null; puede_enviar?: boolean; nota: string }>>(
       `${this.baseUrl}/cotizaciones/${id}/vista-previa-whatsapp`,
+      { method: 'POST' }
+    )
+  }
+
+  static async enviarWhatsapp(id: number) {
+    return this.apiCall<Uno<{ texto: string; destinatario: string; enviado: boolean; nota: string }>>(
+      `${this.baseUrl}/cotizaciones/${id}/enviar-whatsapp`,
       { method: 'POST' }
     )
   }
@@ -106,9 +124,23 @@ export class PagoProveedorService extends BaseService {
     })
   }
 
-  static async listarSolicitudes(params: { search?: string; page?: number; per_page?: number }) {
+  static async listarSolicitudes(params: {
+    search?: string
+    consolidado?: string
+    tipo_pago?: string
+    etapa?: string | number
+    estado?: string
+    page?: number
+    per_page?: number
+  }) {
     const query = new URLSearchParams()
     if (params.search) query.append('search', params.search)
+    if (params.consolidado && params.consolidado !== 'todos') query.append('consolidado', params.consolidado)
+    if (params.tipo_pago && params.tipo_pago !== 'todos') query.append('tipo_pago', params.tipo_pago)
+    if (params.etapa !== undefined && params.etapa !== null && String(params.etapa) !== 'todos') {
+      query.append('etapa', String(params.etapa))
+    }
+    if (params.estado && params.estado !== 'todos') query.append('estado', params.estado)
     if (params.page) query.append('page', String(params.page))
     if (params.per_page) query.append('per_page', String(params.per_page))
     return this.apiCall<Lista<PagoProveedorSolicitud>>(`${this.baseUrl}/solicitudes?${query.toString()}`)
@@ -122,11 +154,14 @@ export class PagoProveedorService extends BaseService {
     return this.apiCall<Uno<Record<string, unknown>>>(`${this.baseUrl}/configuracion`)
   }
 
-  static async guardarVigencia(horas: number) {
-    return this.apiCall<Uno<{ vigencia_cotizacion_horas: number }>>(`${this.baseUrl}/configuracion/vigencia`, {
-      method: 'PUT',
-      body: { horas }
-    })
+  static async guardarVigencia(horas: number, tipo: 'habiles' | 'calendario' = 'habiles') {
+    return this.apiCall<Uno<{ vigencia_cotizacion_horas: number; vigencia_cotizacion_tipo: string }>>(
+      `${this.baseUrl}/configuracion/vigencia`,
+      {
+        method: 'PUT',
+        body: { horas, tipo }
+      }
+    )
   }
 
   static async candidatosPedirDatos(solicitudId: number) {
@@ -180,6 +215,12 @@ export class PagoProveedorService extends BaseService {
     return this.apiCall<Uno<PagoProveedorSolicitud>>(`${this.baseUrl}/solicitudes/${solicitudId}/proveedores/${proveedorId}/cuota-2`, {
       method: 'POST',
       body: { choice }
+    })
+  }
+
+  static async completarProveedor(solicitudId: number, proveedorId: number) {
+    return this.apiCall<Uno<PagoProveedorSolicitud>>(`${this.baseUrl}/solicitudes/${solicitudId}/proveedores/${proveedorId}/completar`, {
+      method: 'POST'
     })
   }
 
@@ -294,6 +335,8 @@ export class PagoProveedorService extends BaseService {
     bucket?: string
     status?: string
     search?: string
+    consolidado?: string
+    banco?: string
     page?: number
     per_page?: number
   }) {
@@ -301,6 +344,8 @@ export class PagoProveedorService extends BaseService {
     if (params.bucket) query.append('bucket', params.bucket)
     if (params.status) query.append('status', params.status)
     if (params.search) query.append('search', params.search)
+    if (params.consolidado && params.consolidado !== 'todos') query.append('consolidado', params.consolidado)
+    if (params.banco && params.banco !== 'todos') query.append('banco', params.banco)
     if (params.page) query.append('page', String(params.page))
     if (params.per_page) query.append('per_page', String(params.per_page))
     return this.apiCall<Lista<SupplierPaymentApproval> & {
@@ -346,6 +391,8 @@ export class PagoProveedorService extends BaseService {
     search?: string
     paid_from?: string
     paid_to?: string
+    banco?: string
+    consolidado?: string
     page?: number
     per_page?: number
   }) {
@@ -354,6 +401,8 @@ export class PagoProveedorService extends BaseService {
     if (params.search) query.append('search', params.search)
     if (params.paid_from) query.append('paid_from', params.paid_from)
     if (params.paid_to) query.append('paid_to', params.paid_to)
+    if (params.banco && params.banco !== 'todos') query.append('banco', params.banco)
+    if (params.consolidado && params.consolidado !== 'todos') query.append('consolidado', params.consolidado)
     if (params.page) query.append('page', String(params.page))
     if (params.per_page) query.append('per_page', String(params.per_page))
     return this.apiCall<Lista<SupplierPaymentExecution> & {
@@ -450,6 +499,10 @@ export class PagoProveedorService extends BaseService {
     })
   }
 
+  static async vistaPreviaBalance(solicitudId: number, proveedorId: number) {
+    return this.apiCall<Uno<{ texto: string; archivo: string }>>(`${this.baseUrl}/solicitudes/${solicitudId}/proveedores/${proveedorId}/balance/vista-previa`)
+  }
+
   static async descargarBalance(solicitudId: number, proveedorId: number) {
     return this.apiCall<Uno<{ filename: string; base64: string }>>(`${this.baseUrl}/solicitudes/${solicitudId}/proveedores/${proveedorId}/balance`)
   }
@@ -489,10 +542,27 @@ export class PagoProveedorService extends BaseService {
   }
 
   static async getTariffs() {
-    return this.apiCall<Uno<{ usd: number[]; rmb: number[]; admin: number }>>(`${this.baseUrl}/aprobaciones/tarifas`)
+    return this.apiCall<Uno<{
+      usd: number[]
+      rmb: number[]
+      tramo_medio: number
+      tramo_alto: number
+      admin: number
+      admin_usd: number
+      admin_rmb: number
+    }>>(`${this.baseUrl}/aprobaciones/tarifas`)
   }
 
-  static async saveTariffs(body: { usd: number[]; rmb: number[]; admin: number }) {
+  static async saveTariffs(body: {
+    tipo?: 'bancaria' | 'admin'
+    usd?: number[]
+    rmb?: number[]
+    tramo_medio?: number
+    tramo_alto?: number
+    admin?: number
+    admin_usd?: number
+    admin_rmb?: number
+  }) {
     return this.apiCall<Uno<Record<string, unknown>>>(`${this.baseUrl}/aprobaciones/tarifas`, { method: 'PUT', body })
   }
 

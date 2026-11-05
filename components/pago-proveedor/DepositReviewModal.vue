@@ -9,21 +9,23 @@
     @close="emit('close')"
   >
     <template #pill>
-      <span class="rounded-full px-2.5 py-1 text-xs font-bold" :class="deposit?.deadline_overdue ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-800'">
-        {{ deposit?.status_label || 'Por validar' }}
-      </span>
+      <UBadge
+        :color="deposit?.deadline_overdue ? 'error' : 'warning'"
+        variant="soft"
+        :label="deposit?.status_label || 'Por validar'"
+      />
     </template>
 
     <div v-if="deposit" class="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
       <SupplierPaymentCard title="Comprobante">
-        <div class="overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+        <UCard variant="subtle" class="overflow-hidden" :ui="{ body: 'p-0 sm:p-0' }">
           <img v-if="isImage" :src="deposit.voucher_url || ''" alt="Comprobante" class="max-h-80 w-full object-contain">
-          <a v-else-if="deposit.voucher_url" :href="deposit.voucher_url" target="_blank" rel="noopener" class="block px-4 py-6 text-sm font-semibold text-primary-600">
+          <a v-else-if="deposit.voucher_url" :href="deposit.voucher_url" target="_blank" rel="noopener" class="block px-4 py-6 text-sm font-semibold text-primary">
             Abrir comprobante · {{ deposit.voucher_name }}
           </a>
-          <p v-else class="px-4 py-6 text-sm text-gray-500">Sin comprobante.</p>
-        </div>
-        <p v-if="deposit.deadline_text" class="text-sm" :class="deposit.deadline_overdue ? 'font-semibold text-red-600' : 'text-gray-500'">
+          <p v-else class="px-4 py-6 text-sm text-muted">Sin comprobante.</p>
+        </UCard>
+        <p v-if="deposit.deadline_text" class="text-sm" :class="deposit.deadline_overdue ? 'font-semibold text-error' : 'text-muted'">
           {{ deposit.status === DEPOSIT_STATUS.OBSERVED ? 'Plazo para subsanar' : 'Plazo para validar' }}: {{ deposit.deadline_text }}
         </p>
       </SupplierPaymentCard>
@@ -31,18 +33,15 @@
       <div class="flex flex-col gap-3.5">
         <SupplierPaymentCard title="Datos registrados por Ventas">
           <template v-if="editing">
-            <label class="text-sm text-gray-500">Banco
-              <select v-model="form.bank" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm font-semibold text-gray-900">
-                <option :value="DEPOSIT_BANK.BCP">BCP</option>
-                <option :value="DEPOSIT_BANK.INTERBANK">Interbank</option>
-              </select>
-            </label>
-            <label class="text-sm text-gray-500">Fecha
-              <input v-model="form.paid_on" type="date" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm font-semibold text-gray-900">
-            </label>
-            <label class="text-sm text-gray-500">N.° de operación
-              <input v-model="form.operation_number" type="text" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm font-semibold text-gray-900">
-            </label>
+            <UFormField label="Banco">
+              <USelect v-model="form.bank" :items="bancos" class="w-full" />
+            </UFormField>
+            <UFormField label="Fecha">
+              <UInput v-model="form.paid_on" type="date" class="w-full" />
+            </UFormField>
+            <UFormField label="N.° de operación">
+              <UInput v-model="form.operation_number" class="w-full" />
+            </UFormField>
           </template>
           <template v-else>
             <SupplierPaymentFact label="Cliente" :value="deposit.client_name || '—'" />
@@ -52,67 +51,60 @@
             <SupplierPaymentFact label="N.° de operación" :value="deposit.operation_number || '—'" />
             <SupplierPaymentFact label="Código" :value="requestCodes" />
           </template>
-          <p v-if="deposit.corrected_by_admin" class="text-xs text-gray-500">Corregido por Administración.</p>
-          <p v-if="deposit.shared" class="text-xs text-gray-600">Voucher compartido con {{ deposit.providers.length }} proveedores. Se verifica una sola vez.</p>
-          <p v-if="deposit.observation_detail || deposit.observation_reason" class="text-sm text-red-700">
+          <p v-if="deposit.corrected_by_admin" class="text-xs text-muted">Corregido por Administración.</p>
+          <p v-if="deposit.shared" class="text-xs text-muted">Voucher compartido con {{ deposit.providers.length }} proveedores. Se verifica una sola vez.</p>
+          <p v-if="deposit.observation_detail || deposit.observation_reason" class="text-sm text-error">
             Observado<span v-if="reasonLabel">: {{ reasonLabel }}</span>
             <span v-if="deposit.observation_detail"> · {{ deposit.observation_detail }}</span>
           </p>
         </SupplierPaymentCard>
 
         <SupplierPaymentCard title="Importe">
-          <div class="rounded-xl bg-gray-50 px-3 py-2">
-            <p class="text-xs text-gray-500">Importe registrado (Ventas)</p>
+          <UCard variant="subtle" :ui="{ body: 'px-3 py-2 sm:px-3 sm:py-2' }">
+            <p class="text-xs text-muted">Importe registrado (Ventas)</p>
             <p class="text-lg font-bold">${{ money(deposit.recorded_amount ?? deposit.amount) }}</p>
-          </div>
-          <label class="rounded-xl border border-primary-200 bg-primary-50 px-3 py-2">
-            <span class="text-xs text-primary-700">Importe ingresado (Banco)</span>
-            <input v-model.number="bankAmount" type="number" min="0" step="0.01" class="mt-1 w-full bg-transparent text-lg font-bold text-primary-800 outline-none" :disabled="!deposit.can_validate">
+          </UCard>
+          <label class="block">
+          <UCard color="primary" variant="subtle" :ui="{ body: 'px-3 py-2 sm:px-3 sm:py-2' }">
+            <span class="text-xs text-primary">Importe ingresado (Banco)</span>
+            <UInput v-model.number="bankAmount" type="number" min="0" step="0.01" variant="none" :disabled="!deposit.can_validate" class="mt-1 w-full text-lg font-bold" />
+          </UCard>
           </label>
-          <p v-if="deposit.recorded_amount != null" class="text-xs text-amber-700">
+          <p v-if="deposit.recorded_amount != null" class="text-xs text-warning">
             Ventas registró ${{ money(deposit.recorded_amount) }} · se ajustó al importe del banco.
           </p>
         </SupplierPaymentCard>
       </div>
     </div>
 
-    <div v-if="observing" class="space-y-3 rounded-2xl border border-red-200 bg-white p-4">
-      <h4 class="text-sm font-bold text-red-700">Observar depósito</h4>
-      <label class="block text-sm">
-        <span class="mb-1 block text-gray-500">Motivo</span>
-        <select v-model="reason" class="w-full rounded-lg border border-gray-300 px-2.5 py-1.5">
-          <option v-for="item in reasons" :key="item.code" :value="item.code">{{ item.label }}</option>
-          <option value="">Otro motivo</option>
-        </select>
-      </label>
-      <label v-if="!reason" class="block text-sm">
-        <span class="mb-1 block text-gray-500">Nuevo motivo</span>
-        <input v-model="newLabel" type="text" class="w-full rounded-lg border border-gray-300 px-2.5 py-1.5" placeholder="Se guarda para la próxima vez">
-      </label>
-      <label class="block text-sm">
-        <span class="mb-1 block text-gray-500">Detalle</span>
-        <textarea v-model="detail" rows="2" class="w-full rounded-lg border border-gray-300 px-2.5 py-1.5" />
-      </label>
-    </div>
-    <div v-if="extending" class="space-y-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-      <h4 class="text-sm font-bold text-amber-900">Extender el plazo de la observación</h4>
-      <label class="block text-sm">
-        <span class="mb-1 block font-semibold text-amber-900">Días adicionales</span>
-        <input v-model.number="extendDays" type="number" min="1" max="60" class="w-full rounded-lg border border-amber-200 bg-white px-2.5 py-1.5">
-      </label>
-      <label class="block text-sm">
-        <span class="mb-1 block font-semibold text-amber-900">Motivo</span>
-        <textarea v-model="extendReason" rows="2" class="w-full rounded-lg border border-amber-200 bg-white px-2.5 py-1.5" />
-      </label>
-    </div>
-    <div v-if="cancelling" class="space-y-3 rounded-2xl border border-red-200 bg-white p-4">
-      <h4 class="text-sm font-bold text-red-700">Anular el pago</h4>
-      <p class="text-sm text-gray-600">El pago deja de continuar. Indica el motivo.</p>
-      <label class="block text-sm">
-        <span class="mb-1 block font-semibold text-red-700">Motivo</span>
-        <textarea v-model="cancelReason" rows="2" class="w-full rounded-lg border border-gray-300 px-2.5 py-1.5" />
-      </label>
-    </div>
+    <UCard v-if="observing" class="space-y-3" color="error" variant="subtle">
+      <h4 class="text-sm font-bold text-error">Observar depósito</h4>
+      <UFormField label="Motivo">
+        <USelect v-model="reason" :items="motivos" class="w-full" />
+      </UFormField>
+      <UFormField v-if="reason === 'other'" label="Nuevo motivo">
+        <UInput v-model="newLabel" placeholder="Se guarda para la próxima vez" class="w-full" />
+      </UFormField>
+      <UFormField label="Detalle">
+        <UTextarea v-model="detail" :rows="2" class="w-full" />
+      </UFormField>
+    </UCard>
+    <UCard v-if="extending" class="space-y-3" color="warning" variant="subtle">
+      <h4 class="text-sm font-bold text-warning">Extender el plazo de la observación</h4>
+      <UFormField label="Días adicionales">
+        <UInput v-model.number="extendDays" type="number" min="1" max="60" class="w-full" />
+      </UFormField>
+      <UFormField label="Motivo">
+        <UTextarea v-model="extendReason" :rows="2" class="w-full" />
+      </UFormField>
+    </UCard>
+    <UCard v-if="cancelling" class="space-y-3" color="error" variant="subtle">
+      <h4 class="text-sm font-bold text-error">Anular el pago</h4>
+      <p class="text-sm text-muted">El pago deja de continuar. Indica el motivo.</p>
+      <UFormField label="Motivo">
+        <UTextarea v-model="cancelReason" :rows="2" class="w-full" />
+      </UFormField>
+    </UCard>
 
     <template #footer>
       <UButton v-if="deposit?.can_validate && !editing" color="neutral" variant="outline" @click="startEdit">Editar</UButton>
@@ -162,7 +154,15 @@ const detail = ref('')
 const extendReason = ref('')
 const extendDays = ref(7)
 const cancelReason = ref('')
-const form = ref({ bank: DEPOSIT_BANK.BCP, paid_on: '', operation_number: '' })
+const form = ref({ bank: DEPOSIT_BANK.BCP as string, paid_on: '', operation_number: '' })
+const bancos = [
+  { label: 'BCP', value: DEPOSIT_BANK.BCP },
+  { label: 'Interbank', value: DEPOSIT_BANK.INTERBANK }
+]
+const motivos = computed(() => [
+  ...props.reasons.map((item) => ({ label: item.label, value: item.code })),
+  { label: 'Otro motivo', value: 'other' }
+])
 
 watch(() => props.deposit, (deposit) => {
   editing.value = false
@@ -245,7 +245,7 @@ function observe() {
     () => PagoProveedorService.observeDeposit(props.deposit!.id, {
       reason: reason.value || undefined,
       detail: detail.value || undefined,
-      new_label: reason.value ? undefined : newLabel.value
+      new_label: reason.value === 'other' ? newLabel.value : undefined
     }).then(() => undefined),
     'Depósito observado. Ventas puede corregir el voucher.'
   )

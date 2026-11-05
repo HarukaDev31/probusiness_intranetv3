@@ -9,6 +9,10 @@ export function useSupplierPaymentProgress() {
     return PagoProveedorService.decidirPago2(solicitudId, proveedorId, choice, reason)
   }
 
+  async function previewBalance(solicitudId: number, proveedorId: number) {
+    return PagoProveedorService.vistaPreviaBalance(solicitudId, proveedorId)
+  }
+
   async function sendBalance(solicitudId: number, proveedorId: number) {
     return PagoProveedorService.enviarBalance(solicitudId, proveedorId)
   }
@@ -29,13 +33,19 @@ export function useSupplierPaymentProgress() {
     return PagoProveedorService.confirmarTipoCambio(solicitudId, rate)
   }
 
+  async function complete(solicitudId: number, proveedorId: number) {
+    return PagoProveedorService.completarProveedor(solicitudId, proveedorId)
+  }
+
   return {
     decideInstallment,
     decidePayment,
+    previewBalance,
     sendBalance,
     downloadBalance,
     registerDifference,
     requestRefund,
-    confirmRate
+    confirmRate,
+    complete
   }
 }

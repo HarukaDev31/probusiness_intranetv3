@@ -1,11 +1,12 @@
 <template>
   <div>
-    <p v-if="!embedded" class="mb-3 text-sm text-gray-500">El dinero sale fuera de la intranet. Aquí solo apruebas el reembolso y dejas el voucher.</p>
+    <template v-if="!modalOnly">
+    <p v-if="!embedded" class="mb-3 text-sm text-muted">El dinero sale fuera de la intranet. Aquí solo apruebas el reembolso y dejas el voucher.</p>
     <div v-if="!embedded" class="mb-3 flex flex-wrap gap-2">
       <button
         type="button"
         class="rounded-lg px-3 py-1.5 text-sm font-semibold"
-        :class="bucket === 'solicitado' ? 'bg-primary-50 text-primary-700' : 'bg-gray-100 text-gray-600'"
+        :class="bucket === 'solicitado' ? 'bg-primary/10 text-primary' : 'bg-elevated text-muted'"
         @click="changeBucket('solicitado')"
       >
         Solicitados<span v-if="pendingCount" class="ml-1 text-xs">({{ pendingCount }})</span>
@@ -13,16 +14,16 @@
       <button
         type="button"
         class="rounded-lg px-3 py-1.5 text-sm font-semibold"
-        :class="bucket === 'aprobado' ? 'bg-primary-50 text-primary-700' : 'bg-gray-100 text-gray-600'"
+        :class="bucket === 'aprobado' ? 'bg-primary/10 text-primary' : 'bg-elevated text-muted'"
         @click="changeBucket('aprobado')"
       >
         Aprobados
       </button>
     </div>
-    <div class="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+    <div class="overflow-x-auto rounded-lg border border-default bg-default">
       <table class="w-full border-collapse text-sm">
         <thead>
-          <tr class="text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+          <tr class="text-left text-[11px] font-semibold uppercase tracking-wide text-muted">
             <th class="px-3.5 py-3">Origen</th>
             <th class="px-3.5 py-3">Cliente</th>
             <th class="px-3.5 py-3">Proveedor</th>
@@ -38,19 +39,19 @@
             </tr>
           </template>
           <tr v-else-if="!rows.length">
-            <td colspan="6" class="px-3.5 py-8 text-center text-gray-400">
+            <td colspan="6" class="px-3.5 py-8 text-center text-muted">
               {{ bucket === 'solicitado' ? 'No hay reembolsos solicitados.' : 'No hay reembolsos aprobados.' }}
             </td>
           </tr>
           <template v-else>
-            <tr v-for="row in rows" :key="row.id" class="border-t border-gray-100">
+            <tr v-for="row in rows" :key="row.id" class="border-t border-default">
               <td class="px-3.5 py-3 font-semibold">{{ row.origin_label }}</td>
               <td class="px-3.5 py-3">
                 {{ row.client_name || '—' }}
-                <div class="text-xs text-gray-400">{{ row.consolidation }}</div>
+                <div class="text-xs text-muted">{{ row.consolidation }}</div>
               </td>
               <td class="px-3.5 py-3">{{ row.supplier_code || '—' }}</td>
-              <td class="px-3.5 py-3 text-gray-600">
+              <td class="px-3.5 py-3 text-muted">
                 <ul class="space-y-0.5">
                   <li v-for="(line, index) in (row.calculation_lines?.length ? row.calculation_lines : [row.calculation])" :key="index">{{ line }}</li>
                 </ul>
@@ -62,9 +63,9 @@
                   <UButton size="sm" color="neutral" variant="outline" @click="startReject(row)">Rechazar</UButton>
                 </div>
                 <div v-else class="space-y-1">
-                  <span class="rounded bg-gray-100 px-2 py-1 text-[11px] font-bold text-gray-600">{{ row.status_label }}</span>
+                  <UBadge color="neutral" variant="soft" size="sm" :label="row.status_label" />
                   <div v-if="row.voucher_url" class="text-xs">
-                    <a :href="row.voucher_url" target="_blank" rel="noopener" class="font-semibold text-primary-600">Ver voucher</a>
+                    <a :href="row.voucher_url" target="_blank" rel="noopener" class="font-semibold text-primary">Ver voucher</a>
                   </div>
                 </div>
               </td>
@@ -73,12 +74,13 @@
         </tbody>
       </table>
     </div>
+    </template>
 
     <SupplierPaymentWindow
       :open="opened"
-      title="Aprobar reembolso"
+      :title="selected?.can_approve ? 'Aprobar reembolso' : 'Reembolso'"
       :subtitle="selected ? `${selected.client_name || 'Cliente'} · ${selected.consolidation || 'Sin consolidado'}` : ''"
-      hint="El reembolso se hace fuera de la intranet: al aprobarlo, registras su voucher."
+      :hint="selected?.can_approve ? 'El reembolso se hace fuera de la intranet: al aprobarlo, registras su voucher.' : 'Reembolso ya revisado.'"
       wide
       @close="opened = false"
     >
@@ -95,39 +97,44 @@
           />
         </SupplierPaymentCard>
         <SupplierPaymentCard title="Reembolso">
-          <p class="text-3xl font-bold text-primary-700">${{ money(selected.amount) }}</p>
-          <p v-if="selected.reason" class="text-sm text-gray-600">{{ selected.reason }}</p>
+          <p class="text-3xl font-bold text-primary">${{ money(selected.amount) }}</p>
+          <p v-if="selected.reason" class="text-sm text-muted">{{ selected.reason }}</p>
         </SupplierPaymentCard>
         <SupplierPaymentCard title="Cómo se calcula">
-          <ul class="space-y-1 text-sm text-gray-700">
+          <ul class="space-y-1 text-sm text-highlighted">
             <li v-for="(line, index) in calculationLines" :key="index">{{ line }}</li>
           </ul>
-          <p class="mt-2 text-xs text-gray-500">Total ${{ money(selected.amount) }}</p>
+          <p class="mt-2 text-xs text-muted">Total ${{ money(selected.amount) }}</p>
         </SupplierPaymentCard>
       </div>
-      <form id="refund-voucher" class="grid gap-3 rounded-2xl border border-gray-200 bg-white p-4 text-sm sm:grid-cols-2" @submit.prevent="approve">
-        <h4 class="text-[15px] font-bold text-gray-900 sm:col-span-2">Voucher del reembolso</h4>
-        <label class="text-gray-500">Importe
-          <input v-model.number="form.importe" type="number" min="0" step="0.01" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-semibold text-gray-900">
-        </label>
-        <label class="text-gray-500">Fecha
-          <input v-model="form.fecha" type="date" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-semibold text-gray-900">
-        </label>
-        <label class="text-gray-500">Banco
-          <select v-model="form.banco" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-semibold text-gray-900">
-            <option value="bcp">BCP</option>
-            <option value="interbank">Interbank</option>
-          </select>
-        </label>
-        <label class="text-gray-500">N.° de operación (opcional)
-          <input v-model="form.operacion" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-semibold text-gray-900">
-        </label>
-        <label class="text-gray-500 sm:col-span-2">Comprobante
-          <input type="file" accept=".pdf,.jpg,.jpeg,.png" class="mt-1 block text-gray-800" @change="onFile">
+      <form v-if="selected?.can_approve" id="refund-voucher" class="grid gap-3 rounded-2xl border border-default bg-elevated p-4 text-sm sm:grid-cols-2" @submit.prevent="approve">
+        <h4 class="text-[15px] font-bold text-highlighted sm:col-span-2">Voucher del reembolso</h4>
+        <UFormField label="Importe" required><UInput v-model.number="form.importe" type="number" min="0" step="0.01" class="w-full" /></UFormField>
+        <UFormField label="Fecha" required><UInput v-model="form.fecha" type="date" class="w-full" /></UFormField>
+        <UFormField label="Banco" required><USelect v-model="form.banco" :items="[{ label: 'BCP', value: 'bcp' }, { label: 'Interbank', value: 'interbank' }]" class="w-full" /></UFormField>
+        <UFormField label="N.° de operación (opcional)"><UInput v-model="form.operacion" class="w-full" /></UFormField>
+        <label class="text-muted sm:col-span-2">
+          Comprobante
+          <div
+            class="mt-1 flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-default bg-default px-3 py-4 text-center text-sm text-muted"
+            @click="() => { voucherInput?.click() }"
+            @dragover.prevent
+            @drop.prevent="onDrop"
+          >
+            <span>{{ photo?.name || 'Arrastra el voucher aquí o haz clic para elegir (PDF, JPG, PNG)' }}</span>
+            <input ref="voucherInput" type="file" accept=".pdf,.jpg,.jpeg,.png" class="sr-only" @change="onFile">
+          </div>
         </label>
       </form>
+      <p v-else-if="selected" class="rounded-2xl border border-default bg-elevated p-4 text-sm text-muted">
+        {{ selected.status_label }}
+        <span v-if="selected.bank_label"> · {{ selected.bank_label }}</span>
+        <span v-if="selected.paid_on"> · {{ selected.paid_on }}</span>
+        <a v-if="selected.voucher_url" :href="selected.voucher_url" target="_blank" rel="noopener" class="mt-2 block font-semibold text-primary">Ver comprobante</a>
+      </p>
       <template #footer>
-        <UButton type="submit" form="refund-voucher" color="primary" :loading="saving">Registrar voucher</UButton>
+        <UButton color="neutral" variant="outline" @click="() => { opened = false }">Cerrar</UButton>
+        <UButton v-if="selected?.can_approve" type="submit" form="refund-voucher" color="primary" :loading="saving">Aprobar y registrar</UButton>
       </template>
     </SupplierPaymentWindow>
 
@@ -139,10 +146,11 @@
       @close="rejecting = null"
     >
       <label class="block text-sm">
-        <span class="mb-1 block font-semibold text-red-700">Motivo del rechazo</span>
-        <textarea v-model="rejectReason" rows="3" class="w-full rounded-lg border border-gray-300 px-2.5 py-1.5" />
+        <span class="mb-1 block font-semibold text-error">Motivo del rechazo</span>
+        <textarea v-model="rejectReason" rows="3" class="w-full rounded-lg border border-default bg-default px-2.5 py-1.5" />
       </label>
       <template #footer>
+        <UButton color="neutral" variant="outline" @click="rejecting = null">Cancelar</UButton>
         <UButton color="error" :loading="saving" @click="confirmReject">Confirmar rechazo</UButton>
       </template>
     </SupplierPaymentWindow>
@@ -160,9 +168,11 @@ import type { SupplierPaymentRefund } from '~/types/pago-proveedor'
 
 const props = withDefaults(defineProps<{
   embedded?: boolean
+  modalOnly?: boolean
   forceBucket?: 'solicitado' | 'aprobado'
 }>(), {
   embedded: false,
+  modalOnly: false,
   forceBucket: undefined
 })
 
@@ -179,6 +189,7 @@ const selected = ref<SupplierPaymentRefund | null>(null)
 const rejecting = ref<SupplierPaymentRefund | null>(null)
 const rejectReason = ref('')
 const photo = ref<File | null>(null)
+const voucherInput = ref<HTMLInputElement | null>(null)
 const form = reactive({ importe: 0, fecha: '', banco: 'bcp', operacion: '' })
 
 const money = (value: number | null) => Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -191,7 +202,7 @@ function open(row: SupplierPaymentRefund) {
   selected.value = row
   form.importe = row.amount
   form.fecha = new Date().toISOString().slice(0, 10)
-  form.banco = 'bcp'
+  form.banco = (row.bank || '').toLowerCase().includes('inter') ? 'interbank' : 'bcp'
   form.operacion = ''
   photo.value = null
   opened.value = true
@@ -200,6 +211,13 @@ function open(row: SupplierPaymentRefund) {
 function onFile(event: Event) {
   photo.value = (event.target as HTMLInputElement).files?.[0] || null
 }
+
+function onDrop(event: DragEvent) {
+  const file = event.dataTransfer?.files?.[0]
+  if (file) photo.value = file
+}
+
+defineExpose({ open, startReject, load })
 
 function startReject(row: SupplierPaymentRefund) {
   rejecting.value = row

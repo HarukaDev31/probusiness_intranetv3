@@ -25,7 +25,7 @@ export interface FilterConfig {
   label: string
   type?: string
   placeholder: string
-  options: FilterOption[]
+  options?: FilterOption[]
   /** Si true, permite seleccionar varias opciones (USelect multiple). */
   multiple?: boolean
 }
@@ -100,6 +100,8 @@ export interface DataTableProps {
 
   // Messages
   emptyStateMessage?: string
+  /** Keeps the last column (actions) visible while the table scrolls sideways. */
+  stickyLastColumn?: boolean
 
   // Skeleton loading UI
   showSkeleton?: boolean

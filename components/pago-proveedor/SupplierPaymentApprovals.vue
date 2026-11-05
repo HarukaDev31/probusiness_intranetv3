@@ -1,61 +1,49 @@
 <template>
   <div>
     <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
-      <div class="flex gap-1.5 border-b border-gray-200">
-        <button
-          type="button"
-          class="border-b-2 px-3.5 py-2 text-sm font-semibold"
-          :class="bucket === APPROVAL_BUCKET.PENDING ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500'"
-          @click="changeBucket(APPROVAL_BUCKET.PENDING)"
-        >
-          Por aprobar <span v-if="totalPending" class="ml-1 rounded-full bg-primary-500 px-1.5 text-[11px] text-white">{{ totalPending }}</span>
-        </button>
-        <button
-          type="button"
-          class="border-b-2 px-3.5 py-2 text-sm font-semibold"
-          :class="bucket === APPROVAL_BUCKET.APPROVED ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500'"
-          @click="changeBucket(APPROVAL_BUCKET.APPROVED)"
-        >
-          Aprobados
-        </button>
-      </div>
-      <div class="flex gap-2">
+      <UTabs
+        :model-value="bucket"
+        :items="approvalTabs"
+        color="neutral"
+        size="sm"
+        variant="pill"
+        class="w-fit"
+        @update:model-value="(value) => changeBucket(String(value) as typeof APPROVAL_BUCKET[keyof typeof APPROVAL_BUCKET])"
+      />
+      <div class="flex flex-wrap gap-2">
         <UButton color="neutral" variant="soft" to="/verificacion?tab=supplier-payment">Validar depósitos</UButton>
         <UButton color="neutral" variant="outline" @click="openSettings">Tolerancia y plazos</UButton>
-        <UButton color="neutral" variant="outline" @click="openTariffs">Comisiones</UButton>
+        <UButton color="neutral" variant="outline" @click="openTariffs('bancaria')">Comisión bancaria / plataforma</UButton>
+        <UButton color="neutral" variant="outline" @click="openTariffs('admin')">Comisión administrativa</UButton>
       </div>
     </div>
 
-    <div class="mb-3 flex flex-wrap gap-2">
-      <button
-        v-for="chip in typeChips"
-        :key="chip.key"
-        type="button"
-        class="rounded-full border px-3 py-1 text-xs"
-        :class="typeFilter === chip.key ? 'border-primary-500 bg-primary-50 font-semibold text-gray-900' : 'border-gray-200 bg-white text-gray-700'"
-        @click="typeFilter = chip.key"
-      >
-        {{ chip.label }}
-      </button>
-    </div>
+    <UAlert
+      v-if="alertas.length"
+      class="mb-3"
+      color="warning"
+      variant="subtle"
+      :title="alertas[0]"
+      :description="alertas.slice(1).join(' · ') || undefined"
+    />
 
-    <div v-if="typeFilter !== 'pago'" class="mb-4">
-      <h3 class="mb-2 text-sm font-semibold text-gray-800">Reembolsos</h3>
-      <p class="mb-3 text-sm text-gray-500">El dinero sale fuera de la intranet. Aquí solo apruebas el reembolso y dejas el voucher.</p>
-      <SupplierPaymentRefunds :embedded="true" :force-bucket="refundBucket" />
-    </div>
+    <SupplierPaymentRefunds
+      ref="refundsRef"
+      modal-only
+      :force-bucket="refundBucket"
+    />
 
     <DataTable
-      v-if="typeFilter !== 'reemb'"
+      sticky-last-column
       title="Aprobación de pagos"
-      subtitle="Compara lo cobrado con lo que ingresó al banco. Los reembolsos solicitados también aparecen arriba."
+      subtitle="Pagos a aprobar y reembolsos solicitados en la misma bandeja. El reembolso se distingue por su estado."
       icon="i-heroicons-check-badge"
-      :data="rows"
+      :data="unifiedRows"
       :columns="columns"
-      :loading="loading"
+      :loading="loading || refundLoading"
       :current-page="pagination.current_page"
       :total-pages="pagination.last_page"
-      :total-records="pagination.total"
+      :total-records="unifiedTotal"
       :items-per-page="pagination.per_page"
       :primary-search-value="search"
       :show-primary-search="true"
@@ -65,14 +53,19 @@
       :filter-config="filterConfig"
       :filters-value="filters"
       :show-export="false"
-      empty-state-message="No hay pagos en esta bandeja."
+      empty-state-message="No hay ítems en esta bandeja."
       @update:primary-search="onSearch"
       @filter-change="onFilter"
       @page-change="onPage"
       @items-per-page-change="onPageSize"
     />
+    <p class="mt-2 text-xs text-muted">
+      {{ bucket === APPROVAL_BUCKET.PENDING
+        ? 'Por aprobar: compara el depósito validado con lo cotizado, o aprueba un reembolso solicitado. Usa Ver.'
+        : 'Aprobados: historial de pagos y reembolsos ya revisados.' }}
+    </p>
 
-    <ApprovalReviewModal :payment="selected" @close="selected = null" @saved="load" />
+    <ApprovalReviewModal :payment="selectedPayment" @close="selectedPayment = null" @saved="reloadAll" />
 
     <SupplierPaymentWindow
       :open="settingsOpen"
@@ -80,44 +73,78 @@
       subtitle="Aplican a la comparación del importe cobrado contra el del banco."
       @close="settingsOpen = false"
     >
-      <div class="grid gap-3 rounded-2xl border border-gray-200 bg-white p-4 sm:grid-cols-2">
-        <label v-for="field in settingFields" :key="field.key" class="text-sm text-gray-500">
-          {{ field.label }}
-          <input v-model.number="settingsForm[field.key]" type="number" min="0" step="0.01" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-semibold text-gray-900">
-        </label>
-        <label class="flex items-center gap-2 text-sm text-gray-800 sm:col-span-2">
-          <input v-model="settingsForm.auto_approve" type="checkbox">
-          Aprobar automáticamente los pagos dentro de la tolerancia
-        </label>
+      <div class="grid gap-3 rounded-2xl border border-default bg-elevated p-4 sm:grid-cols-2">
+        <UFormField v-for="field in settingFields" :key="field.key" :label="field.label">
+          <UInput v-model.number="settingsForm[field.key]" type="number" min="0" step="0.01" class="w-full" />
+        </UFormField>
+        <div class="sm:col-span-2">
+          <UCheckbox
+            v-model="settingsForm.auto_approve"
+            label="Aprobar automáticamente los pagos sin diferencias (o dentro de la tolerancia)."
+            description="Si la diferencia supera la tolerancia pero no el límite excepcional, Administración decide a mano (asumir, cobrar o anular)."
+          />
+        </div>
       </div>
       <template #footer>
+        <UButton color="neutral" variant="outline" @click="() => { settingsOpen = false }">Cancelar</UButton>
         <UButton color="primary" :loading="savingSettings" @click="saveSettings">Guardar</UButton>
       </template>
     </SupplierPaymentWindow>
 
     <SupplierPaymentWindow
       :open="tariffsOpen"
-      title="Comisiones"
-      subtitle="Tramos: menos de $3,000 · de $3,000 a $9,000 · más de $9,000."
+      :title="tariffTipo === 'admin' ? 'Configurar comisión administrativa' : 'Configurar comisión bancaria / plataforma'"
+      :subtitle="tariffTipo === 'admin'
+        ? 'Se cobra por cada pago que gestiona Pro Business a un proveedor.'
+        : 'Tarifa fija en $ según el monto de cada transferencia. Los tramos son los mismos en dólares y yuanes.'"
       @close="tariffsOpen = false"
     >
-      <div class="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 text-sm">
-        <div class="grid grid-cols-3 gap-2">
-          <label v-for="(label, index) in tariffLabels" :key="'usd'+index" class="text-gray-500">USD {{ label }}
-            <input v-model.number="tariffs.usd[index]" type="number" min="0" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-semibold text-gray-900" />
-          </label>
-        </div>
-        <div class="grid grid-cols-3 gap-2">
-          <label v-for="(label, index) in tariffLabels" :key="'rmb'+index" class="text-gray-500">RMB {{ label }}
-            <input v-model.number="tariffs.rmb[index]" type="number" min="0" class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-semibold text-gray-900" />
-          </label>
-        </div>
-        <label class="text-gray-500">Administrativa
-          <input v-model.number="tariffs.admin" type="number" min="0" class="mt-1 block w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-semibold text-gray-900" />
-        </label>
+      <div v-if="tariffTipo === 'admin'" class="grid gap-3 sm:grid-cols-2">
+        <UFormField label="Dólares ($)">
+          <UInput v-model.number="tariffs.admin_usd" type="number" min="0" class="w-full" />
+        </UFormField>
+        <UFormField label="Yuanes ($)">
+          <UInput v-model.number="tariffs.admin_rmb" type="number" min="0" class="w-full" />
+        </UFormField>
       </div>
+      <div v-else class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-xs uppercase tracking-wide text-muted">
+              <th class="pb-2 pr-2">Tramo (monto de transferencia)</th>
+              <th class="pb-2 pr-2">Dólares (T-T) · Tarifa ($)</th>
+              <th class="pb-2">Yuanes · Tarifa ($)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-default">
+              <td class="py-2 pr-2">
+                Menor a $
+                <UInput v-model.number="tariffs.tramo_medio" type="number" min="0" size="sm" class="ml-1 w-24" />
+              </td>
+              <td class="py-2 pr-2"><UInput v-model.number="tariffs.usd[0]" type="number" min="0" size="sm" class="w-24" /></td>
+              <td class="py-2"><UInput v-model.number="tariffs.rmb[0]" type="number" min="0" size="sm" class="w-24" /></td>
+            </tr>
+            <tr class="border-t border-default">
+              <td class="py-2 pr-2">
+                De ${{ tariffs.tramo_medio || 0 }} a $
+                <UInput v-model.number="tariffs.tramo_alto" type="number" min="0" size="sm" class="ml-1 w-24" />
+              </td>
+              <td class="py-2 pr-2"><UInput v-model.number="tariffs.usd[1]" type="number" min="0" size="sm" class="w-24" /></td>
+              <td class="py-2"><UInput v-model.number="tariffs.rmb[1]" type="number" min="0" size="sm" class="w-24" /></td>
+            </tr>
+            <tr class="border-t border-default">
+              <td class="py-2 pr-2">Mayor a ${{ tariffs.tramo_alto || 0 }}</td>
+              <td class="py-2 pr-2"><UInput v-model.number="tariffs.usd[2]" type="number" min="0" size="sm" class="w-24" /></td>
+              <td class="py-2"><UInput v-model.number="tariffs.rmb[2]" type="number" min="0" size="sm" class="w-24" /></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="mt-3 text-xs text-muted">Aplica a las nuevas solicitudes desde que se guarda; no cambia las ya creadas.</p>
       <template #footer>
-        <UButton color="primary" :loading="savingTariffs" @click="saveTariffs">Guardar</UButton>
+        <UButton color="neutral" variant="outline" @click="() => { tariffsOpen = false }">Cancelar</UButton>
+        <UButton color="primary" :loading="savingTariffs" @click="saveTariffs">Guardar tarifa</UButton>
       </template>
     </SupplierPaymentWindow>
   </div>
@@ -131,35 +158,154 @@ import type { TableColumn } from '@nuxt/ui'
 import ApprovalReviewModal from '~/components/pago-proveedor/ApprovalReviewModal.vue'
 import { APPROVAL_BUCKET, APPROVAL_STATUS } from '~/constants/supplierPayment'
 import { PagoProveedorService } from '~/services/pagoProveedorService'
-import type { PagoProveedorPaginacion, SupplierPaymentApproval, SupplierPaymentApprovalSettings } from '~/types/pago-proveedor'
+import type {
+  PagoProveedorPaginacion,
+  SupplierPaymentApproval,
+  SupplierPaymentApprovalSettings,
+  SupplierPaymentRefund
+} from '~/types/pago-proveedor'
 import { useModal } from '~/composables/commons/useModal'
 import { useSupplierPaymentRefunds } from '~/composables/pago-proveedor/useSupplierPaymentRefunds'
 import { UButton } from '#components'
 
+type UnifiedRow = {
+  kind: 'pago' | 'reemb'
+  id: string
+  order_number: number | null
+  client_name: string | null
+  consolidation: string | null
+  supplier_code: string | null
+  supplier_name: string | null
+  request_code: string | null
+  payment_type: string
+  installment_label: string | null
+  amount: number
+  deposit_text: string
+  deadline_text: string
+  status_label: string
+  status_tone: 'ok' | 'warn' | 'muted'
+  observation: string
+  observation_alert: boolean
+  payment?: SupplierPaymentApproval
+  refund?: SupplierPaymentRefund
+}
+
 const { showError, showSuccess } = useModal()
-const { pendingCount: refundPendingCount, load: loadRefunds, changeBucket: changeRefundBucket } = useSupplierPaymentRefunds()
+const {
+  rows: refundRows,
+  loading: refundLoading,
+  pendingCount: refundPendingCount,
+  load: loadRefunds,
+  changeBucket: changeRefundBucket
+} = useSupplierPaymentRefunds()
 const rows = ref<SupplierPaymentApproval[]>([])
-const selected = ref<SupplierPaymentApproval | null>(null)
+const selectedPayment = ref<SupplierPaymentApproval | null>(null)
+const refundsRef = ref<{ open: (row: SupplierPaymentRefund) => void } | null>(null)
 const loading = ref(false)
 const search = ref('')
 const pendingCount = ref(0)
 const typeFilter = ref<'todos' | 'pago' | 'reemb'>('todos')
 const bucket = ref<typeof APPROVAL_BUCKET[keyof typeof APPROVAL_BUCKET]>(APPROVAL_BUCKET.PENDING)
-const typeChips = [
-  { key: 'todos' as const, label: 'Todos' },
-  { key: 'pago' as const, label: 'Pago a proveedor' },
-  { key: 'reemb' as const, label: 'Reembolsos' }
-]
 const refundBucket = computed(() => (bucket.value === APPROVAL_BUCKET.APPROVED ? 'aprobado' : 'solicitado') as 'solicitado' | 'aprobado')
 const totalPending = computed(() => pendingCount.value + refundPendingCount.value)
+const approvalTabs = computed(() => [
+  { label: totalPending.value ? `Por aprobar (${totalPending.value})` : 'Por aprobar', value: APPROVAL_BUCKET.PENDING },
+  { label: 'Aprobados', value: APPROVAL_BUCKET.APPROVED }
+])
 const pagination = ref<PagoProveedorPaginacion>({ current_page: 1, last_page: 1, per_page: 15, total: 0 })
-const filters = ref({ status: APPROVAL_STATUS.ALL })
+const filters = ref({ status: APPROVAL_STATUS.ALL, consolidado: 'todos', banco: 'todos' })
 const settingsOpen = ref(false)
 const tariffsOpen = ref(false)
+const tariffTipo = ref<'bancaria' | 'admin'>('bancaria')
 const savingTariffs = ref(false)
-const tariffLabels = ['bajo', 'medio', 'alto']
-const tariffs = reactive({ usd: [100, 120, 150], rmb: [50, 90, 120], admin: 30 })
+const tariffs = reactive({
+  usd: [100, 120, 150],
+  rmb: [50, 90, 120],
+  tramo_medio: 3000,
+  tramo_alto: 9000,
+  admin_usd: 30,
+  admin_rmb: 30
+})
 const savingSettings = ref(false)
+const overdueCount = ref(0)
+const alertas = computed(() => {
+  const items: string[] = []
+  if (overdueCount.value > 0) {
+    items.push(`${overdueCount.value} observación${overdueCount.value > 1 ? 'es' : ''} vencida${overdueCount.value > 1 ? 's' : ''} (plazo de cobro / error de registro sin resolver).`)
+  }
+  return items
+})
+const consolidadosDisponibles = computed(() => [...new Set(
+  [...rows.value.map((row) => row.consolidation), ...refundRows.value.map((row) => row.consolidation)]
+    .filter((value): value is string => !!value && value.trim() !== '')
+)].sort())
+
+const paymentUnified = computed<UnifiedRow[]>(() => rows.value.map((row) => ({
+  kind: 'pago' as const,
+  id: `pago-${row.id}`,
+  order_number: row.order_number,
+  client_name: row.client_name,
+  consolidation: row.consolidation,
+  supplier_code: row.supplier_code,
+  supplier_name: row.supplier_name || row.product,
+  request_code: row.request_code,
+  payment_type: row.currency === 'RMB' ? 'RMB / Transferencia' : 'USD / T-T',
+  installment_label: row.installment_label,
+  amount: row.charged_amount,
+  deposit_text: depositCell(row),
+  deadline_text: bucket.value === APPROVAL_BUCKET.APPROVED
+    ? formatDate(row.approved_at)
+    : (row.deadline_text || '—'),
+  status_label: row.status_label,
+  status_tone: row.status === APPROVAL_STATUS.APPROVED ? 'ok' : 'warn',
+  observation: row.observation,
+  observation_alert: row.observation_for_admin && row.status !== APPROVAL_STATUS.APPROVED,
+  payment: row
+})))
+
+const refundUnified = computed<UnifiedRow[]>(() => refundRows.value
+  .filter((row) => {
+    if (filters.value.consolidado !== 'todos' && row.consolidation !== filters.value.consolidado) return false
+    if (!search.value.trim()) return true
+    const q = search.value.trim().toLowerCase()
+    return [row.client_name, row.consolidation, row.supplier_code, row.origin_label]
+      .join(' ')
+      .toLowerCase()
+      .includes(q)
+  })
+  .map((row) => ({
+    kind: 'reemb' as const,
+    id: `reemb-${row.id}`,
+    order_number: row.order_number,
+    client_name: row.client_name,
+    consolidation: row.consolidation,
+    supplier_code: row.supplier_code,
+    supplier_name: null,
+    request_code: null,
+    payment_type: 'Reembolso',
+    installment_label: null,
+    amount: row.amount,
+    deposit_text: '—',
+    deadline_text: row.requested_at ? formatDate(row.requested_at) : '—',
+    status_label: row.status_label || (bucket.value === APPROVAL_BUCKET.APPROVED ? 'Reembolso aprobado' : 'Reembolso solicitado'),
+    status_tone: bucket.value === APPROVAL_BUCKET.APPROVED ? 'ok' : 'warn',
+    observation: row.origin_label
+      ? `Reembolso solicitado · ${row.origin_label}`
+      : 'Reembolso solicitado',
+    observation_alert: bucket.value === APPROVAL_BUCKET.PENDING,
+    refund: row
+  })))
+
+const unifiedRows = computed(() => {
+  if (typeFilter.value === 'pago') return paymentUnified.value
+  if (typeFilter.value === 'reemb') return refundUnified.value
+  return [...paymentUnified.value, ...refundUnified.value]
+})
+const unifiedTotal = computed(() => {
+  if (typeFilter.value === 'reemb') return refundUnified.value.length
+  if (typeFilter.value === 'pago') return pagination.value.total
+  return pagination.value.total + refundUnified.value.length
+})
 const settingsForm = reactive<SupplierPaymentApprovalSettings>({
   tolerance: 1,
   exception_limit: 2,
@@ -172,48 +318,139 @@ const settingsForm = reactive<SupplierPaymentApprovalSettings>({
 })
 
 const settingFields = [
-  { key: 'tolerance' as const, label: 'Tolerancia (USD)' },
+  { key: 'tolerance' as const, label: 'Tolerancia de importe (USD)' },
   { key: 'exception_limit' as const, label: 'Límite excepcional (USD)' },
-  { key: 'verify_hours' as const, label: 'Plazo para validar (horas)' },
-  { key: 'remedy_days' as const, label: 'Plazo para subsanar (días)' },
-  { key: 'undo_minutes' as const, label: 'Deshacer sin aviso (minutos)' },
-  { key: 'undo_hours' as const, label: 'Deshacer avisando (horas)' },
-  { key: 'decision_hours' as const, label: 'Decisión de Ventas (horas)' }
+  { key: 'verify_hours' as const, label: 'Plazo para verificar un depósito (horas)' },
+  { key: 'remedy_days' as const, label: 'Plazo para subsanar una observación (días)' },
+  { key: 'undo_minutes' as const, label: 'Deshacer sin aviso a Ventas (minutos)' },
+  { key: 'undo_hours' as const, label: 'Deshacer con aviso a Ventas (horas)' },
+  { key: 'decision_hours' as const, label: 'Plazo de Ventas para pago 2 o reembolso (horas)' }
 ]
 
-const filterConfig = computed(() => [{
-  key: 'status',
-  label: 'Estado',
-  type: 'select',
-  options: bucket.value === APPROVAL_BUCKET.APPROVED
-    ? [
-        { value: APPROVAL_STATUS.ALL, label: 'Todos' },
-        { value: APPROVAL_STATUS.APPROVED, label: 'Aprobado' }
-      ]
-    : [
-        { value: APPROVAL_STATUS.ALL, label: 'Todos' },
-        { value: APPROVAL_STATUS.PENDING, label: 'Pendiente' },
-        { value: APPROVAL_STATUS.TO_COLLECT, label: 'Por cobrar' }
-      ]
-}])
+const filterConfig = computed(() => [
+  {
+    key: 'consolidado',
+    label: 'Consolidado',
+    type: 'select',
+    placeholder: 'Consolidado',
+    options: [
+      { value: 'todos', label: 'Todos' },
+      ...consolidadosDisponibles.value.map((item) => ({ value: item, label: item }))
+    ]
+  },
+  {
+    key: 'banco',
+    label: 'Banco',
+    type: 'select',
+    placeholder: 'Banco',
+    options: [
+      { value: 'todos', label: 'Todos' },
+      { value: 'bcp', label: 'BCP' },
+      { value: 'interbank', label: 'Interbank' }
+    ]
+  },
+  {
+    key: 'status',
+    label: 'Estado',
+    type: 'select',
+    placeholder: 'Estado',
+    options: bucket.value === APPROVAL_BUCKET.APPROVED
+      ? [
+          { value: APPROVAL_STATUS.ALL, label: 'Todos' },
+          { value: APPROVAL_STATUS.APPROVED, label: 'Aprobado' }
+        ]
+      : [
+          { value: APPROVAL_STATUS.ALL, label: 'Todos' },
+          { value: APPROVAL_STATUS.PENDING, label: 'Pendiente' },
+          { value: APPROVAL_STATUS.TO_COLLECT, label: 'Por cobrar' }
+        ]
+  }
+])
 
-const columns = computed<TableColumn<SupplierPaymentApproval>[]>(() => [
-  { accessorKey: 'order_number', header: 'N.° de orden' },
+const columns = computed<TableColumn<UnifiedRow>[]>(() => [
+  { accessorKey: 'order_number', header: 'N.° de orden', cell: ({ row }) => row.original.order_number ?? '—' },
   { accessorKey: 'client_name', header: 'Cliente' },
   { accessorKey: 'consolidation', header: 'Consolidado' },
   { accessorKey: 'supplier_code', header: 'Proveedor', cell: ({ row }) => h('div', [
     h('div', { class: 'font-semibold' }, row.original.supplier_code || '—'),
-    h('div', { class: 'text-xs text-gray-500' }, row.original.supplier_name || row.original.product || '')
+    h('div', { class: 'text-xs text-muted' }, row.original.supplier_name || '')
   ]) },
-  { accessorKey: 'request_code', header: 'Código de solicitud', cell: ({ row }) => row.original.request_code || 'Pendiente' },
-  { accessorKey: 'payment_type', header: 'Tipo de pago', cell: ({ row }) => row.original.currency === 'RMB' ? 'RMB / Transferencia' : 'USD / T-T' },
-  { accessorKey: 'charged_amount', header: 'Importe', cell: ({ row }) => `$${Number(row.original.charged_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}` },
-  { accessorKey: 'deposits', header: 'Depósito', cell: ({ row }) => depositCell(row.original) },
-  { accessorKey: 'deadline_text', header: bucket.value === APPROVAL_BUCKET.APPROVED ? 'Aprobado el' : 'Antigüedad / plazo', cell: ({ row }) => bucket.value === APPROVAL_BUCKET.APPROVED ? formatDate(row.original.approved_at) : (row.original.deadline_text || '—') },
-  { accessorKey: 'status_label', header: 'Estado', cell: ({ row }) => h('span', { class: row.original.status === APPROVAL_STATUS.APPROVED ? 'font-semibold text-green-700' : 'font-semibold text-red-600' }, row.original.status_label) },
-  { accessorKey: 'observation', header: 'Observaciones', cell: ({ row }) => h('span', { class: row.original.observation_for_admin && row.original.status !== APPROVAL_STATUS.APPROVED ? 'text-sm text-red-600' : 'text-sm text-gray-500' }, row.original.observation) },
-  { accessorKey: 'id', header: '', cell: ({ row }) => h(UButton, { size: 'xs', color: 'primary', variant: 'soft', onClick: () => { selected.value = row.original } }, () => 'Ver') }
+  { accessorKey: 'request_code', header: 'Código de solicitud', cell: ({ row }) => row.original.request_code || (row.original.kind === 'reemb' ? '—' : 'Pendiente') },
+  {
+    accessorKey: 'payment_type',
+    header: 'Tipo de pago',
+    cell: ({ row }) => h('div', [
+      h('div', row.original.payment_type),
+      row.original.installment_label
+        ? h('div', { class: 'text-[11px] text-muted' }, row.original.installment_label)
+        : null
+    ])
+  },
+  { accessorKey: 'amount', header: 'Importe', cell: ({ row }) => `$${Number(row.original.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}` },
+  ...(bucket.value === APPROVAL_BUCKET.PENDING
+    ? [
+        { accessorKey: 'deposit_text', header: 'Depósito' },
+        { accessorKey: 'deadline_text', header: 'Antigüedad / plazo' }
+      ]
+    : []) as TableColumn<UnifiedRow>[],
+  {
+    accessorKey: 'status_label',
+    header: 'Estado',
+    cell: ({ row }) => h('span', {
+      class: row.original.status_tone === 'ok' ? 'font-semibold text-success' : 'font-semibold text-error'
+    }, row.original.status_label)
+  },
+  ...(bucket.value === APPROVAL_BUCKET.APPROVED
+    ? [{ accessorKey: 'deadline_text', header: 'Aprobado el' }]
+    : []) as TableColumn<UnifiedRow>[],
+  {
+    accessorKey: 'observation',
+    header: 'Observaciones',
+    cell: ({ row }) => h('span', {
+      class: row.original.observation_alert ? 'text-sm text-error' : 'text-sm text-muted'
+    }, row.original.observation)
+  },
+  {
+    accessorKey: 'id',
+    header: 'Acciones',
+    cell: ({ row }) => {
+      const item = row.original
+      const label = actionLabel(item)
+      if (item.kind === 'reemb' && bucket.value === APPROVAL_BUCKET.APPROVED && item.refund?.voucher_url) {
+        return h('a', {
+          href: item.refund.voucher_url,
+          target: '_blank',
+          rel: 'noopener',
+          class: 'text-xs font-semibold text-primary'
+        }, 'Ver comprobante')
+      }
+      return h(UButton, {
+        size: 'xs',
+        color: 'primary',
+        variant: bucket.value === APPROVAL_BUCKET.PENDING && item.kind === 'pago' && item.payment?.status === APPROVAL_STATUS.PENDING
+          ? 'solid'
+          : 'soft',
+        onClick: () => openUnified(item)
+      }, () => label)
+    }
+  }
 ])
+
+function actionLabel(row: UnifiedRow) {
+  if (row.kind === 'reemb') return 'Ver reembolso'
+  if (bucket.value === APPROVAL_BUCKET.PENDING && row.payment?.status === APPROVAL_STATUS.PENDING) {
+    return 'Revisar y aprobar'
+  }
+  return 'Ver'
+}
+
+function openUnified(row: UnifiedRow) {
+  if (row.kind === 'reemb' && row.refund) {
+    refundsRef.value?.open(row.refund)
+    return
+  }
+  if (row.payment) selectedPayment.value = row.payment
+}
 
 function depositCell(row: SupplierPaymentApproval) {
   if (!row.deposits.length) return '—'
@@ -231,6 +468,8 @@ async function load() {
     const response = await PagoProveedorService.listApprovals({
       bucket: bucket.value,
       status: filters.value.status,
+      consolidado: filters.value.consolidado,
+      banco: filters.value.banco,
       search: search.value,
       page: pagination.value.current_page,
       per_page: pagination.value.per_page
@@ -238,20 +477,25 @@ async function load() {
     rows.value = response.data || []
     pagination.value = response.pagination
     pendingCount.value = response.pending_count || 0
+    overdueCount.value = (response.data || []).filter((row) => row.deadline_overdue).length
     if (response.settings) Object.assign(settingsForm, response.settings)
   } catch (error: any) {
-    showError('Aprobación', error?.data?.message || 'No se pudieron cargar los pagos.')
+    showError('Aprobación', error?.data?.message || error?.message || 'No se pudieron cargar los pagos.')
   } finally {
     loading.value = false
   }
 }
 
+async function reloadAll() {
+  await Promise.all([load(), loadRefunds()])
+}
+
 function changeBucket(next: typeof APPROVAL_BUCKET[keyof typeof APPROVAL_BUCKET]) {
   bucket.value = next
-  filters.value = { status: APPROVAL_STATUS.ALL }
+  filters.value = { status: APPROVAL_STATUS.ALL, consolidado: 'todos', banco: 'todos' }
   pagination.value.current_page = 1
   changeRefundBucket(next === APPROVAL_BUCKET.APPROVED ? 'aprobado' : 'solicitado')
-  load()
+  void reloadAll()
 }
 
 function onSearch(value: string) {
@@ -293,19 +537,23 @@ async function saveSettings() {
     showSuccess('Tolerancia y plazos', 'La configuración quedó guardada.')
     await load()
   } catch (error: any) {
-    showError('Tolerancia y plazos', error?.data?.message || 'No se pudo guardar.')
+    showError('Tolerancia y plazos', error?.data?.message || error?.message || 'No se pudo guardar.')
   } finally {
     savingSettings.value = false
   }
 }
 
-async function openTariffs() {
+async function openTariffs(tipo: 'bancaria' | 'admin' = 'bancaria') {
+  tariffTipo.value = tipo
   try {
     const response = await PagoProveedorService.getTariffs()
     if (response.data) {
       tariffs.usd = [...response.data.usd]
       tariffs.rmb = [...response.data.rmb]
-      tariffs.admin = response.data.admin
+      tariffs.tramo_medio = Number(response.data.tramo_medio || 3000)
+      tariffs.tramo_alto = Number(response.data.tramo_alto || 9000)
+      tariffs.admin_usd = Number(response.data.admin_usd ?? response.data.admin ?? 30)
+      tariffs.admin_rmb = Number(response.data.admin_rmb ?? response.data.admin ?? 30)
     }
   } catch {
     // Se muestran los valores de fábrica si la lectura falla.
@@ -316,15 +564,31 @@ async function openTariffs() {
 async function saveTariffs() {
   savingTariffs.value = true
   try {
-    await PagoProveedorService.saveTariffs({ usd: [...tariffs.usd], rmb: [...tariffs.rmb], admin: tariffs.admin })
+    if (tariffTipo.value === 'admin') {
+      await PagoProveedorService.saveTariffs({
+        tipo: 'admin',
+        admin_usd: tariffs.admin_usd,
+        admin_rmb: tariffs.admin_rmb
+      })
+    } else {
+      await PagoProveedorService.saveTariffs({
+        tipo: 'bancaria',
+        usd: [...tariffs.usd],
+        rmb: [...tariffs.rmb],
+        tramo_medio: tariffs.tramo_medio,
+        tramo_alto: tariffs.tramo_alto
+      })
+    }
     tariffsOpen.value = false
     showSuccess('Comisiones', 'Las tarifas quedaron guardadas.')
   } catch (error: any) {
-    showError('Comisiones', error?.data?.message || 'No se pudo guardar.')
+    showError('Comisiones', error?.data?.message || error?.message || 'No se pudo guardar.')
   } finally {
     savingTariffs.value = false
   }
 }
+
+defineExpose({ pendingCount: totalPending })
 
 onMounted(async () => {
   await Promise.all([load(), loadRefunds()])

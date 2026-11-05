@@ -35,7 +35,7 @@
           <div v-if="showPrimarySearch" class="flex items-center gap-2 h-10 w-full lg:w-auto">
             <label v-if="showPrimarySearchLabel"
               class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ translations.primarySearchLabel }}:</label>
-            <UInput :model-value="primarySearchInternal" :placeholder="translations.primarySearchPlaceholder"
+            <UInput :model-value="primarySearchInternal" :placeholder="primarySearchPlaceholder || translations.primarySearchPlaceholder"
               class="flex-1 h-5 min-w-0 md:h-10 lg:h-10" :ui="{ base: 'h-7 md:h-10 lg:h-10' }"
               @update:model-value="onPrimarySearchChange">
               <template #leading>
@@ -104,6 +104,15 @@
                       @click.stop
                       @focus="handleSelectOpen"
                       @blur="handleSelectClose"
+                    />
+                    <UInput
+                      v-else-if="filter.type === 'number' || filter.type === 'text'"
+                      :model-value="filtersValue?.[filter.key] ?? ''"
+                      :type="filter.type === 'number' ? 'number' : 'text'"
+                      :placeholder="filter.placeholder"
+                      class="w-full"
+                      @update:model-value="(value) => handleFilterChange(filter.key, value)"
+                      @click.stop
                     />
                     <!-- Filtro de tipo select: model-value no vacío (fallback primera opción) para cumplir SelectItem -->
                     <USelect
@@ -192,6 +201,15 @@
                         @click.stop
                         @focus="handleSelectOpen"
                         @blur="handleSelectClose"
+                      />
+                      <UInput
+                        v-else-if="filter.type === 'number' || filter.type === 'text'"
+                        :model-value="filtersValue?.[filter.key] ?? ''"
+                        :type="filter.type === 'number' ? 'number' : 'text'"
+                        :placeholder="filter.placeholder"
+                        class="w-full"
+                        @update:model-value="(value) => handleFilterChange(filter.key, value)"
+                        @click.stop
                       />
                       <USelect
                         v-else
@@ -423,7 +441,7 @@
         data-manual-capture="data-table-grid"
         ref="tableContainerRef"
         class="table-scroll-container"
-        :class="{ 'is-h-scroll': !isTableNarrow }"
+        :class="{ 'is-h-scroll': !isTableNarrow, 'sticky-last-column': stickyLastColumn }"
         :style="tableScrollStyle"
         @mousemove="onTableMouseMove"
         @mouseleave="onTableMouseLeave"
@@ -476,7 +494,7 @@
             <UIcon name="i-heroicons-inbox" class="mx-auto h-12 w-12 text-gray-400" />
             <h3 class="mt-2 text-sm font-semibold text-gray-800 dark:text-gray-100">{{ translations.emptyTitle }}</h3>
             <p class="mt-1 text-sm text-gray-500">
-              {{ translations.emptyMessage || emptyStateMessage }}
+              {{ emptyStateMessage || translations.emptyMessage }}
             </p>
           </div>
         </template>
@@ -1863,6 +1881,16 @@ html.dark .min-w-full :deep(tbody tr + tr td) {
 }
 .dark .table-scroll-container tbody td.china-group-td {
   background-color: rgb(127 29 29 / 0.18);
+}
+
+/* Última columna fija para no perder las acciones al hacer scroll horizontal */
+.sticky-last-column th:last-child,
+.sticky-last-column td:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 30;
+  background: var(--ui-bg);
+  box-shadow: -6px 0 6px -6px rgb(0 0 0 / 0.15);
 }
 
 /* Sombras laterales para indicar scroll horizontal */

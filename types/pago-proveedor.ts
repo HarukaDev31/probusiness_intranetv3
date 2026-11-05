@@ -39,6 +39,8 @@ export interface PagoProveedorCalculoLinea {
   total: number
   total_ahora: number
   etiqueta_bancaria: string | null
+  comision_bancaria?: boolean
+  bancaria_por_cuota?: boolean
   cuotas: Array<{ numero: number; porcentaje: number; carga: number; bancaria: number; administrativa: number; total: number }>
   pagos_proveedor: Array<{ numero: number; porcentaje: number; carga: number }>
 }
@@ -76,17 +78,26 @@ export interface PagoProveedorCotizacion {
   cliente_whatsapp: string | null
   cliente_correo: string | null
   tipo_cambio: number | null
+  tipo_cambio_fecha?: string | null
   tipo_cambio_confirmado: boolean
   vigencia_fin: string | null
   vigencia_texto: string
+  vigencia_hasta?: string | null
+  resumen_enviado?: boolean
   vencida: boolean
+  antiguedad_dias?: number | null
+  antiguedad_texto?: string | null
+  resaltar?: boolean
   proveedores_cantidad: number
   total: number
   total_ahora: number
   comisiones: number
   puede_editar: boolean
+  puede_anular?: boolean
+  observacion?: { motivo: string; detalle?: string | null; plazo?: string | null } | null
   puede_eliminar: boolean
   puede_enviar: boolean
+  puede_descargar_pdf?: boolean
   puede_crear_solicitud: boolean
   puede_renovar: boolean
   faltantes_pdf: string[]
@@ -241,6 +252,8 @@ export interface SupplierPaymentProgress {
     can_send_balance: boolean
     can_download_balance: boolean
     can_request_refund: boolean
+    can_complete?: boolean
+    complete_label?: string
     exchange_due_usd: number
     payment_two_refund: { cargo: number; admin: number; total: number } | null
     decision_due_at: string | null
@@ -252,6 +265,7 @@ export interface SupplierPaymentProgress {
       status_label: string
       origin_label: string
       blocks_close: boolean
+      voucher_url?: string | null
     } | null
     exchange_rate_pending: boolean
   }
@@ -275,6 +289,8 @@ export interface PagoProveedorAbono {
   excedente_decide_text?: string | null
   operacion_repetida: boolean
   puede_editar: boolean
+  puede_anular?: boolean
+  observacion?: { motivo: string; detalle?: string | null; plazo?: string | null } | null
   puede_elegir_continuacion?: boolean
   aplicaciones: Array<{ solicitud_proveedor_id: number; monto: number; continua?: boolean | null }>
 }
@@ -457,6 +473,7 @@ export interface SupplierPaymentExecution {
   receipt_url: string | null
   bank_ready: boolean
   can_register: boolean
+  deposit_bank?: string | null
   bank: SupplierPaymentBankData
   bank_copy_text: string
 }

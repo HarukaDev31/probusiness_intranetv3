@@ -1,90 +1,72 @@
 <template>
   <div class="grid gap-3 md:grid-cols-2">
-    <label class="text-sm md:col-span-2">Nombre del beneficiario
-      <input v-model="modelo.beneficiario_nombre" class="campo" :disabled="bloqueado" />
-    </label>
-    <label class="text-sm md:col-span-2">Número de cuenta o IBAN
-      <input v-model="modelo.beneficiario_cuenta" class="campo" :disabled="bloqueado" />
-    </label>
-    <label class="text-sm md:col-span-2">Dirección
-      <input v-model="modelo.beneficiario_direccion" class="campo" :disabled="bloqueado" />
-    </label>
-    <label class="text-sm">País
-      <input v-model="modelo.beneficiario_pais" class="campo" :disabled="bloqueado" />
-    </label>
-    <label class="text-sm">Ciudad
-      <input v-model="modelo.beneficiario_ciudad" class="campo" :disabled="bloqueado" />
-    </label>
-    <label class="text-sm">Tipo de código
-      <select v-model="modelo.banco_tipo_codigo" class="campo" :disabled="bloqueado">
-        <option value="SWIFT">SWIFT</option>
-        <option value="ABA">ABA</option>
-        <option value="CHIPS">CHIPS</option>
-        <option value="Sort Code">Sort Code</option>
-        <option value="Otro">Otro</option>
-      </select>
-    </label>
-    <label class="text-sm">Código de banco
-      <input v-model="modelo.banco_codigo" class="campo" :disabled="bloqueado" />
-    </label>
-    <label class="text-sm md:col-span-2">Nombre del banco
-      <input v-model="modelo.banco_nombre" class="campo" :disabled="bloqueado" />
-    </label>
-    <label class="text-sm md:col-span-2">Dirección del banco
-      <input v-model="modelo.banco_direccion" class="campo" :disabled="bloqueado" />
-    </label>
-    <label class="text-sm">País del banco
-      <input v-model="modelo.banco_pais" class="campo" :disabled="bloqueado" />
-    </label>
-    <label class="text-sm">Ciudad del banco
-      <input v-model="modelo.banco_ciudad" class="campo" :disabled="bloqueado" />
-    </label>
-    <label class="flex items-center gap-2 text-sm md:col-span-2">
-      <input v-model="modelo.usa_intermediario" type="checkbox" :disabled="bloqueado" />
-      Usar banco intermediario
-    </label>
+    <UFormField label="Nombre del beneficiario" class="md:col-span-2">
+      <UInput v-model="modelo.beneficiario_nombre" :disabled="bloqueado" class="w-full" />
+    </UFormField>
+    <UFormField label="Número de cuenta o IBAN" class="md:col-span-2">
+      <UInput v-model="modelo.beneficiario_cuenta" :disabled="bloqueado" class="w-full" />
+    </UFormField>
+    <UFormField label="Dirección" class="md:col-span-2">
+      <UInput v-model="modelo.beneficiario_direccion" :disabled="bloqueado" class="w-full" />
+    </UFormField>
+    <UFormField label="País">
+      <UInput v-model="modelo.beneficiario_pais" :disabled="bloqueado" class="w-full" />
+    </UFormField>
+    <UFormField label="Ciudad">
+      <UInput v-model="modelo.beneficiario_ciudad" :disabled="bloqueado" class="w-full" />
+    </UFormField>
+    <UFormField label="Tipo de código">
+      <USelect v-model="modelo.banco_tipo_codigo" :items="tiposCodigo" :disabled="bloqueado" class="w-full" />
+    </UFormField>
+    <UFormField label="Código de banco">
+      <UInput v-model="modelo.banco_codigo" :disabled="bloqueado" class="w-full" />
+    </UFormField>
+    <UFormField label="Nombre del banco" class="md:col-span-2">
+      <UInput v-model="modelo.banco_nombre" :disabled="bloqueado" class="w-full" />
+    </UFormField>
+    <UFormField label="Dirección del banco" class="md:col-span-2">
+      <UInput v-model="modelo.banco_direccion" :disabled="bloqueado" class="w-full" />
+    </UFormField>
+    <UFormField label="País del banco">
+      <UInput v-model="modelo.banco_pais" :disabled="bloqueado" class="w-full" />
+    </UFormField>
+    <UFormField label="Ciudad del banco">
+      <UInput v-model="modelo.banco_ciudad" :disabled="bloqueado" class="w-full" />
+    </UFormField>
+    <UCheckbox v-model="modelo.usa_intermediario" :disabled="bloqueado" label="Usar banco intermediario" class="md:col-span-2" />
     <template v-if="modelo.usa_intermediario">
-      <label class="text-sm">Tipo de código
-        <select v-model="modelo.inter_tipo_codigo" class="campo" :disabled="bloqueado">
-          <option value="SWIFT">SWIFT</option>
-          <option value="ABA">ABA</option>
-          <option value="CHIPS">CHIPS</option>
-          <option value="Sort Code">Sort Code</option>
-          <option value="Otro">Otro</option>
-        </select>
-      </label>
-      <label class="text-sm">Código
-        <input v-model="modelo.inter_codigo" class="campo" :disabled="bloqueado" />
-      </label>
-      <label class="text-sm md:col-span-2">Nombre del banco intermediario
-        <input v-model="modelo.inter_nombre" class="campo" :disabled="bloqueado" />
-      </label>
-      <label class="text-sm md:col-span-2">Dirección
-        <input v-model="modelo.inter_direccion" class="campo" :disabled="bloqueado" />
-      </label>
-      <label class="text-sm">País
-        <input v-model="modelo.inter_pais" class="campo" :disabled="bloqueado" />
-      </label>
-      <label class="text-sm">Ciudad
-        <input v-model="modelo.inter_ciudad" class="campo" :disabled="bloqueado" />
-      </label>
+      <UFormField label="Tipo de código">
+        <USelect v-model="modelo.inter_tipo_codigo" :items="tiposCodigo" :disabled="bloqueado" class="w-full" />
+      </UFormField>
+      <UFormField label="Código">
+        <UInput v-model="modelo.inter_codigo" :disabled="bloqueado" class="w-full" />
+      </UFormField>
+      <UFormField label="Nombre del banco intermediario" class="md:col-span-2">
+        <UInput v-model="modelo.inter_nombre" :disabled="bloqueado" class="w-full" />
+      </UFormField>
+      <UFormField label="Dirección" class="md:col-span-2">
+        <UInput v-model="modelo.inter_direccion" :disabled="bloqueado" class="w-full" />
+      </UFormField>
+      <UFormField label="País">
+        <UInput v-model="modelo.inter_pais" :disabled="bloqueado" class="w-full" />
+      </UFormField>
+      <UFormField label="Ciudad">
+        <UInput v-model="modelo.inter_ciudad" :disabled="bloqueado" class="w-full" />
+      </UFormField>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
 const modelo = defineModel<Record<string, any>>({ required: true })
-defineProps<{ bloqueado?: boolean }>()
-</script>
+const props = defineProps<{ bloqueado?: boolean }>()
 
-<style scoped>
-.campo {
-  margin-top: 0.25rem;
-  display: block;
-  width: 100%;
-  border-radius: 0.375rem;
-  border: 1px solid #d1d5db;
-  background: white;
-  padding: 0.5rem 0.75rem;
-}
-</style>
+const tiposCodigo = ['SWIFT', 'ABA', 'CHIPS', 'Sort Code', 'Otro'].map((value) => ({ label: value, value }))
+
+// A new form starts on SWIFT, the code most suppliers use.
+watch(modelo, (value) => {
+  if (props.bloqueado || !value) return
+  if (!value.banco_tipo_codigo) value.banco_tipo_codigo = 'SWIFT'
+  if (value.usa_intermediario && !value.inter_tipo_codigo) value.inter_tipo_codigo = 'SWIFT'
+}, { immediate: true, deep: true })
+</script>

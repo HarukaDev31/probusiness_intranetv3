@@ -7,14 +7,19 @@
       @update:model-value="(tab) => emit('change-tab', tab)"
     />
     <div v-if="overdueCount || observedCount" class="mb-3 flex flex-wrap gap-2">
-      <p v-if="overdueCount" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
-        {{ overdueCount }} depósito{{ overdueCount === 1 ? '' : 's' }} con plazo vencido
-      </p>
-      <p v-if="observedCount" class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">
-        {{ observedCount }} depósito{{ observedCount === 1 ? '' : 's' }} observado{{ observedCount === 1 ? '' : 's' }}
-      </p>
+      <UCard v-if="overdueCount" color="error" variant="subtle" :ui="{ body: 'px-3 py-2 sm:px-3 sm:py-2' }">
+        <p class="text-sm font-semibold text-error">
+          {{ overdueCount }} depósito{{ overdueCount === 1 ? '' : 's' }} con plazo vencido
+        </p>
+      </UCard>
+      <UCard v-if="observedCount" color="warning" variant="subtle" :ui="{ body: 'px-3 py-2 sm:px-3 sm:py-2' }">
+        <p class="text-sm font-semibold">
+          {{ observedCount }} depósito{{ observedCount === 1 ? '' : 's' }} observado{{ observedCount === 1 ? '' : 's' }}
+        </p>
+      </UCard>
     </div>
     <DataTable
+      sticky-last-column
       title="Verificación"
       subtitle="Pago a proveedor"
       icon="i-heroicons-banknotes"
@@ -29,7 +34,7 @@
       :primary-search-value="search"
       :show-primary-search="true"
       :show-primary-search-label="false"
-      primary-search-placeholder="Cliente, N.° de operación, importe o código"
+      primary-search-placeholder="Cliente, N.° de operación, importe o código de solicitud"
       :show-filters="true"
       :filter-config="filterConfig"
       :filters-value="filters"
@@ -105,23 +110,23 @@ const filterConfig = computed(() => [
 ])
 
 const columns: TableColumn<SupplierPaymentDeposit>[] = [
-  { accessorKey: 'order_number', header: 'N.°' },
+  { accessorKey: 'order_number', header: 'N.° de orden' },
   { accessorKey: 'client_name', header: 'Cliente', cell: ({ row }) => h('div', [
     h('div', { class: 'font-medium' }, row.original.client_name || '—'),
-    h('div', { class: 'text-xs text-gray-500' }, [row.original.client_document, row.original.client_whatsapp].filter(Boolean).join(' · '))
+    h('div', { class: 'text-xs text-muted' }, [row.original.client_document, row.original.client_whatsapp].filter(Boolean).join(' · '))
   ]) },
   { accessorKey: 'consolidation', header: 'Consolidado' },
-  { accessorKey: 'providers', header: 'Código', cell: ({ row }) => row.original.providers.map((provider) => provider.request_code || 'Pendiente').join(', ') },
+  { accessorKey: 'providers', header: 'Código de solicitud', cell: ({ row }) => row.original.providers.map((provider) => provider.request_code || 'Pendiente').join(', ') },
   { accessorKey: 'bank_label', header: 'Banco', cell: ({ row }) => row.original.interbank ? `${row.original.bank_label} · Interbancaria` : row.original.bank_label },
   { accessorKey: 'paid_on', header: 'Fecha' },
   { accessorKey: 'operation_number', header: 'N.° de operación' },
   { accessorKey: 'amount', header: 'Importe', cell: ({ row }) => `$${row.original.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}` },
-  { accessorKey: 'voucher_url', header: 'Comprobante', cell: ({ row }) => row.original.voucher_url ? h('a', { href: row.original.voucher_url, target: '_blank', class: 'text-primary-600 text-sm' }, 'Ver') : '—' },
+  { accessorKey: 'voucher_url', header: 'Comprobante', cell: ({ row }) => row.original.voucher_url ? h('a', { href: row.original.voucher_url, target: '_blank', class: 'text-sm text-primary' }, 'Ver') : '—' },
   { accessorKey: 'status_label', header: 'Estado', cell: ({ row }) => h('div', [
-    h('div', { class: row.original.status === DEPOSIT_STATUS.VALIDATED ? 'font-semibold text-green-700' : 'font-semibold text-red-600' }, row.original.status_label),
-    row.original.deadline_text ? h('div', { class: row.original.deadline_overdue ? 'text-xs font-semibold text-red-600' : 'text-xs text-gray-500' }, row.original.deadline_text) : null
+    h('div', { class: row.original.status === DEPOSIT_STATUS.VALIDATED ? 'font-semibold text-success' : 'font-semibold text-error' }, row.original.status_label),
+    row.original.deadline_text ? h('div', { class: row.original.deadline_overdue ? 'text-xs font-semibold text-error' : 'text-xs text-muted' }, row.original.deadline_text) : null
   ]) },
-  { accessorKey: 'id', header: '', cell: ({ row }) => h(UButton, { size: 'xs', color: 'primary', variant: 'soft', onClick: () => { selected.value = row.original } }, () => 'Ver') }
+  { accessorKey: 'id', header: 'Acciones', cell: ({ row }) => h(UButton, { size: 'xs', color: 'primary', variant: 'soft', onClick: () => { selected.value = row.original } }, () => 'Ver') }
 ]
 
 async function load() {
@@ -144,7 +149,7 @@ async function load() {
     pendingCount.value = response.pending_count || 0
     emit('pending-count', pendingCount.value)
   } catch (error: any) {
-    showError('Depósitos', error?.data?.message || 'No se pudieron cargar los depósitos.')
+    showError('Depósitos', error?.data?.message || error?.message || 'No se pudieron cargar los depósitos.')
   } finally {
     loading.value = false
   }

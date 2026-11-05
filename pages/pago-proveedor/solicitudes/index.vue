@@ -2,9 +2,9 @@
   <div class="md:p-6">
     <header v-if="profile !== SUPPLIER_PAYMENT_PROFILE.WAREHOUSE" class="mb-4 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h1 class="text-xl font-bold text-gray-800">Pago a Proveedor</h1>
-        <p v-if="profile === SUPPLIER_PAYMENT_PROFILE.ADMINISTRATION" class="mt-1 text-sm text-gray-500">Primero se valida el depósito. Después se aprueba el pago y, si es en dólares, se transfiere al proveedor.</p>
-        <p v-else-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" class="mt-1 text-sm text-gray-500">Lo que te toca hacer está en Mis pendientes. El resto del pago lo ves en el detalle, en solo lectura.</p>
+        <h1 class="text-xl font-bold text-highlighted">Pago a Proveedor</h1>
+        <p v-if="profile === SUPPLIER_PAYMENT_PROFILE.ADMINISTRATION" class="mt-1 text-sm text-muted">Primero se valida el depósito. Después se aprueba el pago y, si es en dólares, se transfiere al proveedor.</p>
+        <p v-else-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" class="mt-1 text-sm text-muted">Lo que te toca hacer está en Mis pendientes. El resto del pago lo ves en el detalle, en solo lectura.</p>
       </div>
       <div v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" class="flex gap-2">
         <UButton color="neutral" variant="soft" to="/pago-proveedor/cotizaciones">Cotizaciones</UButton>
@@ -13,22 +13,24 @@
     </header>
     <NuevaCotizacionModal v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" :open="nuevaCotizacion" @close="nuevaCotizacion = false" @accepted="(codigo) => navigateTo({ path: '/pago-proveedor/cotizaciones/nueva', query: { cc: codigo } })" />
     <div v-if="profile === SUPPLIER_PAYMENT_PROFILE.ADMINISTRATION">
-      <div class="mb-4 flex gap-1.5 border-b border-gray-200">
+      <div class="mb-4 flex gap-1.5 border-b border-default">
         <button
           type="button"
           class="border-b-2 px-3.5 py-2 text-sm font-semibold"
-          :class="adminTab === ADMIN_TAB.APPROVAL ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500'"
+          :class="adminTab === ADMIN_TAB.APPROVAL ? 'border-primary text-primary' : 'border-transparent text-muted'"
           @click="adminTab = ADMIN_TAB.APPROVAL"
         >
           Aprobación de pagos
+          <span v-if="adminApprovalCount" class="ml-1 rounded-full bg-primary px-1.5 text-[11px] text-white">{{ adminApprovalCount }}</span>
         </button>
         <button
           type="button"
           class="border-b-2 px-3.5 py-2 text-sm font-semibold"
-          :class="adminTab === ADMIN_TAB.USD ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500'"
+          :class="adminTab === ADMIN_TAB.USD ? 'border-primary text-primary' : 'border-transparent text-muted'"
           @click="adminTab = ADMIN_TAB.USD"
         >
           Pagos en dólares
+          <span v-if="adminExecutionCount" class="ml-1 rounded-full bg-primary px-1.5 text-[11px] text-white">{{ adminExecutionCount }}</span>
         </button>
       </div>
       <SupplierPaymentApprovals v-if="adminTab === ADMIN_TAB.APPROVAL" />
@@ -38,19 +40,19 @@
       <SupplierPaymentYuan />
     </section>
     <template v-else-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES">
-    <div class="mb-4 flex gap-1.5 border-b border-gray-200">
+    <div class="mb-4 flex gap-1.5 border-b border-default">
       <button
         type="button"
         class="border-b-2 px-3.5 py-2 text-sm font-semibold"
-        :class="tab === INBOX_TAB.PENDING ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500'"
+        :class="tab === INBOX_TAB.PENDING ? 'border-primary text-primary' : 'border-transparent text-muted'"
         @click="tab = INBOX_TAB.PENDING"
       >
-        Mis pendientes <span class="ml-1 rounded-full bg-primary-500 px-1.5 text-[11px] text-white">{{ pendingRows.length }}</span>
+        Mis pendientes <span class="ml-1 rounded-full bg-primary px-1.5 text-[11px] text-white">{{ pendingRows.length }}</span>
       </button>
       <button
         type="button"
         class="border-b-2 px-3.5 py-2 text-sm font-semibold"
-        :class="tab === INBOX_TAB.ALL ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500'"
+        :class="tab === INBOX_TAB.ALL ? 'border-primary text-primary' : 'border-transparent text-muted'"
         @click="tab = INBOX_TAB.ALL"
       >
         Todas las solicitudes
@@ -60,61 +62,78 @@
     <div v-if="tab === INBOX_TAB.PENDING" class="space-y-3">
       <div class="flex flex-wrap gap-2">
         <button
-          v-for="chip in visibleChips"
+          v-for="chip in taskChips"
           :key="chip.key"
           type="button"
           class="rounded-full border px-3 py-1 text-xs"
-          :class="taskFilter === chip.key ? 'border-primary-500 bg-primary-50 font-semibold text-gray-900' : 'border-gray-200 bg-white text-gray-700'"
+          :class="taskFilter === chip.key ? 'border-primary bg-primary/10 font-semibold text-highlighted' : 'border-default bg-default text-muted'"
           @click="taskFilter = chip.key"
         >
-          {{ chip.label }} <b class="ml-1 text-primary-600">{{ chip.count }}</b>
+          {{ chip.label }} <b class="ml-1 text-primary">{{ chip.count }}</b>
         </button>
       </div>
       <div v-if="loading" class="space-y-2">
-        <div v-for="row in 4" :key="row" class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-3.5 py-3">
-          <div class="flex-1 space-y-2">
-            <USkeleton class="h-4 w-2/3" />
-            <USkeleton class="h-3 w-1/2" />
+        <UCard v-for="row in 4" :key="row" variant="subtle">
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex-1 space-y-2">
+              <USkeleton class="h-4 w-2/3" />
+              <USkeleton class="h-3 w-1/2" />
+            </div>
+            <USkeleton class="h-8 w-16 rounded-md" />
           </div>
-          <USkeleton class="h-8 w-16 rounded-md" />
-        </div>
+        </UCard>
       </div>
-      <p v-else-if="!visiblePending.length" class="rounded-2xl border border-dashed border-gray-200 bg-white px-4 py-10 text-center text-sm text-gray-500">
+      <UCard v-else-if="!visiblePending.length" variant="subtle" class="border-dashed px-4 py-10 text-center text-sm text-muted">
         No tienes pendientes{{ taskFilter !== SALES_TASK.ALL ? ' en este grupo' : '' }}.
-        <span class="mt-1 block text-gray-400">Cuando un pago necesite datos, un comprobante o una confirmación, aparece aquí.</span>
-      </p>
-      <NuxtLink
+        <span class="mt-1 block text-muted">Cuando un pago necesite datos, un comprobante o una confirmación, aparece aquí.</span>
+      </UCard>
+      <div
         v-for="row in visiblePending"
         :key="`${row.requestId}-${row.provider.id}`"
-        :to="`/pago-proveedor/solicitudes/${row.requestId}`"
-        class="mb-2 block rounded-xl border border-gray-200 border-l-4 bg-white px-4 py-3.5 transition hover:border-primary-300 hover:shadow-sm"
-        :class="row.provider.sales_task === SALES_TASK.OBSERVED ? 'border-l-red-600' : 'border-l-primary-500'"
+        class="mb-2 rounded-xl border border-default border-l-4 bg-default px-4 py-3.5 transition hover:border-primary hover:shadow-sm"
+        :class="row.provider.sales_task === SALES_TASK.OBSERVED ? 'border-l-error' : 'border-l-primary'"
       >
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div class="min-w-0 flex-1">
-            <p class="text-sm font-semibold text-gray-900">{{ taskText(row.provider) }}</p>
-            <p class="mt-1 text-xs text-gray-500">
-              {{ row.clientName || 'Cliente' }} · {{ row.consolidation || 'Sin consolidado' }} · {{ supplierLabel(row.provider) }} · {{ paymentLabel(row.provider) }}
+            <p class="text-sm font-bold text-highlighted">{{ row.clientName || 'Cliente' }}</p>
+            <p class="mt-1 text-sm text-muted">{{ taskText(row.provider) }}</p>
+            <p class="mt-1 text-xs text-muted">
+              {{ row.consolidation || 'Sin consolidado' }} · {{ supplierLabel(row.provider) }} · {{ paymentLabel(row.provider) }}
+              <template v-if="row.provider.second_installment_on"> · Cuota {{ installmentTag(row.provider) }}</template>
+            </p>
+            <p v-if="row.provider.decision_due_text || row.provider.observe_text" class="mt-1 text-xs font-medium text-warning">
+              {{ row.provider.decision_due_text || row.provider.observe_text }}
             </p>
           </div>
-          <span class="whitespace-nowrap rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-600">{{ stageLabel(row.provider.stage) }}</span>
+          <div class="flex shrink-0 flex-col items-end gap-2">
+            <UBadge color="neutral" variant="subtle" size="sm">{{ stageLabel(row.provider.stage) }}</UBadge>
+            <UButton size="xs" color="primary" :to="`/pago-proveedor/solicitudes/${row.requestId}`">Abrir</UButton>
+          </div>
         </div>
         <SupplierPaymentSteps class="mt-3" :current="row.provider.stage" />
-      </NuxtLink>
-      <section v-if="otherAreaRows.length" class="pt-2">
-        <h2 class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">En curso en otras áreas · solo lectura</h2>
+      </div>
+      <details v-if="otherAreaRows.length" class="pt-2" open>
+        <summary class="mb-2 cursor-pointer text-xs font-semibold uppercase tracking-wide text-muted">
+          En curso en otras áreas · solo lectura ({{ otherAreaRows.length }})
+        </summary>
         <div class="space-y-2">
           <NuxtLink
             v-for="row in otherAreaRows"
             :key="`other-${row.provider.id}`"
             :to="`/pago-proveedor/solicitudes/${row.requestId}`"
-            class="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm hover:border-gray-300"
+            class="flex items-center justify-between rounded-xl border border-default bg-default px-4 py-3 text-sm hover:border-primary"
           >
-            <span><strong class="text-gray-800">{{ row.clientName }}</strong> <span class="text-gray-500">· {{ supplierLabel(row.provider) }} · {{ stageLabel(row.provider.stage) }}</span></span>
-            <span class="text-xs font-semibold text-primary-600">Ver</span>
+            <span>
+              <strong class="text-highlighted">{{ row.clientName }}</strong>
+              <span class="text-muted"> · {{ supplierLabel(row.provider) }} · En manos de {{ ownerLabel(row.provider) }}</span>
+            </span>
+            <span class="flex items-center gap-2">
+              <UBadge color="neutral" variant="subtle" size="sm">{{ statusLabel(row.provider.status) }}</UBadge>
+              <span class="text-xs text-muted">{{ stageLabel(row.provider.stage) }}</span>
+            </span>
           </NuxtLink>
         </div>
-      </section>
+      </details>
     </div>
 
     <DataTable
@@ -134,12 +153,16 @@
       :show-primary-search="true"
       :show-primary-search-label="false"
       primary-search-placeholder="Cliente, código de proveedor o N.°"
-      :show-filters="false"
+      :show-filters="true"
+      :filter-config="filtrosConfig"
+      :filters-value="filtros"
       :show-export="false"
       empty-state-message="Todavía no hay solicitudes."
       @update:primary-search="onSearch"
       @page-change="onPage"
       @items-per-page-change="onPageSize"
+      @filter-change="onFilter"
+      @clear-filters="onClearFilters"
     />
     </template>
   </div>
@@ -148,6 +171,7 @@
 <script setup lang="ts">
 import { computed, h, ref, watch } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
+import type { FilterConfig } from '~/types/data-table'
 import type { PagoProveedorPaginacion, PagoProveedorSolicitud, SupplierPaymentProviderRow } from '~/types/pago-proveedor'
 import { PagoProveedorService } from '~/services/pagoProveedorService'
 import {
@@ -187,9 +211,17 @@ const loading = ref(false)
 const search = ref('')
 const tab = ref<typeof INBOX_TAB[keyof typeof INBOX_TAB]>(INBOX_TAB.PENDING)
 const adminTab = ref<typeof ADMIN_TAB[keyof typeof ADMIN_TAB]>(ADMIN_TAB.APPROVAL)
+const adminApprovalCount = ref(0)
+const adminExecutionCount = ref(0)
 const taskFilter = ref<typeof SALES_TASK[keyof typeof SALES_TASK]>(SALES_TASK.ALL)
 const nuevaCotizacion = ref(false)
 const pagination = ref<PagoProveedorPaginacion>({ current_page: 1, last_page: 1, per_page: 15, total: 0 })
+const filtros = ref<Record<string, string>>({
+  consolidado: 'todos',
+  tipo_pago: 'todos',
+  etapa: 'todos',
+  estado: 'todos'
+})
 
 const lines = computed<RequestLine[]>(() => requests.value.flatMap((request) => (request.providers || []).map((provider) => ({
   requestId: request.id,
@@ -200,22 +232,101 @@ const lines = computed<RequestLine[]>(() => requests.value.flatMap((request) => 
   provider
 }))))
 
+function isCuota2Task(provider: SupplierPaymentProviderRow) {
+  if (provider.sales_task !== SALES_TASK.CONFIRMATION) return false
+  if (provider.second_installment_on) return true
+  if (provider.payment_shape === PAYMENT_SHAPE.CLIENT_INSTALLMENTS && provider.stage === REQUEST_STAGE.CONFIRMATION) return true
+  if (provider.payment_shape === PAYMENT_SHAPE.SUPPLIER_INSTALLMENTS && !provider.second_payment_choice) return true
+  return false
+}
+
 const pendingRows = computed(() => lines.value.filter((line) => line.provider.sales_task))
 const otherAreaRows = computed(() => lines.value.filter((line) => !line.provider.sales_task && line.provider.status !== PROVIDER_STATUS.CANCELLED))
-const visiblePending = computed(() => pendingRows.value.filter((line) => taskFilter.value === SALES_TASK.ALL || line.provider.sales_task === taskFilter.value))
+const visiblePending = computed(() => pendingRows.value.filter((line) => {
+  if (taskFilter.value === SALES_TASK.ALL) return true
+  if (taskFilter.value === SALES_TASK.INSTALLMENT_2) return isCuota2Task(line.provider)
+  if (taskFilter.value === SALES_TASK.CONFIRMATION) {
+    return line.provider.sales_task === SALES_TASK.CONFIRMATION && !isCuota2Task(line.provider)
+  }
+  return line.provider.sales_task === taskFilter.value
+}))
 const allRows = computed(() => lines.value)
+const consolidadosDisponibles = computed(() => [...new Set(
+  lines.value.map((line) => line.consolidation).filter((value): value is string => !!value && value.trim() !== '')
+)].sort())
 
 const taskChips = computed(() => [
   { key: SALES_TASK.ALL, label: 'Todos', count: pendingRows.value.length },
   { key: SALES_TASK.PROVIDER_DATA, label: 'Datos del proveedor', count: pendingRows.value.filter((line) => line.provider.sales_task === SALES_TASK.PROVIDER_DATA).length },
   { key: SALES_TASK.RECEIPT, label: 'Registro de comprobante', count: pendingRows.value.filter((line) => line.provider.sales_task === SALES_TASK.RECEIPT).length },
   { key: SALES_TASK.OBSERVED, label: 'Observado', count: pendingRows.value.filter((line) => line.provider.sales_task === SALES_TASK.OBSERVED).length },
-  { key: SALES_TASK.CONFIRMATION, label: 'Confirmación', count: pendingRows.value.filter((line) => line.provider.sales_task === SALES_TASK.CONFIRMATION).length }
+  { key: SALES_TASK.CONFIRMATION, label: 'Confirmación final', count: pendingRows.value.filter((line) => line.provider.sales_task === SALES_TASK.CONFIRMATION && !isCuota2Task(line.provider)).length },
+  { key: SALES_TASK.INSTALLMENT_2, label: 'Cuota 2', count: pendingRows.value.filter((line) => isCuota2Task(line.provider)).length }
 ])
-const visibleChips = computed(() => taskChips.value.filter((chip) => chip.key === SALES_TASK.ALL || chip.count > 0 || chip.key === taskFilter.value))
+
+const filtrosConfig = computed<FilterConfig[]>(() => [
+  {
+    key: 'consolidado',
+    label: 'Consolidado',
+    placeholder: 'Consolidado',
+    options: [
+      { label: 'Todos', value: 'todos' },
+      ...consolidadosDisponibles.value.map((item) => ({ label: item, value: item }))
+    ]
+  },
+  {
+    key: 'tipo_pago',
+    label: 'Tipo de pago',
+    placeholder: 'Tipo de pago',
+    options: [
+      { label: 'Todos', value: 'todos' },
+      { label: 'RMB / Transferencia', value: 'RMB' },
+      { label: 'USD / T-T', value: 'USD' }
+    ]
+  },
+  {
+    key: 'etapa',
+    label: 'Etapa',
+    placeholder: 'Etapa',
+    options: [
+      { label: 'Todas', value: 'todos' },
+      { label: '1. Solicitud y datos', value: String(REQUEST_STAGE.DATA) },
+      { label: '2. Validación', value: String(REQUEST_STAGE.VALIDATION) },
+      { label: '3. Ejecución', value: String(REQUEST_STAGE.EXECUTION) },
+      { label: '4. Confirmación', value: String(REQUEST_STAGE.CONFIRMATION) }
+    ]
+  },
+  {
+    key: 'estado',
+    label: 'Estado',
+    placeholder: 'Estado',
+    options: [
+      { label: 'Todos', value: 'todos' },
+      { label: 'En proceso', value: PROVIDER_STATUS.IN_PROGRESS },
+      { label: 'Observado', value: PROVIDER_STATUS.OBSERVED },
+      { label: 'Anulado', value: PROVIDER_STATUS.CANCELLED },
+      { label: 'Completado', value: PROVIDER_STATUS.COMPLETED }
+    ]
+  }
+])
 
 function supplierLabel(provider: SupplierPaymentProviderRow) {
   return provider.supplier_name ? `${provider.supplier_code} · ${provider.supplier_name}` : (provider.supplier_code || 'Sin código')
+}
+
+function ownerLabel(provider: SupplierPaymentProviderRow) {
+  if (provider.owner === REQUEST_OWNER.SALES) return 'Ventas'
+  if (provider.stage === REQUEST_STAGE.VALIDATION) return 'Administración'
+  if (provider.stage === REQUEST_STAGE.EXECUTION && provider.currency === SUPPLIER_CURRENCY.RMB) return 'Operaciones China'
+  if (provider.stage === REQUEST_STAGE.EXECUTION) return 'Administración'
+  return 'otra área'
+}
+
+function installmentTag(provider: SupplierPaymentProviderRow) {
+  if (provider.payment_shape !== PAYMENT_SHAPE.CLIENT_INSTALLMENTS && provider.payment_shape !== PAYMENT_SHAPE.SUPPLIER_INSTALLMENTS) {
+    return ''
+  }
+  return provider.second_installment_on ? '2/2' : '1/2'
 }
 
 function paymentLabel(provider: SupplierPaymentProviderRow) {
@@ -285,7 +396,7 @@ function taskText(provider: SupplierPaymentProviderRow) {
 }
 
 const columns: TableColumn<RequestLine>[] = [
-  { accessorKey: 'orderNumber', header: 'N.°' },
+  { accessorKey: 'orderNumber', header: 'N.° de orden' },
   { accessorKey: 'createdAt', header: 'Fecha', cell: ({ row }) => row.original.createdAt ? new Date(row.original.createdAt).toLocaleDateString('es-PE') : '—' },
   { accessorKey: 'consolidation', header: 'Consolidado' },
   { accessorKey: 'clientName', header: 'Cliente' },
@@ -298,7 +409,7 @@ const columns: TableColumn<RequestLine>[] = [
   { accessorKey: 'owner', header: 'Responsable', cell: ({ row }) => row.original.provider.owner === REQUEST_OWNER.SALES ? 'Ventas' : 'Otra área' },
   {
     accessorKey: 'actions',
-    header: '',
+    header: 'Acciones',
     cell: ({ row }) => h(UButton, {
       size: 'xs',
       color: 'primary',
@@ -314,6 +425,10 @@ async function loadRequests() {
   try {
     const response = await PagoProveedorService.listarSolicitudes({
       search: search.value,
+      consolidado: filtros.value.consolidado,
+      tipo_pago: filtros.value.tipo_pago,
+      etapa: filtros.value.etapa,
+      estado: filtros.value.estado,
       page: pagination.value.current_page,
       per_page: pagination.value.per_page
     })
@@ -343,7 +458,38 @@ function onPageSize(size: number) {
   loadRequests()
 }
 
+function onFilter(clave: string, valor: unknown) {
+  const normalizado = valor && typeof valor === 'object' && 'value' in (valor as Record<string, unknown>)
+    ? (valor as Record<string, unknown>).value
+    : valor
+  const texto = normalizado === null || normalizado === undefined ? '' : String(normalizado)
+  filtros.value = { ...filtros.value, [clave]: texto || 'todos' }
+  pagination.value.current_page = 1
+  loadRequests()
+}
+
+function onClearFilters() {
+  filtros.value = { consolidado: 'todos', tipo_pago: 'todos', etapa: 'todos', estado: 'todos' }
+  pagination.value.current_page = 1
+  loadRequests()
+}
+
+async function loadAdminCounts() {
+  try {
+    const [approvals, executions] = await Promise.all([
+      PagoProveedorService.listApprovals({ bucket: 'pending', per_page: 1 }),
+      PagoProveedorService.listExecutions({ bucket: 'pending', per_page: 1 })
+    ])
+    adminApprovalCount.value = Number(approvals.pending_count || 0)
+    adminExecutionCount.value = Number(executions.pending_count || 0)
+  } catch {
+    adminApprovalCount.value = 0
+    adminExecutionCount.value = 0
+  }
+}
+
 watch(profile, (value) => {
   if (value === SUPPLIER_PAYMENT_PROFILE.SALES) loadRequests()
+  if (value === SUPPLIER_PAYMENT_PROFILE.ADMINISTRATION) void loadAdminCounts()
 }, { immediate: true })
 </script>

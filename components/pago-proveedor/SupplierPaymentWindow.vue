@@ -3,16 +3,17 @@
     :open="open"
     :title="title"
     :description="subtitle || undefined"
+    :dismissible="false"
     :ui="{
       content: contentClass,
       header: 'border-t-[5px] border-t-primary-500',
-      title: 'text-lg font-bold text-gray-900',
-      description: 'text-sm text-gray-500'
+      title: 'text-lg font-bold text-highlighted',
+      description: 'text-sm text-muted'
     }"
     @update:open="onOpen"
   >
     <template v-if="code || $slots.pill" #actions>
-      <span v-if="code" class="rounded-lg bg-gray-100 px-2.5 py-1 font-mono text-sm font-bold text-gray-800">{{ code }}</span>
+      <UBadge v-if="code" color="neutral" variant="subtle" class="font-mono text-sm font-bold">{{ code }}</UBadge>
       <slot name="pill" />
     </template>
     <template #body>
@@ -22,7 +23,7 @@
     </template>
     <template v-if="$slots.footer || hint" #footer>
       <div class="flex w-full flex-wrap items-center justify-end gap-2">
-        <p v-if="hint" class="mr-auto max-w-md text-xs leading-snug text-gray-500">{{ hint }}</p>
+        <p v-if="hint" class="mr-auto max-w-md text-xs leading-snug text-muted">{{ hint }}</p>
         <slot name="footer" />
       </div>
     </template>

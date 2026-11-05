@@ -1,32 +1,25 @@
 <template>
   <div>
-    <div class="mb-3 flex gap-1.5 border-b border-gray-200">
-      <button
-        type="button"
-        class="border-b-2 px-3.5 py-2 text-sm font-semibold"
-        :class="bucket === EXECUTION_BUCKET.PENDING ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500'"
-        @click="changeBucket(EXECUTION_BUCKET.PENDING)"
-      >
-        En proceso <span v-if="pendingCount" class="ml-1 rounded-full bg-primary-500 px-1.5 text-[11px] text-white">{{ pendingCount }}</span>
-      </button>
-      <button
-        type="button"
-        class="border-b-2 px-3.5 py-2 text-sm font-semibold"
-        :class="bucket === EXECUTION_BUCKET.PAID ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500'"
-        @click="changeBucket(EXECUTION_BUCKET.PAID)"
-      >
-        Pagados
-      </button>
-    </div>
+    <UTabs
+      :model-value="bucket"
+      :items="executionTabs"
+      color="neutral"
+      size="sm"
+      variant="pill"
+      class="mb-3 w-fit"
+      @update:model-value="(value) => changeBucket(String(value) as typeof EXECUTION_BUCKET[keyof typeof EXECUTION_BUCKET])"
+    />
 
-    <div v-if="bucket === EXECUTION_BUCKET.PAID" class="mb-3 grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
-      <article v-for="card in cards" :key="card.label" class="rounded-2xl border border-gray-200 bg-white px-4 py-4">
-        <p class="text-[11px] font-bold uppercase tracking-wider text-gray-500">{{ card.label }}</p>
-        <p class="mt-1 text-xl font-bold" :class="card.className">{{ card.value }}</p>
-      </article>
+    <div v-if="bucket === EXECUTION_BUCKET.PAID" class="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+      <UCard v-for="card in cards" :key="card.label" variant="subtle">
+        <p class="text-[11px] font-bold uppercase tracking-wider text-muted">{{ card.label }}</p>
+        <p class="mt-1 text-xl font-bold text-highlighted" :class="card.className">{{ card.value }}</p>
+        <p v-if="card.hint" class="mt-1 text-[11px] text-muted">{{ card.hint }}</p>
+      </UCard>
     </div>
 
     <DataTable
+      sticky-last-column
       title="Pagos en dólares"
       subtitle="Listos para transferir al proveedor."
       icon="i-heroicons-banknotes"
@@ -41,7 +34,7 @@
       :show-primary-search="true"
       :show-primary-search-label="false"
       primary-search-placeholder="Cliente, proveedor, consolidado o código"
-      :show-filters="bucket === EXECUTION_BUCKET.PAID"
+      :show-filters="true"
       :filter-config="filterConfig"
       :filters-value="filters"
       :show-export="false"
@@ -51,6 +44,11 @@
       @page-change="onPage"
       @items-per-page-change="onPageSize"
     />
+    <p class="mt-2 text-xs text-muted">
+      {{ bucket === EXECUTION_BUCKET.PENDING
+        ? 'En proceso: listos para transferir al proveedor cuando los datos y la aprobación estén OK.'
+        : 'Pagados: resumen de comisiones y ganancia según el rango de fechas.' }}
+    </p>
 
     <UsdExecutionModal :payment="selected" @close="selected = null" @saved="load" />
   </div>
@@ -74,7 +72,7 @@ const search = ref('')
 const pendingCount = ref(0)
 const bucket = ref<typeof EXECUTION_BUCKET[keyof typeof EXECUTION_BUCKET]>(EXECUTION_BUCKET.PENDING)
 const pagination = ref<PagoProveedorPaginacion>({ current_page: 1, last_page: 1, per_page: 15, total: 0 })
-const filters = ref({ paid_from: '', paid_to: '' })
+const filters = ref({ paid_from: '', paid_to: '', consolidado: 'todos', estado: 'todos', banco: 'todos' })
 const totals = ref<SupplierPaymentExecutionTotals>({
   count: 0,
   cargo: 0,
@@ -85,10 +83,52 @@ const totals = ref<SupplierPaymentExecutionTotals>({
   profit: 0
 })
 
-const filterConfig = [
-  { key: 'paid_from', label: 'Ejecutado desde', type: 'date' },
-  { key: 'paid_to', label: 'Ejecutado hasta', type: 'date' }
-]
+const filterConfig = computed(() => {
+  const base = [
+    {
+      key: 'consolidado',
+      label: 'Consolidado',
+      type: 'select',
+      placeholder: 'Consolidado',
+      options: [
+        { value: 'todos', label: 'Todos' },
+        ...[...new Set(rows.value.map((row) => row.consolidation).filter((value): value is string => !!value))].sort()
+          .map((item) => ({ value: item, label: item }))
+      ]
+    },
+    {
+      key: 'banco',
+      label: 'Banco',
+      type: 'select',
+      placeholder: 'Banco',
+      options: [
+        { value: 'todos', label: 'Todos' },
+        { value: 'bcp', label: 'BCP' },
+        { value: 'interbank', label: 'Interbank' }
+      ]
+    }
+  ]
+  if (bucket.value === EXECUTION_BUCKET.PENDING) {
+    return [
+      ...base,
+      {
+        key: 'estado',
+        label: 'Estado',
+        type: 'select',
+        placeholder: 'Estado',
+        options: [
+          { value: 'todos', label: 'Todos' },
+          { value: 'pendiente', label: 'Pendiente' }
+        ]
+      }
+    ]
+  }
+  return [
+    ...base,
+    { key: 'paid_from', label: 'Pagado el (desde)', type: 'date', placeholder: 'Desde', options: [] },
+    { key: 'paid_to', label: 'Pagado el (hasta)', type: 'date', placeholder: 'Hasta', options: [] }
+  ]
+})
 
 function money(value: number) {
   const sign = value > 0.004 ? '+' : ''
@@ -96,19 +136,25 @@ function money(value: number) {
 }
 
 const cards = computed(() => [
-  { label: 'Pagos realizados', value: String(totals.value.count), className: '' },
-  { label: 'Pagado a proveedores', value: money(totals.value.cargo).replace('+', ''), className: '' },
-  { label: 'Comisión cobrada', value: money(totals.value.charged_bank_fee).replace('+', ''), className: '' },
-  { label: 'Comisión real', value: money(totals.value.real_bank_fee).replace('+', ''), className: '' },
-  { label: 'Diferencia bancaria', value: money(totals.value.bank_difference), className: tone(totals.value.bank_difference) },
-  { label: 'Ganancia', value: money(totals.value.profit), className: tone(totals.value.profit) }
+  { label: 'Pagos realizados', value: String(totals.value.count), hint: 'En el rango filtrado', className: '' },
+  { label: 'Pagado a proveedores', value: money(totals.value.cargo).replace('+', ''), hint: 'Suma del valor de carga ejecutado', className: '' },
+  { label: 'Comisión bancaria cobrada', value: money(totals.value.charged_bank_fee).replace('+', ''), hint: 'Lo cobrado al cliente', className: '' },
+  { label: 'Comisión bancaria ejecutada', value: money(totals.value.real_bank_fee).replace('+', ''), hint: 'Costo real del banco', className: '' },
+  { label: 'Diferencia bancaria', value: money(totals.value.bank_difference), hint: 'Cobrada − real', className: tone(totals.value.bank_difference) },
+  { label: 'Comisión administrativa', value: money(totals.value.admin_fee).replace('+', ''), hint: 'Tarifa administrativa cobrada', className: '' },
+  { label: 'Ganancia total de Pro Business', value: money(totals.value.profit), hint: 'Diferencia bancaria + administrativa', className: tone(totals.value.profit) }
 ])
 
 function tone(value: number) {
-  if (value > 0.004) return 'text-green-700'
-  if (value < -0.004) return 'text-red-600'
+  if (value > 0.004) return 'text-success'
+  if (value < -0.004) return 'text-error'
   return ''
 }
+
+const executionTabs = computed(() => [
+  { label: pendingCount.value ? `En proceso (${pendingCount.value})` : 'En proceso', value: EXECUTION_BUCKET.PENDING },
+  { label: 'Pagados', value: EXECUTION_BUCKET.PAID }
+])
 
 const columns = computed<TableColumn<SupplierPaymentExecution>[]>(() => [
   { accessorKey: 'order_number', header: 'N.° de orden' },
@@ -116,18 +162,40 @@ const columns = computed<TableColumn<SupplierPaymentExecution>[]>(() => [
   { accessorKey: 'consolidation', header: 'Consolidado' },
   { accessorKey: 'supplier_code', header: 'Proveedor', cell: ({ row }) => h('div', [
     h('div', { class: 'font-semibold' }, row.original.supplier_code || '—'),
-    h('div', { class: 'text-xs text-gray-500' }, row.original.supplier_name || '')
+    h('div', { class: 'text-xs text-muted' }, row.original.supplier_name || '')
   ]) },
-  { accessorKey: 'request_code', header: 'Código', cell: ({ row }) => row.original.request_code || '—' },
-  { accessorKey: 'cargo_amount', header: 'Importe al proveedor', cell: ({ row }) => `$${Number(row.original.cargo_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}` },
-  { accessorKey: 'charged_bank_fee', header: 'Comisión bancaria', cell: ({ row }) => `$${Number(row.original.charged_bank_fee).toLocaleString('en-US', { minimumFractionDigits: 2 })}` },
-  { accessorKey: 'charged_admin_fee', header: 'Administrativa', cell: ({ row }) => `$${Number(row.original.charged_admin_fee).toLocaleString('en-US', { minimumFractionDigits: 2 })}` },
-  { accessorKey: 'profit', header: 'Ganancia', cell: ({ row }) => row.original.profit === null ? '—' : money(row.original.profit) },
-  { accessorKey: 'status_label', header: 'Estado', cell: ({ row }) => h('div', [
-    h('div', { class: row.original.status === EXECUTION_STATUS.PAID ? 'font-semibold text-green-700' : 'font-semibold text-red-600' }, row.original.status_label),
-    h('div', { class: 'text-xs text-gray-500' }, row.original.observation)
-  ]) },
-  { accessorKey: 'provider_id', header: '', cell: ({ row }) => h(UButton, { size: 'xs', color: 'primary', variant: 'soft', onClick: () => { selected.value = row.original } }, () => 'Ver') }
+  { accessorKey: 'request_code', header: 'Código de solicitud', cell: ({ row }) => row.original.request_code || '—' },
+  {
+    accessorKey: 'payment_type',
+    header: 'Tipo de pago',
+    cell: ({ row }) => h('div', [
+      h('div', row.original.currency === 'RMB' ? 'RMB / Transferencia' : 'USD / T-T'),
+      row.original.installment_label
+        ? h('div', { class: 'text-[11px] text-muted' }, row.original.installment_label)
+        : null
+    ])
+  },
+  {
+    accessorKey: 'cargo_amount',
+    header: bucket.value === EXECUTION_BUCKET.PAID ? 'Importe pagado al proveedor' : 'Importe a pagar al proveedor',
+    cell: ({ row }) => `$${Number(row.original.cargo_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+  },
+  { accessorKey: 'status_label', header: 'Estado', cell: ({ row }) => h('span', { class: row.original.status === EXECUTION_STATUS.PAID ? 'font-semibold text-success' : 'font-semibold text-error' }, row.original.status_label) },
+  ...(bucket.value === EXECUTION_BUCKET.PENDING
+    ? [
+        { accessorKey: 'observation', header: 'Observaciones', cell: ({ row }: { row: { original: SupplierPaymentExecution } }) => row.original.observation || '—' }
+      ]
+    : [
+        {
+          accessorKey: 'executed_on',
+          header: 'Pagado el',
+          cell: ({ row }: { row: { original: SupplierPaymentExecution } }) => row.original.executed_on
+            ? new Date(row.original.executed_on).toLocaleDateString('es-PE')
+            : '—'
+        },
+        { accessorKey: 'profit', header: 'Ganancia', cell: ({ row }: { row: { original: SupplierPaymentExecution } }) => row.original.profit === null ? '—' : money(row.original.profit) }
+      ]) as TableColumn<SupplierPaymentExecution>[],
+  { accessorKey: 'provider_id', header: 'Acciones', cell: ({ row }) => h(UButton, { size: 'xs', color: 'primary', variant: 'soft', onClick: () => { selected.value = row.original } }, () => 'Ver') }
 ])
 
 async function load() {
@@ -138,6 +206,8 @@ async function load() {
       search: search.value,
       paid_from: filters.value.paid_from,
       paid_to: filters.value.paid_to,
+      banco: filters.value.banco,
+      consolidado: filters.value.consolidado,
       page: pagination.value.current_page,
       per_page: pagination.value.per_page
     })
@@ -146,7 +216,7 @@ async function load() {
     pendingCount.value = response.pending_count || 0
     if (response.totals) totals.value = response.totals
   } catch (error: any) {
-    showError('Pagos en dólares', error?.data?.message || 'No se pudieron cargar los pagos.')
+    showError('Pagos en dólares', error?.data?.message || error?.message || 'No se pudieron cargar los pagos.')
   } finally {
     loading.value = false
   }

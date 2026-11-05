@@ -1,21 +1,55 @@
 <template>
-  <ol class="flex gap-1" :aria-label="`Etapa ${current} de 4`">
+  <ol class="flex gap-1.5" :aria-label="`Etapa ${current} de ${steps.length}`">
     <li
       v-for="step in steps"
       :key="step.n"
       class="min-w-0 flex-1"
     >
-      <span class="block h-1.5 rounded-full" :class="barClass(step.n)" />
-      <span v-if="labeled" class="mt-1 block truncate text-[11px]" :class="step.n === current ? 'font-semibold text-primary-700' : 'text-gray-400'">{{ step.label }}</span>
+      <UCard
+        :as="navigable ? 'button' : 'div'"
+        :type="navigable ? 'button' : undefined"
+        class="w-full text-left"
+        :class="navigable ? 'cursor-pointer' : 'cursor-default'"
+        :color="stepColor(step.n)"
+        :variant="stepVariant(step.n)"
+        :ui="cardUi"
+        @click="navigable && emit('select', step.n)"
+      >
+        <span
+          v-if="labeled"
+          class="block truncate text-[11px]"
+          :class="step.n === active ? 'font-semibold' : ''"
+        >
+          {{ step.label }}
+        </span>
+      </UCard>
     </li>
   </ol>
+  <UButton
+    v-if="navigable && viewing != null && viewing !== current"
+    class="mt-2"
+    size="xs"
+    color="primary"
+    variant="link"
+    @click="emit('select', current)"
+  >
+    Volver al paso actual
+  </UButton>
 </template>
 
 <script setup lang="ts">
 const props = withDefaults(defineProps<{
   current: number
   labeled?: boolean
-}>(), { labeled: false })
+  navigable?: boolean
+  viewing?: number | null
+}>(), {
+  labeled: false,
+  navigable: false,
+  viewing: null
+})
+
+const emit = defineEmits<{ select: [step: number] }>()
 
 const steps = [
   { n: 1, label: 'Datos' },
@@ -24,9 +58,21 @@ const steps = [
   { n: 4, label: 'Confirmación' }
 ]
 
-function barClass(step: number) {
-  if (step < props.current) return 'bg-primary-500'
-  if (step === props.current) return 'bg-primary-400'
-  return 'bg-gray-200'
+const active = computed(() => props.viewing ?? props.current)
+
+const cardUi = computed(() => props.labeled
+  ? { body: 'px-2 py-1.5 sm:px-2 sm:py-1.5' }
+  : { body: 'h-1.5 p-0 sm:p-0' }
+)
+
+function stepColor(step: number) {
+  if (step === active.value) return 'warning'
+  if (step <= props.current) return 'primary'
+  return 'neutral'
+}
+
+function stepVariant(step: number) {
+  if (step === active.value || step < props.current) return 'solid'
+  return 'subtle'
 }
 </script>
