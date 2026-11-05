@@ -267,22 +267,20 @@
       </UCard>
 
       <UCard v-if="mostrarResumen">
-        <div class="flex flex-wrap items-end justify-between gap-2">
-          <div>
-            <h2 class="text-lg font-semibold">DETALLE POR PROVEEDOR</h2>
-            <p class="mt-1 text-sm text-muted">Se actualiza con el valor de carga y las comisiones marcadas.</p>
-          </div>
-          <p class="text-xs text-muted"><span class="mr-1 inline-block h-2.5 w-2.5 rounded-sm bg-orange-500" />Los importes en naranja suman el total a pagar ahora.</p>
-        </div>
-        <UCard v-if="hayYuanes" class="mt-4" variant="subtle">
-          <div class="flex flex-wrap items-end justify-between gap-3">
-            <p class="text-sm text-muted">
+        <h2 class="font-semibold">Resumen de pago por proveedor</h2>
+        <p class="mt-1 text-sm text-muted">Se genera automáticamente al completar los datos y marcar las comisiones a aplicar.</p>
+
+        <div v-if="hayYuanes" class="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 dark:border-amber-800 dark:bg-amber-950/40">
+          <div class="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+            <p>
               USD — Consultar con el Banco de China
-              <a href="https://www.bankofchina.com/sourcedb/whpj/enindex_1619.html" target="_blank" rel="noopener" class="font-semibold text-primary">Ver tipo de cambio ↗</a>
+              <a href="https://www.bankofchina.com/sourcedb/whpj/enindex_1619.html" target="_blank" rel="noopener" class="font-semibold text-blue-600 dark:text-blue-400">Ver tipo de cambio ↗</a>
             </p>
-            <UFormField label="1 USD = RMB (CNY)" class="w-40">
-              <UInput v-model.number="tipoCambio" :disabled="!editable" type="number" min="0" step="0.01" placeholder="6.70" class="w-full" @update:model-value="alCambiarTc" />
-            </UFormField>
+            <div class="flex items-center gap-2">
+              <label for="tipo-cambio-resumen">1 USD =</label>
+              <UInput id="tipo-cambio-resumen" v-model.number="tipoCambio" :disabled="!editable" type="number" min="0" step="0.01" placeholder="6.70" class="w-24" @update:model-value="alCambiarTc" />
+              <span>RMB (CNY)</span>
+            </div>
           </div>
           <div v-if="pideConfirmacionTc" class="mt-3 rounded-lg border px-3 py-2 text-sm" :class="tcConfirmadoSesion ? 'border-success/40 bg-success/10 text-success' : 'border-warning/40 bg-warning/10 text-warning'">
             <p class="text-xs text-muted">
@@ -303,74 +301,93 @@
               </UButton>
             </div>
           </div>
-        </UCard>
-        <div class="mt-4 space-y-3">
-          <UCard v-for="(proveedor, indice) in proveedoresConValor" :key="`resumen-${proveedor.id || indice}`" variant="subtle">
-            <div class="flex flex-wrap items-start justify-between gap-2">
-              <div>
-                <p class="font-semibold">Proveedor {{ indice + 1 }}: {{ proveedor.code_supplier || 'Sin código' }}</p>
-                <p class="text-sm text-muted">{{ [proveedor.nombre_proveedor, proveedor.producto, etiquetaPago(proveedor), etiquetaModalidad(proveedor)].filter(Boolean).join(' · ') }}</p>
-              </div>
-              <div v-if="calculoVista(proveedor)" class="text-right">
-                <p class="text-xs text-muted">{{ calculoVista(proveedor)!.cuotas.length > 1 ? 'Total del proveedor (2 cuotas)' : 'Total del proveedor' }}</p>
-                <p class="text-lg font-bold">${{ dinero(calculoVista(proveedor)!.total) }}</p>
-              </div>
-            </div>
-            <div v-if="(calculoVista(proveedor)?.cuotas.length || 0) > 1" class="mt-3 grid gap-3 md:grid-cols-2">
-              <UCard
-                v-for="cuota in calculoVista(proveedor)!.cuotas"
-                :key="cuota.numero"
-                class="text-sm"
-                :color="cuota.numero === 1 ? 'warning' : 'neutral'"
-                variant="subtle"
-              >
-                <p class="font-semibold">Cobro {{ cuota.numero }} ({{ cuota.porcentaje }}%) <UBadge :color="cuota.numero === 1 ? 'warning' : 'neutral'" variant="soft" size="sm">{{ cuota.numero === 1 ? 'Ahora' : (proveedor.fecha_cuota_2 ? `Fecha aprox. ${fechaCorta(proveedor.fecha_cuota_2)}` : 'Fecha por definir') }}</UBadge></p>
-                <p class="mt-2 flex justify-between"><span>Valor de carga</span><span>{{ etiquetaValorCarga(proveedor, cuota.carga, cuota.porcentaje) }}</span></p>
-                <p v-if="proveedor.comision_bancaria" class="flex justify-between"><span>Comisión bancaria / plataforma</span><span>{{ cuota.numero === 1 && calculoVista(proveedor)!.etiqueta_bancaria ? calculoVista(proveedor)!.etiqueta_bancaria : `$${dinero(cuota.bancaria)}` }}</span></p>
-                <p v-if="proveedor.comision_administrativa" class="flex justify-between"><span>Comisión administrativa</span><span>${{ dinero(cuota.administrativa) }}</span></p>
-                <p class="mt-2 flex justify-between font-bold" :class="cuota.numero === 1 ? 'text-warning' : ''"><span>Total cobro {{ cuota.numero }}</span><span>${{ dinero(cuota.total) }}</span></p>
-              </UCard>
-            </div>
-            <UCard v-else-if="calculoVista(proveedor)" class="mt-3 text-sm" color="warning" variant="subtle">
-              <p class="font-semibold">Cobro único <UBadge color="warning" variant="soft" size="sm">Ahora</UBadge></p>
-              <p class="mt-2 flex justify-between"><span>Valor de carga</span><span>{{ etiquetaValorCarga(proveedor, calculoVista(proveedor)!.valor_carga_usd) }}</span></p>
-              <p v-if="proveedor.comision_bancaria" class="flex justify-between"><span>Comisión bancaria / plataforma</span><span>{{ calculoVista(proveedor)!.etiqueta_bancaria || `$${dinero(calculoVista(proveedor)!.bancaria)}` }}</span></p>
-              <p v-if="proveedor.comision_administrativa" class="flex justify-between"><span>Comisión administrativa</span><span>${{ dinero(calculoVista(proveedor)!.administrativa) }}</span></p>
-              <p class="mt-2 flex justify-between font-bold text-warning"><span>Total a pagar ahora</span><span>${{ dinero(calculoVista(proveedor)!.total_ahora) }}</span></p>
-            </UCard>
-          </UCard>
         </div>
-        <UCard class="mt-4" color="warning" variant="subtle">
-          <div class="flex items-center justify-between">
-            <span class="font-semibold">Total a pagar ahora</span>
-            <span class="text-2xl font-bold text-warning">${{ dinero(totalAhoraVista) }}</span>
-          </div>
-        </UCard>
-        <p v-if="totalCotizacionVista !== totalAhoraVista" class="text-right text-sm text-muted">Total de la cotización con la cuota 2: ${{ dinero(totalCotizacionVista) }}</p>
-        <div class="mt-4 flex flex-wrap gap-2">
-          <UButton type="button" color="neutral" variant="outline" icon="i-lucide-message-circle" :loading="enviando" :disabled="!cotizacion.id || !cotizacion.puede_enviar" @click="prepararWhatsapp">Vista previa WhatsApp</UButton>
-          <UButton type="button" color="neutral" variant="outline" icon="i-lucide-file-down" :loading="generandoPdf" :disabled="!cotizacion.id || !(cotizacion.puede_descargar_pdf || cotizacion.puede_enviar)" @click="descargarPdf">Descargar PDF</UButton>
-        </div>
-        <UCard v-if="vistaPrevia" class="mt-4" variant="subtle">
-          <p class="text-sm font-semibold">Vista previa de WhatsApp</p>
-          <p v-if="vistaPrevia.destinatario" class="mt-1 text-xs text-muted">Destino: {{ vistaPrevia.destinatario }}</p>
-          <pre class="mt-2 whitespace-pre-wrap text-sm">{{ vistaPrevia.texto }}</pre>
-          <p class="mt-2 text-sm text-muted">{{ vistaPrevia.nota }}</p>
-          <div class="mt-3 flex flex-wrap gap-2">
-            <UButton type="button" color="success" icon="i-lucide-send" :loading="enviandoReal" :disabled="!vistaPrevia.puede_enviar" @click="enviarWhatsapp">Enviar por WhatsApp</UButton>
-          </div>
-        </UCard>
-      </UCard>
 
-      <UCard v-if="cotizacion.historial?.length">
-        <h2 class="font-semibold">Historial</h2>
-        <ul class="mt-3 space-y-2 text-sm">
-          <li v-for="(evento, i) in cotizacion.historial" :key="i">
-            <span class="text-muted">{{ formatearFecha(evento.fecha) }}</span>
-            · {{ evento.usuario }} · {{ evento.accion }}
-            <span v-if="evento.detalle"> — {{ evento.detalle }}</span>
-          </li>
-        </ul>
+        <div class="mt-4 flex flex-wrap items-center justify-between gap-2 border-b border-default pb-2">
+          <h3 class="flex items-center gap-2 font-bold uppercase tracking-wide">
+            <UIcon name="i-lucide-package" class="size-5" />
+            Detalle por proveedor
+          </h3>
+          <p class="flex items-center gap-1.5 text-xs text-muted"><span class="inline-block size-2.5 rounded-sm bg-orange-500" />Los importes en naranja suman el total a pagar ahora.</p>
+        </div>
+
+        <div class="mt-3 space-y-3">
+          <div v-for="(proveedor, indice) in proveedoresConValor" :key="`resumen-${proveedor.id || indice}`" class="rounded-xl border border-default p-4">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div class="flex min-w-0 items-start gap-3">
+                <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-inverted text-sm font-bold text-inverted">{{ indice + 1 }}</span>
+                <div class="min-w-0">
+                  <p class="font-bold">Proveedor {{ indice + 1 }}: {{ proveedor.code_supplier || 'Sin código' }}</p>
+                  <p class="text-xs text-muted">{{ [proveedor.nombre_proveedor, proveedor.producto, etiquetaPago(proveedor), etiquetaModalidad(proveedor)].filter(Boolean).join(' · ') }}</p>
+                </div>
+              </div>
+              <div v-if="calculoVista(proveedor)" class="ml-auto rounded-lg border border-default bg-elevated px-4 py-2 text-right">
+                <p class="text-xs text-muted">{{ calculoVista(proveedor)!.cuotas.length > 1 ? 'Total del proveedor (2 cuotas)' : 'Total del proveedor' }}</p>
+                <p class="text-xl font-bold">${{ dinero(calculoVista(proveedor)!.total) }}</p>
+              </div>
+            </div>
+
+            <p v-if="calculoVista(proveedor) && (proveedor.moneda === 'RMB' || calculoVista(proveedor)!.cuotas.length > 1)" class="mt-3 text-xs">
+              <span class="mr-2 text-muted">Valor de carga total:</span>
+              <span class="font-semibold">{{ etiquetaValorCarga(proveedor, calculoVista(proveedor)!.valor_carga_usd) }}</span>
+            </p>
+
+            <div v-if="(calculoVista(proveedor)?.cuotas.length || 0) > 1" class="mt-3 grid gap-4 md:grid-cols-2">
+              <div v-for="cuota in calculoVista(proveedor)!.cuotas" :key="cuota.numero" class="text-sm" :class="{ 'md:border-l md:border-default md:pl-4': cuota.numero === 2 }">
+                <p class="flex flex-wrap items-center gap-2 font-bold">
+                  Cobro {{ cuota.numero }} ({{ cuota.porcentaje }}%)
+                  <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold" :class="cuota.numero === 1 ? 'bg-orange-100 text-orange-600 dark:bg-orange-950 dark:text-orange-400' : 'bg-elevated text-muted'">
+                    {{ cuota.numero === 1 ? 'Ahora' : (proveedor.fecha_cuota_2 ? `Fecha aprox. ${fechaCorta(proveedor.fecha_cuota_2)}` : 'Fecha por definir') }}
+                  </span>
+                </p>
+                <div class="mt-2 divide-y divide-default">
+                  <p class="flex justify-between gap-3 py-1.5"><span>Valor de carga</span><span class="text-right">${{ dinero(cuota.carga) }}</span></p>
+                  <p v-if="proveedor.comision_bancaria" class="flex justify-between gap-3 py-1.5">
+                    <span>Comisión bancaria / plataforma</span>
+                    <span v-if="calculoVista(proveedor)!.etiqueta_bancaria && !cuota.bancaria" class="text-right italic text-muted">{{ calculoVista(proveedor)!.etiqueta_bancaria }}</span>
+                    <span v-else class="text-right">${{ dinero(cuota.bancaria) }}</span>
+                  </p>
+                  <p v-if="proveedor.comision_administrativa" class="flex justify-between gap-3 py-1.5"><span>Comisión administrativa</span><span class="text-right">${{ dinero(cuota.administrativa) }}</span></p>
+                </div>
+                <p class="mt-2 flex items-center justify-between gap-3 rounded-lg px-3.5 py-3 font-bold" :class="cuota.numero === 1 ? 'bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400' : 'bg-elevated'">
+                  <span>Total cobro {{ cuota.numero }}</span>
+                  <span class="text-base">${{ dinero(cuota.total) }}</span>
+                </p>
+              </div>
+            </div>
+            <div v-else-if="calculoVista(proveedor)" class="mt-3 text-sm">
+              <p class="flex items-center gap-2 font-bold">
+                Cobro único
+                <span class="rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-semibold text-orange-600 dark:bg-orange-950 dark:text-orange-400">Ahora</span>
+              </p>
+              <div class="mt-2 divide-y divide-default">
+                <p class="flex justify-between gap-3 py-1.5"><span>Valor de carga</span><span class="text-right">${{ dinero(calculoVista(proveedor)!.valor_carga_usd) }}</span></p>
+                <p v-if="proveedor.comision_bancaria" class="flex justify-between gap-3 py-1.5">
+                  <span>Comisión bancaria / plataforma</span>
+                  <span v-if="calculoVista(proveedor)!.etiqueta_bancaria" class="text-right italic text-muted">{{ calculoVista(proveedor)!.etiqueta_bancaria }}</span>
+                  <span v-else class="text-right">${{ dinero(calculoVista(proveedor)!.bancaria) }}</span>
+                </p>
+                <p v-if="proveedor.comision_administrativa" class="flex justify-between gap-3 py-1.5"><span>Comisión administrativa</span><span class="text-right">${{ dinero(calculoVista(proveedor)!.administrativa) }}</span></p>
+              </div>
+              <p class="mt-2 flex items-center justify-between gap-3 rounded-lg bg-orange-50 px-3.5 py-3 font-bold text-orange-600 dark:bg-orange-950/40 dark:text-orange-400">
+                <span>Total a pagar ahora</span>
+                <span class="text-lg">${{ dinero(calculoVista(proveedor)!.total_ahora) }}</span>
+              </p>
+            </div>
+            <p v-if="notaResumen(proveedor)" class="mt-3 rounded-lg border border-dashed border-default bg-elevated px-3 py-2 text-xs text-muted">{{ notaResumen(proveedor) }}</p>
+          </div>
+        </div>
+
+        <div class="mt-3 flex items-center justify-between gap-3 rounded-lg bg-orange-500 px-4 py-3.5 text-white">
+          <span class="text-sm">Total a pagar ahora</span>
+          <span class="text-xl font-bold">${{ dinero(totalAhoraVista) }}</span>
+        </div>
+        <p v-if="totalCotizacionVista !== totalAhoraVista" class="mt-2 text-right text-sm text-muted">Total de la cotización con la cuota 2: ${{ dinero(totalCotizacionVista) }}</p>
+
+        <div class="mt-3 flex flex-col gap-2 sm:flex-row">
+          <UButton type="button" color="neutral" variant="outline" size="lg" icon="i-mdi-whatsapp" class="flex-1 justify-center" :ui="{ leadingIcon: 'text-green-500' }" :loading="enviando" :disabled="!editable && !cotizacion.puede_enviar" @click="prepararWhatsapp">Enviar resumen al cliente (WhatsApp)</UButton>
+          <UButton type="button" color="neutral" variant="outline" size="lg" icon="i-lucide-file-text" class="justify-center" :loading="generandoPdf" :disabled="!editable && !(cotizacion.puede_descargar_pdf || cotizacion.puede_enviar)" @click="descargarPdf">Descargar PDF</UButton>
+        </div>
       </UCard>
 
       <UAlert
@@ -380,13 +397,15 @@
         variant="subtle"
         :title="faltantesSolicitud.length ? `Faltan ${faltantesSolicitud.length} dato${faltantesSolicitud.length > 1 ? 's' : ''} para crear la solicitud` : 'Listo para crear la solicitud'"
       />
-      <div v-if="editable" class="flex flex-wrap gap-2">
-        <UButton type="submit" color="neutral" variant="outline" :loading="guardando" :disabled="!puedeGuardarCotizacion">{{ etiquetaGuardarCotizacion }}</UButton>
-        <UButton v-if="cotizacion.puede_renovar" type="button" color="warning" variant="soft" @click="renovar">Renovar cotización</UButton>
+      <div v-if="editable" class="flex flex-col gap-2 sm:flex-row">
+        <UButton type="submit" color="neutral" variant="outline" size="lg" class="flex-1 justify-center" :loading="guardando" :disabled="!puedeGuardarCotizacion">{{ etiquetaGuardarCotizacion }}</UButton>
+        <UButton v-if="cotizacion.puede_renovar" type="button" color="warning" variant="soft" size="lg" class="flex-1 justify-center" @click="renovar">Renovar cotización</UButton>
         <UButton
           v-if="!cotizacion.puede_renovar"
           type="button"
           color="primary"
+          size="lg"
+          class="flex-1 justify-center"
           :loading="creandoSolicitud"
           :disabled="!!faltantesSolicitud.length || !puedeGuardarCotizacion"
           @click="crearSolicitud"
@@ -401,22 +420,38 @@
         <li v-for="falta in faltantesSolicitud" :key="falta">{{ falta }}</li>
       </ul>
     </form>
+
+    <SupplierPaymentWindow
+      :open="!!vistaPrevia"
+      title="Enviar resumen al cliente"
+      :subtitle="vistaPrevia?.destinatario ? `Destino: ${vistaPrevia.destinatario}` : 'Vista previa del mensaje'"
+      :code="cotizacion?.codigo || cotizacion?.cod_cotizacion_cc || ''"
+      @close="vistaPrevia = null"
+    >
+      <UCard variant="subtle">
+        <pre class="max-h-80 overflow-auto whitespace-pre-wrap font-sans text-sm text-highlighted">{{ vistaPrevia?.texto }}</pre>
+      </UCard>
+      <p v-if="vistaPrevia?.nota" class="text-sm text-muted">{{ vistaPrevia.nota }}</p>
+      <template #footer>
+        <UButton type="button" color="neutral" variant="outline" @click="vistaPrevia = null">Cerrar</UButton>
+        <UButton type="button" color="success" icon="i-lucide-send" :loading="enviandoReal" :disabled="!vistaPrevia?.puede_enviar" @click="enviarWhatsapp">Enviar por WhatsApp</UButton>
+      </template>
+    </SupplierPaymentWindow>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import type { PagoProveedorBusquedaCc, PagoProveedorCalculoLinea, PagoProveedorCotizacion, PagoProveedorProveedor } from '~/types/pago-proveedor'
 import PageHeader from '~/components/PageHeader.vue'
+import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
 import { PagoProveedorService } from '~/services/pagoProveedorService'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
-import { useSupplierPaymentQuotes } from '~/composables/pago-proveedor/useSupplierPaymentQuotes'
 
 const props = defineProps<{ quoteId?: number; codigoCc?: string }>()
-const { showSuccess, showError } = useModal()
+const { showSuccess, showError, showWarning } = useModal()
 const { withSpinner } = useSpinner()
-const quotesApi = useSupplierPaymentQuotes()
 const cargando = ref(true)
 const guardando = ref(false)
 const generandoPdf = ref(false)
@@ -438,6 +473,8 @@ const tcConfirmadoSesion = ref(false)
 const valoresNativos = ref<Record<number, number>>({})
 const vistaPrevia = ref<{ texto: string; nota: string; destinatario?: string | null; puede_enviar?: boolean } | null>(null)
 const esNueva = computed(() => !props.quoteId)
+// La vista previa deja de valer si cambian los datos del formulario.
+watch([proveedores, tipoCambio], () => { vistaPrevia.value = null }, { deep: true })
 
 const fraccionOtro = ref<Record<number, boolean>>({})
 const monedas = [
@@ -492,7 +529,8 @@ const fechaTcCotizacion = computed(() => {
   return new Date(fin).toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' })
 })
 const faltantesSolicitud = computed(() => {
-  const base = [...(cotizacion.value?.faltantes || [])]
+  // El aviso del servidor sobre el tipo de cambio lo cubre el botón Confirmar de esta pantalla.
+  const base = (cotizacion.value?.faltantes || []).filter(falta => !(pideConfirmacionTc.value && falta === 'Confirma el tipo de cambio.'))
   if (pideConfirmacionTc.value && !tcConfirmadoSesion.value) {
     base.push('Confirma el tipo de cambio del día para crear la solicitud.')
   }
@@ -518,7 +556,6 @@ const motivoAccion = computed(() => {
     if (hayYuanes.value && !(Number(tipoCambio.value) > 0)) return 'Falta: tipo de cambio del día (1 USD = RMB).'
     return 'Completa los datos del proveedor para guardar.'
   }
-  if (faltantesSolicitud.value.length) return `Falta: ${faltantesSolicitud.value[0]}`
   return ''
 })
 const dinero = (valor: number) => Number(valor || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -555,12 +592,11 @@ function alValorNativo(indice: number, raw: string | number) {
   sincronizarUsdDesdeNativo(indice)
 }
 
-function etiquetaValorCarga(proveedor: PagoProveedorProveedor, cargaUsd: number, porcentaje?: number) {
+function etiquetaValorCarga(proveedor: PagoProveedorProveedor, cargaUsd: number) {
   if (proveedor.moneda !== 'RMB') return `$${dinero(cargaUsd)}`
   const tc = Number(tipoCambio.value) || 0
   const indice = proveedores.value.indexOf(proveedor)
-  const totalYuan = Number(valoresNativos.value[indice] ?? (tc > 0 ? Number(proveedor.valor_carga_usd || 0) * tc : 0))
-  const yuan = porcentaje && porcentaje < 100 ? redondear(totalYuan * porcentaje / 100) : totalYuan
+  const yuan = Number(valoresNativos.value[indice] ?? (tc > 0 ? Number(proveedor.valor_carga_usd || 0) * tc : 0))
   if (!(tc > 0) || !(yuan > 0)) return `$${dinero(cargaUsd)}`
   return `¥${dinero(yuan)} ÷ ${tc} = $${dinero(cargaUsd)}`
 }
@@ -878,6 +914,23 @@ function etiquetaModalidad(proveedor: PagoProveedorProveedor) {
   return 'Pago único'
 }
 
+function notaResumen(proveedor: PagoProveedorProveedor) {
+  const primero = Number(proveedor.porcentaje_1) || 0
+  const tipo = combo(proveedor)
+  if (tipo === 'a') {
+    const simbolo = proveedor.moneda === 'RMB' ? '¥' : '$'
+    const valor = Number(valoresNativos.value[proveedores.value.indexOf(proveedor)]) || 0
+    const parte1 = Math.round(valor * primero) / 100
+    return `Pago al proveedor en 2 partes: 1.ª ${simbolo}${dinero(parte1)} · 2.ª ${simbolo}${dinero(redondear(valor - parte1))}. No afecta el cobro al cliente.`
+  }
+  const cuotas = calculoVista(proveedor)?.cuotas
+  if (tipo === 'c' && cuotas?.length === 2) {
+    const fecha = proveedor.fecha_cuota_2 ? `fecha aprox. ${fechaCorta(proveedor.fecha_cuota_2)}` : 'fecha por definir'
+    return `El cliente realiza 2 abonos: 1.ª parte (${cuotas[0].porcentaje}%) $${dinero(cuotas[0].total)} · 2.ª parte (${cuotas[1].porcentaje}%) $${dinero(cuotas[1].total)} — ${fecha}.`
+  }
+  return ''
+}
+
 function aplicar(datos: PagoProveedorCotizacion) {
   cotizacion.value = datos
   proveedores.value = datos.proveedores.map(proveedor => ({ ...proveedor, code_supplier: textoCodigo(proveedor.code_supplier) }))
@@ -911,12 +964,22 @@ function alCambiarTc() {
   })
 }
 
-function confirmarTc() {
+async function confirmarTc() {
   if (!(Number(tipoCambio.value) > 0)) {
     showError('Tipo de cambio', 'Ingresa el tipo de cambio del día.')
     return
   }
+  if (!puedeGuardarCotizacion.value) {
+    showWarning('Faltan datos', motivoAccion.value)
+    return
+  }
   tcConfirmadoSesion.value = true
+  try {
+    await withSpinner(() => persistir(), 'Confirmando tipo de cambio…')
+  } catch (error: any) {
+    tcConfirmadoSesion.value = false
+    showError('Tipo de cambio', error.message || 'No se pudo confirmar el tipo de cambio.')
+  }
 }
 
 function payload() {
@@ -1054,33 +1117,38 @@ function quitarProforma(indice: number) {
   }
 }
 
-async function subirProformasPendientes() {
-  const pendientes = { ...proformasPendientes.value }
-  const indices = Object.keys(pendientes).map(Number).sort((a, b) => a - b)
-  if (!indices.length || !cotizacion.value?.id) return
-  for (const indice of indices) {
-    const archivo = pendientes[indice]
-    const proveedor = proveedores.value[indice]
-    if (!archivo || !proveedor?.id) {
-      throw new Error('Guarda los proveedores antes de subir la proforma.')
-    }
-    await PagoProveedorService.subirProforma(cotizacion.value.id, proveedor.id, archivo)
+function formularioGuardado() {
+  const form = new FormData()
+  const campo = (clave: string, valor: unknown) => {
+    if (valor === null || valor === undefined) return
+    form.append(clave, typeof valor === 'boolean' ? (valor ? '1' : '0') : String(valor))
   }
-  proformasPendientes.value = {}
-  const fresco = await PagoProveedorService.obtenerCotizacion(cotizacion.value.id)
-  aplicar(fresco.data)
+  const { proveedores: filas, ...generales } = payload()
+  Object.entries(generales).forEach(([clave, valor]) => campo(clave, valor))
+  filas.forEach((fila, indice) => {
+    Object.entries(fila).forEach(([clave, valor]) => campo(`proveedores[${indice}][${clave}]`, valor))
+    const archivo = proformasPendientes.value[indice]
+    if (archivo) form.append(`proveedores[${indice}][proforma]`, archivo)
+  })
+  return form
 }
 
-async function persistir(redirigir = true) {
+async function persistir() {
   if (!cotizacion.value) return
-  if (!cotizacion.value.id) {
-    const creada = await PagoProveedorService.crearCotizacion(cotizacion.value.cod_cotizacion_cc)
-    cotizacion.value.id = creada.data.id
-  }
-  const respuesta = await PagoProveedorService.guardarCotizacion(cotizacion.value.id, payload())
+  const form = formularioGuardado()
+  const respuesta = cotizacion.value.id
+    ? await PagoProveedorService.guardarCotizacion(cotizacion.value.id, form)
+    : await PagoProveedorService.crearCotizacion(cotizacion.value.cod_cotizacion_cc, form)
+  proformasPendientes.value = {}
   aplicar(respuesta.data)
-  await subirProformasPendientes()
-  if (redirigir && props.codigoCc) await navigateTo(`/pago-proveedor/cotizaciones/${cotizacion.value.id}`, { replace: true })
+}
+
+function datosResumen() {
+  return {
+    ...payload(),
+    cotizacion_id: cotizacion.value?.id || null,
+    cod_cotizacion_cc: cotizacion.value?.cod_cotizacion_cc
+  }
 }
 
 async function guardar() {
@@ -1089,6 +1157,7 @@ async function guardar() {
   try {
     await withSpinner(() => persistir(), 'Guardando…')
     showSuccess('Cotización guardada', cotizacion.value?.codigo || 'Cotización')
+    await navigateTo('/pago-proveedor/cotizaciones', { replace: esNueva.value })
   } catch (error: any) {
     showError('No se pudo guardar', error.message || 'Revisa los datos.')
   } finally {
@@ -1096,12 +1165,30 @@ async function guardar() {
   }
 }
 
+function bloqueoResumen() {
+  if (!editable.value) return false
+  const avisoTc = (titulo: string, mensaje: string) => {
+    showWarning(titulo, mensaje)
+    document.getElementById('tipo-cambio-resumen')?.focus()
+    return true
+  }
+  if (hayYuanes.value && !(Number(tipoCambio.value) > 0)) {
+    return avisoTc('Falta completar el tipo de cambio', 'Para generar el PDF o enviar el resumen, primero completa el tipo de cambio (1 USD = ? RMB) del Banco de China.')
+  }
+  if (!puedeGuardarCotizacion.value) {
+    showWarning('Faltan datos', motivoAccion.value)
+    return true
+  }
+  return false
+}
+
 async function descargarPdf() {
-  if (!cotizacion.value?.id) return
+  if (!cotizacion.value || bloqueoResumen()) return
   generandoPdf.value = true
   try {
-    await guardarSilencioso()
-    const respuesta = await PagoProveedorService.descargarPdf(cotizacion.value.id)
+    const respuesta = editable.value
+      ? await PagoProveedorService.pdfResumen(datosResumen())
+      : await PagoProveedorService.descargarPdf(cotizacion.value.id)
     const binario = atob(respuesta.data.base64)
     const bytes = new Uint8Array(binario.length)
     for (let i = 0; i < binario.length; i++) bytes[i] = binario.charCodeAt(i)
@@ -1119,14 +1206,13 @@ async function descargarPdf() {
 }
 
 async function prepararWhatsapp() {
-  if (!cotizacion.value?.id) return
+  if (!cotizacion.value || bloqueoResumen()) return
   enviando.value = true
   try {
-    await guardarSilencioso()
-    const respuesta = await quotesApi.previewWhatsapp(cotizacion.value.id)
+    const respuesta = editable.value
+      ? await PagoProveedorService.vistaPreviaResumen(datosResumen())
+      : await PagoProveedorService.vistaPreviaWhatsapp(cotizacion.value.id)
     vistaPrevia.value = respuesta.data
-    const fresco = await PagoProveedorService.obtenerCotizacion(cotizacion.value.id)
-    aplicar(fresco.data)
   } catch (error: any) {
     showError('WhatsApp', error.message || 'No se pudo armar el mensaje.')
   } finally {
@@ -1135,19 +1221,12 @@ async function prepararWhatsapp() {
 }
 
 async function enviarWhatsapp() {
-  if (!cotizacion.value?.id || !vistaPrevia.value?.puede_enviar) return
+  if (!cotizacion.value || !vistaPrevia.value?.puede_enviar) return
   enviandoReal.value = true
   try {
-    const respuesta = await withSpinner(() => quotesApi.sendWhatsapp(cotizacion.value!.id), 'Enviando WhatsApp…')
-    vistaPrevia.value = {
-      texto: respuesta.data.texto,
-      nota: respuesta.data.nota,
-      destinatario: respuesta.data.destinatario,
-      puede_enviar: false
-    }
+    const respuesta = await withSpinner(() => PagoProveedorService.enviarResumen(datosResumen()), 'Enviando WhatsApp…')
+    vistaPrevia.value = null
     showSuccess('WhatsApp enviado', respuesta.data.nota || 'Resumen enviado al cliente.')
-    const fresco = await PagoProveedorService.obtenerCotizacion(cotizacion.value.id)
-    aplicar(fresco.data)
   } catch (error: any) {
     showError('WhatsApp', error.message || 'No se pudo enviar el mensaje.')
   } finally {
@@ -1164,7 +1243,7 @@ async function crearSolicitud() {
   creandoSolicitud.value = true
   try {
     await withSpinner(async () => {
-      await persistir(false)
+      await persistir()
       const respuesta = await PagoProveedorService.crearSolicitud(cotizacion.value!.id)
       showSuccess('Solicitud creada', `N.° ${respuesta.data.numero_orden}`)
       await navigateTo(`/pago-proveedor/solicitudes/${respuesta.data.id}`)
@@ -1186,16 +1265,6 @@ async function renovar() {
   } catch (error: any) {
     showError('Renovar', error.message || 'No se pudo renovar.')
   }
-}
-
-async function guardarSilencioso() {
-  if (!cotizacion.value || !editable.value) return
-  await persistir(false)
-}
-
-function formatearFecha(valor: string | null) {
-  if (!valor) return ''
-  return new Date(valor).toLocaleString('es-PE', { dateStyle: 'short', timeStyle: 'short' })
 }
 
 function armarBorrador(busqueda: PagoProveedorBusquedaCc) {

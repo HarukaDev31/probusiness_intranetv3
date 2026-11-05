@@ -193,6 +193,8 @@ export interface PagoProveedorSolicitudProveedor {
     until_text?: string | null
     overdue: boolean
   } | null
+  observacion_ventas?: { motivo: string; fecha: string | null } | null
+  motivo_anulacion?: string | null
   progreso?: SupplierPaymentProgress
   modalidad_abono: string
   datos: {

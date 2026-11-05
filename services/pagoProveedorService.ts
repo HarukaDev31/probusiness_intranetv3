@@ -62,10 +62,11 @@ export class PagoProveedorService extends BaseService {
     return this.apiCall<Uno<PagoProveedorBusquedaCc>>(`${this.baseUrl}/cotizaciones-cc/${encodeURIComponent(codigo.trim().toUpperCase())}`)
   }
 
-  static async crearCotizacion(codCotizacionCc: string) {
+  static async crearCotizacion(codCotizacionCc: string, form: FormData) {
+    form.set('cod_cotizacion_cc', codCotizacionCc.trim().toUpperCase())
     return this.apiCall<Uno<PagoProveedorCotizacion>>(`${this.baseUrl}/cotizaciones`, {
       method: 'POST',
-      body: { cod_cotizacion_cc: codCotizacionCc.trim().toUpperCase() }
+      body: form
     })
   }
 
@@ -73,10 +74,12 @@ export class PagoProveedorService extends BaseService {
     return this.apiCall<Uno<PagoProveedorCotizacion>>(`${this.baseUrl}/cotizaciones/${id}`)
   }
 
-  static async guardarCotizacion(id: number, body: Record<string, unknown>) {
+  static async guardarCotizacion(id: number, form: FormData) {
+    // PHP no procesa archivos en un PUT real: se envía POST y Laravel lo enruta como PUT.
+    form.set('_method', 'PUT')
     return this.apiCall<Uno<PagoProveedorCotizacion>>(`${this.baseUrl}/cotizaciones/${id}`, {
-      method: 'PUT',
-      body
+      method: 'POST',
+      body: form
     })
   }
 
@@ -89,15 +92,6 @@ export class PagoProveedorService extends BaseService {
       method: 'POST',
       body: tipoCambio ? { tipo_cambio: tipoCambio } : {}
     })
-  }
-
-  static async subirProforma(cotizacionId: number, proveedorId: number, archivo: File) {
-    const form = new FormData()
-    form.append('proforma', archivo)
-    return this.apiCall<Uno<PagoProveedorCotizacion>>(
-      `${this.baseUrl}/cotizaciones/${cotizacionId}/proveedores/${proveedorId}/proforma`,
-      { method: 'POST', body: form }
-    )
   }
 
   static async vistaPreviaWhatsapp(id: number) {
@@ -116,6 +110,24 @@ export class PagoProveedorService extends BaseService {
 
   static async descargarPdf(id: number) {
     return this.apiCall<Uno<{ filename: string; base64: string }>>(`${this.baseUrl}/cotizaciones/${id}/pdf`)
+  }
+
+  static async pdfResumen(datos: Record<string, unknown>) {
+    return this.apiCall<Uno<{ filename: string; base64: string }>>(`${this.baseUrl}/cotizaciones/resumen/pdf`, { method: 'POST', body: datos })
+  }
+
+  static async vistaPreviaResumen(datos: Record<string, unknown>) {
+    return this.apiCall<Uno<{ texto: string; destinatario: string | null; puede_enviar?: boolean; nota: string }>>(
+      `${this.baseUrl}/cotizaciones/resumen/vista-previa-whatsapp`,
+      { method: 'POST', body: datos }
+    )
+  }
+
+  static async enviarResumen(datos: Record<string, unknown>) {
+    return this.apiCall<Uno<{ texto: string; destinatario: string; enviado: boolean; nota: string }>>(
+      `${this.baseUrl}/cotizaciones/resumen/enviar-whatsapp`,
+      { method: 'POST', body: datos }
+    )
   }
 
   static async crearSolicitud(cotizacionId: number) {
@@ -231,9 +243,24 @@ export class PagoProveedorService extends BaseService {
     })
   }
 
-  static async anularProveedor(solicitudId: number, proveedorId: number) {
+  static async anularProveedor(solicitudId: number, proveedorId: number, motivo: string) {
     return this.apiCall<Uno<PagoProveedorSolicitud>>(`${this.baseUrl}/solicitudes/${solicitudId}/proveedores/${proveedorId}/anular`, {
-      method: 'POST'
+      method: 'POST',
+      body: { motivo }
+    })
+  }
+
+  static async observarProveedor(solicitudId: number, proveedorId: number, motivo: string) {
+    return this.apiCall<Uno<PagoProveedorSolicitud>>(`${this.baseUrl}/solicitudes/${solicitudId}/proveedores/${proveedorId}/observar`, {
+      method: 'POST',
+      body: { motivo }
+    })
+  }
+
+  static async levantarObservacion(solicitudId: number, proveedorId: number, motivo: string) {
+    return this.apiCall<Uno<PagoProveedorSolicitud>>(`${this.baseUrl}/solicitudes/${solicitudId}/proveedores/${proveedorId}/levantar-observacion`, {
+      method: 'POST',
+      body: { motivo }
     })
   }
 
@@ -258,10 +285,6 @@ export class PagoProveedorService extends BaseService {
       method: 'POST',
       body: { decision }
     })
-  }
-
-  static async verFormularioTt(token: string) {
-    return this.apiCall<Uno<Record<string, any>>>(`${this.baseUrl}/publico/formulario-tt/${token}`)
   }
 
   static async listDeposits(params: {
@@ -578,13 +601,6 @@ export class PagoProveedorService extends BaseService {
     return this.apiCall<Uno<PagoProveedorSolicitud>>(`${this.baseUrl}/solicitudes/${solicitudId}/proveedores/${proveedorId}/levantar-china`, {
       method: 'POST',
       body: { vendedor, wechat }
-    })
-  }
-
-  static async guardarFormularioTt(token: string, body: Record<string, unknown>) {
-    return this.apiCall<Uno<{ mensaje: string }>>(`${this.baseUrl}/publico/formulario-tt/${token}`, {
-      method: 'POST',
-      body
     })
   }
 }
