@@ -1,0 +1,242 @@
+# Validación Pago a Proveedor
+
+Control de lo recorrido en local contra la especificación (FL-01 a FL-15, CP-01 a CP-68) y la maqueta. El envío real por WhatsApp queda fuera. Cada pasada anota qué se miró y qué código se tocó.
+
+Estados: `ok` recorrido en la pantalla y coincide · `ok-api` regla comprobada contra la API local con el rol real, sin recorrer la pantalla (las de plazo moviendo fechas en la base local) · `parcial` falta una parte, indicada en la nota · `pendiente` no se probó · `fuera` WhatsApp real o decisión marcada pendiente en la especificación.
+
+## Bitácora de cambios
+
+### Pasada 0 — flujo base ya existente antes de esta revisión
+
+- Menú de Administración y China (grupo real `Administración`, no `Admin`).
+- El yuan no se muestra en 0 cuando falta el tipo de cambio.
+- La cuota 2, en Datos, no muestra el pago anterior como «Importe pagado».
+- Paneles con `UCard` y estados con `UBadge`. El indicador de etapas usa `UCard`.
+- `DynamicModal` acepta modal nulo (la verificación dejaba de romper).
+- Import explícito de depósitos en Verificación.
+- En local los archivos se guardan en disco público porque la clave de almacenamiento devolvía acceso inválido. No va a commit.
+- Columna `observe_until` aplicada solo en su migración.
+- El aviso de yuanes leía el archivo adjunto (`receipt` no llegaba a la vista).
+
+### Pasada 1 — tablas y tema (esta sesión, antes de esta bitácora)
+
+Archivos: `SupplierPaymentYuan.vue`, `SupplierPaymentDeposits.vue`, `SupplierPaymentApprovals.vue`, `SupplierPaymentExecutions.vue`, `SupplierPaymentFact.vue`, `SupplierPaymentWindow.vue`, `DataTable.vue`, `pages/pago-proveedor/solicitudes/index.vue`.
+
+- La lista de yuanes pasó al `DataTable` del proyecto. Se quitaron el buscador, el selector y el botón Buscar propios. Estado y Socio quedan en Filtros.
+- Columnas alineadas a la maqueta en yuanes, depósitos, aprobación (por aprobar y aprobados) y dólares (en proceso y pagados).
+- Pestañas de aprobación y de dólares con `UTabs`. Se quitaron los chips de tipo; el reembolso se distingue por Estado.
+- Textos de esas tablas y ventanas con colores del tema (`text-muted`, `text-highlighted`, `text-success`, `text-error`, `text-warning`, `text-primary`).
+- El `DataTable` usa el placeholder y el mensaje vacío que ya recibía y no aplicaba.
+
+### Pasada 2 — recorrido inicial de Cursor
+
+Quedó sin cerrar. Su trabajo lo continúa la pasada 3.
+
+| Hora | Caso | Qué se vio | Cambio en código |
+| --- | --- | --- | --- |
+| 01:25 | FL-07, CP-46, CP-54, CP-64, CP-67, CP-68 | La orden 9003 está en Confirmación y Completado. El historial dice cierre automático. El balance PDF respondió 200 y quedó en el historial. Al revisar Ejecución solo se ve esa etapa, con constancia y «Volver al paso actual». Ventas que abre Verificación vuelve a Cotizaciones. | `SupplierPaymentProgress.vue` ahora recibe la etapa que se está mirando y, si no es la actual, muestra solo esa. Textos de esa vista con colores del tema. `solicitudes/[id].vue` le pasa la etapa. |
+| 01:35 | CP-07, CP-08 | La vista previa de la cotización cobraba bancaria en cada proveedor RMB. El servidor ya agrupaba. | `CotizacionForm.vue` agrupa en pantalla: la lleva el primero y el resto dice «Incluida en el Proveedor N». |
+| 01:35 | Formularios | Inputs sueltos en depósito, yuanes, ejecución USD, diferencia de cambio y formulario T-T. | Pasaron a `UFormField`, `UInput`, `USelect`, `UTextarea` y `UCheckbox`. El archivo adjunto sigue en input de archivo. |
+
+### Pasada 3 — E2E con todos los roles (5/11/2026)
+
+Entorno: API local en `:8001` y base `127.0.0.1`, intranet en `:3100` con Chrome real. Roles: Cotizador (Ventas), Administración y ContenedorAlmacen (China), más el cliente en el enlace T-T. Clientes de prueba `CO10261610` y `CO10261611`. Sin envío real por WhatsApp.
+
+Resultado final de esta pasada:
+
+| Suite | Resultado |
+| --- | --- |
+| Reglas y estados por API | 124/124 |
+| Plazos, mensajes, configuración y China por API | 48/48 |
+| Recorrido en pantalla con los tres roles y el cliente | 35/35 |
+| PHPStan sobre los PHP del módulo | sin errores |
+| PDF de resumen y de balance | texto leído, sin código interno |
+
+No se pudo correr PHPUnit: pide PHP 8.3 y este equipo tiene 8.2. Se ajustaron dos pruebas de mensajes y sus aserciones se comprobaron aparte con un script. `vue-tsc` deja 10 errores de tipos en el módulo, sin efecto al ejecutar; se detallan en Pendientes.
+
+Bugs corregidos:
+
+| Regla | Qué pasaba | Archivo |
+| --- | --- | --- |
+| VW-27, VW-20 | Abrir el pago en yuanes rompía toda la pantalla de China, y «Otro motivo» rompía la de Verificación: el selector tenía una opción con valor vacío. | `SupplierPaymentYuan.vue`, `DepositReviewModal.vue` |
+| CA-06 | Con Redis, cambiar tolerancia, plazos, tarifas o aprobación automática no surtía efecto por 6 horas: la caché se guardaba con etiquetas y se borraba sin ellas. | `PagoProveedorCacheService.php` |
+| RN-21, CP-13 | La vigencia se guardaba con la hora de Lima en una app en UTC: vencía 5 horas antes y podía caer en domingo. | `PagoProveedorVigenciaService.php` |
+| RN-56, CS-29 | Ventas no podía corregir un depósito observado en etapa 2. | `PagoProveedorEtapa1Service.php`, `AbonoResource.php`, `solicitudes/[id].vue` |
+| ES-02 | Un depósito observado no dejaba al proveedor en Observado. | `PagoProveedorVerificacionService.php` |
+| RN-62 | Si el banco recibía menos en un abono parcial, el saldo no bajaba al importe real. | `PagoProveedorEtapa1Service.php` |
+| RN-124, CP-58 | El reembolso del pago 2 no devolvía la 2.ª administrativa ($500 en vez de $530). | `PagoProveedorConfirmacionService.php`, `PagoProveedorReembolsoService.php` |
+| RN-35, CS-37 | Al anular el proveedor que llevaba la bancaria, esta no pasaba al siguiente. | `PagoProveedorEtapa1Service.php` |
+| RN-72, CP-38 | «Por cobrar» vencido no volvía a Pendiente al consultarlo. | `PagoProveedorAprobacionService.php`, `PagoProveedorEtapa1Service.php` |
+| RN-97 | Las solicitudes manuales de China aparecían en las listas de Ventas. | `PagoProveedorSolicitudService.php`, `PagoProveedorCotizacionService.php` |
+| VW-08 | «Enviar resumen» fallaba en toda solicitud creada. | `PagoProveedorCotizacionWhatsappService.php` |
+| VW-12, RN-72 | En «Por cobrar», Ventas no tenía botón para registrar el voucher de la diferencia. | `solicitudes/[id].vue` |
+| Maqueta | Rechazar un reembolso lo cerraba. Ahora vuelve a Ventas para consultar al cliente. | `PagoProveedorReembolsoService.php` |
+| Anexo B | Los WhatsApp de resumen, pedir datos, cuentas, aviso y balance no seguían el texto de la maqueta. | `PagoProveedorMensajeService.php`, `PagoProveedorEtapa1Service.php` |
+| Socios | Faltaban Javiandy / ECU-DAV y «Pro Business - PE». El socio de la solicitud manual era texto libre. | `PagoProveedorSolicitud.php`, `SupplierPaymentYuan.vue` |
+| Errores | Las pantallas decían «No se pudo completar la operación» y ocultaban el motivo real del servidor. | 8 componentes del módulo |
+| VW-11 | Un error de validación borraba el formulario que el cliente ya había llenado; el tipo de código arrancaba vacío. | `formulario-tt/[token].vue`, `FormularioBancario.vue` |
+| VW-24 | Hacer clic fuera cerraba la ventana y se perdía la constancia adjunta. | `SupplierPaymentWindow.vue` |
+| VW-05 | La vista previa de WhatsApp quedaba al final de la página y sin negritas. Ahora abre en ventana. | `solicitudes/[id].vue`, `whatsappFormat.ts` |
+| VW-14 | Mostraba las etapas 2, 3 y 4 juntas. Ahora solo la etapa elegida; se agregó el resumen de la operación y la proforma. | `SupplierPaymentProgress.vue` |
+| VW-15 | «Enviar balance» no mostraba el mensaje antes de enviarlo. | `PagoProveedorConfirmacionService.php`, `SupplierPaymentProgress.vue` |
+| VW-16 | El voucher no proponía el importe de la diferencia. | `SupplierPaymentProgress.vue` |
+| VW-21, VW-23 | «Acciones» quedaba fuera de pantalla a 1440 px; tipo de pago mostraba `tt`. | `DataTable.vue`, `SupplierPaymentExecutions.vue` |
+| RN-42 | Los datos T-T recibidos figuraban como faltantes por comparar contra un estado que no existe. | `solicitudes/[id].vue`, `SupplierPaymentProgress.vue` |
+| Tema | Títulos ilegibles en modo oscuro y colores sueltos. 74 clases pasaron a colores del tema; formularios a componentes de Nuxt UI. | Módulo |
+| General | `DynamicModal` fallaba con modal nulo en Verificación. | `DynamicModal.vue` |
+
+## Flujos
+
+| ID | Qué cubre | Estado | Evidencia |
+| --- | --- | --- | --- |
+| FL-01 | Cotización a solicitud | ok | Creada por pantalla. Vencida, renovar y tramos por API. [vw01-ventas-cotizaciones](pago-proveedor-validacion/vw01-ventas-cotizaciones.png) · [vw02-nueva-cotizacion](pago-proveedor-validacion/vw02-nueva-cotizacion.png) · [vw03b-formulario-completo](pago-proveedor-validacion/vw03b-formulario-completo.png) |
+| FL-02 | Etapa 1, datos y comprobante | ok | RMB y T-T por pantalla. Anular abono por API. [vw10b-comprobante-completo](pago-proveedor-validacion/vw10b-comprobante-completo.png) · [vw11-formulario-tt-cliente](pago-proveedor-validacion/vw11-formulario-tt-cliente.png) |
+| FL-03 | Verificar depósito | ok | Validar, observar y banco menor por pantalla. Corregir digitación y deshacer por API. [vw19-validar-deposito](pago-proveedor-validacion/vw19-validar-deposito.png) · [vw20-observar-deposito](pago-proveedor-validacion/vw20-observar-deposito.png) · [cp30-banco-recibe-menos](pago-proveedor-validacion/cp30-banco-recibe-menos.png) |
+| FL-04 | Aprobación | ok | Motivo obligatorio y Por cobrar por pantalla. Límites y casilla por API. [vw22-aprobacion-del-pago](pago-proveedor-validacion/vw22-aprobacion-del-pago.png) · [cp36-sin-motivo](pago-proveedor-validacion/cp36-sin-motivo.png) · [cp37-por-cobrar-ventas](pago-proveedor-validacion/cp37-por-cobrar-ventas.png) |
+| FL-05 | Ejecución en dólares | ok | De punta a punta por pantalla, con aviso en vista previa. [vw24a-ejecucion-usd](pago-proveedor-validacion/vw24a-ejecucion-usd.png) · [vw24b-ejecucion-aviso](pago-proveedor-validacion/vw24b-ejecucion-aviso.png) · [vw23b-pagados](pago-proveedor-validacion/vw23b-pagados.png) |
+| FL-06 | Ejecución en yuanes | ok | [vw28-pago-en-yuanes](pago-proveedor-validacion/vw28-pago-en-yuanes.png) · [vw29-observar-pago](pago-proveedor-validacion/vw29-observar-pago.png) · [cp50-observacion-china](pago-proveedor-validacion/cp50-observacion-china.png) |
+| FL-07 | Confirmación y cierre | ok | [vw14-confirmacion-completada](pago-proveedor-validacion/vw14-confirmacion-completada.png) · [cp64-revision-paso-3](pago-proveedor-validacion/cp64-revision-paso-3.png) |
+| FL-08 | Diferencia de cambio | ok | A cobrar, a favor y tolerancia, con vista previa del balance. [vw15a-balance-vista-previa](pago-proveedor-validacion/vw15a-balance-vista-previa.png) · [vw14b-confirmacion-por-cobrar](pago-proveedor-validacion/vw14b-confirmacion-por-cobrar.png) · [vw16-voucher-diferencia](pago-proveedor-validacion/vw16-voucher-diferencia.png) · [vw14c-confirmacion-a-favor](pago-proveedor-validacion/vw14c-confirmacion-a-favor.png) |
+| FL-09 | Cuotas | ok | Se realizará por pantalla; no se realizará por API. [vw14e-cuota-2-por-decidir](pago-proveedor-validacion/vw14e-cuota-2-por-decidir.png) · [cp59-cuota-2-tipo-de-cambio](pago-proveedor-validacion/cp59-cuota-2-tipo-de-cambio.png) · [cp59b-cuota-2-etapa-1](pago-proveedor-validacion/cp59b-cuota-2-etapa-1.png) |
+| FL-10 | Dos pagos al proveedor | ok | No se realizará por pantalla; se realizará y pago 2 por API. [vw14d-pago-2-por-decidir](pago-proveedor-validacion/vw14d-pago-2-por-decidir.png) · [vw17-pago-2-no-se-realizara](pago-proveedor-validacion/vw17-pago-2-no-se-realizara.png) |
+| FL-11 | Excedentes y reembolsos | ok | Reembolso por pantalla; excedentes por API. [vw25-reembolso-solicitado](pago-proveedor-validacion/vw25-reembolso-solicitado.png) · [vw25b-aprobar-reembolso](pago-proveedor-validacion/vw25b-aprobar-reembolso.png) |
+| FL-12 | Observaciones y plazos | ok-api | Plazos movidos en la base local. El aviso a jefatura queda solo en historial (PV-11). |
+| FL-13 | Voucher compartido | ok-api | Reglas por API. «Elegir proveedores» no se accionó en pantalla. |
+| FL-14 | Solicitud manual de China | ok | [vw31-nueva-solicitud-manual](pago-proveedor-validacion/vw31-nueva-solicitud-manual.png) · [cp51-manual-sin-codigo](pago-proveedor-validacion/cp51-manual-sin-codigo.png) · [vw31b-manual-creada](pago-proveedor-validacion/vw31b-manual-creada.png) · [cp52-manual-sin-aviso](pago-proveedor-validacion/cp52-manual-sin-aviso.png) |
+| FL-15 | Anulaciones | ok-api | Abono, proveedor y pago vencido por API. |
+
+## Casos de prueba
+
+| ID | Esperado en una línea | Estado | Nota |
+| --- | --- | --- | --- |
+| CP-01 | Nueva cotización carga cliente bloqueado y 1 proveedor | ok | [vw03-formulario-inicial](pago-proveedor-validacion/vw03-formulario-inicial.png) |
+| CP-02 | N.° inexistente no deja aceptar | ok | [cp02-numero-inexistente](pago-proveedor-validacion/cp02-numero-inexistente.png) |
+| CP-03 | N.° ya usado avisa y deja continuar | ok-api |  |
+| CP-04 | Otra cotización nueva nace limpia | ok-api |  |
+| CP-05 | Tramos USD 100 / 120 / 120 / 150 | ok-api | 100, 120, 120, 150. |
+| CP-06 | Tramos RMB 50 / 90 / 90 / 120 | ok-api | 50, 90, 90, 120. |
+| CP-07 | Bancaria solo en el primer RMB | ok-api |  |
+| CP-08 | Al quitar el primero, la bancaria pasa al siguiente | ok-api |  |
+| CP-09 | Administrativa ×2 y bancaria una vez | ok-api | Administrativa $60. |
+| CP-10 | Cuotas: total a pagar ahora = cuota 1 | ok-api |  |
+| CP-11 | USD fraccionado bloquea el pago al proveedor en 2 cuotas | ok-api |  |
+| CP-12 | Sin T.C. no hay PDF ni resumen | ok-api |  |
+| CP-13 | Vigencia salta sábado y domingo | ok-api | Corregido el desfase de 5 h. |
+| CP-14 | Vencida bloquea enviar y ofrece Renovar | ok-api |  |
+| CP-15 | Renovar conserva el N.° y no reenvía sola | ok-api |  |
+| CP-16 | Sin proforma no crea solicitud | ok-api |  |
+| CP-17 | Crear solicitud confirma la cotización y deja etapa 1 | ok | [cs01-1-solicitud-creada](pago-proveedor-validacion/cs01-1-solicitud-creada.png) |
+| CP-18 | Pedir datos RMB y enlace T-T | ok | [vw05a-pedir-datos-preview](pago-proveedor-validacion/vw05a-pedir-datos-preview.png) |
+| CP-19 | WeChat con letras no se guarda | ok | [cp19-wechat-invalido](pago-proveedor-validacion/cp19-wechat-invalido.png) |
+| CP-20 | Cliente autoriza el formulario T-T | ok | [vw11c-formulario-enviado](pago-proveedor-validacion/vw11c-formulario-enviado.png) |
+| CP-21 | Llenado por Ventas queda Por autorizar | ok-api | Pantalla abierta: [vw11b-tt-llenado-por-ventas](pago-proveedor-validacion/vw11b-tt-llenado-por-ventas.png) |
+| CP-22 | SWIFT de 7 caracteres falla | ok | [cp22-swift-invalido](pago-proveedor-validacion/cp22-swift-invalido.png) |
+| CP-23 | Comprobante queda en validación y en Verificación | ok | [vw18-verificacion](pago-proveedor-validacion/vw18-verificacion.png) |
+| CP-24 | Registrar sin aplicar proveedores queda deshabilitado | ok | [vw10a-comprobante-vacio](pago-proveedor-validacion/vw10a-comprobante-vacio.png) |
+| CP-25 | N.° de operación repetido avisa y deja registrar | ok-api |  |
+| CP-26 | Etapa 2 y código solo con datos e importe completos | ok-api |  |
+| CP-27 | No se anula un abono ya validado | ok-api |  |
+| CP-28 | Abono mayor muestra Excedente | ok-api |  |
+| CP-29 | Validar exacto y aprobar solo si no hay diferencia | ok |  |
+| CP-30 | Banco recibe menos: ajusta y, si pasa de $1, va a Por aprobar | ok | [cp30-banco-recibe-menos](pago-proveedor-validacion/cp30-banco-recibe-menos.png) |
+| CP-31 | Corregir N.° de operación no valida | ok-api |  |
+| CP-32 | Observar «No ingresó» | ok | [vw20-observar-deposito](pago-proveedor-validacion/vw20-observar-deposito.png) · [cs29-observado-ventas](pago-proveedor-validacion/cs29-observado-ventas.png) |
+| CP-33 | Deshacer a los 3 min, 10 h y 30 h | ok-api | 3 min, 10 h y 30 h con fechas movidas. |
+| CP-34 | Alerta si pasan 2 h sin validar | ok-api | Fecha movida. |
+| CP-35 | Faltante de $0.60 se asume y aprueba solo | ok-api |  |
+| CP-36 | Asumir $5 exige motivo | ok | [cp36-sin-motivo](pago-proveedor-validacion/cp36-sin-motivo.png) |
+| CP-37 | Por cobrar, voucher y nueva aprobación | ok | [cp37-por-cobrar-ventas](pago-proveedor-validacion/cp37-por-cobrar-ventas.png) |
+| CP-38 | Por cobrar a los 7 días vuelve a Pendiente | ok-api | Fecha movida. |
+| CP-39 | Observación a los 7 días avisa y permite extender o anular | ok-api | Fecha movida. Aviso a jefatura solo en historial (PV-11). |
+| CP-40 | Con aprobación automática apagada va a Por aprobar | ok-api |  |
+| CP-41 | Ejecución USD completa y cierra si no hay pendientes | ok | [vw24b-ejecucion-aviso](pago-proveedor-validacion/vw24b-ejecucion-aviso.png) |
+| CP-42 | Registrar USD sin aviso queda deshabilitado | ok | Deshabilitado sin aviso. |
+| CP-43 | Ganancia negativa en rojo | ok | Cobrada 120, real 150, administrativa 30: ganancia $0. |
+| CP-44 | No existe paso ni campo SWIFT | ok-api |  |
+| CP-45 | China no lista un pago de Perú sin proforma | ok-api | Sin proforma no nace la solicitud. |
+| CP-46 | RMB en tolerancia: pagado y completado; balance no aplica | ok | [vw14-confirmacion-completada](pago-proveedor-validacion/vw14-confirmacion-completada.png) |
+| CP-47 | T.C. real menor: diferencia por cobrar | ok | [vw14b-confirmacion-por-cobrar](pago-proveedor-validacion/vw14b-confirmacion-por-cobrar.png) |
+| CP-48 | Sobran yuanes: balance a devolver y reembolso | ok | [vw14c-confirmacion-a-favor](pago-proveedor-validacion/vw14c-confirmacion-a-favor.png) |
+| CP-49 | Aviso de yuanes sin importe, sin adjunto y sin código | ok | [vw28-pago-en-yuanes](pago-proveedor-validacion/vw28-pago-en-yuanes.png) |
+| CP-50 | China observa y Ventas levanta | ok | [cp50-observacion-china](pago-proveedor-validacion/cp50-observacion-china.png) |
+| CP-51 | Solicitud manual exige código o nombre | ok | [cp51-manual-sin-codigo](pago-proveedor-validacion/cp51-manual-sin-codigo.png) |
+| CP-52 | La manual no avisa a Ventas ni al cliente | ok | [cp52-manual-sin-aviso](pago-proveedor-validacion/cp52-manual-sin-aviso.png) |
+| CP-53 | China no edita datos cargados por Ventas | ok-api |  |
+| CP-54 | Balance sin diferencia no se envía; sí se descarga | ok-api | La pantalla no ofrece enviar. |
+| CP-55 | Balance de 2 pagos con detalle y total | ok-api | PDF leído: pago 1, pago 2 y total; `Balance_ROVI21-1.pdf`. |
+| CP-56 | Etapa 4 con pago 2 por decidir | ok | [vw14d-pago-2-por-decidir](pago-proveedor-validacion/vw14d-pago-2-por-decidir.png) |
+| CP-57 | «Se realizará» vuelve a etapa 3 | ok-api |  |
+| CP-58 | «No se realizará» arma el reembolso del pago 2 | ok | $530. [vw17-pago-2-no-se-realizara](pago-proveedor-validacion/vw17-pago-2-no-se-realizara.png) |
+| CP-59 | Cuota 2 se realizará: vuelve a etapa 1, mismo código, T.C. nuevo | ok | [cp59b-cuota-2-etapa-1](pago-proveedor-validacion/cp59b-cuota-2-etapa-1.png) |
+| CP-60 | Cuota 2 no se realizará: completa sin cobrarla | ok-api |  |
+| CP-61 | Un reembolso abierto impide completar | ok-api |  |
+| CP-62 | Mis pendientes no muestra lo que espera otra área | ok | [cp62-mis-pendientes](pago-proveedor-validacion/cp62-mis-pendientes.png) |
+| CP-63 | Reembolso sin banco o sin foto no se aprueba | ok | Sin foto por API; aprobar por pantalla. [vw25b-aprobar-reembolso](pago-proveedor-validacion/vw25b-aprobar-reembolso.png) |
+| CP-64 | Ver un paso anterior en lectura y volver | ok | [cp64-revision-paso-3](pago-proveedor-validacion/cp64-revision-paso-3.png) |
+| CP-65 | Sin nombre, el código es el título | ok-api | También visto en las capturas. |
+| CP-66 | El cliente no ve el código de solicitud | ok-api | Mensajes y 3 PDF sin código interno. |
+| CP-67 | Completado sigue mostrando constancias | ok | [vw14-confirmacion-completada](pago-proveedor-validacion/vw14-confirmacion-completada.png) |
+| CP-68 | Ventas no entra a Aprobación | ok | Por pantalla y API, en los 3 roles. |
+
+## Vistas
+
+| ID | Vista | Estado | Evidencia |
+| --- | --- | --- | --- |
+| VW-01 | Lista de cotizaciones | ok | [vw01-ventas-cotizaciones](pago-proveedor-validacion/vw01-ventas-cotizaciones.png) · [vw01b-vigencia](pago-proveedor-validacion/vw01b-vigencia.png) |
+| VW-02 | Nueva cotización | ok | [vw02-nueva-cotizacion](pago-proveedor-validacion/vw02-nueva-cotizacion.png) · [cp02-numero-inexistente](pago-proveedor-validacion/cp02-numero-inexistente.png) |
+| VW-03 | Formulario | ok | [vw03-formulario-inicial](pago-proveedor-validacion/vw03-formulario-inicial.png) · [vw03b-formulario-completo](pago-proveedor-validacion/vw03b-formulario-completo.png) |
+| VW-04 | PDF resumen | parcial | PDF generado y texto leído. No se comparó el diseño hoja por hoja con la maqueta. |
+| VW-05 | Vista previa WhatsApp de Ventas | ok | [vw05a-pedir-datos-preview](pago-proveedor-validacion/vw05a-pedir-datos-preview.png) · [vw05b-cuentas-bancarias](pago-proveedor-validacion/vw05b-cuentas-bancarias.png) · [vw05c-resumen](pago-proveedor-validacion/vw05c-resumen.png) |
+| VW-06 | Mis pendientes | ok | [cp62-mis-pendientes](pago-proveedor-validacion/cp62-mis-pendientes.png) |
+| VW-07 | Todas las solicitudes | ok | [vw07-todas-las-solicitudes](pago-proveedor-validacion/vw07-todas-las-solicitudes.png) |
+| VW-08 | Detalle | ok | [cs01-1-solicitud-creada](pago-proveedor-validacion/cs01-1-solicitud-creada.png) |
+| VW-09 | Paso 1 | ok | [vw09b-paso1-tt](pago-proveedor-validacion/vw09b-paso1-tt.png) |
+| VW-10 | Registrar comprobante | ok | [vw10a-comprobante-vacio](pago-proveedor-validacion/vw10a-comprobante-vacio.png) · [vw10b-comprobante-completo](pago-proveedor-validacion/vw10b-comprobante-completo.png) |
+| VW-11 | Formulario T-T | ok | [vw11-formulario-tt-cliente](pago-proveedor-validacion/vw11-formulario-tt-cliente.png) · [vw11b-tt-llenado-por-ventas](pago-proveedor-validacion/vw11b-tt-llenado-por-ventas.png) · [vw11c-formulario-enviado](pago-proveedor-validacion/vw11c-formulario-enviado.png) |
+| VW-12 | Paso 2 visto por Ventas | ok | [vw12-paso2-visto-por-ventas](pago-proveedor-validacion/vw12-paso2-visto-por-ventas.png) |
+| VW-13 | Paso 3 visto por Ventas | ok | [vw13-paso3-visto-por-ventas](pago-proveedor-validacion/vw13-paso3-visto-por-ventas.png) |
+| VW-14 | Confirmación | ok | [vw14-confirmacion-completada](pago-proveedor-validacion/vw14-confirmacion-completada.png) · [vw14b-confirmacion-por-cobrar](pago-proveedor-validacion/vw14b-confirmacion-por-cobrar.png) · [vw14d-pago-2-por-decidir](pago-proveedor-validacion/vw14d-pago-2-por-decidir.png) · [vw14e-cuota-2-por-decidir](pago-proveedor-validacion/vw14e-cuota-2-por-decidir.png) |
+| VW-15 | Balance | ok | PDF leído y vista previa antes de enviar. [vw15a-balance-vista-previa](pago-proveedor-validacion/vw15a-balance-vista-previa.png) · [vw15-balance-enviado](pago-proveedor-validacion/vw15-balance-enviado.png) |
+| VW-16 | Voucher de la diferencia | ok | [vw16-voucher-diferencia](pago-proveedor-validacion/vw16-voucher-diferencia.png) |
+| VW-17 | Pago 2 no se realizará | ok | [vw17-pago-2-no-se-realizara](pago-proveedor-validacion/vw17-pago-2-no-se-realizara.png) |
+| VW-18 | Verificación | ok | [vw18-verificacion](pago-proveedor-validacion/vw18-verificacion.png) |
+| VW-19 | Validar depósito | ok | [vw19-validar-deposito](pago-proveedor-validacion/vw19-validar-deposito.png) · [cp30-banco-recibe-menos](pago-proveedor-validacion/cp30-banco-recibe-menos.png) |
+| VW-20 | Observar depósito | ok | [vw20-observar-deposito](pago-proveedor-validacion/vw20-observar-deposito.png) |
+| VW-21 | Aprobación | ok | [vw21a-por-aprobar](pago-proveedor-validacion/vw21a-por-aprobar.png) · [vw21b-aprobados](pago-proveedor-validacion/vw21b-aprobados.png) |
+| VW-22 | Ventana de aprobación | ok | [vw22-aprobacion-del-pago](pago-proveedor-validacion/vw22-aprobacion-del-pago.png) |
+| VW-23 | Pagos en dólares | ok | [vw23-pagos-en-dolares](pago-proveedor-validacion/vw23-pagos-en-dolares.png) · [vw23b-pagados](pago-proveedor-validacion/vw23b-pagados.png) |
+| VW-24 | Ventana de ejecución USD | ok | [vw24a-ejecucion-usd](pago-proveedor-validacion/vw24a-ejecucion-usd.png) · [vw24b-ejecucion-aviso](pago-proveedor-validacion/vw24b-ejecucion-aviso.png) |
+| VW-25 | Reembolso solicitado y Aprobar reembolso | ok | [vw25a-bandeja-reembolso](pago-proveedor-validacion/vw25a-bandeja-reembolso.png) · [vw25-reembolso-solicitado](pago-proveedor-validacion/vw25-reembolso-solicitado.png) · [vw25b-aprobar-reembolso](pago-proveedor-validacion/vw25b-aprobar-reembolso.png) |
+| VW-26 | Tarifas y tolerancia | ok | Abiertas por pantalla; guardado y efecto por API. [vw26a-tolerancia-y-plazos](pago-proveedor-validacion/vw26a-tolerancia-y-plazos.png) · [vw26b-comision-bancaria](pago-proveedor-validacion/vw26b-comision-bancaria.png) · [vw26c-comision-administrativa](pago-proveedor-validacion/vw26c-comision-administrativa.png) |
+| VW-27 | Lista China | ok | Encabezados de la tabla en inglés para este rol: ver Pendientes. [vw27-pagos-en-yuanes](pago-proveedor-validacion/vw27-pagos-en-yuanes.png) |
+| VW-28 | Registrar pago en yuanes | ok | [vw28-pago-en-yuanes](pago-proveedor-validacion/vw28-pago-en-yuanes.png) |
+| VW-29 | Observar en China | ok | [vw29-observar-pago](pago-proveedor-validacion/vw29-observar-pago.png) |
+| VW-30 | Texto del aviso | ok | Dentro de la ventana de pago. [vw28-pago-en-yuanes](pago-proveedor-validacion/vw28-pago-en-yuanes.png) |
+| VW-31 | Solicitud manual | ok | [vw31-nueva-solicitud-manual](pago-proveedor-validacion/vw31-nueva-solicitud-manual.png) · [vw31b-manual-creada](pago-proveedor-validacion/vw31b-manual-creada.png) |
+
+Además, en pantalla: [tema-oscuro-mis-pendientes](pago-proveedor-validacion/tema-oscuro-mis-pendientes.png) · [movil-mis-pendientes](pago-proveedor-validacion/movil-mis-pendientes.png). Móvil y tema oscuro se revisaron solo en Mis pendientes.
+
+## Pendientes
+
+Decisión para ti:
+
+1. **China en inglés (VW-27):** el DataTable y el menú traducen al inglés para ContenedorAlmacen, y el resto del módulo está en español. La regla del módulo pide español; cambiarlo afecta un comportamiento general de ese rol.
+
+Sin validar:
+
+- Envío real por WhatsApp: se probó hasta la vista previa. Queda fuera por PV-20.
+- Aviso de la cuota 2 dos días antes en Mis pendientes (RN-18).
+- «Elegir proveedores» del voucher compartido en pantalla (la regla sí, por API).
+- Comparación visual hoja por hoja del PDF de resumen con la maqueta.
+- PHPUnit: requiere PHP 8.3. Corre en el CI.
+
+Deuda técnica sin efecto al ejecutar:
+
+- `vue-tsc` marca 10 errores de tipos: `DepositReviewModal.vue`, `SupplierPaymentDeposits.vue`, `solicitudes/index.vue`, `solicitudes/[id].vue` (2) y `verificacion/index.vue` (5).
+- En tablas anchas, el borde con desplazamiento automático del `DataTable` se mueve al acercar el mouse. Es del componente general; las acciones quedaron fijas a la derecha.
+
+## Cierre
+
+Estado de los 114 ítems: 74 `ok` en pantalla, 39 `ok-api` y 1 `parcial`. Los 68 casos de prueba tienen resultado y ninguno quedó en falla.
+
+Los cambios no están commiteados. `Untitled` y `constancia-local.png` no deben subir.
