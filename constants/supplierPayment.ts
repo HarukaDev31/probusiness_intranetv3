@@ -67,11 +67,6 @@ export const APPROVAL_BUCKET = {
   APPROVED: 'approved',
 } as const
 
-export const ADMIN_TAB = {
-  APPROVAL: 'approval',
-  USD: 'usd',
-} as const
-
 export const EXECUTION_BUCKET = {
   PENDING: 'pending',
   PAID: 'paid',

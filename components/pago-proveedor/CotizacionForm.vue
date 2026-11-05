@@ -388,6 +388,17 @@
           <UButton type="button" color="neutral" variant="outline" size="lg" icon="i-mdi-whatsapp" class="flex-1 justify-center" :ui="{ leadingIcon: 'text-green-500' }" :loading="enviando" :disabled="!editable && !cotizacion.puede_enviar" @click="prepararWhatsapp">Enviar resumen al cliente (WhatsApp)</UButton>
           <UButton type="button" color="neutral" variant="outline" size="lg" icon="i-lucide-file-text" class="justify-center" :loading="generandoPdf" :disabled="!editable && !(cotizacion.puede_descargar_pdf || cotizacion.puede_enviar)" @click="descargarPdf">Descargar PDF</UButton>
         </div>
+
+        <div v-if="documentoPdf" class="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-default bg-elevated/60 px-3 py-2 text-xs text-muted">
+          <UIcon name="i-lucide-history" class="size-4 shrink-0" />
+          <span>
+            PDF emitido en el <strong class="text-highlighted">paso {{ documentoPdf.paso }} · {{ documentoPdf.paso_nombre }}</strong>
+            <template v-if="documentoPdf.generado_en"> el {{ fechaDocumento(documentoPdf.generado_en) }}</template>
+          </span>
+          <UBadge v-if="documentoPdf.desactualizado" color="warning" variant="soft" size="sm">Se regenerará al descargar</UBadge>
+          <UBadge v-else color="success" variant="soft" size="sm">Al día</UBadge>
+          <UBadge v-if="documentoPdf.descargas" color="neutral" variant="soft" size="sm">{{ documentoPdf.descargas }} {{ documentoPdf.descargas === 1 ? 'descarga' : 'descargas' }}</UBadge>
+        </div>
       </UCard>
 
       <UAlert
@@ -442,16 +453,30 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import type { PagoProveedorBusquedaCc, PagoProveedorCalculoLinea, PagoProveedorCotizacion, PagoProveedorProveedor } from '~/types/pago-proveedor'
+import type { PagoProveedorBusquedaCc, PagoProveedorCalculoLinea, PagoProveedorCotizacion, PagoProveedorDocumentoEmitido, PagoProveedorProveedor } from '~/types/pago-proveedor'
 import PageHeader from '~/components/PageHeader.vue'
 import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
-import { PagoProveedorService } from '~/services/pagoProveedorService'
+import { useSupplierPaymentQuotes } from '~/composables/pago-proveedor/useSupplierPaymentQuotes'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
 
 const props = defineProps<{ quoteId?: number; codigoCc?: string }>()
 const { showSuccess, showError, showWarning } = useModal()
 const { withSpinner } = useSpinner()
+const {
+  getConfig: fetchConfig,
+  get: fetchQuote,
+  findByCc: fetchByCode,
+  create: createQuote,
+  save: saveQuote,
+  previewWhatsapp: previewWhatsappMessage,
+  previewDraft: previewDraftSummary,
+  sendDraft: sendDraftMessage,
+  downloadPdf: downloadQuotePdf,
+  downloadDraft: downloadDraftPdf,
+  renew: renewQuote,
+  createRequest: createRequestFromQuote
+} = useSupplierPaymentQuotes()
 const cargando = ref(true)
 const guardando = ref(false)
 const generandoPdf = ref(false)
@@ -496,6 +521,15 @@ const presets = [
 ]
 
 const editable = computed(() => !!cotizacion.value?.puede_editar)
+/** PDF ya emitido: se reutiliza mientras el paso y los datos no cambien. */
+const documentoPdf = computed(() => cotizacion.value?.documento ?? null)
+const fechaDocumento = (valor: string) => new Date(valor).toLocaleString('es-PE', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit'
+})
 const titulo = computed(() => {
   if (cargando.value && props.quoteId) return 'Cotización'
   if (!cotizacion.value?.id) return 'Nueva cotización'
@@ -1137,8 +1171,8 @@ async function persistir() {
   if (!cotizacion.value) return
   const form = formularioGuardado()
   const respuesta = cotizacion.value.id
-    ? await PagoProveedorService.guardarCotizacion(cotizacion.value.id, form)
-    : await PagoProveedorService.crearCotizacion(cotizacion.value.cod_cotizacion_cc, form)
+    ? await saveQuote(cotizacion.value.id, form)
+    : await createQuote(cotizacion.value.cod_cotizacion_cc, form)
   proformasPendientes.value = {}
   aplicar(respuesta.data)
 }
@@ -1187,21 +1221,43 @@ async function descargarPdf() {
   generandoPdf.value = true
   try {
     const respuesta = editable.value
-      ? await PagoProveedorService.pdfResumen(datosResumen())
-      : await PagoProveedorService.descargarPdf(cotizacion.value.id)
-    const binario = atob(respuesta.data.base64)
-    const bytes = new Uint8Array(binario.length)
-    for (let i = 0; i < binario.length; i++) bytes[i] = binario.charCodeAt(i)
-    const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }))
-    const enlace = document.createElement('a')
-    enlace.href = url
-    enlace.download = respuesta.data.filename
-    enlace.click()
-    URL.revokeObjectURL(url)
+      ? await downloadDraftPdf(datosResumen())
+      : await downloadQuotePdf(cotizacion.value.id)
+    descargarBinario(respuesta.data)
+    if (respuesta.data.generado) {
+      showSuccess('PDF emitido', `Paso ${respuesta.data.paso}: ${respuesta.data.paso_nombre}. Se reutiliza si los datos y el paso no cambian.`)
+    } else {
+      showSuccess('PDF al día', `Se descargó el PDF ya emitido en el paso ${respuesta.data.paso}.`)
+    }
+    await refrescarDocumento()
   } catch (error: any) {
     showError('PDF', error.message || 'No se pudo generar el resumen.')
   } finally {
     generandoPdf.value = false
+  }
+}
+
+function descargarBinario(documento: PagoProveedorDocumentoEmitido) {
+  const binario = atob(documento.base64)
+  const bytes = new Uint8Array(binario.length)
+  for (let i = 0; i < binario.length; i++) bytes[i] = binario.charCodeAt(i)
+  const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }))
+  const enlace = document.createElement('a')
+  enlace.href = url
+  enlace.download = documento.filename
+  enlace.click()
+  URL.revokeObjectURL(url)
+}
+
+/** Relee el estado del PDF sin volver a generarlo (no cuenta como descarga). */
+async function refrescarDocumento() {
+  const id = cotizacion.value?.id
+  if (!id) return
+  try {
+    const respuesta = await fetchQuote(id)
+    if (cotizacion.value) cotizacion.value.documento = respuesta.data.documento ?? null
+  } catch {
+    // Si falla, se conserva el estado que ya teníamos en pantalla.
   }
 }
 
@@ -1210,8 +1266,8 @@ async function prepararWhatsapp() {
   enviando.value = true
   try {
     const respuesta = editable.value
-      ? await PagoProveedorService.vistaPreviaResumen(datosResumen())
-      : await PagoProveedorService.vistaPreviaWhatsapp(cotizacion.value.id)
+      ? await previewDraftSummary(datosResumen())
+      : await previewWhatsappMessage(cotizacion.value.id)
     vistaPrevia.value = respuesta.data
   } catch (error: any) {
     showError('WhatsApp', error.message || 'No se pudo armar el mensaje.')
@@ -1224,7 +1280,7 @@ async function enviarWhatsapp() {
   if (!cotizacion.value || !vistaPrevia.value?.puede_enviar) return
   enviandoReal.value = true
   try {
-    const respuesta = await withSpinner(() => PagoProveedorService.enviarResumen(datosResumen()), 'Enviando WhatsApp…')
+    const respuesta = await withSpinner(() => sendDraftMessage(datosResumen()), 'Enviando WhatsApp…')
     vistaPrevia.value = null
     showSuccess('WhatsApp enviado', respuesta.data.nota || 'Resumen enviado al cliente.')
   } catch (error: any) {
@@ -1244,7 +1300,7 @@ async function crearSolicitud() {
   try {
     await withSpinner(async () => {
       await persistir()
-      const respuesta = await PagoProveedorService.crearSolicitud(cotizacion.value!.id)
+      const respuesta = await createRequestFromQuote(cotizacion.value!.id)
       showSuccess('Solicitud creada', `N.° ${respuesta.data.numero_orden}`)
       await navigateTo(`/pago-proveedor/solicitudes/${respuesta.data.id}`)
     }, esNueva.value ? 'Guardando y creando solicitud…' : 'Creando solicitud…')
@@ -1259,7 +1315,7 @@ async function crearSolicitud() {
 async function renovar() {
   if (!cotizacion.value) return
   try {
-    const respuesta = await PagoProveedorService.renovarCotizacion(cotizacion.value.id, tipoCambio.value)
+    const respuesta = await renewQuote(cotizacion.value.id, tipoCambio.value)
     aplicar(respuesta.data)
     showSuccess('Cotización renovada', 'Confirma el tipo de cambio del día y reenvía el resumen.')
   } catch (error: any) {
@@ -1307,7 +1363,7 @@ function armarBorrador(busqueda: PagoProveedorBusquedaCc) {
 onMounted(async () => {
   try {
     try {
-      const config = await PagoProveedorService.obtenerConfiguracion()
+      const config = await fetchConfig()
       const data = config.data as Record<string, any>
       const usd = Array.isArray(data.tarifa_bancaria_usd) ? data.tarifa_bancaria_usd : [100, 120, 150]
       const rmb = Array.isArray(data.tarifa_bancaria_rmb) ? data.tarifa_bancaria_rmb : [50, 90, 120]
@@ -1322,10 +1378,10 @@ onMounted(async () => {
       // Tarifas por defecto del módulo.
     }
     if (props.quoteId) {
-      const respuesta = await PagoProveedorService.obtenerCotizacion(props.quoteId)
+      const respuesta = await fetchQuote(props.quoteId)
       aplicar(respuesta.data)
     } else if (props.codigoCc && /^CO\d{8}$/i.test(props.codigoCc)) {
-      const respuesta = await PagoProveedorService.buscarConsolidada(props.codigoCc)
+      const respuesta = await fetchByCode(props.codigoCc)
       armarBorrador(respuesta.data)
     } else {
       showError('Cotización', 'Elige una cotización de Consolidada para empezar.')

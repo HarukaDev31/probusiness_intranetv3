@@ -1,34 +1,37 @@
 <template>
   <SupplierPaymentWindow
     :open="deposit !== null"
-    title="Validar depósito"
+    :title="windowTitle"
     :subtitle="subtitle"
     :code="requestCodes"
-    hint="El importe del banco es el que cuenta para el pago. Guardar cambios no valida el depósito."
+    :hint="hintText"
     wide
     @close="emit('close')"
   >
     <template #pill>
       <UBadge
-        :color="deposit?.deadline_overdue ? 'error' : 'warning'"
+        :color="slaPill.color"
         variant="soft"
-        :label="deposit?.status_label || 'Por validar'"
+        :label="slaPill.label"
+        :title="slaPill.title"
       />
     </template>
 
-    <div v-if="deposit" class="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
-      <SupplierPaymentCard title="Comprobante">
-        <UCard variant="subtle" class="overflow-hidden" :ui="{ body: 'p-0 sm:p-0' }">
-          <img v-if="isImage" :src="deposit.voucher_url || ''" alt="Comprobante" class="max-h-80 w-full object-contain">
-          <a v-else-if="deposit.voucher_url" :href="deposit.voucher_url" target="_blank" rel="noopener" class="block px-4 py-6 text-sm font-semibold text-primary">
-            Abrir comprobante · {{ deposit.voucher_name }}
-          </a>
-          <p v-else class="px-4 py-6 text-sm text-muted">Sin comprobante.</p>
-        </UCard>
-        <p v-if="deposit.deadline_text" class="text-sm" :class="deposit.deadline_overdue ? 'font-semibold text-error' : 'text-muted'">
-          {{ deposit.status === DEPOSIT_STATUS.OBSERVED ? 'Plazo para subsanar' : 'Plazo para validar' }}: {{ deposit.deadline_text }}
-        </p>
-      </SupplierPaymentCard>
+    <div v-if="deposit" class="grid gap-4 lg:grid-cols-[1.25fr_1fr]">
+      <div class="flex flex-col gap-3">
+        <SupplierPaymentCard title="Comprobante">
+          <VoucherViewer :url="deposit.voucher_url" :name="deposit.voucher_name" />
+        </SupplierPaymentCard>
+
+        <UAlert
+          v-if="deposit.interbank"
+          color="warning"
+          variant="subtle"
+          icon="i-heroicons-exclamation-triangle"
+          title="Interbancaria o cajero"
+          description="Revisa si el banco aplicó comisiones o cargos: el voucher puede no mostrar lo que realmente ingresó."
+        />
+      </div>
 
       <div class="flex flex-col gap-3.5">
         <SupplierPaymentCard title="Datos registrados por Ventas">
@@ -36,7 +39,7 @@
             <UFormField label="Banco">
               <USelect v-model="form.bank" :items="bancos" class="w-full" />
             </UFormField>
-            <UFormField label="Fecha">
+            <UFormField label="Fecha del depósito">
               <UInput v-model="form.paid_on" type="date" class="w-full" />
             </UFormField>
             <UFormField label="N.° de operación">
@@ -45,32 +48,108 @@
           </template>
           <template v-else>
             <SupplierPaymentFact label="Cliente" :value="deposit.client_name || '—'" />
-            <SupplierPaymentFact label="Consolidado" :value="deposit.consolidation || '—'" />
-            <SupplierPaymentFact label="Banco" :value="deposit.interbank ? `${deposit.bank_label} · Interbancaria` : deposit.bank_label" />
-            <SupplierPaymentFact label="Fecha" :value="deposit.paid_on || '—'" />
+            <SupplierPaymentFact label="N.° de consolidado" :value="deposit.consolidation || '—'" />
+            <SupplierPaymentFact label="Código de solicitud">
+              <span v-if="providerCodes.length" class="flex flex-col items-end gap-0.5">
+                <a
+                  v-for="code in providerCodes"
+                  :key="code"
+                  :href="`/pago-proveedor/aprobacion-pagos?codigo=${encodeURIComponent(code)}`"
+                  class="font-mono text-xs font-semibold text-primary hover:underline"
+                  :title="`Ir a Aprobación de pagos · ${code}`"
+                >{{ code }}</a>
+              </span>
+              <span v-else class="italic text-muted" title="Se genera cuando el abono del proveedor está completo y avanza a Validación">Pendiente</span>
+            </SupplierPaymentFact>
+            <SupplierPaymentFact label="Banco">
+              {{ bankLabel }}
+              <UBadge v-if="deposit.interbank" size="sm" color="neutral" variant="subtle" label="Interbancaria / cajero" />
+            </SupplierPaymentFact>
+            <SupplierPaymentFact label="Fecha del depósito" :value="deposit.paid_on || '—'" />
             <SupplierPaymentFact label="N.° de operación" :value="deposit.operation_number || '—'" />
-            <SupplierPaymentFact label="Código" :value="requestCodes" />
+            <SupplierPaymentFact v-if="deposit.purpose === 'exchange_difference'" label="Tipo de abono" :value="deposit.purpose_label || 'Diferencia de cambio'" />
           </template>
-          <p v-if="deposit.corrected_by_admin" class="text-xs text-muted">Corregido por Administración.</p>
-          <p v-if="deposit.shared" class="text-xs text-muted">Voucher compartido con {{ deposit.providers.length }} proveedores. Se verifica una sola vez.</p>
-          <p v-if="deposit.observation_detail || deposit.observation_reason" class="text-sm text-error">
-            Observado<span v-if="reasonLabel">: {{ reasonLabel }}</span>
-            <span v-if="deposit.observation_detail"> · {{ deposit.observation_detail }}</span>
+
+          <div v-if="deposit.can_validate" class="mt-2 flex flex-wrap items-center gap-2">
+            <UButton
+              v-if="!editing"
+              size="xs"
+              color="neutral"
+              variant="outline"
+              icon="i-heroicons-pencil-square"
+              title="Corregir banco, fecha o número de operación"
+              @click="startEdit"
+            >
+              Editar
+            </UButton>
+            <template v-else>
+              <UButton size="xs" color="primary" :loading="saving" icon="i-heroicons-check" @click="saveDetails">Guardar cambios</UButton>
+              <UButton size="xs" color="neutral" variant="ghost" @click="editing = false">Cancelar</UButton>
+            </template>
+            <p class="text-xs text-muted">Guardar no valida el depósito.</p>
+          </div>
+
+          <p v-if="deposit.corrected_by_admin" class="mt-2 text-xs text-muted">
+            Corregido por Administración: queda registrado y se avisa a Ventas.
+          </p>
+          <p v-if="deposit.shared" class="mt-1 text-xs text-muted">
+            Voucher compartido con {{ deposit.providers.length }} proveedores. Se verifica una sola vez.
           </p>
         </SupplierPaymentCard>
 
-        <SupplierPaymentCard title="Importe">
-          <UCard variant="subtle" :ui="{ body: 'px-3 py-2 sm:px-3 sm:py-2' }">
-            <p class="text-xs text-muted">Importe registrado (Ventas)</p>
-            <p class="text-lg font-bold">${{ money(deposit.recorded_amount ?? deposit.amount) }}</p>
-          </UCard>
-          <label class="block">
-          <UCard color="primary" variant="subtle" :ui="{ body: 'px-3 py-2 sm:px-3 sm:py-2' }">
-            <span class="text-xs text-primary">Importe ingresado (Banco)</span>
-            <UInput v-model.number="bankAmount" type="number" min="0" step="0.01" variant="none" :disabled="!deposit.can_validate" class="mt-1 w-full text-lg font-bold" />
-          </UCard>
-          </label>
-          <p v-if="deposit.recorded_amount != null" class="text-xs text-warning">
+        <UAlert
+          v-if="deposit.observation_detail || deposit.observation_reason"
+          color="error"
+          variant="subtle"
+          icon="i-heroicons-exclamation-circle"
+          :title="`Observado${reasonLabel ? `: ${reasonLabel}` : ''}`"
+          :description="deposit.observation_detail || (slaText(deposit.sla) || undefined)"
+        />
+
+        <SupplierPaymentCard title="Plazo de verificación">
+          <SupplierPaymentFact label="Registrado" :value="dateText(deposit.sla?.registered_at)" />
+          <SupplierPaymentFact label="Vence" :value="dateText(deposit.sla?.deadline_at)" />
+          <SupplierPaymentFact label="Tiempo restante">
+            <span :class="slaOverdue(deposit.sla) ? 'font-semibold text-error' : 'font-semibold text-highlighted'">
+              {{ slaText(deposit.sla) || '—' }}
+            </span>
+          </SupplierPaymentFact>
+          <p class="mt-1 text-xs text-muted">
+            Plazo de {{ deposit.sla?.hours ?? 0 }} h definido por Administración. Los tiempos los calcula el servidor.
+          </p>
+          <p v-if="deposit.sla?.server_now" class="mt-0.5 text-[11px] text-muted">
+            Hora del servidor: {{ dateText(deposit.sla.server_now) }}
+          </p>
+        </SupplierPaymentCard>
+
+        <SupplierPaymentCard title="Importes (USD)">
+          <div class="grid gap-2 sm:grid-cols-2">
+            <UCard variant="subtle" :ui="{ body: 'px-3 py-2 sm:px-3 sm:py-2' }">
+              <p class="text-[11px] font-bold uppercase tracking-wide text-muted">Importe registrado (Ventas)</p>
+              <p class="mt-1 text-lg font-bold text-highlighted">${{ money(deposit.recorded_amount ?? deposit.amount) }}</p>
+            </UCard>
+            <UCard color="primary" variant="subtle" :ui="{ body: 'px-3 py-2 sm:px-3 sm:py-2' }">
+              <p class="text-[11px] font-bold uppercase tracking-wide text-primary">Importe ingresado (Banco)</p>
+              <div class="mt-1 flex items-center gap-0.5 text-lg font-bold text-primary">
+                <span>$</span>
+                <UInput
+                  v-model.number="bankAmount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  variant="none"
+                  :disabled="!deposit.can_validate"
+                  class="w-full text-lg font-bold"
+                  aria-label="Importe ingresado (Banco) en USD"
+                />
+              </div>
+            </UCard>
+          </div>
+          <p class="mt-1.5 text-xs text-muted">Compáralo con el importe que muestra el comprobante.</p>
+          <div class="mt-2 rounded-md px-3 py-2 text-xs" :class="differenceBox.class">
+            {{ differenceBox.text }}
+          </div>
+          <p v-if="deposit.recorded_amount != null" class="mt-1.5 text-xs text-warning">
             Ventas registró ${{ money(deposit.recorded_amount) }} · se ajustó al importe del banco.
           </p>
         </SupplierPaymentCard>
@@ -107,9 +186,8 @@
     </UCard>
 
     <template #footer>
-      <UButton v-if="deposit?.can_validate && !editing" color="neutral" variant="outline" @click="startEdit">Editar</UButton>
-      <UButton v-if="editing" color="primary" variant="soft" :loading="saving" @click="saveDetails">Guardar cambios</UButton>
-      <UButton v-if="editing" color="neutral" variant="ghost" @click="editing = false">Cancelar edición</UButton>
+      <UButton v-if="deposit?.can_validate" color="neutral" variant="ghost" @click="emit('close')">Cancelar</UButton>
+      <UButton v-else color="neutral" variant="ghost" @click="emit('close')">Cerrar</UButton>
       <UButton v-if="deposit?.can_extend && !extending && !cancelling" color="neutral" variant="soft" @click="extending = true">Extender plazo</UButton>
       <UButton v-if="extending" color="primary" :loading="saving" @click="extendObservation">Confirmar extensión</UButton>
       <UButton v-if="deposit?.can_cancel_payment && !cancelling && !extending" color="error" variant="soft" @click="cancelling = true">Anular pago</UButton>
@@ -117,7 +195,7 @@
       <UButton v-if="deposit?.can_undo && !extending && !cancelling" color="neutral" variant="soft" :loading="saving" @click="undo">
         Deshacer{{ deposit.undo_notifies_sales ? ' y avisar a Ventas' : '' }}
       </UButton>
-      <UButton v-if="deposit?.can_validate && !observing" color="error" variant="soft" @click="observing = true">Observar</UButton>
+      <UButton v-if="deposit?.can_validate && !observing" color="error" variant="soft" icon="i-heroicons-exclamation-circle" @click="observing = true">Observar</UButton>
       <UButton v-if="deposit?.can_validate && observing" color="error" :loading="saving" @click="observe">Confirmar observación</UButton>
       <UButton v-if="deposit?.can_validate && !observing" color="primary" :loading="saving" @click="validate">Validar depósito</UButton>
     </template>
@@ -129,10 +207,12 @@ import { computed, ref, watch } from 'vue'
 import SupplierPaymentCard from '~/components/pago-proveedor/SupplierPaymentCard.vue'
 import SupplierPaymentFact from '~/components/pago-proveedor/SupplierPaymentFact.vue'
 import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
+import VoucherViewer from '~/components/pago-proveedor/VoucherViewer.vue'
 import { DEPOSIT_BANK, DEPOSIT_STATUS } from '~/constants/supplierPayment'
 import { PagoProveedorService } from '~/services/pagoProveedorService'
-import type { SupplierPaymentDeposit, SupplierPaymentObservationReason } from '~/types/pago-proveedor'
+import type { SupplierPaymentDeposit, SupplierPaymentObservationReason, SupplierPaymentSla } from '~/types/pago-proveedor'
 import { useModal } from '~/composables/commons/useModal'
+import { slaOverdue, slaText, useSlaCountdown } from '~/composables/pago-proveedor/useSlaCountdown'
 
 const props = defineProps<{
   deposit: SupplierPaymentDeposit | null
@@ -141,6 +221,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{ close: []; saved: [] }>()
 const { showError, showSuccess } = useModal()
+useSlaCountdown()
 
 const editing = ref(false)
 const observing = ref(false)
@@ -184,19 +265,124 @@ watch(() => props.deposit, (deposit) => {
   }
 }, { immediate: true })
 
-const isImage = computed(() => /\.(png|jpe?g|webp|gif)(\?|$)/i.test(props.deposit?.voucher_url || ''))
 const requestCodes = computed(() => {
   const codes = (props.deposit?.providers || []).map((provider) => provider.request_code).filter(Boolean)
   return codes.length ? codes.join(', ') : 'Pendiente'
 })
+/** Códigos individuales (la maqueta los lista uno por línea con enlace a Aprobación de pagos). */
+const providerCodes = computed(() => (props.deposit?.providers || [])
+  .map((provider) => provider.request_code)
+  .filter((code): code is string => !!code))
+const bankLabel = computed(() => props.deposit?.bank_label || '—')
+
+/** Título según el modo, como la maqueta: Validar depósito / Depósito observado / Depósito validado. */
+const windowTitle = computed(() => {
+  const deposit = props.deposit
+  if (!deposit) return 'Validar depósito'
+  if (deposit.can_validate) return 'Validar depósito'
+  if (deposit.status === DEPOSIT_STATUS.OBSERVED) return 'Depósito observado'
+  if (deposit.status === DEPOSIT_STATUS.VALIDATED) return 'Depósito validado'
+  return deposit.status_label || 'Depósito'
+})
 const reasonLabel = computed(() => props.reasons.find((item) => item.code === props.deposit?.observation_reason)?.label || props.deposit?.observation_reason)
 const subtitle = computed(() => {
   if (!props.deposit) return ''
-  return `${props.deposit.client_name || 'Cliente'} · ${props.deposit.consolidation || 'Sin consolidado'}`
+  return `${props.deposit.client_name || 'Cliente'} · Consolidado ${props.deposit.consolidation || 'sin identificar'}`
+})
+
+/** Pista del pie: solo al validar (igual que la maqueta); en estados cerrados el pie queda limpio. */
+const hintText = computed(() => (props.deposit?.can_validate
+  ? 'Si el banco recibió otro importe, escríbelo: manda el banco y se ajusta el registro de Ventas. Guardar cambios no valida el depósito.'
+  : ''))
+
+/** Píldora del encabezado: plazo real del backend o estado de la verificación. */
+const slaPill = computed(() => {
+  const deposit = props.deposit
+  if (!deposit) return { color: 'warning' as const, label: 'Por validar', title: '' }
+  if (deposit.can_validate) {
+    const expired = slaOverdue(deposit.sla)
+    const text = slaText(deposit.sla) || `${deposit.sla?.hours ?? 0} h`
+    return {
+      color: expired ? 'error' as const : 'warning' as const,
+      label: `${expired ? '⏰ ' : ''}Plazo para validar: ${text}`,
+      title: slaSource(deposit.sla)
+    }
+  }
+  if (deposit.status === DEPOSIT_STATUS.OBSERVED) return { color: 'error' as const, label: 'Observado', title: slaSource(deposit.sla) }
+  if (deposit.status === DEPOSIT_STATUS.VALIDATED) return { color: 'success' as const, label: 'Validado', title: slaSource(deposit.sla) }
+  return { color: 'neutral' as const, label: deposit.status_label, title: '' }
+})
+
+/** De dónde sale el plazo: registrado y vencimiento calculados en el backend. */
+function slaSource(sla?: SupplierPaymentSla | null) {
+  if (!sla?.deadline_at) return 'El plazo lo calcula el servidor.'
+  const format = (value: string) => {
+    const date = new Date(value)
+    return Number.isNaN(date.getTime()) ? value : date.toLocaleString('es-PE', { dateStyle: 'medium', timeStyle: 'short' })
+  }
+  const registered = sla.registered_at ? `Registrado el ${format(sla.registered_at)}` : 'Registro'
+  return `${registered} · vence el ${format(sla.deadline_at)} (plazo de ${sla.hours} h definido por Administración)`
+}
+
+/** Comparación en vivo: la tolerancia y el límite excepcional vienen del backend. */
+const differenceBox = computed(() => {
+  const deposit = props.deposit
+  const value = Number(bankAmount.value)
+  if (!deposit) return { class: 'bg-elevated text-muted', text: '' }
+  if (!Number.isFinite(value) || value <= 0) {
+    return { class: 'bg-elevated text-error', text: 'Si el dinero no ingresó al banco, usa Observar.' }
+  }
+  const recorded = Number(deposit.recorded_amount ?? deposit.amount)
+  const difference = Number((value - recorded).toFixed(2))
+  const tolerance = Number(deposit.comparison?.tolerance ?? 0)
+  const exceptionLimit = Number(deposit.comparison?.exception_limit ?? 0)
+  const money = (amount: number) => `$${Math.abs(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  if (Math.abs(difference) < 0.005) {
+    return { class: 'bg-success/10 text-success', text: '✓ Coincide con el importe registrado.' }
+  }
+  const amount = money(difference)
+  const withinTolerance = Math.abs(difference) <= tolerance
+  const withinException = Math.abs(difference) <= exceptionLimit
+  if (difference < 0) {
+    if (withinTolerance) {
+      return {
+        class: 'bg-success/10 text-success',
+        text: `Faltan ${amount} frente al importe registrado, dentro de la tolerancia de ${money(tolerance)}: lo asume Probusiness al aprobar el pago.`
+      }
+    }
+    if (withinException) {
+      return {
+        class: 'bg-warning/10 text-warning',
+        text: `Faltan ${amount}: supera la tolerancia de ${money(tolerance)}, pero está dentro del límite excepcional de ${money(exceptionLimit)}. Al aprobar el pago podrás aceptarlo con motivo.`
+      }
+    }
+    return {
+      class: 'bg-error/10 text-error',
+      text: `⚠ Faltan ${amount}: supera la tolerancia de ${money(tolerance)}. Puedes validarlo y decidir al aprobar el pago, u observar para que Ventas cobre la diferencia al cliente.`
+    }
+  }
+  if (withinTolerance) {
+    return {
+      class: 'bg-success/10 text-success',
+      text: `Sobran ${amount} frente al importe registrado, dentro de la tolerancia de ${money(tolerance)}.`
+    }
+  }
+  return {
+    class: 'bg-warning/10 text-warning',
+    text: `Sobran ${amount}: supera la tolerancia de ${money(tolerance)}. Ventas consultará al cliente si prefiere reembolso o aplicarlo a la siguiente cuota.`
+  }
 })
 
 function money(value: number) {
-  return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function dateText(value?: string | null) {
+  if (!value) return '—'
+  const date = new Date(value)
+  return Number.isNaN(date.getTime())
+    ? value
+    : date.toLocaleString('es-PE', { dateStyle: 'medium', timeStyle: 'short' })
 }
 
 function startEdit() {

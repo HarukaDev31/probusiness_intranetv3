@@ -1,10 +1,9 @@
 <template>
   <div class="md:p-6">
-    <header v-if="profile !== SUPPLIER_PAYMENT_PROFILE.WAREHOUSE" class="mb-4 flex flex-wrap items-end justify-between gap-3">
+    <header class="mb-4 flex flex-wrap items-end justify-between gap-3">
       <div>
         <h1 class="text-xl font-bold text-highlighted">Pago a Proveedor</h1>
-        <p v-if="profile === SUPPLIER_PAYMENT_PROFILE.ADMINISTRATION" class="mt-1 text-sm text-muted">Primero se valida el depósito. Después se aprueba el pago y, si es en dólares, se transfiere al proveedor.</p>
-        <p v-else-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" class="mt-1 text-sm text-muted">Lo que te toca hacer está en Mis pendientes. El resto del pago lo ves en el detalle, en solo lectura.</p>
+        <p v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" class="mt-1 text-sm text-muted">Lo que te toca hacer está en Mis pendientes. El resto del pago lo ves en el detalle, en solo lectura.</p>
       </div>
       <div v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" class="flex gap-2">
         <UButton color="neutral" variant="soft" to="/pago-proveedor/cotizaciones">Cotizaciones</UButton>
@@ -12,34 +11,7 @@
       </div>
     </header>
     <NuevaCotizacionModal v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" :open="nuevaCotizacion" @close="nuevaCotizacion = false" @accepted="(codigo) => navigateTo({ path: '/pago-proveedor/cotizaciones/nueva', query: { cc: codigo } })" />
-    <div v-if="profile === SUPPLIER_PAYMENT_PROFILE.ADMINISTRATION">
-      <div class="mb-4 flex gap-1.5 border-b border-default">
-        <button
-          type="button"
-          class="border-b-2 px-3.5 py-2 text-sm font-semibold"
-          :class="adminTab === ADMIN_TAB.APPROVAL ? 'border-primary text-primary' : 'border-transparent text-muted'"
-          @click="adminTab = ADMIN_TAB.APPROVAL"
-        >
-          Aprobación de pagos
-          <span v-if="adminApprovalCount" class="ml-1 rounded-full bg-primary px-1.5 text-[11px] text-white">{{ adminApprovalCount }}</span>
-        </button>
-        <button
-          type="button"
-          class="border-b-2 px-3.5 py-2 text-sm font-semibold"
-          :class="adminTab === ADMIN_TAB.USD ? 'border-primary text-primary' : 'border-transparent text-muted'"
-          @click="adminTab = ADMIN_TAB.USD"
-        >
-          Pagos en dólares
-          <span v-if="adminExecutionCount" class="ml-1 rounded-full bg-primary px-1.5 text-[11px] text-white">{{ adminExecutionCount }}</span>
-        </button>
-      </div>
-      <SupplierPaymentApprovals v-if="adminTab === ADMIN_TAB.APPROVAL" />
-      <SupplierPaymentExecutions v-else-if="adminTab === ADMIN_TAB.USD" />
-    </div>
-    <section v-else-if="profile === SUPPLIER_PAYMENT_PROFILE.WAREHOUSE">
-      <SupplierPaymentYuan />
-    </section>
-    <template v-else-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES">
+    <template v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES">
     <div class="mb-4 flex gap-1.5 border-b border-default">
       <button
         type="button"
@@ -181,16 +153,12 @@ import {
   REQUEST_OWNER,
   REQUEST_STAGE,
   SALES_TASK,
-  ADMIN_TAB,
   APPROVAL_STATUS,
   SUPPLIER_CURRENCY,
   SUPPLIER_PAYMENT_PROFILE
 } from '~/constants/supplierPayment'
 import { useModal } from '~/composables/commons/useModal'
 import { useSupplierPaymentProfile } from '~/composables/pago-proveedor/useSupplierPaymentProfile'
-import SupplierPaymentApprovals from '~/components/pago-proveedor/SupplierPaymentApprovals.vue'
-import SupplierPaymentExecutions from '~/components/pago-proveedor/SupplierPaymentExecutions.vue'
-import SupplierPaymentYuan from '~/components/pago-proveedor/SupplierPaymentYuan.vue'
 import SupplierPaymentSteps from '~/components/pago-proveedor/SupplierPaymentSteps.vue'
 import NuevaCotizacionModal from '~/components/pago-proveedor/NuevaCotizacionModal.vue'
 import { UButton } from '#components'
@@ -210,9 +178,6 @@ const requests = ref<PagoProveedorSolicitud[]>([])
 const loading = ref(false)
 const search = ref('')
 const tab = ref<typeof INBOX_TAB[keyof typeof INBOX_TAB]>(INBOX_TAB.PENDING)
-const adminTab = ref<typeof ADMIN_TAB[keyof typeof ADMIN_TAB]>(ADMIN_TAB.APPROVAL)
-const adminApprovalCount = ref(0)
-const adminExecutionCount = ref(0)
 const taskFilter = ref<typeof SALES_TASK[keyof typeof SALES_TASK]>(SALES_TASK.ALL)
 const nuevaCotizacion = ref(false)
 const pagination = ref<PagoProveedorPaginacion>({ current_page: 1, last_page: 1, per_page: 15, total: 0 })
@@ -474,22 +439,9 @@ function onClearFilters() {
   loadRequests()
 }
 
-async function loadAdminCounts() {
-  try {
-    const [approvals, executions] = await Promise.all([
-      PagoProveedorService.listApprovals({ bucket: 'pending', per_page: 1 }),
-      PagoProveedorService.listExecutions({ bucket: 'pending', per_page: 1 })
-    ])
-    adminApprovalCount.value = Number(approvals.pending_count || 0)
-    adminExecutionCount.value = Number(executions.pending_count || 0)
-  } catch {
-    adminApprovalCount.value = 0
-    adminExecutionCount.value = 0
-  }
-}
-
 watch(profile, (value) => {
   if (value === SUPPLIER_PAYMENT_PROFILE.SALES) loadRequests()
-  if (value === SUPPLIER_PAYMENT_PROFILE.ADMINISTRATION) void loadAdminCounts()
+  if (value === SUPPLIER_PAYMENT_PROFILE.ADMINISTRATION) navigateTo('/pago-proveedor/aprobacion-pagos', { replace: true })
+  if (value === SUPPLIER_PAYMENT_PROFILE.WAREHOUSE) navigateTo('/pago-proveedor/pagos-yuanes', { replace: true })
 }, { immediate: true })
 </script>

@@ -5,6 +5,7 @@ import type {
   PagoProveedorCotizacion,
   PagoProveedorPaginacion,
   PagoProveedorSolicitud,
+  PagoProveedorDocumentoEmitido,
   SupplierPaymentApproval,
   SupplierPaymentApprovalSettings,
   SupplierPaymentExecution,
@@ -109,11 +110,11 @@ export class PagoProveedorService extends BaseService {
   }
 
   static async descargarPdf(id: number) {
-    return this.apiCall<Uno<{ filename: string; base64: string }>>(`${this.baseUrl}/cotizaciones/${id}/pdf`)
+    return this.apiCall<Uno<PagoProveedorDocumentoEmitido>>(`${this.baseUrl}/cotizaciones/${id}/pdf`)
   }
 
   static async pdfResumen(datos: Record<string, unknown>) {
-    return this.apiCall<Uno<{ filename: string; base64: string }>>(`${this.baseUrl}/cotizaciones/resumen/pdf`, { method: 'POST', body: datos })
+    return this.apiCall<Uno<PagoProveedorDocumentoEmitido>>(`${this.baseUrl}/cotizaciones/resumen/pdf`, { method: 'POST', body: datos })
   }
 
   static async vistaPreviaResumen(datos: Record<string, unknown>) {
@@ -517,7 +518,7 @@ export class PagoProveedorService extends BaseService {
   }
 
   static async enviarBalance(solicitudId: number, proveedorId: number) {
-    return this.apiCall<Uno<PagoProveedorSolicitud> & { pdf?: { filename: string; base64: string } }>(`${this.baseUrl}/solicitudes/${solicitudId}/proveedores/${proveedorId}/balance`, {
+    return this.apiCall<Uno<PagoProveedorSolicitud> & { pdf?: PagoProveedorDocumentoEmitido }>(`${this.baseUrl}/solicitudes/${solicitudId}/proveedores/${proveedorId}/balance`, {
       method: 'POST'
     })
   }
@@ -527,7 +528,7 @@ export class PagoProveedorService extends BaseService {
   }
 
   static async descargarBalance(solicitudId: number, proveedorId: number) {
-    return this.apiCall<Uno<{ filename: string; base64: string }>>(`${this.baseUrl}/solicitudes/${solicitudId}/proveedores/${proveedorId}/balance`)
+    return this.apiCall<Uno<PagoProveedorDocumentoEmitido>>(`${this.baseUrl}/solicitudes/${solicitudId}/proveedores/${proveedorId}/balance`)
   }
 
   static async registrarDiferencia(solicitudId: number, proveedorId: number, form: FormData) {

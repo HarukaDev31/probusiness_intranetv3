@@ -145,6 +145,7 @@
                                 </span>
                               </span>
                               <span v-if="!collapsed">{{ displayMenuName(child.name, item.name, child.nameEn) }}</span>
+                              <span v-if="!collapsed && child.notificationCount" class="ml-auto rounded-full px-1.5 text-[11px] font-bold text-white" :class="child.route.includes('pagos-dolares') ? 'bg-blue-500' : 'bg-orange-500'">{{ child.notificationCount }}</span>
                             </template>
                           </UButton>
                         </div>

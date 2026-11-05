@@ -1,5 +1,11 @@
 import { PagoProveedorService } from '~/services/pagoProveedorService'
-import type { PagoProveedorCotizacion, PagoProveedorPaginacion } from '~/types/pago-proveedor'
+import type {
+  PagoProveedorBusquedaCc,
+  PagoProveedorCotizacion,
+  PagoProveedorDocumento,
+  PagoProveedorDocumentoEmitido,
+  PagoProveedorPaginacion
+} from '~/types/pago-proveedor'
 
 export function useSupplierPaymentQuotes() {
   async function list(params: {
@@ -21,6 +27,22 @@ export function useSupplierPaymentQuotes() {
     return PagoProveedorService.guardarVigencia(horas, tipo)
   }
 
+  async function get(id: number) {
+    return PagoProveedorService.obtenerCotizacion(id)
+  }
+
+  async function findByCc(code: string) {
+    return PagoProveedorService.buscarConsolidada(code)
+  }
+
+  async function create(codigoCc: string, form: FormData) {
+    return PagoProveedorService.crearCotizacion(codigoCc, form)
+  }
+
+  async function save(id: number, form: FormData) {
+    return PagoProveedorService.guardarCotizacion(id, form)
+  }
+
   async function previewWhatsapp(id: number) {
     return PagoProveedorService.vistaPreviaWhatsapp(id)
   }
@@ -29,12 +51,25 @@ export function useSupplierPaymentQuotes() {
     return PagoProveedorService.enviarWhatsapp(id)
   }
 
+  /** Resumen del borrador: el servidor devuelve el PDF ya emitido si nada cambió. */
+  async function previewDraft(datos: Record<string, unknown>) {
+    return PagoProveedorService.vistaPreviaResumen(datos)
+  }
+
+  async function sendDraft(datos: Record<string, unknown>) {
+    return PagoProveedorService.enviarResumen(datos)
+  }
+
   async function downloadPdf(id: number) {
     return PagoProveedorService.descargarPdf(id)
   }
 
-  async function renew(id: number) {
-    return PagoProveedorService.renovarCotizacion(id, null)
+  async function downloadDraft(datos: Record<string, unknown>) {
+    return PagoProveedorService.pdfResumen(datos)
+  }
+
+  async function renew(id: number, tipoCambio?: number | null) {
+    return PagoProveedorService.renovarCotizacion(id, tipoCambio)
   }
 
   async function createRequest(id: number) {
@@ -49,9 +84,16 @@ export function useSupplierPaymentQuotes() {
     list,
     getConfig,
     saveValidity,
+    get,
+    findByCc,
+    create,
+    save,
     previewWhatsapp,
     sendWhatsapp,
+    previewDraft,
+    sendDraft,
     downloadPdf,
+    downloadDraft,
     renew,
     createRequest,
     remove
@@ -63,3 +105,5 @@ export type QuotesListMeta = {
   pagination: PagoProveedorPaginacion
   consolidados?: string[]
 }
+
+export type { PagoProveedorBusquedaCc, PagoProveedorCotizacion, PagoProveedorDocumento, PagoProveedorDocumentoEmitido }

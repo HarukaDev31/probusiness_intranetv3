@@ -78,29 +78,38 @@
 
     <SupplierPaymentWindow
       :open="opened"
-      :title="selected?.can_approve ? 'Aprobar reembolso' : 'Reembolso'"
-      :subtitle="selected ? `${selected.client_name || 'Cliente'} · ${selected.consolidation || 'Sin consolidado'}` : ''"
-      :hint="selected?.can_approve ? 'El reembolso se hace fuera de la intranet: al aprobarlo, registras su voucher.' : 'Reembolso ya revisado.'"
+      title="Reembolso solicitado"
+      :subtitle="selected ? `${selected.client_name || 'Cliente'} · Consolidado ${selected.consolidation || '—'}` : ''"
+      :code="selected?.request_code || selected?.supplier_code"
+      :hint="selected?.can_approve ? 'El reembolso se hace fuera de la intranet: al aprobarlo, registras su voucher.' : undefined"
       wide
       @close="opened = false"
     >
+      <template #pill>
+        <UBadge :color="selected?.can_approve ? 'warning' : 'success'" variant="soft" :label="selected?.can_approve ? 'Por aprobar' : (selected?.status_label || 'Revisado')" />
+      </template>
       <div v-if="selected" class="grid gap-4 lg:grid-cols-3">
-        <SupplierPaymentCard title="Solicitud">
+        <SupplierPaymentCard title="Solicitud" icon="i-lucide-file-text">
           <SupplierPaymentFact label="Cliente" :value="selected.client_name || '—'" />
-          <SupplierPaymentFact label="Consolidado" :value="selected.consolidation || '—'" />
-          <SupplierPaymentFact label="Proveedor" :value="selected.supplier_code || '—'" />
+          <SupplierPaymentFact label="N.° de consolidado" :value="selected.consolidation || '—'" />
+          <SupplierPaymentFact label="Código de proveedor" :value="selected.supplier_code || '—'" />
+          <SupplierPaymentFact v-if="selected.supplier_name" label="Proveedor" :value="selected.supplier_name" />
+          <SupplierPaymentFact v-if="selected.product" label="Producto" :value="selected.product" />
+          <SupplierPaymentFact v-if="selected.currency" label="Tipo de pago" :value="selected.currency === 'RMB' ? 'RMB / Transferencia' : 'USD / T-T'" />
+        </SupplierPaymentCard>
+        <SupplierPaymentCard title="Reembolso" icon="i-lucide-circle-dollar-sign">
+          <p class="text-3xl font-bold">${{ money(selected.amount) }}</p>
+          <span class="w-fit rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-800 dark:bg-blue-950 dark:text-blue-300">USD</span>
+          <p class="text-sm text-muted">Monto a devolver al cliente.</p>
           <SupplierPaymentFact label="Origen" :value="selected.origin_label" />
+          <SupplierPaymentFact v-if="selected.reason" label="Motivo" :value="selected.reason" />
           <SupplierPaymentFact
             v-if="selected.requested_at"
             label="Solicitado"
-            :value="new Date(selected.requested_at).toLocaleString('es-PE')"
+            :value="`${new Date(selected.requested_at).toLocaleDateString('es-PE')} · Ventas`"
           />
         </SupplierPaymentCard>
-        <SupplierPaymentCard title="Reembolso">
-          <p class="text-3xl font-bold text-primary">${{ money(selected.amount) }}</p>
-          <p v-if="selected.reason" class="text-sm text-muted">{{ selected.reason }}</p>
-        </SupplierPaymentCard>
-        <SupplierPaymentCard title="Cómo se calcula">
+        <SupplierPaymentCard title="Cómo se calcula" icon="i-lucide-chart-no-axes-column">
           <ul class="space-y-1 text-sm text-highlighted">
             <li v-for="(line, index) in calculationLines" :key="index">{{ line }}</li>
           </ul>
@@ -134,7 +143,8 @@
       </p>
       <template #footer>
         <UButton color="neutral" variant="outline" @click="() => { opened = false }">Cerrar</UButton>
-        <UButton v-if="selected?.can_approve" type="submit" form="refund-voucher" color="primary" :loading="saving">Aprobar y registrar</UButton>
+        <UButton v-if="selected?.can_reject" color="error" variant="outline" @click="() => { if (selected) { const fila = selected; opened = false; startReject(fila) } }">Rechazar</UButton>
+        <UButton v-if="selected?.can_approve" type="submit" form="refund-voucher" color="primary" :loading="saving">Aprobar reembolso</UButton>
       </template>
     </SupplierPaymentWindow>
 

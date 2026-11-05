@@ -1,63 +1,44 @@
 <template>
-  <div class="p-2">
+  <div class="p-2 md:p-6">
+    <header class="mb-3 flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h1 class="flex items-center gap-2 text-xl font-bold text-highlighted">
+          <UIcon name="i-heroicons-clipboard-document-check" class="size-6 text-primary" />
+          Verificación
+        </h1>
+        <p class="mt-1 text-sm text-muted">Gestión de verificación de pagos</p>
+      </div>
+    </header>
 
-    <!-- Tab Content -->
+    <!-- Una sola barra de tabs: el layout no se mueve al cambiar de pestaña -->
+    <div class="mb-4 w-full overflow-x-auto">
+      <UTabs
+        v-model="activeTab"
+        :items="verificationTabs"
+        :content="false"
+        color="neutral"
+        size="sm"
+        variant="pill"
+        class="w-max"
+        :ui="{
+          root: 'h-auto w-max',
+          list: 'flex-nowrap w-max gap-1 h-auto',
+          label: 'whitespace-nowrap',
+          trailingBadge: 'ml-1'
+        }"
+      />
+    </div>
+
     <div v-if="activeTab === 'consolidado'">
       <!-- Consolidado Tab -->
-      <DataTable :show-title="true" title="Verificación" subtitle="Gestión de verificación de pagos"
-        icon="i-heroicons-clipboard-document-check" :data="consolidadoData" :columns="consolidadoColumns"
+      <DataTable title="" subtitle="" :data="consolidadoData" :columns="consolidadoColumns"
         :loading="loadingConsolidado" :current-page="currentPage" :total-pages="totalPages"
         :total-records="totalRecords" :items-per-page="itemsPerPage" :primary-search-value="search"
         :show-secondary-search="false" :show-filters="true" :filter-config="filterConfigConsolidado"
         :filters-value="filtersConsolidado" :show-export="false" :headers="headersConsolidado"
         empty-state-message="No se encontraron registros de consolidado." @update:primary-search="handleSearch"
         @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
-        @filter-change="handleFilterChange" :show-body-top="true" :show-headers="true">
-        <!-- Botón de filtros personalizado -->
-        <template #body-top>
-          <div class="w-50 my-3 flex items-center">
-            <div class="inline-flex rounded-md bg-gray-100 dark:bg-gray-900 p-1 gap-2">
-              <button type="button" @click="activeTab = 'consolidado'" :class="[
-                'px-4 py-2 rounded-md text-sm font-medium transition',
-                isConsolidado ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
-              ]">
-                Consolidado
-              </button>
-              <button type="button" @click="activeTab = 'cursos'" :class="[
-                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
-                isCursos ? 'bg-white dark:bg-gray-800 border border-gray-200 shadow-sm' : 'text-gray-600'
-              ]">
-                Cursos
-              </button>
-              <button type="button" @click="activeTab = 'delivery'" :class="[
-                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
-                isDelivery ? 'bg-white dark:bg-gray-800 border border-gray-200 shadow-sm' : 'text-gray-600'
-              ]">
-                Delivery
-              </button>
-              <button v-if="isAdministracion" type="button" @click="activeTab = 'permisos'" :class="[
-                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
-                isPermisos ? 'bg-white dark:bg-gray-800 border border-gray-200 shadow-sm' : 'text-gray-600'
-              ]">
-                Permisos
-              </button>
-              <button type="button" @click="activeTab = 'boletin-quimico'" :class="[
-                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
-                isBoletinQuimico ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
-              ]">
-                Boletín Químico
-              </button>
-              <button v-if="isAdministracion" type="button" @click="activeTab = 'supplier-payment'" :class="[
-                'px-4 py-2 rounded-md text-sm font-medium transition',
-                activeTab === 'supplier-payment' ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
-              ]">
-                Pago a Proveedor
-                <span v-if="supplierPaymentPending" class="ml-1 rounded bg-orange-500 px-1.5 text-xs text-white">{{ supplierPaymentPending }}</span>
-              </button>
-            </div>
-          </div>
-        </template>
-
+        @filter-change="handleFilterChange" :show-body-top="false" :show-headers="false">
         <!-- Estado de error -->
         <template #error-state>
           <ErrorState :message="errorConsolidado || 'Error desconocido'" />
@@ -67,7 +48,7 @@
 
     <div v-else-if="activeTab === 'cursos'">
       <!-- Cursos Tab -->
-      <DataTable title="Cursos" icon="i-heroicons-clipboard-document-check" :data="cursosData" :columns="cursosColumns"
+      <DataTable title="" subtitle="" :data="cursosData" :columns="cursosColumns"
         :loading="loadingCursos" :current-page="currentPageCursos" :total-pages="totalPagesCursos"
         :total-records="totalRecordsCursos" :items-per-page="itemsPerPageCursos" :primary-search-value="searchCursos"
         :show-secondary-search="false" :show-filters="true" :filter-config="filterConfigCursos"
@@ -75,51 +56,8 @@
         empty-state-message="No se encontraron registros de cursos."
         @update:primary-search="handleSearch" @page-change="handlePageChange"
         @items-per-page-change="handleItemsPerPageChange" @export="exportCursosData" @filter-change="handleFilterChange"
-        :show-body-top="true" :show-headers="true">
+        :show-body-top="false" :show-headers="false">
 
-        <template #body-top>
-          <div class="w-50 mb-6 flex items-center">
-            <div class="inline-flex rounded-md bg-gray-100 dark:bg-gray-900 p-1 gap-2">
-              <button type="button" @click="activeTab = 'consolidado'" :class="[
-                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
-                isConsolidado ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
-              ]">
-                Consolidado
-              </button>
-              <button type="button" @click="activeTab = 'cursos'" :class="[
-                'px-4 py-2 rounded-md text-sm font-medium transition',
-                isCursos ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
-              ]">
-                Cursos
-              </button>
-              <button type="button" @click="activeTab = 'delivery'" :class="[
-                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
-                isDelivery ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
-              ]">
-                Delivery
-              </button>
-              <button v-if="isAdministracion" type="button" @click="activeTab = 'permisos'" :class="[
-                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
-                isPermisos ? 'bg-white dark:bg-gray-800 border border-gray-200 shadow-sm' : 'text-gray-600'
-              ]">
-                Permisos
-              </button>
-              <button type="button" @click="activeTab = 'boletin-quimico'" :class="[
-                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
-                isBoletinQuimico ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
-              ]">
-                Boletín Químico
-              </button>
-              <button v-if="isAdministracion" type="button" @click="activeTab = 'supplier-payment'" :class="[
-                'px-4 py-2 rounded-md text-sm font-medium transition',
-                activeTab === 'supplier-payment' ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
-              ]">
-                Pago a Proveedor
-                <span v-if="supplierPaymentPending" class="ml-1 rounded bg-orange-500 px-1.5 text-xs text-white">{{ supplierPaymentPending }}</span>
-              </button>
-            </div>
-          </div>
-        </template>
         <!-- Estado de error -->
         <template #error-state>
           <ErrorState :message="errorCursos || 'Error desconocido'" />
@@ -129,27 +67,14 @@
 
     <div v-else-if="activeTab === 'permisos' && isAdministracion">
       <!-- Permisos Tab (solo ADMINISTRACION) -->
-      <DataTable title="Permisos" subtitle="Verificación de pagos por permiso y tipo"
-        icon="i-heroicons-document-check" :data="permisosData" :columns="permisosColumns"
+      <DataTable title="" subtitle="" :data="permisosData" :columns="permisosColumns"
         :loading="loadingPermisos" :current-page="paginationPermisos.current_page"
         :total-pages="paginationPermisos.last_page" :total-records="totalRecordsPermisos"
         :items-per-page="paginationPermisos.per_page" :primary-search-value="searchPermisos"
         :show-primary-search="true" :show-filters="false"
         empty-state-message="No hay registros de permisos." @update:primary-search="handleSearchPermisos"
         @page-change="handlePageChangePermisos" @items-per-page-change="handleItemsPerPageChangePermisos"
-        :show-body-top="true">
-        <template #body-top>
-          <div class="w-50 mb-6 flex items-center">
-            <div class="inline-flex rounded-md bg-gray-100 dark:bg-gray-900 p-1 gap-2">
-              <button type="button" @click="activeTab = 'consolidado'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isConsolidado ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Consolidado</button>
-              <button type="button" @click="activeTab = 'cursos'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isCursos ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Cursos</button>
-              <button type="button" @click="activeTab = 'delivery'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isDelivery ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Delivery</button>
-              <button type="button" @click="activeTab = 'permisos'" :class="['px-4 py-2 rounded-md text-sm font-medium transition', isPermisos ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600']">Permisos</button>
-              <button type="button" @click="activeTab = 'boletin-quimico'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isBoletinQuimico ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Boletín Químico</button>
-              <button v-if="isAdministracion" type="button" @click="activeTab = 'supplier-payment'" :class="['px-4 py-2 rounded-md text-sm font-medium transition', activeTab === 'supplier-payment' ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600']">Pago a Proveedor <span v-if="supplierPaymentPending" class="ml-1 rounded bg-orange-500 px-1.5 text-xs text-white">{{ supplierPaymentPending }}</span></button>
-            </div>
-          </div>
-        </template>
+        :show-body-top="false">
         <template #error-state>
           <ErrorState :message="errorPermisos || 'Error al cargar permisos'" />
         </template>
@@ -158,7 +83,7 @@
 
     <div v-else-if="activeTab === 'delivery'">
       <!-- Delivery Tab -->
-      <DataTable title="Delivery" icon="i-heroicons-truck" :data="deliveryData" :columns="deliveryColumns"
+      <DataTable title="" subtitle="" :data="deliveryData" :columns="deliveryColumns"
         :loading="loadingDelivery" :current-page="currentPageDelivery" :total-pages="totalPagesDelivery"
         :total-records="totalRecordsDelivery" :items-per-page="itemsPerPageDelivery"
         :show-summary="true"
@@ -167,51 +92,8 @@
         :headers="totalesDelivery" empty-state-message="No se encontraron registros de delivery."
         @update:primary-search="handleSearch" @page-change="handlePageChange"
         @items-per-page-change="handleItemsPerPageChange" @export="exportDeliveryData"
-        @filter-change="handleFilterChange" :show-body-top="true" :show-headers="true">
+        @filter-change="handleFilterChange" :show-body-top="false" :show-headers="false">
 
-        <template #body-top>
-          <div class="w-50 mb-6 flex items-center">
-            <div class="inline-flex rounded-md bg-gray-100 dark:bg-gray-900 p-1 gap-2">
-              <button type="button" @click="activeTab = 'consolidado'" :class="[
-                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
-                isConsolidado ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
-              ]">
-                Consolidado
-              </button>
-              <button type="button" @click="activeTab = 'cursos'" :class="[
-                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
-                isCursos ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
-              ]">
-                Cursos
-              </button>
-              <button type="button" @click="activeTab = 'delivery'" :class="[
-                'px-4 py-2 rounded-md text-sm font-medium transition',
-                isDelivery ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
-              ]">
-                Delivery
-              </button>
-              <button v-if="isAdministracion" type="button" @click="activeTab = 'permisos'" :class="[
-                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
-                isPermisos ? 'bg-white dark:bg-gray-800 border border-gray-200 shadow-sm' : 'text-gray-600'
-              ]">
-                Permisos
-              </button>
-              <button type="button" @click="activeTab = 'boletin-quimico'" :class="[
-                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
-                isBoletinQuimico ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
-              ]">
-                Boletín Químico
-              </button>
-              <button v-if="isAdministracion" type="button" @click="activeTab = 'supplier-payment'" :class="[
-                'px-4 py-2 rounded-md text-sm font-medium transition',
-                activeTab === 'supplier-payment' ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
-              ]">
-                Pago a Proveedor
-                <span v-if="supplierPaymentPending" class="ml-1 rounded bg-orange-500 px-1.5 text-xs text-white">{{ supplierPaymentPending }}</span>
-              </button>
-            </div>
-          </div>
-        </template>
         <!-- Estado de error -->
         <template #error-state>
           <ErrorState :message="errorDelivery || 'Error desconocido'" />
@@ -221,10 +103,8 @@
 
     <div v-else-if="activeTab === 'boletin-quimico'">
       <DataTable
-        title="Verificación"
-        subtitle="Boletín Químico"
-        icon="i-heroicons-beaker"
-        :show-title="true"
+        title=""
+        subtitle=""
         :data="boletinData"
         :columns="boletinColumns"
         :loading="loadingBoletin"
@@ -237,28 +117,16 @@
         primary-search-placeholder="Buscar por cliente o consolidado"
         :show-filters="false"
         empty-state-message="No hay registros de boletín químico."
-        :show-body-top="true"
+        :show-body-top="false"
         @update:primary-search="handleSearchBoletin"
         @page-change="handlePageChangeBoletin"
         @items-per-page-change="handleItemsPerPageChangeBoletin"
       >
-        <template #body-top>
-          <div class="w-50 mb-6 flex items-center">
-            <div class="inline-flex rounded-md bg-gray-100 dark:bg-gray-900 p-1 gap-2">
-              <button type="button" @click="activeTab = 'consolidado'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isConsolidado ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Consolidado</button>
-              <button type="button" @click="activeTab = 'cursos'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isCursos ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Cursos</button>
-              <button type="button" @click="activeTab = 'delivery'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isDelivery ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Delivery</button>
-              <button v-if="isAdministracion" type="button" @click="activeTab = 'permisos'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isPermisos ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Permisos</button>
-              <button type="button" @click="activeTab = 'boletin-quimico'" :class="['px-4 py-2 rounded-md text-sm font-medium transition', isBoletinQuimico ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600']">Boletín Químico</button>
-              <button v-if="isAdministracion" type="button" @click="activeTab = 'supplier-payment'" :class="['px-4 py-2 rounded-md text-sm font-medium transition', activeTab === 'supplier-payment' ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600']">Pago a Proveedor <span v-if="supplierPaymentPending" class="ml-1 rounded bg-orange-500 px-1.5 text-xs text-white">{{ supplierPaymentPending }}</span></button>
-            </div>
-          </div>
-        </template>
       </DataTable>
     </div>
 
     <div v-else-if="activeTab === 'supplier-payment' && isAdministracion">
-      <SupplierPaymentDeposits @change-tab="activeTab = $event" @pending-count="supplierPaymentPending = $event" />
+      <SupplierPaymentDeposits @pending-count="supplierPaymentPending = $event" />
     </div>
   </div>
 
@@ -299,7 +167,7 @@ const router = useRouter()
 const { hasRole } = useUserRole()
 const isAdministracion = computed(() => hasRole(ROLES.ADMINISTRACION))
 
-// Tabs (Permisos solo visible para ADMINISTRACION)
+// Tabs (Permisos y Pago a Proveedor solo visibles para ADMINISTRACION)
 const tabs = computed(() => {
   const base = [
     { value: 'consolidado', label: 'Consolidado' },
@@ -307,17 +175,23 @@ const tabs = computed(() => {
     { value: 'delivery', label: 'Delivery' },
   ]
   if (isAdministracion.value) base.push({ value: 'permisos', label: 'Permisos' })
+  base.push({ value: 'boletin-quimico', label: 'Boletín Químico' })
+  if (isAdministracion.value) base.push({ value: 'supplier-payment', label: 'Pago a Proveedor' })
   return base
 })
 
 const activeTab = ref('consolidado')
 const supplierPaymentPending = ref(0)
 
-const isConsolidado = computed(() => activeTab.value === 'consolidado')
-const isCursos = computed(() => activeTab.value === 'cursos')
-const isDelivery = computed(() => activeTab.value === 'delivery')
-const isPermisos = computed(() => activeTab.value === 'permisos')
-const isBoletinQuimico = computed(() => activeTab.value === 'boletin-quimico')
+const verificationTabs = computed(() =>
+  tabs.value.map((tab) => ({
+    value: tab.value,
+    label: tab.label,
+    badge: tab.value === 'supplier-payment' && supplierPaymentPending.value > 0
+      ? { label: String(supplierPaymentPending.value), color: 'primary' as const, variant: 'solid' as const }
+      : undefined
+  }))
+)
 
 const modalVisible = ref(false)
 const modalMessage = ref<ModalData | null>(null)

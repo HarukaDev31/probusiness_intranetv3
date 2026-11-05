@@ -1,22 +1,16 @@
 <template>
   <div>
-    <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
-      <UTabs
-        :model-value="bucket"
-        :items="approvalTabs"
-        color="neutral"
-        size="sm"
-        variant="pill"
-        class="w-fit"
-        @update:model-value="(value) => changeBucket(String(value) as typeof APPROVAL_BUCKET[keyof typeof APPROVAL_BUCKET])"
-      />
-      <div class="flex flex-wrap gap-2">
-        <UButton color="neutral" variant="soft" to="/verificacion?tab=supplier-payment">Validar depósitos</UButton>
-        <UButton color="neutral" variant="outline" @click="openSettings">Tolerancia y plazos</UButton>
-        <UButton color="neutral" variant="outline" @click="openTariffs('bancaria')">Comisión bancaria / plataforma</UButton>
-        <UButton color="neutral" variant="outline" @click="openTariffs('admin')">Comisión administrativa</UButton>
-      </div>
+    <div class="mb-3 flex flex-wrap justify-end gap-2">
+      <UButton color="neutral" variant="outline" icon="i-lucide-settings" @click="openTariffs('bancaria')">Comisión bancaria / plataforma</UButton>
+      <UButton color="neutral" variant="outline" icon="i-lucide-settings" @click="openTariffs('admin')">Comisión administrativa</UButton>
+      <UButton color="neutral" variant="outline" icon="i-lucide-settings" @click="openSettings">Tolerancia y plazos</UButton>
     </div>
+    <SupplierPaymentTabs
+      class="mb-3"
+      :model-value="bucket"
+      :items="approvalTabs"
+      @update:model-value="(value) => changeBucket(value as typeof APPROVAL_BUCKET[keyof typeof APPROVAL_BUCKET])"
+    />
 
     <UAlert
       v-if="alertas.length"
@@ -35,9 +29,6 @@
 
     <DataTable
       sticky-last-column
-      title="Aprobación de pagos"
-      subtitle="Pagos a aprobar y reembolsos solicitados en la misma bandeja. El reembolso se distingue por su estado."
-      icon="i-heroicons-check-badge"
       :data="unifiedRows"
       :columns="columns"
       :loading="loading || refundLoading"
@@ -53,7 +44,7 @@
       :filter-config="filterConfig"
       :filters-value="filters"
       :show-export="false"
-      empty-state-message="No hay ítems en esta bandeja."
+      :empty-state-message="emptyMessage"
       @update:primary-search="onSearch"
       @filter-change="onFilter"
       @page-change="onPage"
@@ -61,8 +52,8 @@
     />
     <p class="mt-2 text-xs text-muted">
       {{ bucket === APPROVAL_BUCKET.PENDING
-        ? 'Por aprobar: compara el depósito validado con lo cotizado, o aprueba un reembolso solicitado. Usa Ver.'
-        : 'Aprobados: historial de pagos y reembolsos ya revisados.' }}
+        ? `Pagos con depósitos ya validados en Verificación. Pendiente: el sistema no los aprobó solo (la diferencia supera la tolerancia de ${Number(settingsForm.tolerance || 0).toFixed(2)}) o es un reembolso solicitado; apruébalos (asumiendo la diferencia, con motivo) o márcalos Por cobrar. Por cobrar: Ventas cobra la diferencia al cliente (plazo de ${settingsForm.remedy_days} días; al vencer vuelve a Pendiente).`
+        : 'Pagos de proveedores y reembolsos ya aprobados. Los pagos siguen su camino (Ejecución de pago y Confirmación).' }}
     </p>
 
     <ApprovalReviewModal :payment="selectedPayment" @close="selectedPayment = null" @saved="reloadAll" />
@@ -165,8 +156,12 @@ import type {
   SupplierPaymentRefund
 } from '~/types/pago-proveedor'
 import { useModal } from '~/composables/commons/useModal'
+import SupplierPaymentTabs from '~/components/pago-proveedor/SupplierPaymentTabs.vue'
+import { useSupplierPaymentCounts } from '~/composables/pago-proveedor/useSupplierPaymentCounts'
 import { useSupplierPaymentRefunds } from '~/composables/pago-proveedor/useSupplierPaymentRefunds'
 import { UButton } from '#components'
+
+const FILTRO_REEMBOLSO = 'reembolso'
 
 type UnifiedRow = {
   kind: 'pago' | 'reemb'
@@ -208,12 +203,21 @@ const typeFilter = ref<'todos' | 'pago' | 'reemb'>('todos')
 const bucket = ref<typeof APPROVAL_BUCKET[keyof typeof APPROVAL_BUCKET]>(APPROVAL_BUCKET.PENDING)
 const refundBucket = computed(() => (bucket.value === APPROVAL_BUCKET.APPROVED ? 'aprobado' : 'solicitado') as 'solicitado' | 'aprobado')
 const totalPending = computed(() => pendingCount.value + refundPendingCount.value)
+/** Mensaje vacío según la pestaña y el filtro de código (enlace desde Verificación). */
+const emptyMessage = computed(() => {
+  if (search.value.trim()) return `No hay ítems con «${search.value.trim()}» en esta bandeja.`
+  return bucket.value === APPROVAL_BUCKET.PENDING
+    ? 'No hay nada por aprobar.'
+    : 'Aún no hay pagos aprobados.'
+})
 const approvalTabs = computed(() => [
-  { label: totalPending.value ? `Por aprobar (${totalPending.value})` : 'Por aprobar', value: APPROVAL_BUCKET.PENDING },
+  { label: 'Por aprobar', value: APPROVAL_BUCKET.PENDING, count: totalPending.value },
   { label: 'Aprobados', value: APPROVAL_BUCKET.APPROVED }
 ])
+const { counts: contadoresMenu } = useSupplierPaymentCounts()
+watch(totalPending, (total) => { contadoresMenu.value = { ...contadoresMenu.value, approvals: total } })
 const pagination = ref<PagoProveedorPaginacion>({ current_page: 1, last_page: 1, per_page: 15, total: 0 })
-const filters = ref({ status: APPROVAL_STATUS.ALL, consolidado: 'todos', banco: 'todos' })
+const filters = ref<{ status: string; consolidado: string; banco: string }>({ status: APPROVAL_STATUS.ALL, consolidado: 'todos', banco: 'todos' })
 const settingsOpen = ref(false)
 const tariffsOpen = ref(false)
 const tariffTipo = ref<'bancaria' | 'admin'>('bancaria')
@@ -235,8 +239,7 @@ const alertas = computed(() => {
   }
   return items
 })
-const consolidadosDisponibles = computed(() => [...new Set(
-  [...rows.value.map((row) => row.consolidation), ...refundRows.value.map((row) => row.consolidation)]
+const consolidadosDisponibles = computed(() => [...new Set(  [...rows.value.map((row) => row.consolidation), ...refundRows.value.map((row) => row.consolidation)]
     .filter((value): value is string => !!value && value.trim() !== '')
 )].sort())
 
@@ -247,7 +250,7 @@ const paymentUnified = computed<UnifiedRow[]>(() => rows.value.map((row) => ({
   client_name: row.client_name,
   consolidation: row.consolidation,
   supplier_code: row.supplier_code,
-  supplier_name: row.supplier_name || row.product,
+  supplier_name: [row.supplier_name, row.product].filter(Boolean).join(' · '),
   request_code: row.request_code,
   payment_type: row.currency === 'RMB' ? 'RMB / Transferencia' : 'USD / T-T',
   installment_label: row.installment_label,
@@ -282,12 +285,12 @@ const refundUnified = computed<UnifiedRow[]>(() => refundRows.value
     supplier_code: row.supplier_code,
     supplier_name: null,
     request_code: null,
-    payment_type: 'Reembolso',
+    payment_type: '—',
     installment_label: null,
     amount: row.amount,
     deposit_text: '—',
     deadline_text: row.requested_at ? formatDate(row.requested_at) : '—',
-    status_label: row.status_label || (bucket.value === APPROVAL_BUCKET.APPROVED ? 'Reembolso aprobado' : 'Reembolso solicitado'),
+    status_label: bucket.value === APPROVAL_BUCKET.APPROVED ? 'Reembolso aprobado' : 'Pendiente',
     status_tone: bucket.value === APPROVAL_BUCKET.APPROVED ? 'ok' : 'warn',
     observation: row.origin_label
       ? `Reembolso solicitado · ${row.origin_label}`
@@ -357,7 +360,8 @@ const filterConfig = computed(() => [
     options: bucket.value === APPROVAL_BUCKET.APPROVED
       ? [
           { value: APPROVAL_STATUS.ALL, label: 'Todos' },
-          { value: APPROVAL_STATUS.APPROVED, label: 'Aprobado' }
+          { value: APPROVAL_STATUS.APPROVED, label: 'Aprobado' },
+          { value: FILTRO_REEMBOLSO, label: 'Reembolso aprobado' }
         ]
       : [
           { value: APPROVAL_STATUS.ALL, label: 'Todos' },
@@ -375,7 +379,7 @@ const columns = computed<TableColumn<UnifiedRow>[]>(() => [
     h('div', { class: 'font-semibold' }, row.original.supplier_code || '—'),
     h('div', { class: 'text-xs text-muted' }, row.original.supplier_name || '')
   ]) },
-  { accessorKey: 'request_code', header: 'Código de solicitud', cell: ({ row }) => row.original.request_code || (row.original.kind === 'reemb' ? '—' : 'Pendiente') },
+  { accessorKey: 'request_code', header: 'Código de solicitud', cell: ({ row }) => row.original.request_code || '—' },
   {
     accessorKey: 'payment_type',
     header: 'Tipo de pago',
@@ -396,9 +400,10 @@ const columns = computed<TableColumn<UnifiedRow>[]>(() => [
   {
     accessorKey: 'status_label',
     header: 'Estado',
-    cell: ({ row }) => h('span', {
-      class: row.original.status_tone === 'ok' ? 'font-semibold text-success' : 'font-semibold text-error'
-    }, row.original.status_label)
+    cell: ({ row }) => pastilla(
+      row.original.status_label,
+      row.original.status_tone === 'ok' ? 'ok' : row.original.payment?.status === APPROVAL_STATUS.TO_COLLECT ? 'warn' : 'info'
+    )
   },
   ...(bucket.value === APPROVAL_BUCKET.APPROVED
     ? [{ accessorKey: 'deadline_text', header: 'Aprobado el' }]
@@ -407,7 +412,7 @@ const columns = computed<TableColumn<UnifiedRow>[]>(() => [
     accessorKey: 'observation',
     header: 'Observaciones',
     cell: ({ row }) => h('span', {
-      class: row.original.observation_alert ? 'text-sm text-error' : 'text-sm text-muted'
+      class: row.original.observation_alert ? 'text-sm font-semibold text-error' : 'text-sm'
     }, row.original.observation)
   },
   {
@@ -415,33 +420,37 @@ const columns = computed<TableColumn<UnifiedRow>[]>(() => [
     header: 'Acciones',
     cell: ({ row }) => {
       const item = row.original
-      const label = actionLabel(item)
       if (item.kind === 'reemb' && bucket.value === APPROVAL_BUCKET.APPROVED && item.refund?.voucher_url) {
-        return h('a', {
-          href: item.refund.voucher_url,
-          target: '_blank',
-          rel: 'noopener',
-          class: 'text-xs font-semibold text-primary'
-        }, 'Ver comprobante')
+        return h(UButton, {
+          size: 'xs',
+          color: 'neutral',
+          variant: 'ghost',
+          icon: 'i-heroicons-document-magnifying-glass',
+          title: 'Ver comprobante del reembolso',
+          'aria-label': 'Ver comprobante del reembolso',
+          onClick: () => openUnified(item)
+        })
       }
       return h(UButton, {
         size: 'xs',
         color: 'primary',
-        variant: bucket.value === APPROVAL_BUCKET.PENDING && item.kind === 'pago' && item.payment?.status === APPROVAL_STATUS.PENDING
-          ? 'solid'
-          : 'soft',
+        variant: 'ghost',
+        icon: 'i-heroicons-eye',
+        title: item.kind === 'reemb' ? 'Ver reembolso' : 'Ver pago',
+        'aria-label': item.kind === 'reemb' ? 'Ver reembolso' : 'Ver pago',
         onClick: () => openUnified(item)
-      }, () => label)
+      })
     }
   }
 ])
 
-function actionLabel(row: UnifiedRow) {
-  if (row.kind === 'reemb') return 'Ver reembolso'
-  if (bucket.value === APPROVAL_BUCKET.PENDING && row.payment?.status === APPROVAL_STATUS.PENDING) {
-    return 'Revisar y aprobar'
+function pastilla(texto: string, tono: 'ok' | 'info' | 'warn') {
+  const clases = {
+    ok: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300',
+    info: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+    warn: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
   }
-  return 'Ver'
+  return h('span', { class: `inline-block whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-semibold ${clases[tono]}` }, texto)
 }
 
 function openUnified(row: UnifiedRow) {
@@ -467,7 +476,7 @@ async function load() {
   try {
     const response = await PagoProveedorService.listApprovals({
       bucket: bucket.value,
-      status: filters.value.status,
+      status: filters.value.status === FILTRO_REEMBOLSO ? APPROVAL_STATUS.ALL : filters.value.status,
       consolidado: filters.value.consolidado,
       banco: filters.value.banco,
       search: search.value,
@@ -491,6 +500,7 @@ async function reloadAll() {
 }
 
 function changeBucket(next: typeof APPROVAL_BUCKET[keyof typeof APPROVAL_BUCKET]) {
+  typeFilter.value = 'todos'
   bucket.value = next
   filters.value = { status: APPROVAL_STATUS.ALL, consolidado: 'todos', banco: 'todos' }
   pagination.value.current_page = 1
@@ -509,6 +519,12 @@ function onFilter(key: string, value: unknown) {
     ? (value as Record<string, unknown>).value
     : value
   filters.value = { ...filters.value, [key]: String(normalized ?? '') }
+  if (key === 'status') {
+    const estado = filters.value.status
+    typeFilter.value = estado === FILTRO_REEMBOLSO
+      ? 'reemb'
+      : (estado === APPROVAL_STATUS.TO_COLLECT || estado === APPROVAL_STATUS.APPROVED ? 'pago' : 'todos')
+  }
   pagination.value.current_page = 1
   load()
 }
@@ -591,6 +607,9 @@ async function saveTariffs() {
 defineExpose({ pendingCount: totalPending })
 
 onMounted(async () => {
+  // Enlace directo desde Verificación › código de solicitud (?codigo=CN01NOV26).
+  const code = String(useRoute().query.codigo || '').trim()
+  if (code) search.value = code
   await Promise.all([load(), loadRefunds()])
 })
 </script>

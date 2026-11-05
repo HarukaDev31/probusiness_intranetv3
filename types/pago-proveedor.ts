@@ -104,8 +104,29 @@ export interface PagoProveedorCotizacion {
   faltantes: string[]
   codigos_disponibles: PagoProveedorCodigoCc[]
   proveedores: PagoProveedorProveedor[]
+  documento?: PagoProveedorDocumento | null
   creado_en: string | null
   historial: Array<{ accion: string; detalle: string | null; usuario: string; fecha: string | null }>
+}
+
+/**
+ * PDF emitido y su paso del flujo. Se regenera solo si cambian los datos o el paso.
+ */
+export interface PagoProveedorDocumento {
+  paso: number
+  paso_nombre: string
+  paso_actual?: number
+  paso_actual_nombre?: string
+  desactualizado?: boolean
+  generado_en: string | null
+  emitido_el: string | null
+  descargas: number
+  generado: boolean
+}
+
+export interface PagoProveedorDocumentoEmitido extends PagoProveedorDocumento {
+  filename: string
+  base64: string
 }
 
 export interface PagoProveedorSolicitud {
@@ -129,7 +150,22 @@ export interface PagoProveedorSolicitud {
   creado_en: string | null
   proveedores?: PagoProveedorSolicitudProveedor[]
   abonos?: PagoProveedorAbono[]
+  documentos?: PagoProveedorDocumentoEstado[]
   historial?: Array<{ accion: string; detalle: string | null; usuario: string; fecha: string | null }>
+}
+
+/** Documento emitido de la solicitud: resumen general (alcance 0) o balance por proveedor. */
+export interface PagoProveedorDocumentoEstado {
+  alcance_id: number
+  documento: 'resumen' | 'balance'
+  paso: number
+  paso_nombre: string
+  paso_actual?: number
+  paso_actual_nombre?: string
+  desactualizado?: boolean
+  generado_en: string | null
+  emitido_el: string | null
+  descargas: number
 }
 
 export interface SupplierPaymentProviderRow {
@@ -196,6 +232,7 @@ export interface PagoProveedorSolicitudProveedor {
   observacion_ventas?: { motivo: string; fecha: string | null } | null
   motivo_anulacion?: string | null
   progreso?: SupplierPaymentProgress
+  documento_balance?: PagoProveedorDocumento | null
   modalidad_abono: string
   datos: {
     estado: string
@@ -305,6 +342,10 @@ export interface SupplierPaymentRefund {
   client_name: string | null
   consolidation: string | null
   supplier_code: string | null
+  supplier_name?: string | null
+  product?: string | null
+  request_code?: string | null
+  currency?: string | null
   origin: string
   origin_label: string
   status: string
@@ -333,6 +374,24 @@ export interface SupplierPaymentDepositProvider {
   amount: number
 }
 
+export interface SupplierPaymentSla {
+  registered_at: string | null
+  deadline_at: string | null
+  server_now: string | null
+  hours: number
+  remaining_minutes: number | null
+  overdue: boolean
+  text: string | null
+}
+
+export interface SupplierPaymentDepositComparison {
+  recorded_amount: number
+  bank_amount: number | null
+  difference: number | null
+  tolerance: number
+  exception_limit: number
+}
+
 export interface SupplierPaymentDeposit {
   id: number
   request_id: number
@@ -353,8 +412,13 @@ export interface SupplierPaymentDeposit {
   voucher_url: string | null
   status: string
   status_label: string
+  /** `client_deposit` (abono del cliente) o `exchange_difference` (diferencia de cambio). */
+  purpose?: string
+  purpose_label?: string
   deadline_text: string | null
   deadline_overdue: boolean
+  sla: SupplierPaymentSla
+  comparison: SupplierPaymentDepositComparison
   observation_reason: string | null
   observation_detail: string | null
   observe_until: string | null
@@ -386,6 +450,10 @@ export interface SupplierPaymentApprovalDeposit {
 }
 
 export interface SupplierPaymentApproval {
+  modality_label?: string
+  cargo_amount?: number | null
+  bank_fee_amount?: number | null
+  admin_fee_amount?: number | null
   id: number
   request_id: number
   order_number: number | null
@@ -447,6 +515,9 @@ export interface SupplierPaymentBankData {
 }
 
 export interface SupplierPaymentExecution {
+  modality_label?: string
+  proforma_name?: string | null
+  proforma_url?: string | null
   id: number
   provider_id: number
   request_id: number
@@ -459,6 +530,12 @@ export interface SupplierPaymentExecution {
   request_code: string | null
   currency: string
   payment_type: string
+  /** Etiqueta legible que manda el backend: `USD / T-T` o `USD / Tarjeta`. */
+  payment_type_label?: string | null
+  /** Texto de modalidad de la maqueta: `Total`, `2 cuotas 40%–60%`, etc. */
+  modality_label?: string | null
+  proforma_name?: string | null
+  proforma_url?: string | null
   installment_label: string | null
   supplier_payment_label: string | null
   status: string

@@ -82,6 +82,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, defineAsyncComponent } from 'vue'
+import { useSupplierPaymentCounts } from '~/composables/pago-proveedor/useSupplierPaymentCounts'
 import { isContentNarrow, setContentNarrow } from '~/composables/usePageLayout'
 import { useAuth } from '../composables/auth/useAuth'
 import { useMenuPrefetch } from '../composables/navigation/useMenuPrefetch'
@@ -242,6 +243,17 @@ const { schedulePrefetchFromStorage } = useMenuPrefetch()
 // Notificaciones modales vía evento window (ligero; no abre sockets extra)
 useWebSocketNotifications()
 
+const { counts: contadoresPagoProveedor, refresh: refrescarContadoresPagoProveedor } = useSupplierPaymentCounts()
+const contadorSubmenu = (ruta: string) => {
+  if (ruta.includes('pago-proveedor/aprobacion-pagos')) return contadoresPagoProveedor.value.approvals
+  if (ruta.includes('pago-proveedor/pagos-dolares')) return contadoresPagoProveedor.value.executions
+  return 0
+}
+const veSubmenusPagoProveedor = computed(() => JSON.stringify(menu.value ?? []).includes('pago-proveedor/aprobacion-pagos'))
+watch([veSubmenusPagoProveedor, () => route.path], ([visible]) => {
+  if (visible && import.meta.client) refrescarContadoresPagoProveedor()
+}, { immediate: true })
+
 // Convertir menús del login al formato del sidebar
 const sidebarCategories = computed(() => {
   const backend = menu.value ?? []
@@ -299,7 +311,7 @@ const sidebarCategories = computed(() => {
         order: h.Nu_Orden ?? 0,
         isVisible: true,
         hasNotifications: false,
-        notificationCount: 0,
+        notificationCount: contadorSubmenu(childRoute || ''),
         permissions: ['view'],
         children: subChildren
       }
