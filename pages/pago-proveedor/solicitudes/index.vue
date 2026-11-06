@@ -165,6 +165,8 @@ import NuevaCotizacionModal from '~/components/pago-proveedor/NuevaCotizacionMod
 import { UBadge, UButton } from '#components'
 
 interface RequestLine {
+  groupIndex: number
+  groupSize: number
   requestId: number
   orderNumber: number
   clientName: string | null
@@ -189,7 +191,9 @@ const filtros = ref<Record<string, string>>({
   estado: 'todos'
 })
 
-const lines = computed<RequestLine[]>(() => requests.value.flatMap((request) => (request.providers || []).map((provider) => ({
+const lines = computed<RequestLine[]>(() => requests.value.flatMap((request) => (request.providers || []).map((provider, groupIndex) => ({
+  groupIndex,
+  groupSize: request.providers.length,
   requestId: request.id,
   orderNumber: request.numero_orden,
   clientName: request.cliente_nombre,
@@ -395,11 +399,17 @@ function taskText(provider: SupplierPaymentProviderRow) {
   }[provider.sales_task || ''] || 'Pendiente de Ventas.'
 }
 
+// Los datos de la orden se muestran una vez y abarcan a todos sus proveedores.
+const orderCell = {
+  rowspan: { td: (cell: { row: { original: RequestLine } }) => cell.row.original.groupSize },
+  class: { td: (cell: { row: { original: RequestLine } }) => cell.row.original.groupIndex ? 'hidden' : '' }
+}
+
 const columns: TableColumn<RequestLine>[] = [
-  { accessorKey: 'orderNumber', header: 'N.°' },
-  { accessorKey: 'createdAt', header: 'Fecha', cell: ({ row }) => row.original.createdAt ? new Date(row.original.createdAt).toLocaleDateString('es-PE') : '—' },
-  { accessorKey: 'consolidation', header: 'Consolidado' },
-  { accessorKey: 'clientName', header: 'Cliente' },
+  { accessorKey: 'orderNumber', header: 'N.°', meta: orderCell },
+  { accessorKey: 'createdAt', header: 'Fecha', meta: orderCell, cell: ({ row }) => row.original.createdAt ? new Date(row.original.createdAt).toLocaleDateString('es-PE') : '—' },
+  { accessorKey: 'consolidation', header: 'Consolidado', meta: orderCell },
+  { accessorKey: 'clientName', header: 'Cliente', meta: orderCell, cell: ({ row }) => h('span', { class: 'block w-32 whitespace-normal' }, row.original.clientName) },
   { accessorKey: 'provider', header: 'Proveedor', cell: ({ row }) => supplierLabel(row.original.provider) },
   { accessorKey: 'requestCode', header: 'Código de solicitud', cell: ({ row }) => row.original.provider.request_code || '—' },
   { accessorKey: 'paymentShape', header: 'Forma de pago', cell: ({ row }) => pill(paymentShapeLabel(row.original.provider.payment_shape), shapeColor(row.original.provider.payment_shape)) },
