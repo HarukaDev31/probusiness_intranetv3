@@ -382,7 +382,7 @@ const columns = computed<TableColumn<UnifiedRow>[]>(() => [
   {
     accessorKey: 'payment_type',
     header: 'Tipo de pago',
-    cell: ({ row }) => h('div', [
+    cell: ({ row }) => h('div', { class: 'w-20 whitespace-normal' }, [
       h('div', row.original.payment_type),
       row.original.installment_label
         ? h('div', { class: 'text-[11px] text-muted' }, row.original.installment_label)
@@ -392,8 +392,8 @@ const columns = computed<TableColumn<UnifiedRow>[]>(() => [
   { accessorKey: 'amount', header: 'Importe', cell: ({ row }) => `$${Number(row.original.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}` },
   ...(bucket.value === APPROVAL_BUCKET.PENDING
     ? [
-        { accessorKey: 'deposit_text', header: 'Depósito' },
-        { accessorKey: 'deadline_text', header: 'Antigüedad / plazo' }
+        { accessorKey: 'deposit_text', header: 'Depósito', cell: ({ row }) => h('span', { class: 'block w-20 whitespace-normal' }, row.original.deposit_text) },
+        { accessorKey: 'deadline_text', header: 'Antigüedad / plazo', cell: ({ row }) => h('span', { class: 'block w-20 whitespace-normal' }, row.original.deadline_text) }
       ]
     : []) as TableColumn<UnifiedRow>[],
   {
@@ -411,7 +411,7 @@ const columns = computed<TableColumn<UnifiedRow>[]>(() => [
     accessorKey: 'observation',
     header: 'Observaciones',
     cell: ({ row }) => h('span', {
-      class: row.original.observation_alert ? 'text-sm font-semibold text-error' : 'text-sm'
+      class: ['block w-36 whitespace-normal text-sm', row.original.observation_alert ? 'font-semibold text-error' : '']
     }, row.original.observation)
   },
   {

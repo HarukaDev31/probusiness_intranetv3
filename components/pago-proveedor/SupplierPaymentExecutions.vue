@@ -201,14 +201,14 @@ const emptyMessage = computed(() => {
 
 const columns = computed<TableColumn<SupplierPaymentExecution>[]>(() => [
   { accessorKey: 'order_number', header: 'N.° de orden', cell: ({ row }) => row.original.order_number ?? '—' },
-  { accessorKey: 'client_name', header: 'Cliente', cell: ({ row }) => h('span', { class: 'block w-32 whitespace-normal' }, row.original.client_name || '—') },
+  { accessorKey: 'client_name', header: 'Cliente', cell: ({ row }) => h('span', { class: 'block w-24 whitespace-normal' }, row.original.client_name || '—') },
   { accessorKey: 'consolidation', header: 'Consolidado', cell: ({ row }) => row.original.consolidation || '—' },
   {
     accessorKey: 'supplier_code',
     header: 'Proveedor',
     cell: ({ row }) => h('div', [
       h('div', { class: 'font-semibold' }, row.original.supplier_code || '—'),
-      h('div', { class: 'w-40 whitespace-normal text-xs text-muted' }, [row.original.supplier_name, row.original.product].filter(Boolean).join(' · '))
+      h('div', { class: 'w-32 whitespace-normal text-xs text-muted' }, [row.original.supplier_name, row.original.product].filter(Boolean).join(' · '))
     ])
   },
   {
