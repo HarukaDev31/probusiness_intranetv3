@@ -9,7 +9,7 @@
     <div class="grid items-end gap-3.5 sm:grid-cols-4">
       <UFormField label="Socio">
         <template #hint>
-          <UButton v-if="SHOW_NEW_ORGANIZATION && !newOrganization.open" size="xs" color="primary" variant="link" :padded="false" @click="openNewOrganization">Nuevo socio</UButton>
+          <UButton v-if="!newOrganization.open" size="xs" color="primary" variant="link" :padded="false" @click="openNewOrganization">Nuevo socio</UButton>
         </template>
         <USelect v-model="form.organizationId" :items="organizationItems" placeholder="Seleccionar…" class="w-full" @update:model-value="form.partner = ''" />
       </UFormField>
@@ -136,9 +136,6 @@ const emit = defineEmits<{ close: []; saved: []; 'organization-created': [] }>()
 
 const { showError, showSuccess } = useModal()
 const { withSpinner } = useSpinner()
-
-// Oculto de momento: el alta de socios sigue disponible en el back.
-const SHOW_NEW_ORGANIZATION = false
 
 const saving = ref(false)
 let nextKey = 0

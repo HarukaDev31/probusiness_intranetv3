@@ -1,8 +1,5 @@
 <template>
   <div>
-    <div class="mb-4 flex justify-end">
-      <UButton color="primary" icon="i-heroicons-plus" @click="openForm(null)">Nueva solicitud</UButton>
-    </div>
     <div class="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <UCard v-for="card in cards" :key="card.label">
         <p class="text-xs uppercase tracking-wider text-muted">{{ card.label }}</p>
