@@ -14,7 +14,9 @@ import type {
   SupplierPaymentObservationReason,
   SupplierPaymentRefund,
   SupplierPaymentYuan,
+  SupplierPaymentYuanOrganization,
   SupplierPaymentYuanRequest,
+  SupplierPaymentYuanSuggestions,
   SupplierPaymentYuanIndicators
 } from '~/types/pago-proveedor'
 
@@ -474,8 +476,8 @@ export class PagoProveedorService extends BaseService {
       indicators: SupplierPaymentYuanIndicators
       counts: { all: number; pending: number; observed: number; paid: number }
       countries: string[]
-      partners_by_country: Record<string, string[]>
-      clients_by_country: Record<string, string[]>
+      organizations: SupplierPaymentYuanOrganization[]
+      suggestions: SupplierPaymentYuanSuggestions
     }>(`${this.baseUrl}/yuanes?${query.toString()}`)
   }
 
@@ -600,6 +602,14 @@ export class PagoProveedorService extends BaseService {
     admin_rmb?: number
   }) {
     return this.apiCall<Uno<Record<string, unknown>>>(`${this.baseUrl}/aprobaciones/tarifas`, { method: 'PUT', body })
+  }
+
+  static async listYuanCountries() {
+    return this.apiCall<Uno<Array<{ id: number; name: string }>>>(`${this.baseUrl}/yuanes/socios/paises`)
+  }
+
+  static async createYuanOrganization(body: { name: string; country_id: number }) {
+    return this.apiCall<Uno<SupplierPaymentYuanOrganization>>(`${this.baseUrl}/yuanes/socios`, { method: 'POST', body })
   }
 
   static async createManualYuan(form: FormData) {

@@ -6,9 +6,12 @@
     width-class="max-w-[820px] sm:max-w-[820px]"
     @close="emit('close')"
   >
-    <div class="grid gap-3.5 sm:grid-cols-4">
-      <UFormField label="País">
-        <USelect v-model="form.country" :items="countries" class="w-full" @update:model-value="form.partner = ''" />
+    <div class="grid items-end gap-3.5 sm:grid-cols-4">
+      <UFormField label="Socio">
+        <template #hint>
+          <UButton v-if="SHOW_NEW_ORGANIZATION && !newOrganization.open" size="xs" color="primary" variant="link" :padded="false" @click="openNewOrganization">Nuevo socio</UButton>
+        </template>
+        <USelect v-model="form.organizationId" :items="organizationItems" placeholder="Seleccionar…" class="w-full" @update:model-value="form.partner = ''" />
       </UFormField>
       <UFormField label="Cliente">
         <UInput v-model="form.partner" list="yuan-partners" placeholder="Selecciona o escribe" class="w-full" />
@@ -19,6 +22,22 @@
       <UFormField label="Tipo de cambio (RMB por USD)">
         <UInput v-model="form.rate" type="number" min="0" step="0.0001" class="w-full font-semibold" @update:model-value="onRate" />
       </UFormField>
+    </div>
+
+    <div v-if="newOrganization.open" class="flex flex-col gap-3 rounded-lg bg-muted p-3.5">
+      <span class="text-sm font-semibold text-highlighted">Nuevo socio</span>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <UFormField label="Nombre o empresa">
+          <UInput v-model="newOrganization.name" placeholder="ej. Importaciones Sur SAC" maxlength="100" class="w-full" />
+        </UFormField>
+        <UFormField label="País del socio">
+          <USelectMenu v-model="newOrganization.countryId" :items="countryItems" value-key="value" placeholder="Seleccionar…" class="w-full" />
+        </UFormField>
+      </div>
+      <div class="flex justify-end gap-2">
+        <UButton color="neutral" variant="outline" @click="newOrganization.open = false">Cancelar</UButton>
+        <UButton color="primary" :loading="saving" :disabled="!newOrganization.name.trim() || !newOrganization.countryId" @click="createOrganization">Crear socio</UButton>
+      </div>
     </div>
 
     <span class="font-semibold text-highlighted">Proveedores</span>
@@ -63,10 +82,10 @@
       </div>
     </div>
     <datalist id="yuan-partners">
-      <option v-for="partner in partnersByCountry[form.country] || []" :key="partner" :value="partner" />
+      <option v-for="partner in suggestions.partners[form.organizationId as number] || []" :key="partner" :value="partner" />
     </datalist>
     <datalist id="yuan-clients">
-      <option v-for="client in clientsByCountry[form.country] || []" :key="client" :value="client" />
+      <option v-for="client in suggestions.clients[form.organizationId as number] || []" :key="client" :value="client" />
     </datalist>
     <UButton class="self-start" color="primary" variant="link" icon="i-heroicons-plus" :padded="false" @click="form.providers.push(blankProvider())">Agregar proveedor</UButton>
 
@@ -89,7 +108,7 @@ import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { YUAN_STATUS } from '~/constants/supplierPayment'
 import { PagoProveedorService } from '~/services/pagoProveedorService'
-import type { SupplierPaymentYuanRequest } from '~/types/pago-proveedor'
+import type { SupplierPaymentYuanOrganization, SupplierPaymentYuanRequest, SupplierPaymentYuanSuggestions } from '~/types/pago-proveedor'
 
 interface ProviderDraft {
   key: string
@@ -110,14 +129,16 @@ interface ProviderDraft {
 const props = defineProps<{
   open: boolean
   request: SupplierPaymentYuanRequest | null
-  countries: string[]
-  partnersByCountry: Record<string, string[]>
-  clientsByCountry: Record<string, string[]>
+  organizations: SupplierPaymentYuanOrganization[]
+  suggestions: SupplierPaymentYuanSuggestions
 }>()
-const emit = defineEmits<{ close: []; saved: [] }>()
+const emit = defineEmits<{ close: []; saved: []; 'organization-created': [] }>()
 
 const { showError, showSuccess } = useModal()
 const { withSpinner } = useSpinner()
+
+// Oculto de momento: el alta de socios sigue disponible en el back.
+const SHOW_NEW_ORGANIZATION = false
 
 const saving = ref(false)
 let nextKey = 0
@@ -138,8 +159,12 @@ const blankProvider = (): ProviderDraft => ({
   proformaName: ''
 })
 
+const countries = ref<Array<{ id: number; name: string }>>([])
+const createdOrganizations = ref<SupplierPaymentYuanOrganization[]>([])
+const newOrganization = reactive({ open: false, name: '', countryId: undefined as number | undefined })
+
 const form = reactive({
-  country: '',
+  organizationId: undefined as number | undefined,
   partner: '',
   date: '',
   rate: '' as string | number,
@@ -149,7 +174,8 @@ const form = reactive({
 watch(() => props.open, (open) => {
   if (!open) return
   const request = props.request
-  form.country = request?.country || props.countries[0] || ''
+  form.organizationId = request?.organization_id ?? undefined
+  newOrganization.open = false
   form.partner = request?.partner || ''
   form.date = request?.date || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' })
   form.rate = request?.exchange_rate ?? '7.10'
@@ -172,11 +198,47 @@ watch(() => props.open, (open) => {
     : [blankProvider()]
 })
 
+const organizationItems = computed(() => [...props.organizations, ...createdOrganizations.value]
+  .filter((item, index, list) => list.findIndex((other) => other.id === item.id) === index)
+  .map((item) => ({ label: item.country ? `${item.name} · ${item.country}` : item.name, value: item.id })))
+const countryItems = computed(() => countries.value.map((item) => ({ label: item.name, value: item.id })))
 const rateValue = computed(() => Number(form.rate) || 0)
 const totalYuan = computed(() => roundTwo(form.providers.reduce((sum, provider) => sum + (Number(provider.yuan) || 0), 0)))
 const totalUsd = computed(() => roundTwo(totalYuan.value / (rateValue.value || 1)))
-const valid = computed(() => rateValue.value > 0 && !!form.partner.trim() && !!form.date && form.providers.length > 0
+const valid = computed(() => rateValue.value > 0 && !!form.organizationId && !!form.partner.trim() && !!form.date && form.providers.length > 0
   && form.providers.every((provider) => provider.client_name.trim() && provider.supplier_name.trim() && provider.wechat.trim() && Number(provider.yuan) > 0))
+
+async function openNewOrganization() {
+  newOrganization.name = ''
+  newOrganization.countryId = undefined
+  newOrganization.open = true
+  if (countries.value.length) return
+  try {
+    const response = await PagoProveedorService.listYuanCountries()
+    countries.value = response.data || []
+  } catch (error: any) {
+    showError('Nuevo socio', error?.data?.message || 'No se pudieron cargar los países.')
+  }
+}
+
+async function createOrganization() {
+  saving.value = true
+  try {
+    const response = await withSpinner(() => PagoProveedorService.createYuanOrganization({
+      name: newOrganization.name.trim(),
+      country_id: newOrganization.countryId as number
+    }), 'Creando socio…')
+    createdOrganizations.value.push(response.data)
+    form.organizationId = response.data.id
+    form.partner = ''
+    newOrganization.open = false
+    emit('organization-created')
+  } catch (error: any) {
+    showError('Nuevo socio', error?.data?.message || 'No se pudo crear el socio.')
+  } finally {
+    saving.value = false
+  }
+}
 
 function onRate() {
   form.providers.forEach((provider) => {
@@ -198,7 +260,7 @@ function onYuan(provider: ProviderDraft) {
 
 async function save() {
   const body = new FormData()
-  body.append('country', form.country)
+  body.append('organizacion_id', String(form.organizationId))
   body.append('partner', form.partner)
   body.append('request_date', form.date)
   body.append('exchange_rate', String(form.rate))

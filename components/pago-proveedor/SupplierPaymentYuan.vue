@@ -59,11 +59,11 @@
     <YuanRequestForm
       :open="formOpen"
       :request="editing"
-      :countries="countries"
-      :partners-by-country="partnersByCountry"
-      :clients-by-country="clientsByCountry"
+      :organizations="organizations"
+      :suggestions="suggestions"
       @close="formOpen = false"
       @saved="onSaved"
+      @organization-created="load"
     />
   </div>
 </template>
@@ -79,7 +79,7 @@ import type { SupplierPaymentYuanRequest } from '~/types/pago-proveedor'
 import { UBadge, UButton } from '#components'
 
 const {
-  bucket, search, country, dateFrom, dateTo, rows, countries, partnersByCountry, clientsByCountry, pagination, loading,
+  bucket, search, country, dateFrom, dateTo, rows, countries, organizations, suggestions, pagination, loading,
   selectedId, selected, cards, states, load, reload, changeBucket
 } = useSupplierPaymentYuan()
 
@@ -130,7 +130,10 @@ const columns: TableColumn<SupplierPaymentYuanRequest>[] = [
     h('span', dayLabel(row.original.date)),
     h('span', { class: 'text-xs text-muted' }, monthLabel(row.original.date))
   ]) },
-  { accessorKey: 'country', header: 'País' },
+  { accessorKey: 'country', header: 'País', cell: ({ row }) => h('div', { class: 'flex flex-col' }, [
+    h('span', row.original.country || '—'),
+    row.original.organization ? h('span', { class: 'text-xs text-muted' }, row.original.organization) : null
+  ]) },
   { accessorKey: 'partner', header: 'Cliente', cell: ({ row }) => h('span', { class: 'font-semibold' }, row.original.partner) },
   { accessorKey: 'code', header: 'N. orden', cell: ({ row }) => h('div', { class: 'flex flex-col' }, [
     h('span', { class: 'text-sm font-bold' }, row.original.code),

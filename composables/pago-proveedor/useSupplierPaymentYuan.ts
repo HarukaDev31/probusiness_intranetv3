@@ -2,7 +2,7 @@ import { computed, onMounted, ref } from 'vue'
 import { YUAN_BUCKET } from '~/constants/supplierPayment'
 import { useModal } from '~/composables/commons/useModal'
 import { PagoProveedorService } from '~/services/pagoProveedorService'
-import type { SupplierPaymentYuanIndicators, SupplierPaymentYuanRequest } from '~/types/pago-proveedor'
+import type { SupplierPaymentYuanIndicators, SupplierPaymentYuanOrganization, SupplierPaymentYuanRequest, SupplierPaymentYuanSuggestions } from '~/types/pago-proveedor'
 
 const emptyIndicators = (): SupplierPaymentYuanIndicators => ({
   usd_received: 0,
@@ -24,8 +24,8 @@ export function useSupplierPaymentYuan() {
   const indicators = ref<SupplierPaymentYuanIndicators>(emptyIndicators())
   const counts = ref({ all: 0, pending: 0, observed: 0, paid: 0 })
   const countries = ref<string[]>([])
-  const partnersByCountry = ref<Record<string, string[]>>({})
-  const clientsByCountry = ref<Record<string, string[]>>({})
+  const organizations = ref<SupplierPaymentYuanOrganization[]>([])
+  const suggestions = ref<SupplierPaymentYuanSuggestions>({ partners: {}, clients: {} })
   const pagination = ref({ current_page: 1, last_page: 1, per_page: 10, total: 0 })
   const loading = ref(false)
 
@@ -55,7 +55,10 @@ export function useSupplierPaymentYuan() {
     { key: YUAN_BUCKET.PAID, label: 'Pagado', count: counts.value.paid, dot: 'bg-success' }
   ])
 
+  let lastRequest = 0
+
   async function load() {
+    const current = ++lastRequest
     loading.value = true
     try {
       const response = await PagoProveedorService.listYuan({
@@ -67,17 +70,19 @@ export function useSupplierPaymentYuan() {
         page: pagination.value.current_page,
         per_page: pagination.value.per_page
       })
+      // Una respuesta tardía no pisa la de un filtro más reciente.
+      if (current !== lastRequest) return
       rows.value = response.data || []
       indicators.value = { ...emptyIndicators(), ...response.indicators }
       counts.value = response.counts || counts.value
       countries.value = response.countries || []
-      partnersByCountry.value = response.partners_by_country || {}
-      clientsByCountry.value = response.clients_by_country || {}
+      organizations.value = response.organizations || []
+      suggestions.value = response.suggestions || { partners: {}, clients: {} }
       if (response.pagination) pagination.value = response.pagination
     } catch (error: any) {
       showError('Pago a proveedores', error?.data?.message || 'No se pudo cargar la lista.')
     } finally {
-      loading.value = false
+      if (current === lastRequest) loading.value = false
     }
   }
 
@@ -101,8 +106,8 @@ export function useSupplierPaymentYuan() {
     dateTo,
     rows,
     countries,
-    partnersByCountry,
-    clientsByCountry,
+    organizations,
+    suggestions,
     pagination,
     loading,
     selectedId,

@@ -167,6 +167,10 @@ Decisiones donde la maqueta no alcanza:
 
 Bugs encontrados al probar: la tabla ancha se cortaba por la izquierda (`DataTable.vue`, `safe center`) y un aviso de éxito cerraba la ventana lateral.
 
+Socios desde `organizacion`: el modal de China ya no pide país. Elige un socio de `organizacion` (nunca la organización 1) y «Nuevo socio» crea una fila ahí, con nombre y país. Los pagos de Perú solo llegan por Ventas, en yuanes y ya aprobados. [ch02b-nuevo-socio](pago-proveedor-validacion/ch02b-nuevo-socio.png)
+
+Un socio creado así no tiene usuarios ni menús; eso lo hace el comando `organizacion:crear`. De momento el botón «Nuevo socio» está oculto en el modal (`SHOW_NEW_ORGANIZATION`).
+
 Pendiente: `PortalSocio`, la vista del socio que también trae la maqueta, se hará más adelante.
 
 ## Flujos

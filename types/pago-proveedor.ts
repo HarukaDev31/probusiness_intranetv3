@@ -576,9 +576,6 @@ export interface SupplierPaymentBankData {
 }
 
 export interface SupplierPaymentExecution {
-  modality_label?: string
-  proforma_name?: string | null
-  proforma_url?: string | null
   id: number
   provider_id: number
   request_id: number
@@ -697,6 +694,17 @@ export interface SupplierPaymentYuanIncome {
   can_remove: boolean
 }
 
+export interface SupplierPaymentYuanOrganization {
+  id: number
+  name: string
+  country: string
+}
+
+export interface SupplierPaymentYuanSuggestions {
+  partners: Record<number, string[]>
+  clients: Record<number, string[]>
+}
+
 export interface SupplierPaymentYuanRequest {
   request_id: number
   number: number | null
@@ -704,6 +712,8 @@ export interface SupplierPaymentYuanRequest {
   date: string
   country: string
   partner: string
+  organization_id: number | null
+  organization: string | null
   manual: boolean
   consolidation: string | null
   exchange_rate: number
