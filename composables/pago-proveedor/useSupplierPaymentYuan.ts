@@ -63,7 +63,7 @@ export function useSupplierPaymentYuan() {
   const cards = computed(() => [
     { label: 'USD recibido de socios', value: `$${money(indicators.value.usd_received)}`, danger: false },
     { label: 'RMB obtenido', value: `¥${money(indicators.value.yuan_obtained)}`, danger: false },
-    { label: 'RMB pagado', value: `¥${money(indicators.value.yuan_paid)}`, danger: false },
+    { label: 'RMB pagado a proveedores', value: `¥${money(indicators.value.yuan_paid)}`, danger: false },
     { label: 'Diferencia por cobrar', value: `¥${money(indicators.value.to_collect_yuan)}`, danger: indicators.value.to_collect_yuan > 0 }
   ])
 

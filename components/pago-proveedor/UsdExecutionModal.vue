@@ -443,7 +443,7 @@ function money(value: number | null | undefined) {  return Number(value || 0).to
 
 function signed(value: string) {
   const numeric = Number(value.replace(/,/g, ''))
-  return numeric > 0.004 ? `+${value}` : (numeric < -0.004 ? `−${value.replace('-', '')}` : value)
+  return numeric > 0.004 ? `+$${value}` : (numeric < -0.004 ? `−$${value.replace('-', '')}` : `$${value}`)
 }
 
 async function copy(value: string | null | undefined, label: string) {

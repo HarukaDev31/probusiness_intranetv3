@@ -78,7 +78,7 @@
           description="Las decisiones de Admin se hacen en Aprobación de pagos y Pagos en dólares. Aquí revisas el expediente sin acciones de Ventas."
         />
 
-        <div v-if="!esAdmin && hayProveedoresActivos" class="flex flex-wrap items-center gap-2.5">
+        <div v-if="!soloLectura && hayProveedoresActivos" class="flex flex-wrap items-center gap-2.5">
           <UButton
             v-if="solicitud.cotizacion_id"
             color="neutral"
@@ -196,7 +196,7 @@
           <UAlert v-else-if="proveedor.estado === 'completado'" class="mt-4" color="success" variant="subtle" description="✓ Completado. El pago se ejecutó y no quedó nada pendiente." />
           <UAlert v-if="proveedor.observacion_ventas" class="mt-4" color="error" variant="subtle" :title="`Observado — ${proveedor.observacion_ventas.motivo}`">
             <template #actions>
-              <UButton v-if="!esAdmin" size="xs" color="error" variant="soft" @click="abrirMotivo(proveedor, 'levantar')">Levantar observación</UButton>
+              <UButton v-if="!soloLectura" size="xs" color="error" variant="soft" @click="abrirMotivo(proveedor, 'levantar')">Levantar observación</UButton>
             </template>
           </UAlert>
 
@@ -267,14 +267,14 @@
                 </div>
                 <div class="flex shrink-0 gap-1">
                   <UButton v-if="item.voucher_url" size="xs" color="neutral" variant="outline" icon="i-lucide-receipt-text" title="Ver voucher" :to="item.voucher_url" target="_blank" />
-                  <template v-if="!esAdmin">
+                  <template v-if="!soloLectura">
                     <UButton size="xs" color="neutral" variant="outline" icon="i-lucide-pencil" title="Editar abono" :disabled="!item.puede_editar" @click="editarAbono(item)" />
                     <UButton size="xs" color="neutral" variant="outline" icon="i-lucide-trash-2" title="Anular abono" :disabled="!item.puede_anular" @click="anularAbono(item)" />
                   </template>
                 </div>
               </div>
               <p v-if="!abonosProveedor(proveedor.id).length" class="mb-3 text-sm text-muted">Sin abonos registrados.</p>
-              <UButton v-if="!esAdmin && (proveedor.puede_editar_etapa1 || proveedor.puede_registrar_diferencia) && proveedor.saldo > 0.004" size="sm" color="primary" @click="abrirAbono()">
+              <UButton v-if="!soloLectura && (proveedor.puede_editar_etapa1 || proveedor.puede_registrar_diferencia) && proveedor.saldo > 0.004" size="sm" color="primary" @click="abrirAbono()">
                 {{ proveedor.importe_abonado > 0 ? 'Registrar otro abono' : 'Registrar comprobante' }}
               </UButton>
             </UCard>
@@ -297,40 +297,49 @@
             </UCard>
           </div>
 
-          <UAlert
-            v-if="(vistaEtapa[proveedor.id] ?? proveedor.etapa) === proveedor.etapa && siguientePaso(proveedor)"
-            class="mt-3"
-            color="info"
-            variant="subtle"
-          >
-            <template #description>
-              <strong v-if="proveedor.etapa === 1">Por realizar: </strong>{{ siguientePaso(proveedor) }}
-            </template>
-            <template #actions>
-              <UButton v-if="!esAdmin && abonoObservado(proveedor)" size="xs" color="warning" @click="editarAbono(abonoObservado(proveedor)!)">Corregir comprobante</UButton>
-              <UButton v-if="!esAdmin && proveedor.puede_registrar_diferencia && !abonoObservado(proveedor)" size="xs" color="warning" @click="abrirAbono()">Registrar voucher de la diferencia</UButton>
-            </template>
-          </UAlert>
-          <p v-else-if="(vistaEtapa[proveedor.id] ?? proveedor.etapa) !== proveedor.etapa" class="mt-3 text-sm text-muted">
+          <p v-if="(vistaEtapa[proveedor.id] ?? proveedor.etapa) !== proveedor.etapa" class="mt-3 text-sm text-muted">
             Estás revisando este paso en solo lectura. El paso actual del proveedor es {{ proveedor.etapa }}.
           </p>
+          <UAlert v-else-if="enManos(proveedor)" class="mt-3" color="info" variant="subtle" :description="enManos(proveedor)" />
 
           <SupplierPaymentProgress
             v-if="solicitud.id && proveedor.estado !== 'anulado'"
             :solicitud-id="solicitud.id"
             :proveedor="proveedor"
             :tipo-cambio="solicitud.tipo_cambio"
-            :readonly="esAdmin"
+            :readonly="soloLectura"
             :viewing="vistaEtapa[proveedor.id] ?? proveedor.etapa"
             @saved="cargar"
             @complete-data="irACompletarDatos(proveedor)"
+            @view-data="abrirDatos(proveedor, true)"
+            @go-step="(paso) => irAPaso(proveedor, paso)"
+            @lift="abrirMotivo(proveedor, 'levantar')"
+            @lift-china="levantarChina(proveedor)"
+            @edit-deposit="(id) => editarAbonoPorId(id)"
+            @register-difference="abrirAbono()"
+            @choose-providers="abrirContinuacion(proveedor)"
+            @decide-surplus="(id, decision) => decidir(id, decision)"
           />
 
-          <div v-if="!esAdmin && proveedor.estado === 'en_proceso' && (proveedor.etapa !== 2 || proveedor.puede_editar_etapa1)" class="mt-4 flex flex-wrap gap-2">
+          <UAlert
+            v-if="!soloLectura && (vistaEtapa[proveedor.id] ?? proveedor.etapa) === proveedor.etapa && porRealizar(proveedor)"
+            class="mt-3"
+            color="warning"
+            variant="subtle"
+          >
+            <template #description>
+              <strong>Por realizar: </strong>{{ porRealizar(proveedor) }}
+            </template>
+            <template #actions>
+              <UButton v-if="abonoObservado(proveedor)" size="xs" color="warning" @click="editarAbono(abonoObservado(proveedor)!)">Corregir comprobante</UButton>
+            </template>
+          </UAlert>
+
+          <div v-if="!soloLectura && proveedor.estado === 'en_proceso' && (proveedor.etapa !== 2 || proveedor.puede_editar_etapa1)" class="mt-4 flex flex-wrap gap-2">
             <UButton color="neutral" variant="outline" icon="i-lucide-eye" @click="abrirMotivo(proveedor, 'observar')">Observar</UButton>
             <UButton v-if="proveedor.puede_editar_etapa1" color="error" variant="outline" icon="i-lucide-trash-2" @click="abrirMotivo(proveedor, 'anular')">Anular</UButton>
           </div>
-          <div v-else-if="!esAdmin && proveedor.observacion_ventas && proveedor.puede_editar_etapa1" class="mt-4">
+          <div v-else-if="!soloLectura && proveedor.observacion_ventas && proveedor.puede_editar_etapa1" class="mt-4">
             <UButton color="error" variant="outline" icon="i-lucide-trash-2" @click="abrirMotivo(proveedor, 'anular')">Anular</UButton>
           </div>
         </div>
@@ -362,7 +371,7 @@
                   <td class="py-2 pr-3">{{ abono.aplicaciones.map(item => `${nombreProveedor(item.solicitud_proveedor_id)} $${dinero(item.monto)}`).join(', ') }}</td>
                   <td class="py-2 pr-3">
                     <template v-if="abono.excedente > 0">
-                      ${{ dinero(abono.excedente) }} <span class="text-xs text-muted">{{ textoExcedente(abono.excedente_decision) }}</span>
+                      ${{ dinero(abono.excedente) }} <span class="text-xs text-muted">{{ textoExcedente(abono) }}</span>
                       <span v-if="abono.excedente_decide_text" class="block text-xs" :class="abono.excedente_decide_overdue ? 'font-semibold text-error' : 'text-warning'">{{ abono.excedente_decide_text }}</span>
                     </template>
                     <template v-else>—</template>
@@ -373,24 +382,7 @@
                 <tr v-if="abonoConDetalle(abono)">
                   <td colspan="8" class="pb-3">
                     <UAlert v-if="abono.observacion" color="error" variant="subtle" :title="`Observado: ${abono.observacion.motivo}`" :description="[abono.observacion.detalle, abono.observacion.plazo].filter(Boolean).join(' · ') || undefined" />
-                    <p v-if="abono.excedente_decision === 'reembolso_solicitado'" class="mt-1 text-sm text-info">Administración ya puede registrar el voucher del reembolso. Pide las cuentas bancarias al cliente.</p>
                     <p v-if="abono.operacion_repetida" class="mt-1 text-sm text-warning">El número de operación ya estaba registrado.</p>
-                    <div v-if="!esAdmin" class="mt-1 flex flex-wrap items-center gap-3">
-                      <template v-if="abono.excedente_decision === 'por_consultar'">
-                        <UButton v-if="hayCuotas" size="xs" color="primary" variant="link" @click="decidir(abono.id, 'aplicado_cuota')">Aplicar a la siguiente cuota</UButton>
-                        <UButton size="xs" color="primary" variant="link" @click="decidir(abono.id, 'reembolso_solicitado')">Solicitar reembolso del excedente</UButton>
-                      </template>
-                      <template v-if="abono.puede_elegir_continuacion">
-                        <UCheckbox
-                          v-for="aplicacion in abono.aplicaciones"
-                          :key="aplicacion.solicitud_proveedor_id"
-                          :model-value="(continuacion[abono.id] || []).includes(aplicacion.solicitud_proveedor_id)"
-                          :label="nombreProveedor(aplicacion.solicitud_proveedor_id)"
-                          @update:model-value="(checked) => alternarContinuacion(abono.id, aplicacion.solicitud_proveedor_id, !!checked)"
-                        />
-                        <UButton size="xs" color="primary" variant="link" @click="guardarContinuacion(abono.id)">Estos continúan</UButton>
-                      </template>
-                    </div>
                   </td>
                 </tr>
               </template>
@@ -473,6 +465,32 @@
         </dl>
         <template #footer>
           <UButton color="neutral" variant="outline" @click="cerrarDesglose">Cerrar</UButton>
+        </template>
+      </SupplierPaymentWindow>
+
+      <SupplierPaymentWindow
+        :open="!!abonoContinuacion"
+        title="Elegir proveedores"
+        subtitle="Selecciona los proveedores que continúan con el pago."
+        @close="abonoContinuacion = null"
+      >
+        <template v-if="abonoContinuacion">
+          <p class="text-sm text-highlighted"><strong>Abono {{ abonoContinuacion.id }}: ${{ dinero(abonoContinuacion.importe) }}</strong> · N.° de operación {{ abonoContinuacion.numero_operacion || '—' }}</p>
+          <UCard v-for="aplicacion in abonoContinuacion.aplicaciones" :key="aplicacion.solicitud_proveedor_id" variant="subtle" :ui="{ body: 'p-3 sm:p-3' }">
+            <div class="flex items-center justify-between gap-3 text-sm">
+              <UCheckbox
+                :model-value="(continuacion[abonoContinuacion.id] || []).includes(aplicacion.solicitud_proveedor_id)"
+                :label="nombreProveedor(aplicacion.solicitud_proveedor_id)"
+                @update:model-value="(checked) => alternarContinuacion(abonoContinuacion!.id, aplicacion.solicitud_proveedor_id, !!checked)"
+              />
+              <span class="text-muted">Monto asignado <strong class="text-highlighted">${{ dinero(aplicacion.monto) }}</strong></span>
+            </div>
+          </UCard>
+          <UAlert color="warning" variant="subtle" :description="`Falta: $${dinero(abonoContinuacion.aplicaciones.reduce((suma, item) => suma + Number(item.monto), 0) - abonoContinuacion.importe)}. Consulta con el cliente y marca qué proveedor(es) continúan con el proceso; los demás quedan pendientes.`" />
+        </template>
+        <template #footer>
+          <UButton color="neutral" variant="outline" @click="abonoContinuacion = null">Cancelar</UButton>
+          <UButton color="primary" :disabled="!(continuacion[abonoContinuacion?.id || 0] || []).length" @click="guardarContinuacion(abonoContinuacion!.id)">Confirmar selección</UButton>
         </template>
       </SupplierPaymentWindow>
 
@@ -634,6 +652,10 @@ const { withSpinner } = useSpinner()
 const { profile } = useSupplierPaymentProfile()
 const api = useSupplierPaymentRequest()
 const esAdmin = computed(() => profile.value === SUPPLIER_PAYMENT_PROFILE.ADMINISTRATION)
+const esChina = computed(() => profile.value === SUPPLIER_PAYMENT_PROFILE.WAREHOUSE)
+/** Administración y Operaciones China consultan la solicitud; las acciones son de Ventas. */
+const soloLectura = computed(() => esAdmin.value || esChina.value)
+const abonoContinuacion = ref<PagoProveedorAbono | null>(null)
 const cargando = ref(true)
 const guardandoAbono = ref(false)
 const guardandoAviso = ref(false)
@@ -684,7 +706,6 @@ const proveedoresConSaldo = computed(() => (solicitud.value?.proveedores || []).
   if (abonoEnEdicion.value?.aplicaciones?.some(aplicacion => aplicacion.solicitud_proveedor_id === item.id)) return true
   return (item.puede_editar_etapa1 || item.puede_registrar_diferencia) && item.saldo > 0
 }))
-const hayCuotas = computed(() => (solicitud.value?.proveedores || []).some(item => item.modalidad_abono === 'fraccionado'))
 const hayAccionEtapa1 = computed(() => (solicitud.value?.proveedores || []).some(item => item.puede_editar_etapa1 || item.puede_registrar_diferencia || item.observacion_china))
 const ctaPrincipal = computed<'datos' | 'resumen' | 'cuentas' | ''>(() => {
   const proveedores = solicitud.value?.proveedores || []
@@ -786,7 +807,7 @@ function pasoHecho(proveedor: PagoProveedorSolicitudProveedor, paso: number) {
 }
 
 function datosEditables(proveedor: PagoProveedorSolicitudProveedor) {
-  return !esAdmin.value && (proveedor.puede_editar_etapa1 || !!proveedor.observacion_china)
+  return !soloLectura.value && (proveedor.puede_editar_etapa1 || !!proveedor.observacion_china)
 }
 
 function cuentaOculta(cuenta?: string | null) {
@@ -810,13 +831,18 @@ function etiquetaDatos(estado: string) {
   return { pendiente: 'Sin enviar', enviado: 'Formulario enviado · esperando al cliente', por_autorizar: 'Por autorizar', recibido: 'Recibido ✓' }[estado] || estado
 }
 
-function textoExcedente(decision: string | null) {
+function textoExcedente(abonoItem: PagoProveedorAbono) {
+  const fila = (solicitud.value?.proveedores || [])
+    .flatMap(proveedor => proveedor.progreso?.verification.surpluses || [])
+    .find(item => item.deposit_id === abonoItem.id)
+  const reembolso = { por_consultar: 'por consultar al cliente', solicitado: 'reembolso solicitado', aprobado: 'reembolso aprobado' }[fila?.refund_status || '']
+  if (reembolso) return reembolso
   return {
     aplicado_cuota: 'se aplica a la cuota 2',
     no_devuelve: 'no se devuelve (dentro de la tolerancia)',
     por_consultar: 'por consultar al cliente',
     reembolso_solicitado: 'reembolso solicitado'
-  }[decision || ''] || decision
+  }[abonoItem.excedente_decision || ''] || abonoItem.excedente_decision
 }
 
 async function cargar() {
@@ -1060,21 +1086,56 @@ function abonoObservado(proveedor: PagoProveedorSolicitudProveedor) {
   return (solicitud.value?.abonos || []).find(abono => abono.observacion && abono.aplicaciones?.some(aplicacion => aplicacion.solicitud_proveedor_id === proveedor.id)) || null
 }
 
-function siguientePaso(proveedor: PagoProveedorSolicitudProveedor) {
-  const observado = abonoObservado(proveedor)
-  if (proveedor.observacion_ventas) return ''
-  if (observado) return `Administración observó el comprobante: ${observado.observacion?.motivo}. Corrígelo o cambia el voucher.`
-  if (proveedor.observacion_china) return 'Corrige el vendedor o el WeChat y levanta la observación.'
-  if (proveedor.puede_registrar_diferencia) return 'Administración dejó una diferencia por cobrar. Registra ese comprobante.'
-  if (proveedor.etapa === 1 && proveedor.estado === 'en_proceso') {
-    const tareas: string[] = []
+/** Franja «Por realizar»: solo cuando a Ventas le toca algo (VW-12). */
+function porRealizar(proveedor: PagoProveedorSolicitudProveedor) {
+  if (proveedor.observacion_ventas || proveedor.estado === 'anulado' || proveedor.estado === 'completado') return ''
+  const aprobacion = proveedor.progreso?.verification.approval
+  const tareas: string[] = []
+  if (proveedor.observacion_china) tareas.push('corregir el dato del proveedor y levantar la observación')
+  if (proveedor.etapa === 1 && proveedor.estado !== 'observado') {
     if (datosPendientes(proveedor)) tareas.push(proveedor.moneda === 'RMB' ? 'completar los datos del proveedor' : 'completar los datos bancarios del proveedor')
     if (proveedor.saldo > 0.004) tareas.push(proveedor.importe_abonado > 0 ? `registrar el abono faltante (${dinero(proveedor.saldo)})` : 'registrar el abono del cliente')
-    return tareas.length ? `${tareas.join(' · ')}.` : ''
   }
+  if (aprobacion?.state === 'to_collect') tareas.push(`avisar al cliente que debe abonar ${aprobacion.collect_amount ? `$${dinero(aprobacion.collect_amount)}` : 'la diferencia'} y registrar el voucher de la diferencia`)
+  else if (abonoObservado(proveedor)) tareas.push('avisar al cliente que el depósito no ingresó y, si corresponde, corregir o registrar el abono correcto')
+  else if (aprobacion?.state === 'registration_error') tareas.push('corregir tu voucher o tus datos y levantar la observación')
+  if (aprobacion?.state === 'waiting_shared') tareas.push('consultar al cliente qué proveedores continúan con este dinero; los demás quedan pendientes con lo que sobre')
+  if (proveedor.etapa >= 2 && proveedor.etapa < 4) {
+    for (const fila of proveedor.progreso?.verification.surpluses || []) {
+      if (fila.refund_status === 'por_consultar' || fila.decision === 'por_consultar') {
+        tareas.push(fila.can_apply_installment
+          ? `consultar al cliente qué prefiere para el excedente de $${dinero(fila.amount)}: reembolso (pedirle sus cuentas bancarias) o aplicarlo a su siguiente cuota`
+          : `informar al cliente que se le reembolsará el excedente de $${dinero(fila.amount)} y pedirle sus cuentas bancarias`)
+      }
+    }
+  }
+  if (aprobacion?.state === 'missing_data') tareas.push('completar los datos del proveedor')
+  if (proveedor.etapa === 3 && !proveedor.observacion_china && datosPendientes(proveedor)) tareas.push('completar los datos del proveedor: sin ellos el pago no se puede ejecutar')
+  return tareas.length ? `${tareas.join(' · ')}.` : ''
+}
+
+/** Franja «En manos de»: solo cuando Ventas no tiene nada que hacer. */
+function enManos(proveedor: PagoProveedorSolicitudProveedor) {
+  if (proveedor.estado !== 'en_proceso' || porRealizar(proveedor)) return ''
   if (proveedor.etapa === 2) return 'En manos de Administración: verifica el depósito y aprueba el pago. Te avisamos cuando lo aprueben.'
-  if (proveedor.etapa === 3) return `En manos de ${proveedor.moneda === 'RMB' ? 'Operaciones China' : 'Administración'}: pago en ejecución. Te avisamos cuando suban la constancia.`
-  return ''
+  if (proveedor.etapa !== 3) return ''
+  const quien = proveedor.moneda === 'RMB' ? 'Operaciones China' : 'Administración'
+  const aprobado = proveedor.progreso?.verification.approval.decided_at
+  let desde = ''
+  if (aprobado) {
+    const dias = Math.floor((Date.now() - new Date(aprobado).getTime()) / 86400000)
+    desde = ` desde el ${new Date(aprobado).toLocaleDateString('es-PE', { timeZone: 'America/Lima' })}${dias >= 1 ? ` (hace ${dias} día${dias > 1 ? 's' : ''})` : ''}`
+  }
+  return `En manos de ${quien}${desde}. Te avisamos cuando suban la constancia.`
+}
+
+function editarAbonoPorId(id: number) {
+  const item = (solicitud.value?.abonos || []).find(abonoItem => abonoItem.id === id)
+  if (item) editarAbono(item)
+}
+
+function abrirContinuacion(proveedor: PagoProveedorSolicitudProveedor) {
+  abonoContinuacion.value = abonosProveedor(proveedor.id).find(item => item.puede_elegir_continuacion) || null
 }
 
 function abrirAbono() {
@@ -1209,6 +1270,7 @@ async function guardarContinuacion(abonoId: number) {
       'Guardando…'
     )
     aplicar(respuesta.data)
+    abonoContinuacion.value = null
     showSuccess('Voucher compartido', 'Los proveedores elegidos continúan con el pago.')
   } catch (error: any) {
     showError('Voucher compartido', error?.data?.message || error.message || 'No se pudo guardar.')

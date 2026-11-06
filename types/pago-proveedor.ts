@@ -188,6 +188,7 @@ export interface SupplierPaymentProviderRow {
   exchange_result?: string | null
   second_payment_choice?: string | null
   second_installment_on?: string | null
+  current_installment?: number
   decision_due_at?: string | null
   decision_due_text?: string | null
   observe_until?: string | null
@@ -221,6 +222,9 @@ export interface PagoProveedorSolicitudProveedor {
   codigo_solicitud: string | null
   puede_editar_etapa1: boolean
   puede_registrar_diferencia?: boolean
+  puede_levantar?: boolean
+  cuota_actual?: number
+  cuota_carga?: number | null
   observacion_china?: {
     reason: string
     label: string
@@ -234,6 +238,7 @@ export interface PagoProveedorSolicitudProveedor {
   progreso?: SupplierPaymentProgress
   documento_balance?: PagoProveedorDocumento | null
   modalidad_abono: string
+  modalidad_pago?: string
   datos: {
     estado: string
     origen: string | null
@@ -269,13 +274,63 @@ export interface SupplierPaymentProgressItem {
   owner: string
 }
 
+export interface SupplierPaymentProgressDeposit {
+  id: number
+  amount: number
+  applied_amount: number
+  recorded_amount: number | null
+  corrections: Array<{ field: string; from: string; to: string }>
+  modified: boolean
+  shared: boolean
+  bank_label: string
+  voucher_url: string | null
+  can_edit: boolean
+  verified_at: string | null
+  verified_by: string | null
+  deadline_text: string | null
+  deadline_overdue: boolean
+  observation: { reason: string; detail: string | null; deadline_text: string | null } | null
+  status: string
+  status_label: string
+  paid_on: string | null
+  operation_number: string
+}
+
+export interface SupplierPaymentApprovalSummary {
+  state: 'approved' | 'to_collect' | 'registration_error' | 'waiting_money' | 'waiting_shared' | 'missing_data' | 'difference' | 'waiting_verification' | 'evaluating'
+  automatic: boolean
+  decided_at: string | null
+  decided_by: string | null
+  assumed_amount: number | null
+  assumed_reason: string | null
+  collect_amount: number | null
+  deadline_text: string | null
+  note: string | null
+  surplus: number
+  surplus_applied: boolean
+  difference: number
+  tolerance: number
+}
+
+export interface SupplierPaymentSurplusRow {
+  deposit_id: number
+  amount: number
+  decision: string
+  refund_status: string | null
+  rejection: string | null
+  voucher_url: string | null
+  can_apply_installment: boolean
+}
+
 export interface SupplierPaymentProgress {
   verification: {
-    deposits: Array<{ id: number; amount: number; status: string; status_label: string; paid_on: string | null; operation_number: string }>
+    deposits: SupplierPaymentProgressDeposit[]
+    approval: SupplierPaymentApprovalSummary
+    surpluses: SupplierPaymentSurplusRow[]
     approval_status: string | null
     approval_label: string
   }
-  executions: Array<{ id: number; cargo_amount: number; executed_on: string | null; receipt_name: string | null; receipt_url: string | null }>
+  executions: Array<{ id: number; cargo_amount: number; executed_on: string | null; registered_at: string | null; registered_by: string | null; paid_yuan: number | null; receipt_name: string | null; receipt_url: string | null }>
   confirmation: {
     visible: boolean
     completed: boolean
@@ -294,6 +349,11 @@ export interface SupplierPaymentProgress {
     can_complete?: boolean
     complete_label?: string
     exchange_due_usd: number
+    exchange_result: string | null
+    exchange_amount_usd: number
+    exchange_covered: boolean
+    exchange_validating: boolean
+    balance_sent: boolean
     payment_two_refund: { cargo: number; admin: number; total: number } | null
     decision_due_at: string | null
     decision_overdue: boolean
@@ -303,6 +363,7 @@ export interface SupplierPaymentProgress {
       status: string
       status_label: string
       origin_label: string
+      rejection?: string | null
       blocks_close: boolean
       voucher_url?: string | null
     } | null

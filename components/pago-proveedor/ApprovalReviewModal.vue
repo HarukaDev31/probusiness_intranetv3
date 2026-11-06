@@ -30,10 +30,10 @@
           <SupplierPaymentFact label="Tipo de pago" :value="payment.currency === 'RMB' ? 'RMB / Transferencia' : 'USD / T-T'" />
           <SupplierPaymentFact label="Modalidad" :value="payment.modality_label || payment.installment_label || 'Total'" />
           <div class="mt-1">
-            <SupplierPaymentFact v-if="payment.cargo_amount != null" label="Valor de carga" :value="`${money(payment.cargo_amount)}`" />
-            <SupplierPaymentFact v-if="payment.bank_fee_amount" label="Comisión bancaria / plataforma" :value="`${money(payment.bank_fee_amount)}`" />
-            <SupplierPaymentFact v-if="payment.admin_fee_amount" label="Comisión administrativa" :value="`${money(payment.admin_fee_amount)}`" />
-            <SupplierPaymentFact label="Importe cobrado" :value="`${money(payment.charged_amount)}`" />
+            <SupplierPaymentFact v-if="payment.cargo_amount != null" label="Valor de carga" :value="`$${money(payment.cargo_amount)}`" />
+            <SupplierPaymentFact v-if="payment.bank_fee_amount" label="Comisión bancaria / plataforma" :value="`$${money(payment.bank_fee_amount)}`" />
+            <SupplierPaymentFact v-if="payment.admin_fee_amount" label="Comisión administrativa" :value="`$${money(payment.admin_fee_amount)}`" />
+            <SupplierPaymentFact label="Importe cobrado" :value="`$${money(payment.charged_amount)}`" />
           </div>
         </SupplierPaymentCard>
 
@@ -77,7 +77,7 @@
             </div>
             <div class="rounded-lg border border-default p-3">
               <p class="text-[11px] font-semibold uppercase text-muted">Importe ingresado (Banco)</p>
-              <p class="mt-1 text-lg font-bold">{{ depositsOpen ? '—' : `${money(payment.received_amount)}` }}</p>
+              <p class="mt-1 text-lg font-bold">{{ depositsOpen ? '—' : `$${money(payment.received_amount)}` }}</p>
             </div>
           </div>
           <p class="rounded-lg p-3 text-sm" :class="comparison.clase">
@@ -173,8 +173,8 @@ const pill = computed<{ color: 'error' | 'warning' | 'info' | 'success'; label: 
   const difference = Number(props.payment?.difference || 0)
   if (deposits.value.some((deposit) => deposit.status_label === 'Observado')) return { color: 'error', label: 'Depósito observado' }
   if (depositsOpen.value) return { color: 'warning', label: 'Depósito por validar' }
-  if (difference < -0.004) return { color: 'error', label: `Faltan ${money(-difference)}` }
-  if (difference > 0.004) return { color: 'info', label: `Sobran ${money(difference)}` }
+  if (difference < -0.004) return { color: 'error', label: `Faltan $${money(-difference)}` }
+  if (difference > 0.004) return { color: 'info', label: `Sobran $${money(difference)}` }
   return { color: 'success', label: 'Importes coinciden' }
 })
 const comparison = computed(() => {
@@ -184,8 +184,8 @@ const comparison = computed(() => {
   if (!payment) return { clase: verde, titulo: '', texto: '' }
   if (depositsOpen.value) return { clase: rojo, titulo: '', texto: 'Faltan validar depósitos (que el dinero ingresó al banco) antes de aprobar el pago.' }
   const difference = Number(payment.difference || 0)
-  const monto = `${money(Math.abs(difference))}`
-  const tolerancia = `${money(payment.tolerance)}`
+  const monto = `$${money(Math.abs(difference))}`
+  const tolerancia = `$${money(payment.tolerance)}`
   if (Math.abs(difference) <= 0.004) return { clase: verde, titulo: '✓ ', texto: 'Los importes coinciden.' }
   if (!payment.needs_reason) return { clase: verde, titulo: '', texto: `${difference < 0 ? 'Faltan' : 'Sobran'} ${monto}: dentro de la tolerancia de ${tolerancia}.` }
   if (difference < 0) return { clase: rojo, titulo: `Faltan ${monto}`, texto: `: supera la tolerancia de ${tolerancia}. Aprobar pago: lo asume Probusiness (motivo obligatorio). Por cobrar: Ventas cobra la diferencia al cliente.` }

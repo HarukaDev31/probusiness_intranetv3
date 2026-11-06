@@ -283,18 +283,16 @@ const refundUnified = computed<UnifiedRow[]>(() => refundRows.value
     client_name: row.client_name,
     consolidation: row.consolidation,
     supplier_code: row.supplier_code,
-    supplier_name: null,
-    request_code: null,
+    supplier_name: [row.supplier_name, row.product].filter(Boolean).join(' · ') || null,
+    request_code: row.request_code || null,
     payment_type: '—',
     installment_label: null,
     amount: row.amount,
     deposit_text: '—',
     deadline_text: row.requested_at ? formatDate(row.requested_at) : '—',
-    status_label: bucket.value === APPROVAL_BUCKET.APPROVED ? 'Reembolso aprobado' : 'Pendiente',
+    status_label: bucket.value === APPROVAL_BUCKET.APPROVED ? 'Reembolso aprobado' : 'Reembolso solicitado',
     status_tone: bucket.value === APPROVAL_BUCKET.APPROVED ? 'ok' : 'warn',
-    observation: row.origin_label
-      ? `Reembolso solicitado · ${row.origin_label}`
-      : 'Reembolso solicitado',
+    observation: refundObservation(row),
     observation_alert: bucket.value === APPROVAL_BUCKET.PENDING,
     refund: row
   })))
@@ -366,7 +364,8 @@ const filterConfig = computed(() => [
       : [
           { value: APPROVAL_STATUS.ALL, label: 'Todos' },
           { value: APPROVAL_STATUS.PENDING, label: 'Pendiente' },
-          { value: APPROVAL_STATUS.TO_COLLECT, label: 'Por cobrar' }
+          { value: APPROVAL_STATUS.TO_COLLECT, label: 'Por cobrar' },
+          { value: FILTRO_REEMBOLSO, label: 'Reembolso solicitado' }
         ]
   }
 ])
@@ -444,6 +443,14 @@ const columns = computed<TableColumn<UnifiedRow>[]>(() => [
   }
 ])
 
+function refundObservation(row: SupplierPaymentRefund) {
+  const amount = `$${Number(row.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+  if (bucket.value === APPROVAL_BUCKET.APPROVED) return row.origin === 'payment_2' ? 'Por anulación de pago' : 'Reembolso de un excedente'
+  if (row.origin === 'payment_2') return `Reembolso por anulación de pago${row.reason ? ` · ${row.reason}` : ''}`
+  if (row.origin === 'exchange') return `Reembolso de ${amount} por diferencia de cambio`
+  return `Reembolso de ${amount} por excedente`
+}
+
 function pastilla(texto: string, tono: 'ok' | 'info' | 'warn') {
   const clases = {
     ok: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300',
@@ -471,7 +478,11 @@ function formatDate(value: string | null) {
   return value ? new Date(value).toLocaleDateString('es-PE') : '—'
 }
 
+// Solo se aplica la última consulta: una respuesta tardía de otra pestaña no pisa la lista.
+let lastLoad = 0
+
 async function load() {
+  const current = ++lastLoad
   loading.value = true
   try {
     const response = await PagoProveedorService.listApprovals({
@@ -483,6 +494,7 @@ async function load() {
       page: pagination.value.current_page,
       per_page: pagination.value.per_page
     })
+    if (current !== lastLoad) return
     rows.value = response.data || []
     pagination.value = response.pagination
     pendingCount.value = response.pending_count || 0
@@ -491,7 +503,7 @@ async function load() {
   } catch (error: any) {
     showError('Aprobación', error?.data?.message || error?.message || 'No se pudieron cargar los pagos.')
   } finally {
-    loading.value = false
+    if (current === lastLoad) loading.value = false
   }
 }
 

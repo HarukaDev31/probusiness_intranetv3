@@ -567,9 +567,9 @@ const props = withDefaults(defineProps<DataTableProps>(), {
   kanbanDraggable: false
 })
 
-const useEnglishHeaders = computed(() => usesEnglishTableHeaders(currentRole.value))
-const displayedTitle = computed(() => translateTableText(props.title || '', currentRole.value) || props.title)
-const displayedColumns = computed(() => applyEnglishTableHeaders(props.columns || [], currentRole.value))
+const useEnglishHeaders = computed(() => !props.keepSpanishHeaders && usesEnglishTableHeaders(currentRole.value))
+const displayedTitle = computed(() => (props.keepSpanishHeaders ? props.title : translateTableText(props.title || '', currentRole.value) || props.title))
+const displayedColumns = computed(() => (props.keepSpanishHeaders ? props.columns || [] : applyEnglishTableHeaders(props.columns || [], currentRole.value)))
 
 /** Evita ambigüedad con otros `loading` en plantilla; fuerza booleano para UTable */
 const isTableLoading = computed(() => Boolean(props.loading))

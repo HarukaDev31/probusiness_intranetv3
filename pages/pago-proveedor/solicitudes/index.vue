@@ -71,8 +71,9 @@
             <p class="mt-1 text-sm text-muted">{{ taskText(row.provider) }}</p>
             <p class="mt-1 text-xs text-muted">
               {{ row.consolidation || 'Sin consolidado' }} · {{ supplierLabel(row.provider) }} · {{ paymentLabel(row.provider) }}
-              <template v-if="row.provider.second_installment_on"> · Cuota {{ installmentTag(row.provider) }}</template>
+              <template v-if="row.provider.payment_shape === PAYMENT_SHAPE.CLIENT_INSTALLMENTS"> · Cuota {{ installmentTag(row.provider) }}</template>
             </p>
+            <p v-if="compromisoCuota(row.provider)" class="mt-1 text-xs font-medium text-warning">{{ compromisoCuota(row.provider) }}</p>
             <p v-if="row.provider.decision_due_text || row.provider.observe_text" class="mt-1 text-xs font-medium text-warning">
               {{ row.provider.decision_due_text || row.provider.observe_text }}
             </p>
@@ -291,7 +292,7 @@ function installmentTag(provider: SupplierPaymentProviderRow) {
   if (provider.payment_shape !== PAYMENT_SHAPE.CLIENT_INSTALLMENTS && provider.payment_shape !== PAYMENT_SHAPE.SUPPLIER_INSTALLMENTS) {
     return ''
   }
-  return provider.second_installment_on ? '2/2' : '1/2'
+  return `${provider.current_installment || 1}/2`
 }
 
 function paymentLabel(provider: SupplierPaymentProviderRow) {
@@ -324,6 +325,18 @@ function statusLabel(status: string) {
   }[status] || status
 }
 
+/** RN-18: la fecha comprometida se avisa desde 2 días antes; en la cuota 2 ya en curso se muestra siempre. */
+function compromisoCuota(provider: SupplierPaymentProviderRow) {
+  if (!provider.second_installment_on || provider.payment_shape !== PAYMENT_SHAPE.CLIENT_INSTALLMENTS) return ''
+  const hoy = new Date(new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' }) + 'T00:00:00')
+  const [anio, mes, dia] = provider.second_installment_on.split('-').map(Number)
+  const dias = Math.round((new Date(anio, mes - 1, dia).getTime() - hoy.getTime()) / 86400000)
+  const enCuota2 = (provider.current_installment || 1) === 2 && provider.stage === REQUEST_STAGE.DATA
+  if (!enCuota2 && ((provider.current_installment || 1) !== 1 || dias > 2)) return ''
+  const texto = dias < 0 ? `venció hace ${-dias} día${dias < -1 ? 's' : ''}` : dias === 0 ? 'vence hoy' : dias <= 2 ? `vence en ${dias} día${dias > 1 ? 's' : ''}` : `faltan ${dias} días`
+  return `Compromiso del cliente: ${dia}/${mes}/${anio} · ${texto}`
+}
+
 function taskText(provider: SupplierPaymentProviderRow) {
   const deadline = provider.decision_due_text || provider.observe_text
   const withDeadline = (text: string) => (deadline ? `${text} · ${deadline}` : text)
@@ -346,7 +359,7 @@ function taskText(provider: SupplierPaymentProviderRow) {
     if (provider.exchange_result === 'to_collect') return 'Registra el voucher de la diferencia de cambio.'
     if (provider.exchange_result === 'to_refund') return 'Hay diferencia de cambio a favor del cliente. El reembolso lo aprueba Administración.'
     if (provider.stage !== REQUEST_STAGE.CONFIRMATION && provider.second_installment_on) {
-      return `La cuota 2 está comprometida para ${provider.second_installment_on}. Prepárate o confirma el tipo de cambio.`
+      return 'Aviso: la 2.ª cuota del cliente vence pronto — recordarle su compromiso.'
     }
     return provider.stage === REQUEST_STAGE.CONFIRMATION
       ? withDeadline('Resolver para cerrar la Confirmación: Decidir la cuota 2')
@@ -361,7 +374,7 @@ function taskText(provider: SupplierPaymentProviderRow) {
 }
 
 const columns: TableColumn<RequestLine>[] = [
-  { accessorKey: 'orderNumber', header: 'N.° de orden' },
+  { accessorKey: 'orderNumber', header: 'N.°' },
   { accessorKey: 'createdAt', header: 'Fecha', cell: ({ row }) => row.original.createdAt ? new Date(row.original.createdAt).toLocaleDateString('es-PE') : '—' },
   { accessorKey: 'consolidation', header: 'Consolidado' },
   { accessorKey: 'clientName', header: 'Cliente' },

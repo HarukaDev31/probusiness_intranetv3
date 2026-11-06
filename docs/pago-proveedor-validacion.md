@@ -85,6 +85,63 @@ Bugs corregidos:
 | Tema | Títulos ilegibles en modo oscuro y colores sueltos. 74 clases pasaron a colores del tema; formularios a componentes de Nuxt UI. | Módulo |
 | General | `DynamicModal` fallaba con modal nulo en Verificación. | `DynamicModal.vue` |
 
+### Pasada 4 — estados de la solicitud tras cada acción de Administración (6/11/2026)
+
+Sobre `qa` con los commits nuevos (`e75d8453` y `6279305`). Se abrió la maqueta en el navegador y se comparó su código de render con las pantallas. El T-T se probó en `probusiness-clientes-front` (`origin/qa`, puerto 3001), donde ahora vive esa página.
+
+| Suite | Resultado |
+| --- | --- |
+| Reglas y estados por API | 124/124 |
+| Plazos, mensajes, configuración y China por API | 48/48 |
+| Recorrido en pantalla con los tres roles y el cliente | 35/35 y 5/5 |
+| Matriz de estados en pantalla | 49/49 (primera corrida: 6/28) |
+| PHPStan del módulo | sin errores |
+
+Qué ve la solicitud según lo que hizo Administración:
+
+| ID | Acción | Lo que ve Ventas | Evidencia |
+| --- | --- | --- | --- |
+| ST-01 | Nada todavía | `Por validar · quedan…`, aprobación `Pendiente`, «En manos de Administración» | [st01-por-validar](pago-proveedor-validacion/st01-por-validar.png) |
+| ST-02 | Validar importe exacto | `✓ Validado`, importe del banco, `✓ Aprobado automáticamente`, «Sin diferencias ni devoluciones» | [st02-validado-automatico](pago-proveedor-validacion/st02-validado-automatico.png) · [st02b-validado-admin](pago-proveedor-validacion/st02b-validado-admin.png) · [st02c-paso3-ventas](pago-proveedor-validacion/st02c-paso3-ventas.png) |
+| ST-03 | Banco menor, dentro de tolerancia | `✎ Modificado`, «Importe: $a → $b», «Registraste $a», la asume Pro Business | [st03-ajuste-tolerancia](pago-proveedor-validacion/st03-ajuste-tolerancia.png) |
+| ST-04 | Observar depósito | Proveedor `Observado`, `Observado · motivo`, aprobación `En espera`, Por realizar | [st04-observado](pago-proveedor-validacion/st04-observado.png) · [st04b-observado-mis-pendientes](pago-proveedor-validacion/st04b-observado-mis-pendientes.png) |
+| ST-05 | Banco menor, fuera de tolerancia | «Hay una diferencia de $5.00: Administración decide» | [st05-pendiente-decision](pago-proveedor-validacion/st05-pendiente-decision.png) · [st05b-por-aprobar](pago-proveedor-validacion/st05b-por-aprobar.png) |
+| ST-06 | Por cobrar | `Observado · Por cobrar $5.00`, plazo, voucher de la diferencia, Por realizar; luego `Por validar` y aprobado | [st06-por-cobrar](pago-proveedor-validacion/st06-por-cobrar.png) · [st06b-por-cobrar-admin](pago-proveedor-validacion/st06b-por-cobrar-admin.png) · [st06c-diferencia-por-validar](pago-proveedor-validacion/st06c-diferencia-por-validar.png) · [st06d-cobrada](pago-proveedor-validacion/st06d-cobrada.png) |
+| ST-07 | Aprobar asumiendo | `✓ Aprobado por Administración`, «Asumió una diferencia de $5.00 (motivo)»; sale en Aprobados | [st07a-aprobar-con-motivo](pago-proveedor-validacion/st07a-aprobar-con-motivo.png) · [st07-aprobado-admin](pago-proveedor-validacion/st07-aprobado-admin.png) · [st07b-aprobados](pago-proveedor-validacion/st07b-aprobados.png) |
+| ST-08 | Error de registro | `Observado · Error de registro`, qué corregir, Levantar observación; vuelve a En proceso | [st08a-error-registro-admin](pago-proveedor-validacion/st08a-error-registro-admin.png) · [st08-error-registro](pago-proveedor-validacion/st08-error-registro.png) · [st08b-levantada](pago-proveedor-validacion/st08b-levantada.png) |
+| ST-09 | Corregir datos del depósito | `✎ Modificado`, «N.° de operación: a → b» | [st09a-corregido-por-validar](pago-proveedor-validacion/st09a-corregido-por-validar.png) · [st09-corregido](pago-proveedor-validacion/st09-corregido.png) |
+| ST-10 | Sobrante y reembolso | Sobrante, Solicitar reembolso, solicitado, rechazado con motivo, aprobado con comprobante | [st10-sobrante-pendiente](pago-proveedor-validacion/st10-sobrante-pendiente.png) · [st10b-sobrante-aprobado](pago-proveedor-validacion/st10b-sobrante-aprobado.png) · [st10c-reembolso-solicitado](pago-proveedor-validacion/st10c-reembolso-solicitado.png) · [st10e-ventana-reembolso](pago-proveedor-validacion/st10e-ventana-reembolso.png) · [st10f-reembolso-rechazado](pago-proveedor-validacion/st10f-reembolso-rechazado.png) · [st10g-reembolso-aprobado](pago-proveedor-validacion/st10g-reembolso-aprobado.png) |
+| ST-11 | Deshacer | Vuelve a `Por validar`, sin marcas de validado | [st11a-deshacer](pago-proveedor-validacion/st11a-deshacer.png) · [st11-deshecho](pago-proveedor-validacion/st11-deshecho.png) |
+| ST-12 | Validar sin datos del proveedor | Sigue en paso 1 y pide completar datos | [st12-validado-sin-datos](pago-proveedor-validacion/st12-validado-sin-datos.png) |
+| ST-13/14 | Pago ejecutado | Paso 3 pendiente y revisado; yuanes «no se envía al cliente», dólares «enviada por WhatsApp» | [st13-paso3-revisado-yuanes](pago-proveedor-validacion/st13-paso3-revisado-yuanes.png) · [st14-paso3-usd-pendiente](pago-proveedor-validacion/st14-paso3-usd-pendiente.png) · [st14b-paso3-usd-pagado](pago-proveedor-validacion/st14b-paso3-usd-pagado.png) |
+| ST-16 a 20 | Confirmación | Tolerancia, por cobrar, a favor, cuota 2 y pago 2 según VW-14 | [st16-confirmacion-tolerancia](pago-proveedor-validacion/st16-confirmacion-tolerancia.png) · [st17-confirmacion-por-cobrar](pago-proveedor-validacion/st17-confirmacion-por-cobrar.png) · [st18-confirmacion-a-favor](pago-proveedor-validacion/st18-confirmacion-a-favor.png) · [st18b-reembolso-solicitado](pago-proveedor-validacion/st18b-reembolso-solicitado.png) · [st19-confirmacion-cuota-2](pago-proveedor-validacion/st19-confirmacion-cuota-2.png) · [st20-confirmacion-pago-2](pago-proveedor-validacion/st20-confirmacion-pago-2.png) |
+| ST-21 | Voucher compartido con faltante | `Espera tu decisión`, Elegir proveedores; el elegido continúa | [st21-voucher-compartido](pago-proveedor-validacion/st21-voucher-compartido.png) · [st21b-elegir-proveedores](pago-proveedor-validacion/st21b-elegir-proveedores.png) · [st21c-eleccion-guardada](pago-proveedor-validacion/st21c-eleccion-guardada.png) |
+| ST-22 | Error de registro vencido y anular | Extender o anular; proveedor `Anulado` | [st22a-observacion-vencida](pago-proveedor-validacion/st22a-observacion-vencida.png) · [st22-anulado](pago-proveedor-validacion/st22-anulado.png) |
+| ST-23 | Cuota 2 a 2 días (RN-18) | «Compromiso del cliente: fecha · vence en 2 días» sin tapar la tarea real | [st23-aviso-cuota-2](pago-proveedor-validacion/st23-aviso-cuota-2.png) |
+| ST-24 | T-T por autorizar | Borrador de Ventas, cliente revisa bloqueado, autoriza, Recibido | [st24b-por-autorizar](pago-proveedor-validacion/st24b-por-autorizar.png) · [st24c-enlace-autorizacion](pago-proveedor-validacion/st24c-enlace-autorizacion.png) · [st24d-cliente-revisa](pago-proveedor-validacion/st24d-cliente-revisa.png) · [st24f-cliente-autorizo](pago-proveedor-validacion/st24f-cliente-autorizo.png) · [st24g-recibido-ventas](pago-proveedor-validacion/st24g-recibido-ventas.png) |
+
+Bugs corregidos:
+
+| Regla | Qué pasaba | Archivo |
+| --- | --- | --- |
+| VW-14, ES-63 | Las filas de decisión se montaban: al pulsar «Se realizará» el clic caía en «No se realizará» y la cuota se cerraba. | `SupplierPaymentProgress.vue` |
+| VW-12 | El paso 2 no reflejaba a Administración: textos genéricos, sin banco, quién aprobó, cambios ni plazos. | `SupplierPaymentProgress.vue`, `solicitudes/[id].vue`, `PagoProveedorConfirmacionService.php` |
+| VW-09 | Administración no podía abrir la solicitud («No tienes permiso»), aunque la pantalla tenía modo de solo lectura. China sigue sin acceso (RN-98). | `PagoProveedorAutorizacion.php`, `PagoProveedorSolicitudController.php` |
+| ES-02 | Al abrir Por aprobar, el error de registro volvía solo a Pendiente y Ventas no podía levantarlo ni corregir el voucher. Ahora guarda qué corregir. | `PagoProveedorAprobacionService.php`, `PagoProveedorEtapa1Service.php`, `AbonoResource.php`, migración |
+| RN-120, RN-123 | El reembolso del excedente se pedía solo, incluso antes de validar el depósito. Ahora lo solicita Ventas. | `PagoProveedorReembolsoService.php`, `PagoProveedorAprobacionService.php`, `PagoProveedorEtapa1Service.php` |
+| VW-12 | Las correcciones de Administración no guardaban el dato anterior. | `PagoProveedorVerificacionService.php`, migración |
+| VW-21 | Aprobados podía mostrar pagos pendientes por una respuesta tardía. Los reembolsos salían sin código, como `Pendiente` y sin filtro. | `SupplierPaymentApprovals.vue` |
+| VW-22, VW-24 | Montos sin `$` en las ventanas de aprobación y de ejecución en dólares. | `ApprovalReviewModal.vue`, `UsdExecutionModal.vue` |
+| VW-13 | Paso 3 sin franja «En manos de… desde», comprobante y balance pendientes, ver formulario T-T ni aviso sobre la constancia. El importe pagado usa el yuan real. | `SupplierPaymentProgress.vue`, `PagoProveedorConfirmacionService.php` |
+| VW-13, ES-51 | La observación de China no se veía ni se levantaba en el paso 3. | `SupplierPaymentProgress.vue`, `solicitudes/[id].vue` |
+| VW-14 | Confirmación sin monto por cuota, excedente, documentos, estados de balance y diferencia, ni pago 2 con yuanes. Quedaba `1 pendiente` en un proveedor Completado. | `SupplierPaymentProgress.vue`, `PagoProveedorConfirmacionService.php` |
+| FL-13 | «Elegir proveedores» estaba en casillas sueltas de la tabla; ahora tiene su botón y ventana. | `SupplierPaymentProgress.vue`, `solicitudes/[id].vue` |
+| RN-42 | «Enviar al cliente para autorización» siempre fallaba con datos Por autorizar. | `PagoProveedorEtapa1Service.php` |
+| RN-18 | El aviso de la cuota 2 tapaba la tarea real, mostraba la fecha sin formato y marcaba `Cuota 2/2` estando en la 1. | `PagoProveedorSolicitudProveedor.php`, `SolicitudProveedorResource.php`, `solicitudes/index.vue` |
+| VW-27 | La tabla de yuanes mezclaba inglés y español para China. Ahora va en español solo en esa tabla; el menú sigue en inglés. | `DataTable.vue`, `SupplierPaymentYuan.vue` |
+
+Columnas de las 8 bandejas comparadas contra la maqueta en el navegador: coinciden.
+
 ## Flujos
 
 | ID | Qué cubre | Estado | Evidencia |
@@ -101,7 +158,7 @@ Bugs corregidos:
 | FL-10 | Dos pagos al proveedor | ok | No se realizará por pantalla; se realizará y pago 2 por API. [vw14d-pago-2-por-decidir](pago-proveedor-validacion/vw14d-pago-2-por-decidir.png) · [vw17-pago-2-no-se-realizara](pago-proveedor-validacion/vw17-pago-2-no-se-realizara.png) |
 | FL-11 | Excedentes y reembolsos | ok | Reembolso por pantalla; excedentes por API. [vw25-reembolso-solicitado](pago-proveedor-validacion/vw25-reembolso-solicitado.png) · [vw25b-aprobar-reembolso](pago-proveedor-validacion/vw25b-aprobar-reembolso.png) |
 | FL-12 | Observaciones y plazos | ok-api | Plazos movidos en la base local. El aviso a jefatura queda solo en historial (PV-11). |
-| FL-13 | Voucher compartido | ok-api | Reglas por API. «Elegir proveedores» no se accionó en pantalla. |
+| FL-13 | Voucher compartido | ok | Elegir proveedores por pantalla. [st21-voucher-compartido](pago-proveedor-validacion/st21-voucher-compartido.png) · [st21b-elegir-proveedores](pago-proveedor-validacion/st21b-elegir-proveedores.png) · [st21c-eleccion-guardada](pago-proveedor-validacion/st21c-eleccion-guardada.png) |
 | FL-14 | Solicitud manual de China | ok | [vw31-nueva-solicitud-manual](pago-proveedor-validacion/vw31-nueva-solicitud-manual.png) · [cp51-manual-sin-codigo](pago-proveedor-validacion/cp51-manual-sin-codigo.png) · [vw31b-manual-creada](pago-proveedor-validacion/vw31b-manual-creada.png) · [cp52-manual-sin-aviso](pago-proveedor-validacion/cp52-manual-sin-aviso.png) |
 | FL-15 | Anulaciones | ok-api | Abono, proveedor y pago vencido por API. |
 
@@ -220,23 +277,23 @@ Además, en pantalla: [tema-oscuro-mis-pendientes](pago-proveedor-validacion/tem
 
 Decisión para ti:
 
-1. **China en inglés (VW-27):** el DataTable y el menú traducen al inglés para ContenedorAlmacen, y el resto del módulo está en español. La regla del módulo pide español; cambiarlo afecta un comportamiento general de ese rol.
+1. **China en inglés (VW-27):** la tabla de yuanes ya va en español. El menú y el resto de la intranet siguen en inglés para ContenedorAlmacen; cambiarlo afecta a ese rol en toda la intranet.
 
 Sin validar:
 
 - Envío real por WhatsApp: se probó hasta la vista previa. Queda fuera por PV-20.
-- Aviso de la cuota 2 dos días antes en Mis pendientes (RN-18).
-- «Elegir proveedores» del voucher compartido en pantalla (la regla sí, por API).
+- Los chips de estado de la lista de yuanes de la maqueta siguen como Filtros del `DataTable`, por la convención del módulo.
+- Las capturas muestran datos de un cliente de la copia local: no se suben al repo y sus enlaces solo abren en este equipo.
 - Comparación visual hoja por hoja del PDF de resumen con la maqueta.
 - PHPUnit: requiere PHP 8.3. Corre en el CI.
 
 Deuda técnica sin efecto al ejecutar:
 
-- `vue-tsc` marca 10 errores de tipos: `DepositReviewModal.vue`, `SupplierPaymentDeposits.vue`, `solicitudes/index.vue`, `solicitudes/[id].vue` (2) y `verificacion/index.vue` (5).
+- `vue-tsc` marca 9 errores de tipos: `DepositReviewModal.vue`, `useSlaCountdown.ts`, `solicitudes/index.vue` y 6 identificadores duplicados en `types/pago-proveedor.ts`.
 - En tablas anchas, el borde con desplazamiento automático del `DataTable` se mueve al acercar el mouse. Es del componente general; las acciones quedaron fijas a la derecha.
 
 ## Cierre
 
-Estado de los 114 ítems: 74 `ok` en pantalla, 39 `ok-api` y 1 `parcial`. Los 68 casos de prueba tienen resultado y ninguno quedó en falla.
+Pasada 4: 49/49 estados en pantalla, 35/35 y 5/5 del recorrido, 172/172 por API. Los 68 casos de prueba tienen resultado y ninguno quedó en falla.
 
-Los cambios no están commiteados. `Untitled` y `constancia-local.png` no deben subir.
+`Untitled`, `constancia-local.png` y las capturas no deben subir.

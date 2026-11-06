@@ -112,3 +112,17 @@ export const PROVIDER_STATUS = {
 
 export type SupplierPaymentProfile = typeof SUPPLIER_PAYMENT_PROFILE[keyof typeof SUPPLIER_PAYMENT_PROFILE]
 export type SalesTask = typeof SALES_TASK[keyof typeof SALES_TASK]
+
+export const REFUND_STATUS = {
+  CONSULT: 'por_consultar',
+  REQUESTED: 'solicitado',
+  APPROVED: 'aprobado',
+  REJECTED: 'rechazado',
+} as const
+
+export const SURPLUS_DECISION = {
+  CONSULT: 'por_consultar',
+  REFUND: 'reembolso_solicitado',
+  APPLY: 'aplicado_cuota',
+  KEEP: 'no_devuelve',
+} as const

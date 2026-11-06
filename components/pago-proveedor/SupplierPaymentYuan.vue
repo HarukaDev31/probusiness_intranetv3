@@ -12,6 +12,7 @@
     </div>
     <DataTable
       sticky-last-column
+      keep-spanish-headers
       title="Pagos en yuanes"
       subtitle="Operaciones"
       icon="i-heroicons-banknotes"

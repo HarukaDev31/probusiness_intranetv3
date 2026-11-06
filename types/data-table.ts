@@ -102,6 +102,8 @@ export interface DataTableProps {
   emptyStateMessage?: string
   /** Keeps the last column (actions) visible while the table scrolls sideways. */
   stickyLastColumn?: boolean
+  /** La tabla se ve en español aunque el rol use encabezados en inglés. */
+  keepSpanishHeaders?: boolean
 
   // Skeleton loading UI
   showSkeleton?: boolean
