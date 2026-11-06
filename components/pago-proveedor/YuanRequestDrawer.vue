@@ -121,7 +121,7 @@
           <template v-if="provider.status === YUAN_STATUS.PAID">
             <div class="grid grid-cols-2 gap-2.5 rounded-lg bg-success/10 px-3.5 py-3 text-sm text-highlighted">
               <span>Pagado <strong>{{ rmb(provider.yuan_paid) }}</strong></span>
-              <span>{{ dayLabel(provider.paid_on) }} {{ monthLabel(provider.paid_on) }}</span>
+              <span>{{ dayLabel(provider.paid_on) }} {{ provider.paid_on?.slice(0, 4) }}</span>
               <span class="col-span-2 flex items-center gap-1.5">
                 <UIcon name="i-heroicons-paper-clip" class="size-3.5 shrink-0 text-primary" />
                 <a v-if="provider.receipt_url" :href="provider.receipt_url" target="_blank" rel="noopener" class="truncate font-medium text-primary">{{ provider.receipt_name || 'Voucher' }}</a>

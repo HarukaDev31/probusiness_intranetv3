@@ -712,6 +712,7 @@ export interface SupplierPaymentYuanRequest {
   date: string
   country: string
   partner: string
+  client: string | null
   organization_id: number | null
   organization: string | null
   manual: boolean

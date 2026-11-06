@@ -372,11 +372,11 @@ const filterConfig = computed(() => [
 
 const columns = computed<TableColumn<UnifiedRow>[]>(() => [
   { accessorKey: 'order_number', header: 'N.° de orden', cell: ({ row }) => row.original.order_number ?? '—' },
-  { accessorKey: 'client_name', header: 'Cliente' },
+  { accessorKey: 'client_name', header: 'Cliente', cell: ({ row }) => h('span', { class: 'block w-28 whitespace-normal' }, row.original.client_name || '—') },
   { accessorKey: 'consolidation', header: 'Consolidado' },
   { accessorKey: 'supplier_code', header: 'Proveedor', cell: ({ row }) => h('div', [
     h('div', { class: 'font-semibold' }, row.original.supplier_code || '—'),
-    h('div', { class: 'text-xs text-muted' }, row.original.supplier_name || '')
+    h('div', { class: 'w-36 whitespace-normal text-xs text-muted' }, row.original.supplier_name || '')
   ]) },
   { accessorKey: 'request_code', header: 'Código de solicitud', cell: ({ row }) => row.original.request_code || '—' },
   {

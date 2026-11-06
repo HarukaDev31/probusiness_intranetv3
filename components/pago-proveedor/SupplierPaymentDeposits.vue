@@ -141,7 +141,7 @@ const filterConfig = computed(() => [
 const columns: TableColumn<SupplierPaymentDeposit>[] = [
   { accessorKey: 'order_number', header: 'N.° de orden' },
   { accessorKey: 'client_name', header: 'Cliente', cell: ({ row }) => h('div', [
-    h('div', { class: 'font-medium' }, row.original.client_name || '—'),
+    h('div', { class: 'w-32 whitespace-normal font-medium' }, row.original.client_name || '—'),
     h('div', { class: 'text-xs text-muted' }, [row.original.client_document, row.original.client_whatsapp].filter(Boolean).join(' · '))
   ]) },
   { accessorKey: 'consolidation', header: 'Consolidado' },
@@ -162,7 +162,7 @@ const columns: TableColumn<SupplierPaymentDeposit>[] = [
     }, code)))
   } },
   { accessorKey: 'bank_label', header: 'Banco', cell: ({ row }) => row.original.interbank ? `${row.original.bank_label} · Interbancaria` : row.original.bank_label },
-  { accessorKey: 'paid_on', header: 'Fecha' },
+  { accessorKey: 'paid_on', header: 'Fecha', cell: ({ row }) => row.original.paid_on?.slice(0, 10).split('-').reverse().join('/') || '—' },
   { accessorKey: 'operation_number', header: 'N.° de operación' },
   { accessorKey: 'amount', header: 'Importe', cell: ({ row }) => h('div', { class: 'flex flex-col' }, [
     h('span', { class: 'font-semibold' }, `$${row.original.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`),

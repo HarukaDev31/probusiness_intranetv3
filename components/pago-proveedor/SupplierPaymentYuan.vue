@@ -131,7 +131,7 @@ const columns: TableColumn<SupplierPaymentYuanRequest>[] = [
     h('span', row.original.country || '—'),
     row.original.organization ? h('span', { class: 'text-xs text-muted' }, row.original.organization) : null
   ]) },
-  { accessorKey: 'partner', header: 'Cliente', cell: ({ row }) => h('span', { class: 'font-semibold' }, row.original.partner) },
+  { accessorKey: 'partner', header: 'Cliente', cell: ({ row }) => h('span', { class: 'block w-32 whitespace-normal font-semibold' }, row.original.client || row.original.partner) },
   { accessorKey: 'code', header: 'N. orden', cell: ({ row }) => h('div', { class: 'flex flex-col' }, [
     h('span', { class: 'text-sm font-bold' }, row.original.code),
     h('span', { class: 'text-xs text-muted whitespace-nowrap' }, `${row.original.provider_count} ${row.original.provider_count === 1 ? 'proveedor' : 'proveedores'}`)
