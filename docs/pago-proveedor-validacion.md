@@ -388,7 +388,7 @@ El nombre del caso está en el producto de cada solicitud, para encontrarlo en p
 ### Diferencias que siguen
 
 - Filtros: la maqueta los muestra abiertos sobre la tabla; la intranet los agrupa en el panel «Filtros» de su tabla común.
-- Ventas: la maqueta agrupa los proveedores de una orden en una sola fila de cliente; la intranet usa una fila por proveedor.
+- Ninguna en las filas de Ventas: ya agrupan los proveedores de cada orden, como la maqueta (orden 66 en QA).
 - Dólares, En proceso: la intranet agrega la franja «Pagos listos para transferir», que no está en la maqueta.
 - A 1440 px con el menú abierto, Aprobación (417 px), China (344 px), Verificación (124 px) y Dólares (30 px) necesitan scroll horizontal. A 1920 px caben.
 - Menú de China en inglés (Home, Customers…): viene del idioma de ese usuario, igual que antes de este módulo.
