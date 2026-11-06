@@ -328,3 +328,72 @@ Deuda técnica sin efecto al ejecutar:
 Pasada 4: 49/49 estados en pantalla, 35/35 y 5/5 del recorrido, 172/172 por API. Los 68 casos de prueba tienen resultado y ninguno quedó en falla.
 
 `Untitled`, `constancia-local.png` y las capturas no deben subir.
+
+## Pasada en QA (6 de noviembre de 2026)
+
+Entorno: `qaintranet.probusiness.pe`, con Cotizador, Administración y China por el login real.
+Flujo solo de Perú: China no crea solicitudes y su botón «Nueva solicitud» está oculto.
+
+| Prueba en QA | Resultado |
+|---|---|
+| Flujo completo en pantalla | 35/35 |
+| Estados en pantalla | 47/49 |
+| Vista de China, pagos de Perú | 12/12 |
+| Casos abiertos con su rol, sin errores en pantalla ni 500 | 41/41 |
+
+Los 2 fallos de estados son el mismo caso (`ST-22a`): necesita un plazo vencido y en QA no se adelantan fechas. En local pasa.
+
+### Casos que quedan en QA
+
+El nombre del caso está en el producto de cada solicitud, para encontrarlo en pantalla. Las capturas están en `docs/pago-proveedor-validacion/qa/` y no se suben al repositorio porque traen datos de clientes.
+
+| Caso | Código | Dónde se ve | Capturas |
+|---|---|---|---|
+| Cotización vigente | COT-41 | Ventas › Cotizaciones | — |
+| USD T-T · Etapa 1 faltan datos | Orden 40 | Ventas › Mis pendientes | [Ventas](pago-proveedor-validacion/qa/caso-usd-t-t-etapa-1-faltan-datos.png) |
+| USD T-T · Etapa 1 falta comprobante | Orden 41 | Ventas › Mis pendientes | [Ventas](pago-proveedor-validacion/qa/caso-usd-t-t-etapa-1-falta-comprobante.png) |
+| USD T-T · Etapa 2 depósito por verificar | PE37NOV26 | Administración › Verificación | [Ventas](pago-proveedor-validacion/qa/caso-usd-t-t-etapa-2-depo-sito-por-verificar.png) |
+| USD T-T · Etapa 2 depósito observado | PE38NOV26 | Ventas › Mis pendientes | [Ventas](pago-proveedor-validacion/qa/caso-usd-t-t-etapa-2-depo-sito-observado.png) |
+| USD T-T · Etapa 2 por aprobar, banco recibió menos | PE39NOV26 | Administración › Aprobación de pagos | [Ventas](pago-proveedor-validacion/qa/caso-usd-t-t-etapa-2-por-aprobar-banco-recibio-menos.png) |
+| USD T-T · Etapa 2 por cobrar | PE40NOV26 | Ventas › Mis pendientes | [Ventas](pago-proveedor-validacion/qa/caso-usd-t-t-etapa-2-por-cobrar.png) |
+| USD T-T · Etapa 3 listo para transferir | PE41NOV26 | Administración › Pagos en dólares | [Ventas](pago-proveedor-validacion/qa/caso-usd-t-t-etapa-3-listo-para-transferir.png) |
+| USD T-T · Pagado con constancia | PE42NOV26 | Administración › Pagos en dólares › Pagados | [Ventas](pago-proveedor-validacion/qa/caso-usd-t-t-pagado-con-constancia.png) |
+| USD T-T · Cuota 1 de 2 lista para transferir | PE43NOV26 | Administración › Pagos en dólares | [Ventas](pago-proveedor-validacion/qa/caso-usd-t-t-cuota-1-de-2-lista-para-transferir.png) |
+| USD T-T · Anulado por Ventas | Orden 49 | Ventas › Todas las solicitudes | [Ventas](pago-proveedor-validacion/qa/caso-usd-t-t-anulado-por-ventas.png) |
+| RMB · Etapa 1 faltan datos | Orden 50 | Ventas › Mis pendientes | [Ventas](pago-proveedor-validacion/qa/caso-rmb-etapa-1-faltan-datos.png) |
+| RMB · Etapa 1 falta comprobante | Orden 51 | Ventas › Mis pendientes | [Ventas](pago-proveedor-validacion/qa/caso-rmb-etapa-1-falta-comprobante.png) |
+| RMB · Etapa 2 depósito por verificar | CN44NOV26 | Administración › Verificación | [Ventas](pago-proveedor-validacion/qa/caso-rmb-etapa-2-depo-sito-por-verificar.png) |
+| RMB · Etapa 2 depósito observado | CN45NOV26 | Ventas › Mis pendientes | [Ventas](pago-proveedor-validacion/qa/caso-rmb-etapa-2-depo-sito-observado.png) |
+| RMB · Etapa 2 por aprobar, banco recibió menos | CN46NOV26 | Administración › Aprobación de pagos | [Ventas](pago-proveedor-validacion/qa/caso-rmb-etapa-2-por-aprobar-banco-recibio-menos.png) |
+| RMB · Etapa 2 por cobrar | CN47NOV26 | Ventas › Mis pendientes | [Ventas](pago-proveedor-validacion/qa/caso-rmb-etapa-2-por-cobrar.png) |
+| RMB · Etapa 2 error de registro | CN48NOV26 | Ventas › Mis pendientes | [Ventas](pago-proveedor-validacion/qa/caso-rmb-etapa-2-error-de-registro.png) |
+| RMB · Etapa 3 pendiente en China | CN49NOV26 | China › Pago a proveedores | [Ventas](pago-proveedor-validacion/qa/caso-rmb-etapa-3-pendiente-en-china.png) · [China](pago-proveedor-validacion/qa/caso-china-rmb-etapa-3-pendiente-en-china.png) |
+| RMB · Etapa 3 observado por China | CN50NOV26 | China y Ventas | [Ventas](pago-proveedor-validacion/qa/caso-rmb-etapa-3-observado-por-china.png) · [China](pago-proveedor-validacion/qa/caso-china-rmb-etapa-3-observado-por-china.png) |
+| RMB · Pagado, cobrar diferencia al cliente | CN51NOV26 | Ventas › Mis pendientes | [Ventas](pago-proveedor-validacion/qa/caso-rmb-pagado-cobrar-diferencia-al-cliente.png) · [China](pago-proveedor-validacion/qa/caso-china-rmb-pagado-cobrar-diferencia-al-cliente.png) |
+| RMB · Pagado, diferencia a favor del cliente | CN52NOV26 | Ventas › Mis pendientes | [Ventas](pago-proveedor-validacion/qa/caso-rmb-pagado-diferencia-a-favor-del-cliente.png) · [China](pago-proveedor-validacion/qa/caso-china-rmb-pagado-diferencia-a-favor-del-cliente.png) |
+| RMB · Pagado sin diferencia | CN53NOV26 | Ventas › Todas las solicitudes | [Ventas](pago-proveedor-validacion/qa/caso-rmb-pagado-sin-diferencia.png) · [China](pago-proveedor-validacion/qa/caso-china-rmb-pagado-sin-diferencia.png) |
+| RMB · 2 pagos, decidir pago 2 | CN54NOV26 | Ventas › Mis pendientes | [Ventas](pago-proveedor-validacion/qa/caso-rmb-2-pagos-decidir-pago-2.png) · [China](pago-proveedor-validacion/qa/caso-china-rmb-2-pagos-decidir-pago-2.png) |
+| RMB · Cuota 1 pagada, decidir cuota 2 | CN55NOV26 | Ventas › Mis pendientes | [Ventas](pago-proveedor-validacion/qa/caso-rmb-cuota-1-pagada-decidir-cuota-2.png) · [China](pago-proveedor-validacion/qa/caso-china-rmb-cuota-1-pagada-decidir-cuota-2.png) |
+| RMB · Anulado por Ventas | Orden 64 | Ventas › Todas las solicitudes | [Ventas](pago-proveedor-validacion/qa/caso-rmb-anulado-por-ventas.png) |
+
+«USD Tarjeta» no se creó: el sistema lo rechaza por estar fuera de alcance en esta versión.
+
+### Diferencias con la maqueta corregidas
+
+- Dólares: «Observaciones» en rojo y en dos líneas; negativos como `-$250.00`; títulos de tarjetas completos.
+- Ventas: pastillas en Forma de pago, Etapa y Estado; «2 pagos» en lugar de «2 partes».
+- Aprobación y Verificación: fechas `dd/mm/aaaa` y textos largos en varias líneas.
+- China: el cliente real en los pagos de Perú y la fecha de pago sin el mes repetido.
+
+### Diferencias que siguen
+
+- Filtros: la maqueta los muestra abiertos sobre la tabla; la intranet los agrupa en el panel «Filtros» de su tabla común.
+- Ventas: la maqueta agrupa los proveedores de una orden en una sola fila de cliente; la intranet usa una fila por proveedor.
+- Dólares, En proceso: la intranet agrega la franja «Pagos listos para transferir», que no está en la maqueta.
+- A 1440 px con el menú abierto, Aprobación (417 px), China (344 px), Verificación (124 px) y Dólares (30 px) necesitan scroll horizontal. A 1920 px caben.
+- Menú de China en inglés (Home, Customers…): viene del idioma de ese usuario, igual que antes de este módulo.
+
+### Pendiente fuera del código
+
+- El enlace del formulario T-T apunta a `clientes.probusiness.pe`, que da «Page not found». El formulario solo está en la rama `qa` del front de clientes. El caso se probó con ese front en local conectado a la API de QA. Falta publicarlo y definir `APP_URL_CLIENTES` en el servidor.
+- WhatsApp: los envíos no dieron error, pero la recepción se confirma en el teléfono.
