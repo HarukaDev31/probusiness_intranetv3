@@ -470,7 +470,10 @@ function openUnified(row: UnifiedRow) {
 
 function depositCell(row: SupplierPaymentApproval) {
   if (!row.deposits.length) return '—'
-  if (row.deposits.length === 1) return `${row.deposits[0].bank_label} · ${row.deposits[0].paid_on || ''}`
+  if (row.deposits.length === 1) {
+    const paidOn = row.deposits[0].paid_on?.slice(0, 10).split('-').reverse().join('/') || ''
+    return `${row.deposits[0].bank_label} · ${paidOn}`
+  }
   return `${row.deposits.length} depósitos`
 }
 

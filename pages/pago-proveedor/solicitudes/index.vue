@@ -162,7 +162,7 @@ import { useModal } from '~/composables/commons/useModal'
 import { useSupplierPaymentProfile } from '~/composables/pago-proveedor/useSupplierPaymentProfile'
 import SupplierPaymentSteps from '~/components/pago-proveedor/SupplierPaymentSteps.vue'
 import NuevaCotizacionModal from '~/components/pago-proveedor/NuevaCotizacionModal.vue'
-import { UButton } from '#components'
+import { UBadge, UButton } from '#components'
 
 interface RequestLine {
   requestId: number
@@ -303,8 +303,30 @@ function paymentShapeLabel(shape: SupplierPaymentProviderRow['payment_shape']) {
   return {
     [PAYMENT_SHAPE.SINGLE]: 'Único',
     [PAYMENT_SHAPE.CLIENT_INSTALLMENTS]: 'Cuotas',
-    [PAYMENT_SHAPE.SUPPLIER_INSTALLMENTS]: '2 partes'
+    [PAYMENT_SHAPE.SUPPLIER_INSTALLMENTS]: '2 pagos'
   }[shape]
+}
+
+type PillColor = 'neutral' | 'info' | 'warning' | 'success' | 'error'
+
+function pill(label: string | undefined, color: PillColor) {
+  return h(UBadge, { label, color, variant: 'subtle', size: 'sm' })
+}
+
+function shapeColor(shape: SupplierPaymentProviderRow['payment_shape']): PillColor {
+  return {
+    [PAYMENT_SHAPE.SINGLE]: 'neutral',
+    [PAYMENT_SHAPE.CLIENT_INSTALLMENTS]: 'warning',
+    [PAYMENT_SHAPE.SUPPLIER_INSTALLMENTS]: 'info'
+  }[shape] as PillColor
+}
+
+function statusColor(status: string): PillColor {
+  return ({
+    [PROVIDER_STATUS.OBSERVED]: 'error',
+    [PROVIDER_STATUS.CANCELLED]: 'neutral',
+    [PROVIDER_STATUS.COMPLETED]: 'success'
+  } as Record<string, PillColor>)[status] || 'info'
 }
 
 function stageLabel(stage: number) {
@@ -380,10 +402,10 @@ const columns: TableColumn<RequestLine>[] = [
   { accessorKey: 'clientName', header: 'Cliente' },
   { accessorKey: 'provider', header: 'Proveedor', cell: ({ row }) => supplierLabel(row.original.provider) },
   { accessorKey: 'requestCode', header: 'Código de solicitud', cell: ({ row }) => row.original.provider.request_code || '—' },
-  { accessorKey: 'paymentShape', header: 'Forma de pago', cell: ({ row }) => paymentShapeLabel(row.original.provider.payment_shape) },
+  { accessorKey: 'paymentShape', header: 'Forma de pago', cell: ({ row }) => pill(paymentShapeLabel(row.original.provider.payment_shape), shapeColor(row.original.provider.payment_shape)) },
   { accessorKey: 'paymentType', header: 'Tipo de pago', cell: ({ row }) => paymentLabel(row.original.provider) },
-  { accessorKey: 'stage', header: 'Etapa', cell: ({ row }) => `${row.original.provider.stage}. ${stageLabel(row.original.provider.stage)}` },
-  { accessorKey: 'status', header: 'Estado', cell: ({ row }) => statusLabel(row.original.provider.status) },
+  { accessorKey: 'stage', header: 'Etapa', cell: ({ row }) => pill(`${row.original.provider.stage}. ${stageLabel(row.original.provider.stage)}`, 'info') },
+  { accessorKey: 'status', header: 'Estado', cell: ({ row }) => pill(statusLabel(row.original.provider.status), statusColor(row.original.provider.status)) },
   { accessorKey: 'owner', header: 'Responsable', cell: ({ row }) => row.original.provider.owner === REQUEST_OWNER.SALES ? 'Ventas' : 'Otra área' },
   {
     accessorKey: 'actions',

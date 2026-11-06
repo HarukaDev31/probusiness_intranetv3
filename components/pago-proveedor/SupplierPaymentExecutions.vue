@@ -20,7 +20,7 @@
           <UIcon :name="card.icon" class="size-4.5" />
         </span>
         <div class="min-w-0">
-          <p class="truncate text-[11px] font-semibold text-muted">{{ card.label }}</p>
+          <p class="text-[11px] font-semibold leading-tight text-muted">{{ card.label }}</p>
           <p class="text-lg font-bold leading-tight text-highlighted" :class="card.className">{{ card.value }}</p>
           <p class="text-[11px] leading-tight text-muted">{{ card.hint }}</p>
         </div>
@@ -149,8 +149,9 @@ const filterConfig = computed(() => {
 })
 
 function money(value: number) {
-  const sign = value > 0.004 ? '+' : ''
-  return `${sign}$${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  const amount = Number(value || 0)
+  const sign = amount > 0.004 ? '+' : (amount < -0.004 ? '-' : '')
+  return `${sign}$${Math.abs(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 function plainMoney(value: number) {
@@ -246,10 +247,10 @@ const columns = computed<TableColumn<SupplierPaymentExecution>[]>(() => [
           header: 'Observaciones',
           cell: ({ row }: { row: { original: SupplierPaymentExecution } }) => {
             const payment = row.original
-            if (!payment.bank_ready) {
-              return h('span', { class: 'text-sm text-error' }, 'Faltan los datos bancarios del proveedor (T-T)')
-            }
-            return h('span', { class: 'text-sm text-muted' }, payment.observation || 'Listo para transferir')
+            const text = payment.bank_ready
+              ? payment.observation || 'Listo para transferir'
+              : 'Faltan los datos bancarios del proveedor (T-T)'
+            return h('span', { class: 'block w-24 whitespace-normal text-sm font-semibold text-error' }, text)
           }
         }
       ]
