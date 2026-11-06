@@ -14,6 +14,7 @@ import type {
   SupplierPaymentObservationReason,
   SupplierPaymentRefund,
   SupplierPaymentYuan,
+  SupplierPaymentYuanRequest,
   SupplierPaymentYuanIndicators
 } from '~/types/pago-proveedor'
 
@@ -463,19 +464,18 @@ export class PagoProveedorService extends BaseService {
     })
   }
 
-  static async listYuan(params: { bucket?: string; search?: string; partner?: string; page?: number; per_page?: number }) {
+  static async listYuan(params: { bucket?: string; search?: string; country?: string; date_from?: string; date_to?: string; page?: number; per_page?: number }) {
     const query = new URLSearchParams()
-    if (params.bucket) query.append('bucket', params.bucket)
-    if (params.search) query.append('search', params.search)
-    if (params.partner) query.append('partner', params.partner)
-    if (params.page) query.append('page', String(params.page))
-    if (params.per_page) query.append('per_page', String(params.per_page))
-    return this.apiCall<Lista<SupplierPaymentYuan> & {
+    Object.entries(params).forEach(([key, value]) => {
+      if (value) query.append(key, String(value))
+    })
+    return this.apiCall<Lista<SupplierPaymentYuanRequest> & {
       pending_count: number
       indicators: SupplierPaymentYuanIndicators
       counts: { all: number; pending: number; observed: number; paid: number }
-      partners: string[]
-      reasons: SupplierPaymentObservationReason[]
+      countries: string[]
+      partners_by_country: Record<string, string[]>
+      clients_by_country: Record<string, string[]>
     }>(`${this.baseUrl}/yuanes?${query.toString()}`)
   }
 
@@ -494,16 +494,28 @@ export class PagoProveedorService extends BaseService {
     return this.apiCall<Uno<SupplierPaymentYuan>>(`${this.baseUrl}/yuanes/${providerId}/levantar`, { method: 'POST' })
   }
 
-  static async deleteManualYuan(providerId: number) {
-    return this.apiCall<Uno<{ message: string }>>(`${this.baseUrl}/yuanes/${providerId}`, { method: 'DELETE' })
+  static async registerYuan(providerId: number, payload: { yuanPaid: number; paidOn: string; receipt: File | null }) {
+    const form = new FormData()
+    form.append('yuan_paid', String(payload.yuanPaid))
+    form.append('paid_on', payload.paidOn)
+    if (payload.receipt) form.append('receipt', payload.receipt)
+    return this.apiCall<Uno<SupplierPaymentYuan>>(`${this.baseUrl}/yuanes/${providerId}`, { method: 'POST', body: form })
   }
 
-  static async registerYuan(providerId: number, realRate: number, yuanPaid: number, receipt: File) {
+  static async undoYuan(providerId: number) {
+    return this.apiCall<Uno<SupplierPaymentYuan>>(`${this.baseUrl}/yuanes/${providerId}/deshacer`, { method: 'POST' })
+  }
+
+  static async addYuanIncome(requestId: number, payload: { usd: number; rate: number; receipt: File | null }) {
     const form = new FormData()
-    form.append('real_exchange_rate', String(realRate))
-    form.append('yuan_paid', String(yuanPaid))
-    form.append('receipt', receipt)
-    return this.apiCall<Uno<SupplierPaymentYuan>>(`${this.baseUrl}/yuanes/${providerId}`, { method: 'POST', body: form })
+    form.append('usd_amount', String(payload.usd))
+    form.append('exchange_rate', String(payload.rate))
+    if (payload.receipt) form.append('receipt', payload.receipt)
+    return this.apiCall<{ success: boolean; message: string }>(`${this.baseUrl}/yuanes/solicitudes/${requestId}/ingresos`, { method: 'POST', body: form })
+  }
+
+  static async removeYuanIncome(incomeId: number) {
+    return this.apiCall<{ success: boolean; message: string }>(`${this.baseUrl}/yuanes/ingresos/${incomeId}`, { method: 'DELETE' })
   }
 
   static async observeYuan(providerId: number, body: { reason?: string; detail?: string; new_reason?: string }) {
@@ -591,11 +603,11 @@ export class PagoProveedorService extends BaseService {
   }
 
   static async createManualYuan(form: FormData) {
-    return this.apiCall<Uno<SupplierPaymentYuan>>(`${this.baseUrl}/yuanes/manual`, { method: 'POST', body: form })
+    return this.apiCall<Uno<{ request_id: number }>>(`${this.baseUrl}/yuanes/manual`, { method: 'POST', body: form })
   }
 
-  static async updateManualYuan(providerId: number, form: FormData) {
-    return this.apiCall<Uno<SupplierPaymentYuan>>(`${this.baseUrl}/yuanes/${providerId}/editar`, { method: 'POST', body: form })
+  static async updateManualYuan(requestId: number, form: FormData) {
+    return this.apiCall<Uno<{ request_id: number }>>(`${this.baseUrl}/yuanes/solicitudes/${requestId}/editar`, { method: 'POST', body: form })
   }
 
   static async levantarChina(solicitudId: number, proveedorId: number, vendedor: string, wechat: string) {

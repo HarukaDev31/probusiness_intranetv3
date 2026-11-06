@@ -91,6 +91,12 @@ export const PAYMENT_CHOICE = {
   REFUND: 'reembolso_solicitado',
 } as const
 
+export const YUAN_STATUS = {
+  PENDING: 'pendiente',
+  OBSERVED: 'observado',
+  PAID: 'pagado',
+} as const
+
 export const EXECUTION_STATUS = {
   PENDING: 'pendiente',
   PAID: 'pagado',

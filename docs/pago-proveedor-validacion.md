@@ -142,6 +142,33 @@ Bugs corregidos:
 
 Columnas de las 8 bandejas comparadas contra la maqueta en el navegador: coinciden.
 
+### Pasada 5 — vista final de China (maqueta `Intranet Pro Business`, 6/11/2026)
+
+La maqueta nueva cambia el modelo de China: la lista agrupa por solicitud, con varios proveedores y el dinero recibido del socio. Si la maqueta y el PDF difieren, manda la maqueta.
+
+Tablas: `pago_proveedor_ingresos` es nueva. `pago_proveedor_solicitudes` suma `country` y `request_date`; `pago_proveedor_solicitud_proveedores` suma `client_name`; en `pago_proveedor_ejecuciones` la constancia pasa a opcional. Una segunda migración crea el ingreso de los pagos ya registrados, para que no salgan como por cobrar.
+
+| ID | Qué se probó | Evidencia |
+| --- | --- | --- |
+| VW-27 | Indicadores, estados, 12 columnas iguales a la maqueta, filtros y búsqueda | [ch01-lista](pago-proveedor-validacion/ch01-lista.png) · [ch04-creada](pago-proveedor-validacion/ch04-creada.png) · [ch15-filtro-observado](pago-proveedor-validacion/ch15-filtro-observado.png) |
+| VW-31 | Nueva solicitud y edición con varios proveedores, USD y RMB enlazados | [ch02-nueva-solicitud](pago-proveedor-validacion/ch02-nueva-solicitud.png) · [ch03-formulario-lleno](pago-proveedor-validacion/ch03-formulario-lleno.png) · [ch12-editar](pago-proveedor-validacion/ch12-editar.png) · [ch13-editada](pago-proveedor-validacion/ch13-editada.png) |
+| VW-28 | Gestionar: ingreso, pago, deshacer y balance | [ch05-gestionar](pago-proveedor-validacion/ch05-gestionar.png) · [ch06-ingreso](pago-proveedor-validacion/ch06-ingreso.png) · [ch07-ingreso-guardado](pago-proveedor-validacion/ch07-ingreso-guardado.png) · [ch10-registrar-pago](pago-proveedor-validacion/ch10-registrar-pago.png) · [ch11-pagado](pago-proveedor-validacion/ch11-pagado.png) · [ch14-todos-pagados](pago-proveedor-validacion/ch14-todos-pagados.png) |
+| VW-29 | Observar con texto libre; los demás proveedores siguen | [ch08-observar](pago-proveedor-validacion/ch08-observar.png) · [ch09-observado](pago-proveedor-validacion/ch09-observado.png) |
+| VW-30 | Perú: ingreso, constancia y aviso antes de confirmar; llega a Ventas | [ch16-peru](pago-proveedor-validacion/ch16-peru.png) · [ch17-peru-pago](pago-proveedor-validacion/ch17-peru-pago.png) · [ch18-peru-listo](pago-proveedor-validacion/ch18-peru-listo.png) · [ch19-peru-pagado](pago-proveedor-validacion/ch19-peru-pagado.png) · [ch20-peru-deshacer](pago-proveedor-validacion/ch20-peru-deshacer.png) |
+| — | Móvil y modo oscuro | [ch21-movil](pago-proveedor-validacion/ch21-movil.png) · [ch22-oscuro](pago-proveedor-validacion/ch22-oscuro.png) |
+
+Decisiones donde la maqueta no alcanza:
+
+- Solo las solicitudes manuales se editan. Las de Perú las corrige Ventas (RN-98).
+- En Perú el ingreso, la constancia y el aviso son obligatorios: el T.C. real sale del ingreso (promedio de lo recibido) y Ventas usa la constancia. En las manuales el voucher es opcional, como en la maqueta.
+- «Deshacer pago» se bloquea en Perú cuando Ventas ya envió el balance, recibió el voucher de la diferencia o decidió la cuota o el pago 2.
+- Se mantiene «Nueva solicitud» por RN-97, aunque la maqueta no muestra el botón.
+- Quien registra en Perú el dinero enviado a China no está definido en el PDF. Queda en China, como en la maqueta.
+
+Bugs encontrados al probar: la tabla ancha se cortaba por la izquierda (`DataTable.vue`, `safe center`) y un aviso de éxito cerraba la ventana lateral.
+
+Pendiente: `PortalSocio`, la vista del socio que también trae la maqueta, se hará más adelante.
+
 ## Flujos
 
 | ID | Qué cubre | Estado | Evidencia |

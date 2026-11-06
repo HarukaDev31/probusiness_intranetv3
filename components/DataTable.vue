@@ -1636,7 +1636,8 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
 .utable-narrow {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  /* safe: si la tabla es más ancha que el contenedor, no se corta por la izquierda. */
+  align-items: safe center;
 }
 .utable-narrow table {
   width: auto !important;

@@ -1,244 +1,194 @@
 <template>
   <div>
     <div class="mb-4 flex justify-end">
-      <UButton color="primary" @click="startManual()">Nueva solicitud</UButton>
+      <UButton color="primary" icon="i-heroicons-plus" @click="openForm(null)">Nueva solicitud</UButton>
     </div>
-    <div class="mb-3.5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      <UCard v-for="card in cards" :key="card.label" variant="subtle">
-        <p class="text-[11px] font-bold uppercase tracking-wider text-muted">{{ card.label }}</p>
-        <USkeleton v-if="loading" class="mt-2 h-8 w-24" />
+    <div class="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <UCard v-for="card in cards" :key="card.label">
+        <p class="text-xs uppercase tracking-wider text-muted">{{ card.label }}</p>
+        <USkeleton v-if="loading && !rows.length" class="mt-2 h-8 w-28" />
         <p v-else class="mt-1 text-2xl font-bold" :class="card.danger ? 'text-error' : 'text-highlighted'">{{ card.value }}</p>
+        <p v-if="card.sub" class="text-xs text-muted">{{ card.sub }}</p>
       </UCard>
+    </div>
+    <div class="mb-4 grid grid-cols-2 overflow-hidden rounded-lg bg-default ring ring-default lg:grid-cols-4">
+      <button
+        v-for="state in states"
+        :key="state.key"
+        type="button"
+        class="flex flex-col gap-1 border-b-[3px] border-r border-r-default px-5 py-4 text-left transition-colors hover:bg-primary/5"
+        :class="bucket === state.key ? 'border-b-primary bg-primary/10' : 'border-b-transparent'"
+        @click="changeBucket(state.key)"
+      >
+        <span class="flex items-center gap-2 text-sm text-toned"><span class="size-2.5 rounded-full" :class="state.dot" />{{ state.label }}</span>
+        <span class="text-2xl font-bold text-highlighted">{{ state.count }}</span>
+      </button>
     </div>
     <DataTable
       sticky-last-column
       keep-spanish-headers
-      title="Pagos en yuanes"
-      subtitle="Operaciones"
-      icon="i-heroicons-banknotes"
       :data="rows"
       :columns="columns"
       :loading="loading"
-      :current-page="1"
-      :total-pages="1"
-      :total-records="rows.length"
-      :items-per-page="50"
+      :current-page="pagination.current_page"
+      :total-pages="pagination.last_page"
+      :total-records="pagination.total"
+      :items-per-page="pagination.per_page"
       :primary-search-value="search"
       :show-primary-search="true"
       :show-primary-search-label="false"
-      primary-search-placeholder="N.° de solicitud, proveedor o WeChat"
+      primary-search-placeholder="Buscar por N° de solicitud, proveedor o WeChat ID"
       :show-filters="true"
       :filter-config="filterConfig"
       :filters-value="filters"
       :show-export="false"
-      empty-state-message="No hay pagos que coincidan."
+      empty-state-message="No hay solicitudes que coincidan."
       @update:primary-search="onSearch"
       @filter-change="onFilter"
+      @clear-filters="onClearFilters"
+      @page-change="onPage"
+      @items-per-page-change="onPageSize"
     />
 
-    <SupplierPaymentWindow
-      :open="opened"
-      title="Pago en yuanes"
-      :subtitle="selected ? `${selected.client_name || 'Cliente'} · ${selected.consolidation || 'Sin consolidado'}` : ''"
-      :code="selected?.request_code"
-      hint="Primero el tipo de cambio y los yuanes, después la constancia. En solicitudes de Perú el aviso al cliente va antes de registrar."
-      wide
-      @close="opened = false"
-    >
-      <div v-if="selected" class="grid gap-4 lg:grid-cols-3">
-        <SupplierPaymentCard title="Solicitud">
-          <SupplierPaymentFact label="Cliente" :value="selected.client_name || '—'" />
-          <SupplierPaymentFact label="Consolidado" :value="selected.consolidation || '—'" />
-          <SupplierPaymentFact label="Socio" :value="selected.partner" />
-          <SupplierPaymentFact label="Vendedor" :value="selected.seller_name || '—'" />
-          <p v-if="selected.supplier_payments > 1" class="text-sm text-muted">Pago {{ selected.current_payment }} de {{ selected.supplier_payments }}</p>
-          <a v-if="selected.proforma_url" :href="selected.proforma_url" target="_blank" rel="noopener" class="text-sm font-semibold text-primary">Ver proforma</a>
-        </SupplierPaymentCard>
-        <SupplierPaymentCard title="Proveedor">
-          <SupplierPaymentFact label="Código" :value="selected.supplier_code || 'Sin código'" />
-          <SupplierPaymentFact label="Nombre" :value="selected.supplier_name || '—'" />
-          <SupplierPaymentFact label="Producto" :value="selected.product || '—'" />
-          <div class="flex items-center justify-between gap-2 text-sm">
-            <span class="text-muted">WeChat</span>
-            <span class="font-semibold">{{ selected.wechat || '—' }}</span>
-            <button type="button" class="text-xs font-semibold text-primary" @click="copy(selected.wechat)">Copiar</button>
-          </div>
-          <button type="button" class="text-xs font-semibold text-primary" @click="copy(selected.supplier_code)">Copiar código</button>
-        </SupplierPaymentCard>
-        <SupplierPaymentCard title="Importes">
-          <p class="text-3xl font-bold text-warning">¥{{ money(selected.yuan_amount) }}</p>
-          <SupplierPaymentFact label="USD recibido" :value="`$${money(selected.usd_amount)}`" />
-          <SupplierPaymentFact label="T.C. cotizado" :value="String(selected.quoted_rate)" />
-        </SupplierPaymentCard>
-      </div>
-      <UCard v-if="selected && readOnly" class="text-sm">
-        <p>T.C. real {{ selected.real_exchange_rate }} · Recibido ${{ money(selected.usd_amount) }}</p>
-        <p class="mt-1">Obtenidos ¥{{ money(selected.yuan_obtained) }} · Pagados ¥{{ money(selected.yuan_paid) }}</p>
-        <p class="mt-1">{{ selected.difference_label || 'Sin diferencia' }}</p>
-        <a v-if="selected.receipt_url" :href="selected.receipt_url" target="_blank" rel="noopener" class="mt-2 inline-block font-semibold text-primary">Ver constancia</a>
-      </UCard>
-      <UCard v-if="selected && !readOnly">
-        <h4 class="mb-2 text-[15px] font-bold text-highlighted">1. Tipo de cambio y yuanes pagados</h4>
-        <div class="grid gap-3 sm:grid-cols-2">
-          <UFormField label="T.C. real (¥ por $)">
-            <UInput v-model.number="rate" type="number" min="0" step="0.0001" class="w-full" />
-          </UFormField>
-          <UFormField label="Yuanes pagados">
-            <UInput v-model.number="yuanPaid" type="number" min="0" step="0.01" class="w-full" />
-          </UFormField>
-        </div>
-        <p class="mt-2 text-sm text-highlighted">Obtenidos ¥{{ money(obtained) }} · diferencia ¥{{ money(differenceYuan) }} (${{ money(differenceUsd) }}) · {{ differenceText }}</p>
-        <h4 class="mb-2 mt-4 text-[15px] font-bold text-highlighted">2. Constancia</h4>
-        <input type="file" accept=".pdf,.jpg,.jpeg,.png" class="block text-sm text-highlighted" @change="onFile" />
-        <p class="mt-1 text-xs text-muted">Queda en el sistema. No se adjunta al aviso del cliente.</p>
-      </UCard>
-      <UCard v-if="selected && !readOnly && !selected.manual">
-        <h4 class="mb-2 text-[15px] font-bold">3. Aviso al cliente</h4>
-        <UCard variant="subtle">
-          <!-- eslint-disable-next-line vue/no-v-html -->
-          <pre class="whitespace-pre-wrap font-sans text-sm" v-html="whatsappHtml(notice) || 'Cargando aviso…'" />
-        </UCard>
-        <p class="mt-2 text-xs text-muted">Sin importe y sin código de solicitud. Si cambias los yuanes pagados, vuelve a enviarlo.</p>
-        <UButton class="mt-3" color="neutral" variant="soft" :disabled="!receipt || !(yuanPaid && yuanPaid > 0) || saving" @click="sendNotice">
-          {{ noticeReady ? 'Aviso enviado' : 'Enviar aviso al cliente' }}
-        </UButton>
-      </UCard>
-      <UCard v-else-if="selected && !readOnly" class="text-sm text-muted">
-        Solicitud de otro socio. No se avisa a Ventas ni al cliente.
-      </UCard>
-      <UCard v-if="selected?.can_observe && !readOnly" color="error" variant="subtle">
-        <h4 class="mb-2 text-[15px] font-bold text-highlighted">Observar</h4>
-        <USelect v-model="reason" :items="motivosObservacion" placeholder="Elige un motivo si hay que observar" class="w-full" />
-        <UInput v-if="reason === 'other'" v-model="newReason" placeholder="Nuevo motivo" class="mt-2 w-full" />
-        <UInput v-if="reason" v-model="detail" placeholder="Detalle opcional" class="mt-2 w-full" />
-      </UCard>
-      <template #footer>
-        <UButton v-if="!readOnly && reason" color="error" variant="soft" :loading="saving" @click="observe">Observar</UButton>
-        <UButton v-if="!readOnly" color="primary" :loading="saving" :disabled="!canSave" @click="save">Registrar pago</UButton>
-      </template>
-    </SupplierPaymentWindow>
-
-    <SupplierPaymentWindow
-      :open="manualOpen"
-      :title="editingId ? 'Editar solicitud' : 'Nueva solicitud'"
-      subtitle="Para otros socios. No avisa a Ventas ni al cliente."
-      @close="manualOpen = false"
-    >
-      <form id="yuan-manual" class="grid gap-3 text-sm sm:grid-cols-2" @submit.prevent="createManual">
-        <UFormField label="Socio"><USelect v-model="manual.partner" :items="partners.filter((item) => !/pro business/i.test(item))" placeholder="Elige el socio" class="w-full" /></UFormField>
-        <UFormField label="Cliente"><UInput v-model="manual.client_name" class="w-full" /></UFormField>
-        <UFormField label="Consolidado"><UInput v-model="manual.consolidation" class="w-full" /></UFormField>
-        <UFormField label="Producto"><UInput v-model="manual.product" class="w-full" /></UFormField>
-        <UFormField label="Código proveedor"><UInput v-model="manual.supplier_code" class="w-full" /></UFormField>
-        <UFormField label="Nombre proveedor"><UInput v-model="manual.supplier_name" class="w-full" /></UFormField>
-        <UFormField label="Vendedor"><UInput v-model="manual.seller_name" class="w-full" /></UFormField>
-        <UFormField label="WeChat"><UInput v-model="manual.wechat" placeholder="Solo dígitos" class="w-full" /></UFormField>
-        <UFormField label="USD"><UInput v-model.number="manual.usd_amount" type="number" min="0" step="0.01" class="w-full" /></UFormField>
-        <UFormField label="RMB"><UInput v-model.number="manual.yuan_amount" type="number" min="0" step="0.01" class="w-full" /></UFormField>
-        <p class="text-muted sm:col-span-2">Tipo de cambio {{ manualRate }}</p>
-        <label class="text-muted sm:col-span-2">Proforma (opcional)<input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" class="mt-1 block text-highlighted" @change="onProforma" /></label>
-      </form>
-      <template #footer>
-        <UButton type="submit" form="yuan-manual" color="primary" :loading="saving">{{ editingId ? 'Guardar' : 'Crear' }}</UButton>
-      </template>
-    </SupplierPaymentWindow>
+    <YuanRequestDrawer
+      :request="selected"
+      @close="selectedId = null"
+      @changed="load"
+      @edit="openForm"
+    />
+    <YuanRequestForm
+      :open="formOpen"
+      :request="editing"
+      :countries="countries"
+      :partners-by-country="partnersByCountry"
+      :clients-by-country="clientsByCountry"
+      @close="formOpen = false"
+      @saved="onSaved"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, h, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import SupplierPaymentCard from '~/components/pago-proveedor/SupplierPaymentCard.vue'
-import SupplierPaymentFact from '~/components/pago-proveedor/SupplierPaymentFact.vue'
-import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
+import YuanRequestDrawer from '~/components/pago-proveedor/YuanRequestDrawer.vue'
+import YuanRequestForm from '~/components/pago-proveedor/YuanRequestForm.vue'
 import { useSupplierPaymentYuan } from '~/composables/pago-proveedor/useSupplierPaymentYuan'
-import { EXECUTION_STATUS, YUAN_BUCKET } from '~/constants/supplierPayment'
-import type { SupplierPaymentYuan } from '~/types/pago-proveedor'
+import { YUAN_STATUS } from '~/constants/supplierPayment'
+import type { SupplierPaymentYuanRequest } from '~/types/pago-proveedor'
 import { UBadge, UButton } from '#components'
 
 const {
-  bucket, search, partner, partners, rows, reasons, loading, saving, opened, readOnly, manualOpen, editingId, startManual, manual,
-  selected, rate, yuanPaid, receipt, reason, newReason, detail, notice, noticeReady, cards, manualRate,
-  obtained, differenceYuan, differenceUsd, differenceText, canSave, money, tabCount, statusColor,
-  load, open, onFile, onProforma, copy, sendNotice, save, observe, createManual, lift, remove
+  bucket, search, country, dateFrom, dateTo, rows, countries, partnersByCountry, clientsByCountry, pagination, loading,
+  selectedId, selected, cards, states, load, reload, changeBucket
 } = useSupplierPaymentYuan()
 
-const filters = ref({ status: YUAN_BUCKET.PENDING, partner: 'todos' })
-const motivosObservacion = computed(() => [
-  ...reasons.value.map((item) => ({ label: item.label, value: item.code })),
-  { label: 'Otro motivo', value: 'other' }
-])
+const formOpen = ref(false)
+const editing = ref<SupplierPaymentYuanRequest | null>(null)
+const filters = ref<Record<string, string>>({ country: 'todos', date_from: '', date_to: '' })
 
 const filterConfig = computed(() => [
   {
-    key: 'status',
-    label: 'Estado',
+    key: 'country',
+    label: 'País',
     type: 'select',
-    placeholder: 'Estado',
+    placeholder: 'País',
     options: [
-      { value: YUAN_BUCKET.ALL, label: `Todos (${tabCount(YUAN_BUCKET.ALL)})` },
-      { value: YUAN_BUCKET.PENDING, label: `Pendiente (${tabCount(YUAN_BUCKET.PENDING)})` },
-      { value: YUAN_BUCKET.OBSERVED, label: `Observado (${tabCount(YUAN_BUCKET.OBSERVED)})` },
-      { value: YUAN_BUCKET.PAID, label: `Pagado (${tabCount(YUAN_BUCKET.PAID)})` }
+      { value: 'todos', label: 'Todos los países' },
+      ...countries.value.map((item) => ({ value: item, label: item }))
     ]
   },
-  {
-    key: 'partner',
-    label: 'Socio',
-    type: 'select',
-    placeholder: 'Socio',
-    options: [
-      { value: 'todos', label: 'Todos los socios' },
-      ...partners.value.map((item) => ({ value: item, label: item }))
-    ]
-  }
+  { key: 'date_from', label: 'Desde', type: 'date', placeholder: 'Desde' },
+  { key: 'date_to', label: 'Hasta', type: 'date', placeholder: 'Hasta' }
 ])
 
-const columns: TableColumn<SupplierPaymentYuan>[] = [
-  { accessorKey: 'order_number', header: 'N.° de orden', cell: ({ row }) => row.original.order_number ?? '—' },
-  { accessorKey: 'request_code', header: 'Código de solicitud', cell: ({ row }) => h('span', { class: 'font-semibold' }, row.original.request_code || '—') },
-  { accessorKey: 'supplier_code', header: 'Proveedor', cell: ({ row }) => h('div', [
-    h('div', { class: 'font-semibold' }, row.original.supplier_code || 'Sin código'),
-    row.original.supplier_name ? h('div', { class: 'text-xs text-muted' }, row.original.supplier_name) : null,
-    h('div', { class: 'text-xs text-muted' }, row.original.product || '—'),
-    h('div', { class: 'text-xs text-muted' }, `WeChat ${row.original.wechat || '—'}`)
+function statusColor(status: string): 'primary' | 'error' | 'success' {
+  if (status === YUAN_STATUS.PAID) return 'success'
+  return status === YUAN_STATUS.OBSERVED ? 'error' : 'primary'
+}
+
+function differenceText(row: SupplierPaymentYuanRequest): string {
+  if (!row.incomes.length) return ''
+  if (row.difference_status === 'collect') return 'Por cobrar al socio'
+  if (row.difference_status === 'missing') return 'Falta recibir'
+  return row.difference_status === 'favor' ? 'A favor del socio' : ''
+}
+
+function differenceColor(row: SupplierPaymentYuanRequest): string {
+  if (!row.incomes.length || !row.difference) return 'text-highlighted'
+  return row.difference < 0 ? 'text-error' : 'text-success'
+}
+
+const stacked = (top: string, bottom: string, topClass = '') => h('div', { class: 'flex flex-col items-end text-right' }, [
+  h('span', { class: topClass }, top),
+  bottom ? h('span', { class: 'text-xs text-muted' }, bottom) : null
+])
+
+const columns: TableColumn<SupplierPaymentYuanRequest>[] = [
+  { accessorKey: 'number', header: 'N.', cell: ({ row }) => h('span', { class: 'text-muted' }, String(row.original.number ?? '')) },
+  { accessorKey: 'date', header: 'Fecha', cell: ({ row }) => h('div', { class: 'flex flex-col' }, [
+    h('span', dayLabel(row.original.date)),
+    h('span', { class: 'text-xs text-muted' }, monthLabel(row.original.date))
   ]) },
-  { accessorKey: 'client_name', header: 'Cliente', cell: ({ row }) => h('div', [
-    h('div', row.original.client_name || '—'),
-    h('div', { class: 'text-xs text-muted' }, row.original.consolidation ? `Consolidado ${row.original.consolidation}` : '—')
+  { accessorKey: 'country', header: 'País' },
+  { accessorKey: 'partner', header: 'Cliente', cell: ({ row }) => h('span', { class: 'font-semibold' }, row.original.partner) },
+  { accessorKey: 'code', header: 'N. orden', cell: ({ row }) => h('div', { class: 'flex flex-col' }, [
+    h('span', { class: 'text-sm font-bold' }, row.original.code),
+    h('span', { class: 'text-xs text-muted whitespace-nowrap' }, `${row.original.provider_count} ${row.original.provider_count === 1 ? 'proveedor' : 'proveedores'}`)
   ]) },
-  { accessorKey: 'partner', header: 'Socio' },
-  { accessorKey: 'usd_amount', header: 'Monto USD', cell: ({ row }) => h('span', { class: 'font-semibold' }, `$${money(row.original.usd_amount)}`) },
-  { accessorKey: 'yuan_amount', header: 'Monto RMB', cell: ({ row }) => h('div', [
-    h('div', { class: 'font-semibold text-warning' }, `¥${money(row.original.yuan_amount)}`),
-    h('div', { class: 'text-xs text-muted' }, `T.C. ${row.original.quoted_rate ?? '—'}`)
-  ]) },
-  { accessorKey: 'yuan_obtained', header: 'Recibido del socio', cell: ({ row }) => h('div', [
-    h('div', `$${money(row.original.usd_amount)}`),
-    row.original.yuan_obtained != null ? h('div', { class: 'text-xs text-muted' }, `¥${money(row.original.yuan_obtained)}`) : null
-  ]) },
-  { accessorKey: 'yuan_paid', header: 'Pagado RMB', cell: ({ row }) => row.original.yuan_paid == null ? '—' : h('div', [
-    h('div', { class: 'font-semibold' }, `¥${money(row.original.yuan_paid)}`),
-    h('div', { class: 'text-xs text-muted' }, `T.C. real ${row.original.real_exchange_rate ?? '—'}`)
-  ]) },
-  { accessorKey: 'difference_label', header: 'Diferencia', cell: ({ row }) => row.original.difference_label || '—' },
-  { accessorKey: 'status_label', header: 'Estado', cell: ({ row }) => h('div', [
-    h(UBadge, { color: statusColor(row.original.status), variant: 'soft', label: row.original.status_label }),
-    row.original.supplier_payments > 1 ? h('p', { class: 'mt-1 text-xs text-muted' }, `Pago ${row.original.current_payment} de ${row.original.supplier_payments}`) : null,
-    row.original.observation_label ? h('p', { class: 'mt-1 text-xs text-error' }, `${row.original.observation_label}${row.original.observation_until_text ? ` · ${row.original.observation_until_text}` : ''}`) : null
-  ]) },
-  { accessorKey: 'provider_id', header: 'Acciones', cell: ({ row }) => h('div', { class: 'flex flex-wrap justify-end gap-1' }, [
-    row.original.can_register ? h(UButton, { size: 'sm', color: 'primary', onClick: () => open(row.original, false) }, () => 'Registrar') : null,
-    !row.original.can_register && row.original.status === EXECUTION_STATUS.PAID ? h(UButton, { size: 'sm', color: 'neutral', variant: 'soft', onClick: () => open(row.original, true) }, () => 'Ver') : null,
-    row.original.can_lift ? h(UButton, { size: 'sm', color: 'primary', variant: 'soft', onClick: () => lift(row.original) }, () => 'Levantar') : null,
-    row.original.can_edit ? h(UButton, { size: 'sm', color: 'neutral', variant: 'soft', onClick: () => startManual(row.original) }, () => 'Editar') : null,
-    row.original.manual && row.original.can_register ? h(UButton, { size: 'sm', color: 'error', variant: 'ghost', onClick: () => remove(row.original) }, () => 'Eliminar') : null
+  { id: 'providers', header: 'Proveedores', cell: ({ row }) => h('div', { class: 'flex min-w-60 flex-col' }, row.original.providers.map((provider) => h('div', {
+    key: provider.provider_id,
+    class: 'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2.5 border-t border-dashed border-default py-1.5'
+  }, [
+    h('div', { class: 'flex min-w-0 flex-col' }, [
+      h('span', { class: 'font-bold' }, provider.supplier_code || 'Sin código'),
+      h('span', { class: 'truncate text-xs text-muted' }, provider.client || '—')
+    ]),
+    h('div', { class: 'flex flex-col items-end gap-0.5' }, [
+      h(UBadge, { color: statusColor(provider.status), variant: 'soft', label: provider.status_label }),
+      h('span', { class: 'text-xs text-toned whitespace-nowrap' }, rmb(provider.yuan_amount))
+    ])
+  ]))) },
+  { accessorKey: 'usd_total', header: 'Monto USD', cell: ({ row }) => stacked(usd(row.original.usd_total), `${rmb(row.original.yuan_total)} · TC ${row.original.exchange_rate}`, 'font-semibold') },
+  { accessorKey: 'usd_received', header: 'Recibido USD', cell: ({ row }) => stacked(row.original.usd_received ? usd(row.original.usd_received) : '—', '') },
+  { accessorKey: 'yuan_obtained', header: 'Cambiado RMB', cell: ({ row }) => stacked(
+    row.original.yuan_obtained ? rmb(row.original.yuan_obtained) : '—',
+    row.original.income_rates.length ? `TC ${row.original.income_rates.join(' / ')}` : ''
+  ) },
+  { accessorKey: 'yuan_paid', header: 'Pagado RMB', cell: ({ row }) => stacked(row.original.yuan_paid ? rmb(row.original.yuan_paid) : '—', '') },
+  { accessorKey: 'difference', header: 'Diferencia RMB', cell: ({ row }) => {
+    if (!row.original.incomes.length) return stacked('—', '')
+    const color = differenceColor(row.original)
+    return h('div', { class: `flex flex-col items-end text-right ${color}` }, [
+      h('span', { class: 'font-semibold' }, `${row.original.difference < 0 ? '−' : ''}${rmb(Math.abs(row.original.difference))}`),
+      h('span', { class: 'text-xs' }, differenceText(row.original))
+    ])
+  } },
+  { id: 'progress', header: 'Avance', cell: ({ row }) => h('div', { class: 'flex flex-col items-start gap-1' }, [
+    h(UButton, {
+      size: 'sm',
+      color: 'primary',
+      variant: 'outline',
+      trailingIcon: 'i-heroicons-chevron-right',
+      onClick: () => { selectedId.value = row.original.request_id }
+    }, () => 'Gestionar'),
+    h('span', { class: 'text-xs text-muted whitespace-nowrap' }, `${row.original.paid_count} de ${row.original.provider_count} ${row.original.provider_count === 1 ? 'pagado' : 'pagados'}`)
   ]) }
 ]
 
+function openForm(request: SupplierPaymentYuanRequest | null) {
+  editing.value = request
+  formOpen.value = true
+}
+
+function onSaved() {
+  formOpen.value = false
+  load()
+}
+
 function onSearch(value: string) {
   search.value = value
-  load()
+  reload()
 }
 
 function onFilter(key: string, value: unknown) {
@@ -247,8 +197,27 @@ function onFilter(key: string, value: unknown) {
     : value
   const next = String(normalized ?? '')
   filters.value = { ...filters.value, [key]: next }
-  if (key === 'status') bucket.value = next
-  if (key === 'partner') partner.value = next === 'todos' ? '' : next
+  if (key === 'country') country.value = next === 'todos' ? '' : next
+  if (key === 'date_from') dateFrom.value = next
+  if (key === 'date_to') dateTo.value = next
+  reload()
+}
+
+function onClearFilters() {
+  filters.value = { country: 'todos', date_from: '', date_to: '' }
+  country.value = ''
+  dateFrom.value = ''
+  dateTo.value = ''
+  reload()
+}
+
+function onPage(page: number) {
+  pagination.value.current_page = page
   load()
+}
+
+function onPageSize(size: number) {
+  pagination.value.per_page = size
+  reload()
 }
 </script>

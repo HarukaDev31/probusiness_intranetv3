@@ -1,7 +1,7 @@
 <template>
   <SupplierPaymentPage
-    title="Pago a Proveedor"
-    subtitle="Pagos en yuanes (RMB) a proveedores de China."
+    title="Pago a proveedores"
+    subtitle="Operaciones"
   >
     <SupplierPaymentYuan />
   </SupplierPaymentPage>

@@ -638,6 +638,7 @@ export interface SupplierPaymentYuan {
   product: string | null
   wechat: string | null
   seller_name: string | null
+  client: string | null
   client_name: string | null
   consolidation: string | null
   partner: string
@@ -654,14 +655,19 @@ export interface SupplierPaymentYuan {
   difference_label: string | null
   status: string
   status_label: string
+  proforma_name: string | null
   proforma_url: string | null
+  receipt_name: string | null
   receipt_url: string | null
+  paid_on: string | null
   current_payment: number
   supplier_payments: number
   can_register: boolean
   can_observe: boolean
-  can_edit: boolean
+  can_undo: boolean
   can_lift: boolean
+  needs_notice: boolean
+  needs_receipt: boolean
   observation_reason: string | null
   observation_label: string | null
   observation_detail: string | null
@@ -677,6 +683,48 @@ export interface SupplierPaymentYuanIndicators {
   yuan_paid: number
   to_collect: number
   to_collect_yuan: number
+  to_collect_count: number
+}
+
+export interface SupplierPaymentYuanIncome {
+  id: number
+  usd_amount: number
+  exchange_rate: number
+  yuan_amount: number
+  received_on: string
+  receipt_name: string | null
+  receipt_url: string | null
+  can_remove: boolean
+}
+
+export interface SupplierPaymentYuanRequest {
+  request_id: number
+  number: number | null
+  code: string
+  date: string
+  country: string
+  partner: string
+  manual: boolean
+  consolidation: string | null
+  exchange_rate: number
+  usd_total: number
+  yuan_total: number
+  usd_received: number
+  yuan_obtained: number
+  income_rates: number[]
+  yuan_paid: number
+  yuan_pending: number
+  difference: number
+  difference_usd: number
+  difference_status: 'collect' | 'missing' | 'favor' | null
+  last_rate: number
+  status: string
+  status_label: string
+  paid_count: number
+  provider_count: number
+  can_edit: boolean
+  providers: SupplierPaymentYuan[]
+  incomes: SupplierPaymentYuanIncome[]
 }
 
 export interface SupplierPaymentApprovalSettings {

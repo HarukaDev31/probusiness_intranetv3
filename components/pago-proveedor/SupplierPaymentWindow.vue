@@ -38,16 +38,21 @@ const props = withDefaults(defineProps<{
   code?: string | null
   hint?: string
   wide?: boolean
+  widthClass?: string
 }>(), {
   subtitle: '',
   code: null,
   hint: '',
-  wide: false
+  wide: false,
+  widthClass: ''
 })
 
 const emit = defineEmits<{ close: [] }>()
 
-const contentClass = computed(() => props.wide ? 'w-full max-w-6xl sm:max-w-6xl' : 'w-full max-w-2xl sm:max-w-2xl')
+const contentClass = computed(() => {
+  if (props.widthClass) return `w-full ${props.widthClass}`
+  return props.wide ? 'w-full max-w-6xl sm:max-w-6xl' : 'w-full max-w-2xl sm:max-w-2xl'
+})
 
 function onOpen(value: boolean) {
   if (!value) emit('close')

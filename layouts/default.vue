@@ -136,6 +136,8 @@ const pageTitle = computed(() => {
   // Módulos
   if (route.path === '/modules') return 'Módulos'
 
+  if (route.path.includes('/pago-proveedor/pagos-yuanes')) return 'Pago a proveedores'
+
   // Base de datos
   if (route.path.includes('/basedatos')) {
     // Clientes
