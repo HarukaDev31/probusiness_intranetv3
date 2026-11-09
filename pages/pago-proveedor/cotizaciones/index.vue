@@ -12,24 +12,33 @@
       :total-pages="paginacion.last_page"
       :total-records="paginacion.total"
       :items-per-page="paginacion.per_page"
-      :primary-search-value="busqueda"
-      :show-primary-search="true"
-      :show-primary-search-label="false"
-      primary-search-placeholder="Buscar por cotización, cliente o consolidado"
-      :show-filters="true"
-      :filter-config="filtrosConfig"
-      :filters-value="filtros"
+      :show-primary-search="false"
+      :show-filters="false"
+      :show-body-top="true"
       :show-export="false"
       empty-state-message="No hay cotizaciones que coincidan con los filtros."
       :show-new-button="true"
       new-button-label="Nueva cotización"
       :on-new-button-click="() => nuevaAbierta = true"
-      @update:primary-search="alBuscar"
       @page-change="alCambiarPagina"
       @items-per-page-change="alCambiarTamano"
-      @filter-change="alFiltrar"
-      @clear-filters="alLimpiarFiltros"
     >
+      <template #body-top>
+        <div class="grid w-full gap-3 rounded-xl border border-default bg-default p-4 md:grid-cols-[1fr_auto_auto_auto]">
+          <UFormField label="Buscar cliente o cotización" :ui="{ label: 'text-[11px] font-semibold uppercase text-muted' }">
+            <UInput :model-value="busqueda" icon="i-heroicons-magnifying-glass" placeholder="Ej: Juan Pérez, COT-03" class="w-full" @update:model-value="(v) => alBuscar(String(v ?? ''))" />
+          </UFormField>
+          <UFormField label="Consolidado" :ui="{ label: 'text-[11px] font-semibold uppercase text-muted' }">
+            <USelect :model-value="filtros.consolidado" :items="filtrosConfig[0]!.options" value-key="value" class="w-full md:w-40" @update:model-value="(v) => alFiltrar('consolidado', v)" />
+          </UFormField>
+          <UFormField label="Estado" :ui="{ label: 'text-[11px] font-semibold uppercase text-muted' }">
+            <USelect :model-value="filtros.estado" :items="filtrosConfig[1]!.options" value-key="value" class="w-full md:w-40" @update:model-value="(v) => alFiltrar('estado', v)" />
+          </UFormField>
+          <UFormField label="Resaltar desde (días)" :ui="{ label: 'text-[11px] font-semibold uppercase text-muted' }">
+            <UInput :model-value="filtros.resaltar_desde" type="number" min="0" placeholder="Sin definir" class="w-full md:w-40" @update:model-value="(v) => alFiltrar('resaltar_desde', v)" />
+          </UFormField>
+        </div>
+      </template>
       <template #actions>
         <UButton
           size="md"
@@ -51,9 +60,27 @@
     <NuevaCotizacionModal :open="nuevaAbierta" @close="nuevaAbierta = false" @accepted="abrirBorrador" />
 
     <SupplierPaymentWindow
+      :open="!!renovarCotizacion"
+      title="Renovar cotización"
+      :subtitle="renovarCotizacion ? `${renovarCotizacion.cliente_nombre || ''} · Consolidado ${soloConsolidado(renovarCotizacion.consolidado)}` : ''"
+      :code="renovarCotizacion?.codigo"
+      @close="renovarCotizacion = null"
+    >
+      <div v-if="renovarCotizacion" class="rounded-xl border border-success/40 bg-success/10 px-4 py-3">
+        <p class="text-[11px] font-semibold uppercase text-muted">Nueva vigencia</p>
+        <p class="text-lg font-bold text-success">Hasta {{ renovarNuevaVigencia }}</p>
+      </div>
+      <p v-if="renovarCotizacion" class="text-sm text-muted">Vigencia anterior: <strong class="text-error">venció el {{ renovarCotizacion.vigencia_hasta }}</strong></p>
+      <template #footer>
+        <UButton color="neutral" variant="outline" @click="renovarCotizacion = null">Cancelar</UButton>
+        <UButton color="primary" :loading="renovando" @click="confirmarRenovar">Renovar y ver formulario</UButton>
+      </template>
+    </SupplierPaymentWindow>
+
+    <SupplierPaymentWindow
       :open="!!solicitudCotizacion"
       title="Crear solicitud"
-      :subtitle="solicitudCotizacion ? `${solicitudCotizacion.cliente_nombre || ''} · Consolidado ${solicitudCotizacion.consolidado || ''}` : ''"
+      :subtitle="solicitudCotizacion ? `${solicitudCotizacion.cliente_nombre || ''} · Consolidado ${soloConsolidado(solicitudCotizacion.consolidado)}` : ''"
       :code="solicitudCotizacion?.codigo"
       @close="solicitudCotizacion = null"
     >
@@ -197,6 +224,10 @@ const filtrosConfig = computed<FilterConfig[]>(() => [
   }
 ])
 
+function soloConsolidado(valor: string | null | undefined) {
+  return String(valor || '').split(/\s*[-–]\s*/)[0]?.trim() || '—'
+}
+
 const dinero = (valor: number) => `$${Number(valor || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 const columns: TableColumn<PagoProveedorCotizacion>[] = [
@@ -233,7 +264,7 @@ const columns: TableColumn<PagoProveedorCotizacion>[] = [
       ])
     }
   },
-  { accessorKey: 'consolidado', header: 'Consolidado' },
+  { accessorKey: 'consolidado', header: 'Consolidado', cell: ({ row }) => soloConsolidado(row.original.consolidado) },
   { accessorKey: 'cliente_nombre', header: 'Cliente' },
   { accessorKey: 'proveedores', header: 'Proveedores', cell: ({ row }) => supplierSummary(row.original) },
   {
@@ -257,10 +288,10 @@ const columns: TableColumn<PagoProveedorCotizacion>[] = [
     header: 'T.C. usado',
     cell: ({ row }) => {
       if (!row.original.tipo_cambio) return '—'
-      return h('span', [
-        String(row.original.tipo_cambio),
+      return h('div', [
+        h('div', String(row.original.tipo_cambio)),
         row.original.tipo_cambio_fecha
-          ? h('span', { class: 'ml-1 text-[11px] text-muted' }, `(${row.original.tipo_cambio_fecha})`)
+          ? h('div', { class: 'text-[11px] text-muted' }, `(${row.original.tipo_cambio_fecha})`)
           : null
       ])
     }
@@ -311,17 +342,25 @@ function supplierSummary(quote: PagoProveedorCotizacion) {
 
 function quoteActions(quote: PagoProveedorCotizacion) {
   const open = () => { void navigateTo(`/pago-proveedor/cotizaciones/${quote.id}`) }
+  const vencida = quote.estado === 'pendiente' && quote.puede_renovar
   const buttons = [
     h(UButton, {
       icon: quote.puede_editar ? 'i-heroicons-pencil-square' : 'i-heroicons-eye',
       size: 'xs',
       color: 'neutral',
       variant: 'ghost',
-      title: quote.puede_editar ? 'Editar' : 'Ver',
+      title: vencida ? 'Vencida: renuévala para editarla' : quote.puede_editar ? 'Editar' : 'Ver',
+      disabled: vencida,
       onClick: open
     })
   ]
-  if (quote.puede_enviar) {
+  if (vencida) {
+    buttons.push(
+      h(UButton, { icon: 'i-heroicons-chat-bubble-left-right', size: 'xs', color: 'neutral', variant: 'ghost', disabled: true, title: 'Vencida: renuévala para enviarla' }),
+      h(UButton, { icon: 'i-heroicons-document-arrow-down', size: 'xs', color: 'neutral', variant: 'ghost', disabled: true, title: 'Vencida: renuévala para descargar el PDF' })
+    )
+  }
+  if (!vencida && quote.puede_enviar) {
     buttons.push(h(UButton, {
       icon: 'i-heroicons-chat-bubble-left-right',
       size: 'xs',
@@ -331,7 +370,7 @@ function quoteActions(quote: PagoProveedorCotizacion) {
       onClick: () => { void abrirWhatsapp(quote) }
     }))
   }
-  if (quote.puede_descargar_pdf ?? quote.puede_enviar) {
+  if (!vencida && (quote.puede_descargar_pdf ?? quote.puede_enviar)) {
     buttons.push(h(UButton, {
       icon: 'i-heroicons-document-arrow-down',
       size: 'xs',
@@ -354,7 +393,7 @@ function quoteActions(quote: PagoProveedorCotizacion) {
   if (quote.estado === 'confirmada') {
     // La solicitud se abre desde el enlace de la columna Estado; no es una acción.
   } else if (quote.puede_renovar) {
-    buttons.push(h(UButton, { size: 'xs', color: 'primary', label: 'Renovar', onClick: () => { void renewQuote(quote) } }))
+    buttons.push(h(UButton, { size: 'xs', color: 'primary', label: 'Renovar', onClick: () => { renovarCotizacion.value = quote } }))
   } else if (quote.estado === 'pendiente' && quote.puede_editar) {
     buttons.push(h(UButton, { size: 'xs', color: 'primary', label: 'Crear solicitud', onClick: () => createRequest(quote) }))
   }
@@ -487,13 +526,49 @@ async function downloadPdf(quote: PagoProveedorCotizacion) {
   }
 }
 
-async function renewQuote(quote: PagoProveedorCotizacion) {
+const renovarCotizacion = ref<PagoProveedorCotizacion | null>(null)
+const renovando = ref(false)
+
+/** Misma regla que el back: horas hábiles saltan sábado y domingo (hora de Lima, UTC-5). */
+function nuevaVigencia(): Date {
+  const lima = new Date(Date.now() - 5 * 3600 * 1000)
+  if (tipoVigencia.value === 'calendario') return new Date(lima.getTime() + horasVigencia.value * 3600 * 1000)
+  let restantes = Math.max(0, horasVigencia.value) * 60
+  let cursor = new Date(lima.getTime())
+  while (restantes > 0) {
+    const dia = cursor.getUTCDay()
+    if (dia === 0 || dia === 6) {
+      cursor = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth(), cursor.getUTCDate() + (dia === 6 ? 2 : 1)))
+      continue
+    }
+    const medianoche = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth(), cursor.getUTCDate() + 1))
+    const minutosDelDia = Math.floor((medianoche.getTime() - cursor.getTime()) / 60000)
+    if (minutosDelDia >= restantes) return new Date(cursor.getTime() + restantes * 60000)
+    restantes -= minutosDelDia
+    cursor = medianoche
+  }
+  return cursor
+}
+
+function textoLima(fecha: Date) {
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${p(fecha.getUTCDate())}/${p(fecha.getUTCMonth() + 1)}/${fecha.getUTCFullYear()} · ${p(fecha.getUTCHours())}:${p(fecha.getUTCMinutes())}`
+}
+
+const renovarNuevaVigencia = computed(() => renovarCotizacion.value ? textoLima(nuevaVigencia()) : '')
+
+async function confirmarRenovar() {
+  const quote = renovarCotizacion.value
+  if (!quote) return
+  renovando.value = true
   try {
     await withSpinner(() => api.renew(quote.id), 'Renovando…')
-    showSuccess('Cotización renovada', 'Confirma el tipo de cambio del día y reenvía el resumen.')
-    await cargar()
+    renovarCotizacion.value = null
+    await navigateTo(`/pago-proveedor/cotizaciones/${quote.id}`)
   } catch (error: any) {
     showError('Renovar', error.message || 'No se pudo renovar.')
+  } finally {
+    renovando.value = false
   }
 }
 
