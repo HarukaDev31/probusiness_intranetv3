@@ -70,7 +70,7 @@
         <h2 class="text-lg font-semibold">Proveedores</h2>
         <p class="mt-1 text-sm text-muted">Agrega uno o más proveedores. Cada uno puede tener distinto tipo de pago y modalidad.</p>
 
-        <UCard v-for="(proveedor, indice) in proveedores" :key="proveedor.id || `nuevo-${indice}`" class="mt-4" variant="subtle">
+        <UCard v-for="(proveedor, indice) in proveedores" :key="proveedor.id || `nuevo-${indice}`" class="mt-4 border-l-4 border-l-primary-500" variant="subtle">
           <div class="mb-4 flex items-center justify-between gap-2">
             <h3 class="font-semibold">Proveedor {{ indice + 1 }}</h3>
             <div class="flex items-center gap-2">
@@ -263,7 +263,7 @@
           </div>
         </UCard>
 
-        <UButton v-if="editable" type="button" color="neutral" variant="outline" class="mt-4" icon="i-lucide-plus" @click="agregar">Agregar proveedor</UButton>
+        <UButton v-if="editable" type="button" color="primary" variant="outline" class="mt-4 w-full justify-center border-2 border-dashed border-primary-500" icon="i-lucide-plus" @click="agregar">Agregar proveedor</UButton>
       </UCard>
 
       <UCard v-if="mostrarResumen">
@@ -427,16 +427,33 @@
       <p v-if="editable && motivoAccion" class="text-sm text-error">{{ motivoAccion }}</p>
       <p v-if="editable && esNueva" class="text-sm text-muted"><strong>Toda solicitud nace de una cotización.</strong> Usa Guardar cotización si el cliente solo quiere saber el costo. Si ya confirmó, Guardar y crear solicitud registra la cotización y crea la solicitud en un solo paso.</p>
       <p v-else-if="editable && cotizacion.puede_renovar" class="text-sm text-muted"><strong>Renovar la cotización:</strong> confirma el tipo de cambio de hoy y guárdala. La vigencia vuelve a empezar y tendrás que reenviarla al cliente.</p>
-      <ul v-if="editable && faltantesSolicitud.length" class="list-disc pl-5 text-sm text-error">
+      <p v-if="editable && esNueva && faltantesSolicitud.length" class="text-sm text-error">Para guardar y crear la solicitud falta: {{ faltantesSolicitud.join(' · ') }}.</p>
+      <ul v-else-if="editable && faltantesSolicitud.length" class="list-disc pl-5 text-sm text-error">
         <li v-for="falta in faltantesSolicitud" :key="falta">{{ falta }}</li>
       </ul>
     </form>
 
     <SupplierPaymentWindow
+      :open="!!guardadaResumen"
+      title="Cotización guardada"
+      :subtitle="guardadaResumen ? `${guardadaResumen.cliente} · Consolidado ${guardadaResumen.consolidado}` : ''"
+      :code="guardadaResumen?.codigo"
+      @close="irAlListado"
+    >
+      <div v-if="guardadaResumen" class="divide-y divide-default overflow-hidden rounded-xl border border-default text-sm">
+        <div class="flex justify-between gap-4 px-4 py-3"><span class="text-muted">Proveedores</span><strong>{{ guardadaResumen.proveedores }}</strong></div>
+        <div class="flex justify-between gap-4 px-4 py-3"><span class="text-muted">Vigente hasta</span><strong>{{ guardadaResumen.vigencia }}</strong></div>
+        <div class="flex justify-between gap-4 bg-primary-50 px-4 py-3"><span class="text-muted">Total a pagar</span><strong class="text-lg text-primary-700">${{ dinero(guardadaResumen.total) }}</strong></div>
+      </div>
+      <template #footer>
+        <UButton type="button" color="primary" @click="irAlListado">Ir al listado</UButton>
+      </template>
+    </SupplierPaymentWindow>
+
+    <SupplierPaymentWindow
       :open="!!vistaPrevia"
       title="Enviar resumen al cliente"
       :subtitle="vistaPrevia?.destinatario ? `Destino: ${vistaPrevia.destinatario}` : 'Vista previa del mensaje'"
-      :code="cotizacion?.codigo || cotizacion?.cod_cotizacion_cc || ''"
       @close="vistaPrevia = null"
     >
       <UCard variant="subtle">
@@ -445,6 +462,7 @@
       <p v-if="vistaPrevia?.nota" class="text-sm text-muted">{{ vistaPrevia.nota }}</p>
       <template #footer>
         <UButton type="button" color="neutral" variant="outline" @click="vistaPrevia = null">Cerrar</UButton>
+        <UButton type="button" color="neutral" variant="outline" icon="i-lucide-file-text" :loading="generandoPdf" @click="descargarPdf">Descargar PDF</UButton>
         <UButton type="button" color="success" icon="i-lucide-send" :loading="enviandoReal" :disabled="!vistaPrevia?.puede_enviar" @click="enviarWhatsapp">Enviar por WhatsApp</UButton>
       </template>
     </SupplierPaymentWindow>
@@ -496,6 +514,11 @@ const proveedores = ref<PagoProveedorProveedor[]>([])
 const tipoCambio = ref<number | null>(null)
 const tcConfirmadoSesion = ref(false)
 const valoresNativos = ref<Record<number, number>>({})
+const guardadaResumen = ref<{ codigo: string; cliente: string; consolidado: string; proveedores: string; vigencia: string; total: number } | null>(null)
+async function irAlListado() {
+  guardadaResumen.value = null
+  await navigateTo('/pago-proveedor/cotizaciones', { replace: esNueva.value })
+}
 const vistaPrevia = ref<{ texto: string; nota: string; destinatario?: string | null; puede_enviar?: boolean } | null>(null)
 const esNueva = computed(() => !props.quoteId)
 // La vista previa deja de valer si cambian los datos del formulario.
@@ -562,11 +585,17 @@ const fechaTcCotizacion = computed(() => {
   if (!fin) return ''
   return new Date(fin).toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' })
 })
+const faltantesProforma = computed(() => proveedores.value
+  .map((proveedor, indice) => (proformasPendientes.value[indice] || proveedor.proforma_nombre || proveedor.proforma_url) ? null : `Proveedor ${indice + 1}: proforma de la carga`)
+  .filter((falta): falta is string => !!falta))
 const faltantesSolicitud = computed(() => {
   // El aviso del servidor sobre el tipo de cambio lo cubre el botón Confirmar de esta pantalla.
   const base = (cotizacion.value?.faltantes || []).filter(falta => !(pideConfirmacionTc.value && falta === 'Confirma el tipo de cambio.'))
   if (pideConfirmacionTc.value && !tcConfirmadoSesion.value) {
     base.push('Confirma el tipo de cambio del día para crear la solicitud.')
+  }
+  for (const falta of faltantesProforma.value) {
+    if (!base.some(item => /proforma/i.test(item) && item.includes(falta.split(':')[0]!))) base.push(falta)
   }
   return base
 })
@@ -1190,8 +1219,15 @@ async function guardar() {
   guardando.value = true
   try {
     await withSpinner(() => persistir(), 'Guardando…')
-    showSuccess('Cotización guardada', cotizacion.value?.codigo || 'Cotización')
-    await navigateTo('/pago-proveedor/cotizaciones', { replace: esNueva.value })
+    const c = cotizacion.value
+    guardadaResumen.value = {
+      codigo: c?.codigo || 'Cotización',
+      cliente: c?.cliente_nombre || '—',
+      consolidado: c?.consolidado || '—',
+      proveedores: proveedores.value.map(p => p.code_supplier).filter(Boolean).join(' · ') || '—',
+      vigencia: c?.vigencia_hasta || '—',
+      total: Number(c?.total || 0)
+    }
   } catch (error: any) {
     showError('No se pudo guardar', error.message || 'Revisa los datos.')
   } finally {

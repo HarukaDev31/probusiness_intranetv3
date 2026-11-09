@@ -51,10 +51,44 @@
     <NuevaCotizacionModal :open="nuevaAbierta" @close="nuevaAbierta = false" @accepted="abrirBorrador" />
 
     <SupplierPaymentWindow
+      :open="!!solicitudCotizacion"
+      title="Crear solicitud"
+      :subtitle="solicitudCotizacion ? `${solicitudCotizacion.cliente_nombre || ''} · Consolidado ${solicitudCotizacion.consolidado || ''}` : ''"
+      :code="solicitudCotizacion?.codigo"
+      @close="solicitudCotizacion = null"
+    >
+      <template v-if="solicitudCotizacion">
+        <div class="rounded-lg border border-default">
+          <div v-for="(provider, i) in solicitudCotizacion.proveedores || []" :key="i" class="flex items-center justify-between gap-2 border-b border-default px-3 py-2 text-sm last:border-b-0">
+            <strong>{{ provider.code_supplier }}</strong>
+            <UBadge :color="provider.moneda === 'RMB' ? 'warning' : 'info'" variant="soft" size="sm">{{ provider.moneda === 'RMB' ? 'RMB' : 'USD T-T' }}</UBadge>
+          </div>
+        </div>
+        <div class="flex justify-between rounded-lg bg-primary-50 px-3 py-2 text-sm">
+          <span class="text-muted">Total a pagar</span><strong class="text-primary-700">{{ dinero(solicitudCotizacion.total_ahora || solicitudCotizacion.total) }}</strong>
+        </div>
+        <p class="text-xs font-semibold uppercase text-muted">Requisitos para crear la solicitud</p>
+        <UAlert
+          :color="solicitudCotizacion.faltantes?.length ? 'warning' : 'success'"
+          variant="subtle"
+          :title="solicitudCotizacion.faltantes?.length ? `Falta${solicitudCotizacion.faltantes.length > 1 ? 'n' : ''} ${solicitudCotizacion.faltantes.length} dato${solicitudCotizacion.faltantes.length > 1 ? 's' : ''} para crear la solicitud` : 'Todo listo para crear la solicitud'"
+        />
+        <ul v-if="solicitudCotizacion.faltantes?.length" class="list-disc pl-5 text-sm text-error">
+          <li v-for="falta in solicitudCotizacion.faltantes" :key="falta">{{ falta }}</li>
+        </ul>
+        <p v-else class="text-xs text-muted">Al crearla se genera la solicitud con su N.° de orden, la cotización pasa a Confirmada y los proveedores entran a la etapa 1.</p>
+      </template>
+      <template #footer>
+        <UButton color="neutral" variant="outline" @click="solicitudCotizacion = null">Cancelar</UButton>
+        <UButton v-if="solicitudCotizacion?.faltantes?.length" color="neutral" variant="outline" @click="completarEnFormulario">Completar en el formulario</UButton>
+        <UButton color="primary" :loading="creandoSolicitud" :disabled="!solicitudCotizacion?.puede_crear_solicitud" @click="confirmarCrearSolicitud">Crear solicitud</UButton>
+      </template>
+    </SupplierPaymentWindow>
+
+    <SupplierPaymentWindow
       :open="whatsappAbierto"
       :title="whatsappTitulo"
       :subtitle="whatsappDestinatario ? `Destino: ${whatsappDestinatario}` : 'Vista previa del mensaje'"
-      :code="whatsappCodigo"
       @close="cerrarWhatsapp"
     >
       <UCard variant="subtle">
@@ -64,6 +98,7 @@
       <p v-if="whatsappNota" class="text-sm text-muted">{{ whatsappNota }}</p>
       <template #footer>
         <UButton color="neutral" variant="outline" @click="cerrarWhatsapp">Cerrar</UButton>
+        <UButton color="neutral" variant="outline" icon="i-heroicons-document-arrow-down" @click="descargarPdfWhatsapp">Descargar PDF</UButton>
         <UButton color="success" icon="i-heroicons-paper-airplane" :loading="enviandoWhatsapp" :disabled="!whatsappPuedeEnviar" @click="enviarWhatsapp">
           Enviar por WhatsApp
         </UButton>
@@ -233,11 +268,19 @@ const columns: TableColumn<PagoProveedorCotizacion>[] = [
   {
     accessorKey: 'estado',
     header: 'Estado',
-    cell: ({ row }) => h(UBadge, {
-      color: row.original.estado === 'confirmada' ? 'success' : row.original.vencida ? 'error' : 'warning',
-      variant: 'soft',
-      label: row.original.estado === 'confirmada' ? 'Confirmada' : row.original.vencida ? 'Vencida' : 'Pendiente'
-    })
+    cell: ({ row }) => h('div', { class: 'flex flex-col items-start gap-1' }, [
+      h(UBadge, {
+        color: row.original.estado === 'confirmada' ? 'success' : row.original.vencida ? 'error' : 'warning',
+        variant: 'soft',
+        label: row.original.estado === 'confirmada' ? 'Confirmada' : row.original.vencida ? 'Vencida' : 'Pendiente'
+      }),
+      row.original.estado === 'confirmada' && row.original.solicitud_id
+        ? h('a', {
+            class: 'cursor-pointer text-xs font-medium text-primary hover:underline',
+            onClick: () => { void navigateTo(`/pago-proveedor/solicitudes/${row.original.solicitud_id}`) }
+          }, "Ver solicitud ↗")
+        : null
+    ])
   },
   {
     accessorKey: 'acciones',
@@ -252,11 +295,18 @@ function formatDate(value: string | null) {
 }
 
 function supplierSummary(quote: PagoProveedorCotizacion) {
-  return (quote.proveedores || []).map((provider) => {
-    const payment = provider.moneda === 'RMB' ? 'RMB / Transferencia' : 'USD / T-T'
-    const name = provider.nombre_proveedor ? ` · ${provider.nombre_proveedor}` : ''
-    return `${provider.code_supplier || 'Sin código'}${name} · ${payment}`
-  }).join(' · ') || '—'
+  const list = quote.proveedores || []
+  if (!list.length) return '—'
+  return h('div', { class: 'flex flex-col' }, list.map((provider, index) => {
+    const rmb = provider.moneda === 'RMB'
+    return h('div', { class: ['py-1', index > 0 ? 'border-t border-dashed border-default' : ''] }, [
+      h('div', { class: 'flex flex-wrap items-center gap-2' }, [
+        h('strong', { class: 'text-highlighted' }, provider.code_supplier || 'Sin código'),
+        h(UBadge, { color: rmb ? 'warning' : 'info', variant: 'soft', size: 'sm', label: rmb ? 'RMB · Transferencia' : 'USD · T-T' })
+      ]),
+      provider.nombre_proveedor ? h('div', { class: 'text-xs text-muted' }, provider.nombre_proveedor) : null
+    ])
+  }))
 }
 
 function quoteActions(quote: PagoProveedorCotizacion) {
@@ -301,17 +351,11 @@ function quoteActions(quote: PagoProveedorCotizacion) {
       onClick: () => confirmDelete(quote)
     }))
   }
-  if (quote.estado === 'confirmada' && quote.solicitud_id) {
-    buttons.push(h(UButton, {
-      size: 'xs',
-      color: 'primary',
-      variant: 'soft',
-      label: 'Solicitud',
-      onClick: () => { void navigateTo(`/pago-proveedor/solicitudes/${quote.solicitud_id}`) }
-    }))
+  if (quote.estado === 'confirmada') {
+    // La solicitud se abre desde el enlace de la columna Estado; no es una acción.
   } else if (quote.puede_renovar) {
     buttons.push(h(UButton, { size: 'xs', color: 'primary', label: 'Renovar', onClick: () => { void renewQuote(quote) } }))
-  } else if (quote.puede_crear_solicitud) {
+  } else if (quote.estado === 'pendiente' && quote.puede_editar) {
     buttons.push(h(UButton, { size: 'xs', color: 'primary', label: 'Crear solicitud', onClick: () => createRequest(quote) }))
   }
   return buttons
@@ -399,6 +443,11 @@ async function abrirWhatsapp(quote: PagoProveedorCotizacion) {
   }
 }
 
+async function descargarPdfWhatsapp() {
+  if (!whatsappId.value) return
+  await downloadPdf({ id: whatsappId.value } as PagoProveedorCotizacion)
+}
+
 function cerrarWhatsapp() {
   if (enviandoWhatsapp.value) return
   whatsappAbierto.value = false
@@ -448,9 +497,33 @@ async function renewQuote(quote: PagoProveedorCotizacion) {
   }
 }
 
+const solicitudCotizacion = ref<PagoProveedorCotizacion | null>(null)
+const creandoSolicitud = ref(false)
+
 function createRequest(quote: PagoProveedorCotizacion) {
-  // En la maqueta se abre la cotización para confirmar T.C. (si hay yuanes) y luego crear la solicitud.
-  void navigateTo(`/pago-proveedor/cotizaciones/${quote.id}`)
+  solicitudCotizacion.value = quote
+}
+
+function completarEnFormulario() {
+  const quote = solicitudCotizacion.value
+  solicitudCotizacion.value = null
+  if (quote) void navigateTo(`/pago-proveedor/cotizaciones/${quote.id}`)
+}
+
+async function confirmarCrearSolicitud() {
+  const quote = solicitudCotizacion.value
+  if (!quote || !quote.puede_crear_solicitud) return
+  creandoSolicitud.value = true
+  try {
+    const respuesta = await withSpinner(() => api.createRequest(quote.id), 'Creando solicitud…')
+    solicitudCotizacion.value = null
+    showSuccess('Solicitud creada', `N.° ${respuesta.data.numero_orden}`)
+    await navigateTo(`/pago-proveedor/solicitudes/${respuesta.data.id}`)
+  } catch (error: any) {
+    showError('Solicitud', error.message || 'Faltan datos para crear la solicitud.')
+  } finally {
+    creandoSolicitud.value = false
+  }
 }
 
 function confirmDelete(quote: PagoProveedorCotizacion) {
