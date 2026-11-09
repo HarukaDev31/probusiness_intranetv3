@@ -44,15 +44,15 @@
         <div class="flex flex-wrap items-center justify-between gap-2">
           <h2 class="text-lg font-semibold">Datos del cliente</h2>
           <UBadge v-if="cotizacion.cod_cotizacion_cc" color="success" variant="subtle">
-            Cotización de Consolidada: {{ cotizacion.cod_cotizacion_cc }}
+            Cotización de C. Consolidada: {{ cotizacion.cod_cotizacion_cc }}
           </UBadge>
         </div>
-        <p class="mt-1 text-sm text-muted">Datos tomados de la cotización de Consolidada. Para cambiar de cliente, vuelve y crea otra cotización.</p>
+        <p class="mt-1 text-sm text-muted">Datos tomados de la cotización de C. Consolidada. Para cambiar de cliente, vuelve y crea otra cotización.</p>
         <div class="mt-4 grid gap-4 md:grid-cols-2">
-          <UFormField label="N.° de consolidado" required help="Consolidado en el que está el cliente.">
-            <UInput :model-value="cotizacion.consolidado || '—'" disabled class="w-full" />
+          <UFormField label="N.° de consolidado" required>
+            <UInput :model-value="soloConsolidado(cotizacion.consolidado)" disabled class="w-full" />
           </UFormField>
-          <UFormField label="Nombre y apellido" required help="Cliente que solicita el pago.">
+          <UFormField label="Nombre y apellido" required>
             <UInput :model-value="cotizacion.cliente_nombre || '—'" disabled class="w-full" />
           </UFormField>
           <UFormField label="WhatsApp">
@@ -80,7 +80,7 @@
           </div>
 
           <div class="grid gap-4 md:grid-cols-3">
-            <UFormField label="Código de proveedor" required help="Ventas elige el código que el intranet tiene para este cliente.">
+            <UFormField label="Código de proveedor" required help="Ventas elige el código que el intranet tiene para este cliente." :ui="{ help: 'text-[11px] text-muted' }">
               <template #hint><UBadge color="neutral" variant="soft" size="sm">Ventas</UBadge></template>
               <USelect
                 v-model="proveedor.code_supplier"
@@ -97,7 +97,7 @@
               <template #hint><UBadge color="neutral" variant="soft" size="sm">Opcional</UBadge></template>
               <UInput v-model="proveedor.nombre_proveedor" :disabled="!editable" placeholder="Ej: Foshan Light Industry Co." class="w-full" />
             </UFormField>
-            <UFormField label="Nombre del producto" help="Información registrada por Ventas en Por embarcar.">
+            <UFormField label="Nombre del producto" help="Información registrada por Ventas en Por embarcar." :ui="{ help: 'text-[11px] text-muted' }">
               <template #hint><UBadge color="neutral" variant="soft" size="sm">Autocompletado</UBadge></template>
               <UInput :model-value="proveedor.producto || '—'" disabled class="w-full" />
             </UFormField>
@@ -127,14 +127,11 @@
               <p v-else-if="proveedor.moneda === 'RMB' && !(Number(tipoCambio) > 0) && Number(proveedor.valor_carga_usd) > 0" class="mt-1 text-xs text-muted">
                 Quedó guardado en ${{ dinero(proveedor.valor_carga_usd) }}. Ingresa el tipo de cambio para verlo en yuanes.
               </p>
-              <p v-else-if="proveedor.moneda === 'RMB' && !(Number(tipoCambio) > 0) && Number(valorNativo(indice)) > 0" class="mt-1 text-xs text-warning">
-                Ingresa el tipo de cambio para convertir a dólares.
-              </p>
             </UFormField>
           </div>
 
           <div class="mt-4 grid gap-3 md:grid-cols-2">
-            <UCard color="success" variant="subtle">
+            <UCard variant="subtle" class="bg-green-50 ring-green-200 dark:bg-green-950/30 dark:ring-green-900">
               <div class="mb-2.5 flex items-center gap-2.5">
                 <UAvatar icon="i-lucide-user" size="sm" color="success" variant="soft" />
                 <div>
@@ -155,9 +152,9 @@
                 class="mt-1"
                 @update:model-value="alCambiarAbono(proveedor)"
               />
-              <p v-if="notaAbono(proveedor)" class="mt-2 text-xs leading-snug text-muted">{{ notaAbono(proveedor) }}</p>
+              <p v-if="notaAbono(proveedor)" class="mt-2 text-[11px] leading-snug text-muted">{{ notaAbono(proveedor) }}</p>
             </UCard>
-            <UCard color="info" variant="subtle">
+            <UCard variant="subtle" class="bg-blue-50 ring-blue-200 dark:bg-blue-950/30 dark:ring-blue-900">
               <div class="mb-2.5 flex items-center gap-2.5">
                 <UAvatar icon="i-lucide-credit-card" size="sm" color="info" variant="soft" />
                 <div>
@@ -234,8 +231,8 @@
           <div class="mt-4">
             <p class="text-sm font-semibold">Comisiones a aplicar sobre este proveedor</p>
             <div class="mt-2 flex flex-col gap-2">
-              <UCheckbox v-model="proveedor.comision_bancaria" :disabled="!editable" label="Comisión bancaria / plataforma (tarifa fija configurada)" />
-              <UCheckbox v-model="proveedor.comision_administrativa" :disabled="!editable" label="Comisión administrativa (tarifa fija configurada)" />
+              <UCheckbox v-model="proveedor.comision_bancaria" :disabled="!editable"><template #label>Comisión bancaria / plataforma <span class="text-[11px] font-normal text-muted">(tarifa fija configurada)</span></template></UCheckbox>
+              <UCheckbox v-model="proveedor.comision_administrativa" :disabled="!editable"><template #label>Comisión administrativa <span class="text-[11px] font-normal text-muted">(tarifa fija configurada)</span></template></UCheckbox>
             </div>
           </div>
 
@@ -246,7 +243,7 @@
                 <UButton as="span" color="neutral" variant="outline" size="sm">Seleccionar archivo</UButton>
                 <input type="file" class="sr-only" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" :disabled="!editable" @change="elegirProforma(indice, $event)" />
               </label>
-              <span class="text-sm text-muted">{{ nombreProforma(proveedor, indice) }}</span>
+              <span class="text-xs text-muted">{{ nombreProforma(proveedor, indice) }}</span>
               <UBadge v-if="proformasPendientes[indice]" color="warning" variant="soft" size="sm">Pendiente de guardar</UBadge>
               <a v-if="proveedor.proforma_url && !proformasPendientes[indice]" :href="proveedor.proforma_url" target="_blank" class="text-sm font-semibold text-primary">Ver</a>
               <UButton
@@ -259,11 +256,11 @@
                 @click="quitarProforma(indice)"
               />
             </div>
-            <p class="mt-1 text-xs text-muted">PDF, JPG, PNG, Word o Excel. Se sube al guardar la cotización.</p>
+            <p class="mt-1 text-xs text-muted">PDF, JPG, PNG, Word o Excel.</p>
           </div>
         </UCard>
 
-        <UButton v-if="editable" type="button" color="primary" variant="outline" class="mt-4 w-full justify-center border-2 border-dashed border-primary-500" icon="i-lucide-plus" @click="agregar">Agregar proveedor</UButton>
+        <UButton v-if="editable && puedeAgregarProveedor" type="button" color="primary" variant="outline" class="mt-4 w-full justify-center border-2 border-dashed border-primary-500" icon="i-lucide-plus" @click="agregar">Agregar proveedor</UButton>
       </UCard>
 
       <UCard v-if="mostrarResumen">
@@ -281,6 +278,17 @@
               <UInput id="tipo-cambio-resumen" v-model.number="tipoCambio" :disabled="!editable" type="number" min="0" step="0.01" placeholder="6.70" class="w-24" @update:model-value="alCambiarTc" />
               <span>RMB (CNY)</span>
             </div>
+            <UButton
+              v-if="pideConfirmacionTc && !tcConfirmadoSesion"
+              type="button"
+              color="primary"
+              size="sm"
+              class="ml-auto"
+              :disabled="!(Number(tipoCambio) > 0)"
+              @click="confirmarTc"
+            >
+              ✓ Confirmar tipo de cambio
+            </UButton>
           </div>
           <div v-if="pideConfirmacionTc" class="mt-3 rounded-lg border px-3 py-2 text-sm" :class="tcConfirmadoSesion ? 'border-success/40 bg-success/10 text-success' : 'border-warning/40 bg-warning/10 text-warning'">
             <p class="text-xs text-muted">
@@ -289,16 +297,7 @@
             </p>
             <div class="mt-2 flex flex-wrap items-center gap-2">
               <p v-if="tcConfirmadoSesion" class="font-semibold">✓ Tipo de cambio confirmado</p>
-              <UButton
-                v-else
-                type="button"
-                color="primary"
-                size="sm"
-                :disabled="!(Number(tipoCambio) > 0)"
-                @click="confirmarTc"
-              >
-                ✓ Confirmar tipo de cambio
-              </UButton>
+
             </div>
           </div>
         </div>
@@ -389,25 +388,8 @@
           <UButton type="button" color="neutral" variant="outline" size="lg" icon="i-lucide-file-text" class="justify-center" :loading="generandoPdf" :disabled="!editable && !(cotizacion.puede_descargar_pdf || cotizacion.puede_enviar)" @click="descargarPdf">Descargar PDF</UButton>
         </div>
 
-        <div v-if="documentoPdf" class="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-default bg-elevated/60 px-3 py-2 text-xs text-muted">
-          <UIcon name="i-lucide-history" class="size-4 shrink-0" />
-          <span>
-            PDF emitido en el <strong class="text-highlighted">paso {{ documentoPdf.paso }} · {{ documentoPdf.paso_nombre }}</strong>
-            <template v-if="documentoPdf.generado_en"> el {{ fechaDocumento(documentoPdf.generado_en) }}</template>
-          </span>
-          <UBadge v-if="documentoPdf.desactualizado" color="warning" variant="soft" size="sm">Se regenerará al descargar</UBadge>
-          <UBadge v-else color="success" variant="soft" size="sm">Al día</UBadge>
-          <UBadge v-if="documentoPdf.descargas" color="neutral" variant="soft" size="sm">{{ documentoPdf.descargas }} {{ documentoPdf.descargas === 1 ? 'descarga' : 'descargas' }}</UBadge>
-        </div>
       </UCard>
 
-      <UAlert
-        v-if="editable && !esNueva && cotizacion.estado === 'pendiente'"
-        class="mb-1"
-        :color="faltantesSolicitud.length ? 'warning' : 'success'"
-        variant="subtle"
-        :title="faltantesSolicitud.length ? `Faltan ${faltantesSolicitud.length} dato${faltantesSolicitud.length > 1 ? 's' : ''} para crear la solicitud` : 'Listo para crear la solicitud'"
-      />
       <div v-if="editable" class="flex flex-col gap-2 sm:flex-row">
         <UButton type="submit" color="neutral" variant="outline" size="lg" class="flex-1 justify-center" :loading="guardando" :disabled="!puedeGuardarCotizacion">{{ etiquetaGuardarCotizacion }}</UButton>
         <UButton v-if="cotizacion.puede_renovar" type="button" color="warning" variant="soft" size="lg" class="flex-1 justify-center" @click="renovar">Renovar cotización</UButton>
@@ -427,10 +409,7 @@
       <p v-if="editable && motivoAccion" class="text-sm text-error">{{ motivoAccion }}</p>
       <p v-if="editable && esNueva" class="text-sm text-muted"><strong>Toda solicitud nace de una cotización.</strong> Usa Guardar cotización si el cliente solo quiere saber el costo. Si ya confirmó, Guardar y crear solicitud registra la cotización y crea la solicitud en un solo paso.</p>
       <p v-else-if="editable && cotizacion.puede_renovar" class="text-sm text-muted"><strong>Renovar la cotización:</strong> confirma el tipo de cambio de hoy y guárdala. La vigencia vuelve a empezar y tendrás que reenviarla al cliente.</p>
-      <p v-if="editable && esNueva && faltantesSolicitud.length" class="text-sm text-error">Para guardar y crear la solicitud falta: {{ faltantesSolicitud.join(' · ') }}.</p>
-      <ul v-else-if="editable && faltantesSolicitud.length" class="list-disc pl-5 text-sm text-error">
-        <li v-for="falta in faltantesSolicitud" :key="falta">{{ falta }}</li>
-      </ul>
+      <p v-if="editable && faltantesSolicitud.length" class="text-sm text-error">{{ esNueva ? 'Para guardar y crear la solicitud falta' : 'Para crear la solicitud falta' }}: {{ faltantesSolicitud.map(falta => falta.replace(/\.$/, '')).join(' · ') }}.</p>
     </form>
 
     <SupplierPaymentWindow
@@ -585,6 +564,7 @@ const fechaTcCotizacion = computed(() => {
   if (!fin) return ''
   return new Date(fin).toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' })
 })
+const puedeAgregarProveedor = computed(() => (cotizacion.value?.codigos_disponibles?.length || 0) > proveedores.value.length)
 const faltantesProforma = computed(() => proveedores.value
   .map((proveedor, indice) => (proformasPendientes.value[indice] || proveedor.proforma_nombre || proveedor.proforma_url) ? null : `Proveedor ${indice + 1}: proforma de la carga`)
   .filter((falta): falta is string => !!falta))
@@ -621,6 +601,10 @@ const motivoAccion = computed(() => {
   }
   return ''
 })
+function soloConsolidado(valor: string | null | undefined) {
+  return String(valor || '').split(/\s*[-–]\s*/)[0]?.trim() || '—'
+}
+
 const dinero = (valor: number) => Number(valor || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const redondear = (valor: number) => Math.round((Number(valor) + Number.EPSILON) * 100) / 100
 
@@ -832,9 +816,7 @@ function opcionesCodigo(actual: string | null) {
   return (cotizacion.value?.codigos_disponibles || [])
     .filter(codigo => codigo.code_supplier === actualCodigo || !usados.has(codigo.code_supplier))
     .map(codigo => ({
-      label: codigo.producto
-        ? `${codigo.code_supplier} · ${codigo.producto}`
-        : codigo.code_supplier,
+      label: codigo.code_supplier,
       value: codigo.code_supplier,
       producto: codigo.producto || '',
       nombre: codigo.nombre || ''
@@ -974,7 +956,7 @@ function etiquetaModalidad(proveedor: PagoProveedorProveedor) {
   if (tipo === 'b') return '2 cuotas'
   if (tipo === 'a') return '2 pagos al proveedor'
   if (tipo === 'c') return '2 abonos'
-  return 'Pago único'
+  return 'Total'
 }
 
 function notaResumen(proveedor: PagoProveedorProveedor) {
@@ -1126,7 +1108,7 @@ function agregar() {
     code_supplier: '',
     nombre_proveedor: '',
     producto: '',
-    moneda: 'RMB',
+    moneda: '' as unknown as 'RMB',
     tipo_pago: 'transferencia',
     valor_carga_usd: 0,
     modalidad_abono: 'total',
@@ -1223,7 +1205,7 @@ async function guardar() {
     guardadaResumen.value = {
       codigo: c?.codigo || 'Cotización',
       cliente: c?.cliente_nombre || '—',
-      consolidado: c?.consolidado || '—',
+      consolidado: soloConsolidado(c?.consolidado),
       proveedores: proveedores.value.map(p => p.code_supplier).filter(Boolean).join(' · ') || '—',
       vigencia: c?.vigencia_hasta || '—',
       total: Number(c?.total || 0)

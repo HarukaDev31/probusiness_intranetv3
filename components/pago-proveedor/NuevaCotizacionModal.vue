@@ -2,7 +2,7 @@
   <SupplierPaymentWindow
     :open="open"
     title="Nueva cotización"
-    subtitle="Parte de la cotización de Consolidada del cliente"
+    subtitle="Parte de la cotización de carga consolidada del cliente"
     @close="cerrar"
   >
     <div class="flex items-center gap-2.5 text-xs">
@@ -17,7 +17,7 @@
       </span>
     </div>
 
-    <UFormField label="N.° de cotización de Consolidada" required class="w-full">
+    <UFormField label="N.° de cotización de C. Consolidada" required class="w-full">
       <UInputMenu
         v-model="seleccion"
         v-model:search-term="busqueda"
@@ -42,7 +42,7 @@
           </span>
         </template>
         <template #item-trailing="{ item }">
-          <span class="text-xs text-muted">{{ item.consolidado || '—' }}</span>
+          <span class="text-xs text-muted">{{ soloConsolidado(item.consolidado) }}</span>
         </template>
         <template #empty>
           <div v-if="buscandoLista" class="space-y-2 px-1 py-1">
@@ -93,7 +93,7 @@
     </UCard>
 
     <UCard v-else-if="resultado" variant="subtle">
-      <p class="text-xs font-semibold text-success">Cotización de Consolidada encontrada: {{ resultado.cod_cotizacion_cc }}</p>
+      <p class="text-xs font-semibold text-success">Cotización de C. Consolidada encontrada: {{ resultado.cod_cotizacion_cc }}</p>
       <div class="mt-2.5 flex items-center gap-3">
         <UAvatar :text="iniciales" size="lg" class="bg-primary/10 text-primary" />
         <div>
@@ -112,7 +112,7 @@
         </div>
         <div>
           <dt class="text-[11px] font-bold uppercase tracking-wide text-muted">Consolidado</dt>
-          <dd class="font-bold text-highlighted">{{ resultado.consolidado || '—' }}</dd>
+          <dd class="font-bold text-highlighted">{{ soloConsolidado(resultado.consolidado) }}</dd>
         </div>
         <div>
           <dt class="text-[11px] font-bold uppercase tracking-wide text-muted">Proveedores</dt>
@@ -136,6 +136,10 @@
 </template>
 
 <script setup lang="ts">
+function soloConsolidado(valor: string | null | undefined) {
+  return String(valor || '').split(/\s*[-–]\s*/)[0]?.trim() || '—'
+}
+
 import { computed, ref, watch } from 'vue'
 import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
 import { PagoProveedorService } from '~/services/pagoProveedorService'
