@@ -409,7 +409,7 @@
       <p v-if="editable && motivoAccion" class="text-sm text-error">{{ motivoAccion }}</p>
       <p v-if="editable && esNueva" class="text-sm text-muted"><strong>Toda solicitud nace de una cotización.</strong> Usa Guardar cotización si el cliente solo quiere saber el costo. Si ya confirmó, Guardar y crear solicitud registra la cotización y crea la solicitud en un solo paso.</p>
       <p v-else-if="editable && cotizacion.puede_renovar" class="text-sm text-muted"><strong>Renovar la cotización:</strong> confirma el tipo de cambio de hoy y guárdala. La vigencia vuelve a empezar y tendrás que reenviarla al cliente.</p>
-      <p v-if="editable && faltantesSolicitud.length" class="text-sm text-error">{{ esNueva ? 'Para guardar y crear la solicitud falta' : 'Para crear la solicitud falta' }}: {{ faltantesSolicitud.map(falta => falta.replace(/\.$/, '')).join(' · ') }}.</p>
+      <p v-if="editable && faltantesSolicitud.length" class="text-sm text-error">{{ esNueva ? 'Para guardar y crear la solicitud falta' : 'Para crear la solicitud falta' }}: {{ faltantesSolicitud.map(falta => falta.replace(/\.$/, '').replace(/: falta (la |el )?/, ': ')).join(' · ') }}.</p>
     </form>
 
     <SupplierPaymentWindow
@@ -572,7 +572,7 @@ const faltantesSolicitud = computed(() => {
   // El aviso del servidor sobre el tipo de cambio lo cubre el botón Confirmar de esta pantalla.
   const base = (cotizacion.value?.faltantes || []).filter(falta => !(pideConfirmacionTc.value && falta === 'Confirma el tipo de cambio.'))
   if (pideConfirmacionTc.value && !tcConfirmadoSesion.value) {
-    base.push('Confirma el tipo de cambio del día para crear la solicitud.')
+    base.push('confirmar el tipo de cambio del día')
   }
   for (const falta of faltantesProforma.value) {
     if (!base.some(item => /proforma/i.test(item) && item.includes(falta.split(':')[0]!))) base.push(falta)
