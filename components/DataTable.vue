@@ -4,7 +4,67 @@
     <!-- Sticky Top Section -->
     <div v-if="!showTopSection" class="sticky top-0 z-40 bg-[#f0f4f9] dark:bg-gray-900">
   <slot name="filters" />
-  <template v-if="!$slots.filters">
+  <!-- Modo "inline": buscador, filtros y contador en una sola barra (en vez del panel «Filtros») -->
+  <template v-if="!$slots.filters && filtersLayout === 'inline'">
+    <div
+      class="mb-3 flex flex-wrap items-center gap-3 rounded-2xl bg-default p-3 ring ring-default"
+      data-manual-capture="data-table-inline-filters"
+    >
+      <UInput
+        v-if="showPrimarySearch"
+        :model-value="primarySearchInternal"
+        :placeholder="primarySearchPlaceholder || translations.primarySearchPlaceholder"
+        class="min-w-48 flex-1"
+        icon="i-heroicons-magnifying-glass"
+        @update:model-value="onPrimarySearchChange"
+      />
+      <template v-if="showFilters">
+        <template v-for="filter in displayedFilterConfig" :key="filter.key">
+          <UInput
+            v-if="filter.type === 'date'"
+            type="date"
+            :model-value="filtersValue?.[filter.key] ?? ''"
+            :aria-label="filter.label"
+            :title="filter.label"
+            class="w-36"
+            @update:model-value="(value) => handleFilterChange(filter.key, value)"
+          />
+          <UInput
+            v-else-if="filter.type === 'number' || filter.type === 'text'"
+            :type="filter.type === 'number' ? 'number' : 'text'"
+            :model-value="filtersValue?.[filter.key] ?? ''"
+            :placeholder="filter.placeholder"
+            :aria-label="filter.label"
+            class="w-40"
+            @update:model-value="(value) => handleFilterChange(filter.key, value)"
+          />
+          <USelect
+            v-else
+            :model-value="(filtersValue && filtersValue[filter.key]) ?? (filter.options?.[0]?.value) ?? ''"
+            :items="filter.options"
+            value-key="value"
+            label-key="label"
+            :aria-label="filter.label"
+            :placeholder="filter.placeholder"
+            class="w-48"
+            :ui="filterSelectUi"
+            @update:model-value="(value) => handleFilterChange(filter.key, value)"
+          />
+        </template>
+        <UButton
+          v-if="hasActiveInlineFilters"
+          color="neutral"
+          variant="ghost"
+          icon="i-heroicons-x-mark"
+          :label="translations.clearFilters"
+          @click="handleClearFilters"
+        />
+      </template>
+      <slot name="actions" />
+      <span class="ml-auto whitespace-nowrap text-sm text-muted">{{ totalRecords }} {{ totalRecords === 1 && translations.resultados === 'resultados' ? 'resultado' : translations.resultados }}</span>
+    </div>
+  </template>
+  <template v-else-if="!$slots.filters">
     <div class="flex flex-col md:flex-row flex-wrap gap-4 p-0 md:p-4 " data-manual-capture="data-table-toolbar">
       <div class="w-full lg:w-full flex flex-col md:flex-row items-start md:items-center md:justify-between gap-1 md:gap-3 items-center">
         <PageHeader :title="displayedTitle" :subtitle="subtitle" :icon="icon" :hide-back-button="hideBackButton" @back="goBack">
@@ -588,6 +648,14 @@ const tableScrollStyle = computed(() => {
 // Emits
 const emit = defineEmits(['update:primarySearch', 'filter-change', 'update:filters', 'clear-filters', 'items-per-page-change', 'page-change', 'row-click', 'kanban-move'] )
 
+/** Hay algún filtro del modo inline con un valor distinto del «todos» por defecto. */
+const hasActiveInlineFilters = computed(() =>
+  Object.values(props.filtersValue || {}).some((value) => {
+    if (Array.isArray(value)) return value.length > 0
+    return value !== undefined && value !== null && value !== '' && value !== 'todos' && value !== 'all'
+  })
+)
+
 const filterSelectUi = {
   base: 'w-full text-left',
   value: 'text-left',
@@ -832,8 +900,14 @@ const applyTableMetaClasses = () => {
         if (!rowData) return
         row.querySelectorAll('td').forEach((td) => {
           const classes = tdClassFn?.({ original: rowData, index: rowIdx })
+          // Quita lo que se aplicó antes: Vue reutiliza las celdas y la clase de otra fila se quedaba pegada.
+          const previous = td.dataset.metaClass
+          if (previous) previous.split(' ').filter(Boolean).forEach((cls) => td.classList.remove(cls))
           if (classes && typeof classes === 'string') {
-            td.className = classes + ' ' + td.className
+            classes.split(' ').filter(Boolean).forEach((cls) => td.classList.add(cls))
+            td.dataset.metaClass = classes
+          } else {
+            delete td.dataset.metaClass
           }
         })
       })

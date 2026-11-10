@@ -1,0 +1,197 @@
+export interface ChinaOrganizationRef {
+  id: number
+  name: string
+  country: string
+}
+
+export interface ChinaOperationCost {
+  id?: number
+  name: string
+  amount: number
+  source_operation_id?: number | null
+}
+
+export interface ChinaOperationPaymentRef {
+  payment_id: number
+  code: string
+  amount: number
+  status: string
+}
+
+export interface ChinaCreditApplication {
+  id: number
+  amount: number
+  from_operation_id: number | null
+}
+
+/** Operación aprobada o borrador "Por aprobar" (is_draft). Todos los montos los calcula el backend. */
+export interface ChinaOperation {
+  id: number | null
+  is_draft: boolean
+  code: string | null
+  organization: ChinaOrganizationRef
+  issued_on: string
+  description: string
+  service_name: string
+  billing_type: string
+  variant_name?: string | null
+  container_id: number | null
+  cbm: number | null
+  rate?: number | null
+  amount?: number
+  fob?: number
+  freight?: number
+  packing_list_url?: string | null
+  costs?: ChinaOperationCost[]
+  transferred_to_operation_id?: number | null
+  transferred_to_code?: string | null
+  payments?: ChinaOperationPaymentRef[]
+  credits?: ChinaCreditApplication[]
+  status: string
+  partner_status?: string
+  service_amount?: number
+  extras_amount?: number
+  total: number
+  declared?: number
+  confirmed?: number
+  in_confirmation?: number
+  received?: number
+  received_rmb?: number
+  credit_applied?: number
+  shortfall_included?: number
+  pending?: number
+  balance_due?: number
+  difference?: number | null
+  transferred?: boolean
+}
+
+export interface ChinaPaymentAllocation {
+  operation_id: number
+  code: string
+  amount: number
+}
+
+export interface ChinaPayment {
+  id: number
+  code: string
+  organization: ChinaOrganizationRef
+  paid_on: string
+  status: string
+  registered_by: string
+  amount_sent: number
+  amount_received: number | null
+  allocated: number
+  shortfall: number
+  credit_generated: number
+  credit_used: number
+  shortfall_operation_id: number | null
+  exchange_rate: number | null
+  yuan_amount: number | null
+  receipt_url: string | null
+  receipt_name: string | null
+  cash_voucher_url: string | null
+  cash_voucher_name: string | null
+  confirmed_at: string | null
+  cashed_at: string | null
+  allocations: ChinaPaymentAllocation[]
+}
+
+export interface ChinaSummary {
+  operations_count: number
+  services_amount: number
+  receivable: number
+  cashed_usd: number
+  cashed_rmb: number
+  total_billed: number
+  paid: number
+  in_confirmation: number
+  balance_due: number
+  credit_balance: number
+}
+
+export interface ChinaCredit {
+  organization_id: number
+  name: string
+  balance: number
+}
+
+export interface ChinaOrganizationOption {
+  id: number
+  name: string
+  country: string
+  country_id: number | null
+}
+
+export interface ChinaPagination {
+  current_page: number
+  last_page: number
+  per_page: number
+  total: number
+}
+
+export type ChinaCounts = Record<string, number>
+
+export interface ChinaOperationFormPayload {
+  organization_id: number
+  container_id: number | null
+  service_name: string
+  billing_type: string
+  variant_name: string
+  issued_on: string
+  description: string
+  cbm: number | null
+  rate: number | null
+  amount: number | null
+  fob: number | null
+  freight: number | null
+  costs: ChinaOperationCost[]
+  packing_list: File | null
+}
+
+export interface ChinaPaymentFormPayload {
+  organization_id?: number
+  paid_on: string
+  amount_sent: number
+  allocations: { operation_id: number; amount: number }[]
+  receipt: File | null
+}
+
+export interface ChinaBankAccount {
+  company: string
+  beneficiary: string
+  intermediary_bank: string
+  payer_bank: string
+  account_number: string
+}
+
+/** Factura o balance ya emitido (PDF generado por el backend). */
+export interface ChinaDocument {
+  id: number
+  type: string
+  issued_on: string
+  created_at: string | null
+  file_name: string
+  url: string
+  generated_by: string | null
+  total: number | null
+}
+
+/** Qué documento se quiere ver o emitir. */
+export interface ChinaDocumentTarget {
+  kind: 'invoice' | 'balance'
+  mode: 'china' | 'partner'
+  title: string
+  operationId?: number
+  organizationId?: number
+}
+
+export interface ChinaListFilters {
+  status?: string
+  search?: string
+  country_id?: number | string
+  organization_id?: number | string
+  from?: string
+  to?: string
+  page?: number
+  per_page?: number
+}

@@ -57,6 +57,8 @@ export interface DataTableKanbanColumn {
 }
 
 export interface DataTableProps {
+  /** 'panel' (por defecto): botón «Filtros» con panel. 'inline': buscador y filtros en una barra, como en las maquetas de China. */
+  filtersLayout?: 'panel' | 'inline'
   // Basic props
   title?: string|null
   subtitle?: string|null
