@@ -7,7 +7,7 @@ import type { ChinaCounts, ChinaOperation, ChinaPagination, ChinaPayment, ChinaS
 const plural = (count: number, one: string, many: string): string => `${count} ${count === 1 ? one : many}`
 
 const emptySummary = (): ChinaSummary => ({
-  operations_count: 0, services_amount: 0, receivable: 0, cashed_usd: 0, cashed_rmb: 0,
+  operations_count: 0, services_amount: 0, receivable: 0, income_usd: 0, income_rmb: 0,
   total_billed: 0, paid: 0, in_confirmation: 0, balance_due: 0, credit_balance: 0
 })
 
@@ -24,14 +24,14 @@ export function usePartnerBilling() {
   const loading = ref(false)
 
   const cards = computed(() => [
-    { label: 'Total facturado', value: usd(summary.value.total_billed), sub: plural(counts.value.all ?? 0, 'consolidado cerrado', 'consolidados cerrados'), tone: '' },
+    { label: 'Total facturado', value: usd(summary.value.total_billed), sub: plural(counts.value.all ?? 0, 'consolidado cerrado', 'consolidados cerrados'), tone: 'text-highlighted' },
     { label: 'Pagado', value: usd(summary.value.paid), sub: 'Confirmado por Pro Business', tone: 'text-success' },
-    { label: 'En confirmación', value: usd(summary.value.in_confirmation), sub: 'Pagos enviados por confirmar', tone: 'text-info' },
-    { label: 'Saldo por pagar', value: usd(summary.value.balance_due), sub: plural(counts.value.due ?? 0, 'factura pendiente', 'facturas pendientes'), tone: 'text-error' },
+    { label: 'En confirmación', value: usd(summary.value.in_confirmation), sub: 'Pagos enviados por confirmar', tone: 'text-[#1d4f91]' },
+    { label: 'Saldo por pagar', value: usd(summary.value.balance_due), sub: plural(counts.value.due ?? 0, 'factura pendiente', 'facturas pendientes'), tone: 'text-primary' },
     {
       label: 'Saldo a favor',
       value: usd(summary.value.credit_balance),
-      sub: summary.value.credit_balance > 0 ? 'Se aplicará en tu próxima factura' : '',
+      sub: summary.value.credit_balance > 0 ? 'Se aplicará en tu próxima factura' : 'Sin saldo a favor',
       tone: 'text-success'
     }
   ])

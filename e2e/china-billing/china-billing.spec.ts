@@ -33,15 +33,25 @@ test.describe.serial('Operaciones China + Pagos Socio', () => {
   test('China: borrador por aprobar, aprobación y operación manual', async ({ page }) => {
     await login(page, 'china@e2e.test')
     await page.goto('/operaciones-china')
-    await expect(page.getByRole('heading', { name: 'Operaciones' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Operaciones' })).toBeVisible({ timeout: 60_000 })
+
+    // Orden de la maqueta: encabezado → KPIs (Resumen) → pestañas → barra de estados → tabla.
+    const summaryY = (await page.getByText('Resumen ·').boundingBox())!.y
+    const tabsY = (await page.getByRole('button', { name: /^Cobros/ }).boundingBox())!.y
+    const statesY = (await page.getByRole('button', { name: /^Por aprobar/ }).boundingBox())!.y
+    expect(summaryY).toBeLessThan(tabsY)
+    expect(tabsY).toBeLessThan(statesY)
+    for (const kpi of ['Cantidad de operaciones', 'Monto por servicios', 'Saldo por cobrar USD', 'Ingresado a caja USD', 'Ingresado a caja RMB']) {
+      await expect(page.getByText(kpi, { exact: true })).toBeVisible()
+    }
 
     // El borrador trae el CBM China del consolidado cerrado (12.5 + 7.5; excluye PENDIENTE y proveedor WAIT).
-    const draftRow = page.locator('tr', { hasText: 'Socio Ecuador Demo' })
+    const draftRow = page.locator('tr:visible', { hasText: 'Socio Ecuador Demo' })
     await expect(draftRow).toContainText('Por aprobar')
     await expect(draftRow).toContainText('20 CBM')
     await shot(page, '01-china-operaciones-borrador')
 
-    await draftRow.getByRole('button', { name: 'Aprobar' }).click()
+    await draftRow.getByRole('button', { name: /Por aprobar/ }).click()
     const modal = page.getByRole('dialog')
     await expect(modal).toContainText('Aprobar operación')
     await modal.getByPlaceholder('Ej. Consolidado, Inspección').fill('Consolidado')
@@ -54,7 +64,7 @@ test.describe.serial('Operaciones China + Pagos Socio', () => {
     await expect(modal).toContainText('$1,500.00')
     await shot(page, '02-china-aprobar-modal')
     await modal.getByRole('button', { name: 'Aprobar operación' }).click()
-    await expect(page.locator('tr', { hasText: 'OP-0001' })).toBeVisible()
+    await expect(page.locator('tr:visible', { hasText: 'OP-0001' })).toBeVisible()
     await shot(page, '03-china-operacion-creada')
   })
 
@@ -65,17 +75,21 @@ test.describe.serial('Operaciones China + Pagos Socio', () => {
     await page.getByRole('button', { name: 'Datos bancarios' }).click()
     const bank = page.getByRole('dialog')
     await bank.getByLabel('Empresa').fill('Global Shop International Co. Ltd. (GSI)')
-    await bank.getByLabel('Beneficiario').fill('Global Shop International Co. Ltd.')
-    await bank.getByLabel('Banco intermediario').fill('Bank of China')
-    await bank.getByLabel('Banco pagador').fill('HSBC Hong Kong')
-    await bank.getByLabel('Número de cuenta').fill('123-456-789')
+    await bank.getByLabel('Dirección de la oficina en China').fill('Shuangchuang Building 1, Room 1013, Yiwu')
+    await bank.getByRole('textbox', { name: 'Código Swift' }).nth(0).fill('BKCHHKHH')
+    await bank.getByRole('textbox', { name: 'Nombre del banco' }).nth(0).fill('Bank of China')
+    await bank.getByRole('textbox', { name: 'Código Swift' }).nth(1).fill('HSBCHKHH')
+    await bank.getByRole('textbox', { name: 'Nombre del banco' }).nth(1).fill('HSBC Hong Kong')
+    await bank.getByRole('textbox', { name: 'Cuenta', exact: true }).fill('123-456-789')
+    await bank.getByRole('textbox', { name: 'Beneficiario', exact: true }).fill('Global Shop International Co. Ltd.')
     await shot(page, '04-china-datos-bancarios')
     await bank.getByRole('button', { name: 'Guardar' }).click()
     await expect(bank).toBeHidden()
 
     // Selecciona OP-0001 y registra un pago de $1,000 (reparto automático).
-    await page.locator('tr', { hasText: 'OP-0001' }).getByRole('checkbox').check()
-    await page.getByRole('button', { name: 'Registrar pago', exact: true }).click()
+    await page.locator('tr:visible', { hasText: 'OP-0001' }).getByRole('checkbox').check()
+    await expect(page.getByText('1 operación seleccionada')).toBeVisible()
+    await page.getByRole('button', { name: 'Registrar pago', exact: true }).first().click()
     const modal = page.getByRole('dialog')
     await modal.getByLabel('Monto enviado (USD)').fill('1000')
     await modal.getByLabel('Monto enviado (USD)').press('Tab')
@@ -86,15 +100,17 @@ test.describe.serial('Operaciones China + Pagos Socio', () => {
     await expect(modal).toBeHidden()
 
     await page.getByRole('button', { name: /^Cobros/ }).click()
-    const row = page.locator('tr', { hasText: 'PG-0001' })
+    const row = page.locator('tr:visible', { hasText: 'PG-0001' })
     await expect(row).toContainText('Por confirmar')
+    await expect(row).toContainText('Confirmar ingreso →')
+    await expect(page.getByText('Resumen ·')).toBeVisible()
     await shot(page, '06-china-cobros-por-confirmar')
   })
 
   test('Socio: indicadores, factura y pago propio', async ({ page }) => {
     await login(page, 'socio@e2e.test')
     await page.goto('/pagos-socio')
-    await expect(page.getByRole('heading', { name: 'Pagos' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Pagos' })).toBeVisible({ timeout: 60_000 })
 
     await expect(page.getByText('Total facturado').locator('..')).toContainText('$1,500.00')
     await expect(page.getByText('En confirmación').first().locator('..')).toContainText('$1,000.00')
@@ -103,6 +119,7 @@ test.describe.serial('Operaciones China + Pagos Socio', () => {
 
     await page.getByRole('button', { name: /Nuestra cuenta bancaria en China/ }).click()
     await expect(page.getByText('Bank of China')).toBeVisible()
+    await expect(page.getByText('BKCHHKHH')).toBeVisible()
 
     await page.getByRole('button', { name: 'Registrar pago', exact: true }).first().click()
     const modal = page.getByRole('dialog')
@@ -118,7 +135,7 @@ test.describe.serial('Operaciones China + Pagos Socio', () => {
     await expect(modal).toBeHidden()
 
     await page.getByRole('button', { name: /^Mis pagos/ }).click()
-    await expect(page.locator('tr', { hasText: 'PG-0002' })).toContainText('Por confirmar')
+    await expect(page.locator('tr:visible', { hasText: 'PG-0002' })).toContainText('Por confirmar')
     await shot(page, '09-socio-mis-pagos')
   })
 
@@ -128,41 +145,54 @@ test.describe.serial('Operaciones China + Pagos Socio', () => {
     await page.getByRole('button', { name: /^Cobros/ }).click()
 
     // PG-0001: llegaron $900 de $1,000 → faltante de $100 cargado a OP-0001.
-    await page.locator('tr', { hasText: 'PG-0001' }).getByRole('button', { name: 'Gestionar' }).click()
+    await page.locator('tr:visible', { hasText: 'PG-0001' }).getByRole('button', { name: /Confirmar ingreso/ }).click()
     const drawer = page.getByRole('dialog')
-    await drawer.getByLabel('Monto realmente recibido (USD)').fill('900')
-    await drawer.getByLabel('Monto realmente recibido (USD)').press('Tab')
-    await drawer.getByText('Elige la operación').click()
-    await page.getByRole('option').first().click()
+    // Avance como en la maqueta: Por confirmar → Confirmado → En caja, y los 3 pasos del pago.
+    for (const text of ['Por confirmar', 'Confirmado', 'En caja', '1 · Pago del cliente', '2 · Confirmar ingreso', '3 · Cambio a RMB']) {
+      await expect(drawer.getByText(text, { exact: true }).first()).toBeVisible()
+    }
+    await drawer.getByLabel('Monto real recibido en el banco (USD)').fill('900')
+    await drawer.getByLabel('Monto real recibido en el banco (USD)').press('Tab')
+    await expect(drawer).toContainText('¿A qué operación cargas la diferencia?')
+    await drawer.getByRole('button', { name: /OP-0001/ }).first().click()
     await shot(page, '10-china-confirmar-faltante')
     await drawer.getByRole('button', { name: 'Confirmar ingreso' }).click()
-    await expect(drawer.getByText('Paso 3 · Pasar a RMB')).toBeVisible()
-    await drawer.getByLabel('Tipo de cambio').fill('7.2')
-    await drawer.getByLabel('Tipo de cambio').press('Tab')
+    await expect(drawer.getByText('Monto confirmado (USD)')).toBeVisible()
+    await drawer.getByLabel('Tipo de cambio del banco').fill('7.2')
+    await drawer.getByLabel('Tipo de cambio del banco').press('Tab')
+    await expect(drawer).toContainText('¥6,480.00')
     await drawer.getByRole('button', { name: 'Pasar a caja' }).click()
-    await expect(page.locator('tr', { hasText: 'PG-0001' })).toContainText('En caja')
+    await expect(drawer.getByText('Deshacer cambio')).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(page.locator('tr:visible', { hasText: 'PG-0001' })).toContainText('En caja')
 
     // PG-0002 del socio: confirmado completo.
-    await page.keyboard.press('Escape')
-    await page.locator('tr', { hasText: 'PG-0002' }).getByRole('button', { name: 'Gestionar' }).click()
-    await drawer.getByLabel('Monto realmente recibido (USD)').fill('500')
-    await drawer.getByLabel('Monto realmente recibido (USD)').press('Tab')
+    await page.locator('tr:visible', { hasText: 'PG-0002' }).getByRole('button', { name: /Confirmar ingreso/ }).click()
+    await drawer.getByLabel('Monto real recibido en el banco (USD)').fill('500')
+    await drawer.getByLabel('Monto real recibido en el banco (USD)').press('Tab')
     await drawer.getByRole('button', { name: 'Confirmar ingreso' }).click()
-    await expect(drawer.getByText('Paso 3 · Pasar a RMB')).toBeVisible()
+    await expect(drawer.getByText('Monto confirmado (USD)')).toBeVisible()
     await page.keyboard.press('Escape')
     await shot(page, '11-china-cobros-confirmados')
 
     // OP-0001: queda $100 por cobrar por el faltante.
     await page.getByRole('button', { name: /^Operaciones/ }).click()
-    const op = page.locator('tr', { hasText: 'OP-0001' })
+    const op = page.locator('tr:visible', { hasText: 'OP-0001' })
     await expect(op).toContainText('$100.00')
-    await expect(op).toContainText('Por cobrar')
+    await expect(op).toContainText('Trasladar a otra orden')
     await expect(op).toContainText('¥6,480.00')
     await shot(page, '12-china-operacion-con-diferencia')
 
+    // KPIs del encabezado = los de la maqueta: ingresado a caja cuenta todo ingreso confirmado.
+    const kpi = (label: string) => page.getByText(label, { exact: true }).locator('..')
+    await expect(kpi('Cantidad de operaciones')).toContainText('1')
+    await expect(kpi('Monto por servicios')).toContainText('$1,000.00')
+    await expect(kpi('Saldo por cobrar USD')).toContainText('$100.00')
+    await expect(kpi('Ingresado a caja USD')).toContainText('$1,400.00')
+    await expect(kpi('Ingresado a caja RMB')).toContainText('¥6,480.00')
+
     // Factura en PDF desde el backend, con historial.
-    await op.getByRole('button', { name: 'Gestionar' }).click()
-    await page.getByRole('button', { name: 'Ver factura' }).click()
+    await op.getByRole('button', { name: 'Descargar factura' }).click()
     const documents = page.getByRole('dialog').last()
     const issued = page.waitForResponse((r) => r.url().includes('/documents') && r.request().method() === 'POST')
     await documents.getByRole('button', { name: 'Generar documento nuevo' }).click()

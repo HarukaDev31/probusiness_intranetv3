@@ -1,59 +1,69 @@
 <template>
   <div>
-    <div class="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-      <UCard v-for="card in cards" :key="card.label" variant="subtle">
-        <p class="text-xs uppercase tracking-wider text-muted">{{ card.label }}</p>
-        <USkeleton v-if="loading && !invoices.length" class="mt-2 h-8 w-28" />
-        <p v-else class="mt-1 text-2xl font-bold" :class="card.tone || 'text-highlighted'">{{ card.value }}</p>
-        <p v-if="card.sub" class="text-xs text-muted">{{ card.sub }}</p>
-      </UCard>
+    <div class="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div
+        v-for="card in cards"
+        :key="card.label"
+        class="flex flex-col gap-0.5 rounded-2xl bg-default px-5 py-5 shadow-[0_6px_20px_rgba(30,42,59,.06)]"
+      >
+        <span class="text-xs uppercase tracking-[0.08em] text-muted">{{ card.label }}</span>
+        <USkeleton v-if="loading && !invoices.length" class="mt-1 h-8 w-28" />
+        <span v-else class="text-[28px] font-bold leading-tight" :class="card.tone || 'text-highlighted'">{{ card.value }}</span>
+        <span v-if="card.sub" class="text-[13px] text-muted">{{ card.sub }}</span>
+      </div>
     </div>
 
     <SupplierPaymentTabs v-model="tab" :items="tabs" class="mb-4" />
 
-    <template v-if="tab === PARTNER_TAB.INVOICES">
-      <div class="mb-3 flex flex-wrap items-center gap-3 rounded-2xl bg-default p-3 ring ring-default">
-        <div class="inline-flex rounded-lg bg-elevated p-1">
+    <DataTable
+      v-if="tab === PARTNER_TAB.INVOICES"
+      sticky-last-column
+      keep-spanish-headers
+      filters-layout="inline"
+      :fill-viewport="false"
+      :data="invoices"
+      :columns="invoiceColumns"
+      :loading="loading"
+      :current-page="invoicePagination.current_page"
+      :total-pages="invoicePagination.last_page"
+      :total-records="invoicePagination.total"
+      :items-per-page="invoicePagination.per_page"
+      :show-primary-search="false"
+      :show-filters="false"
+      :show-export="false"
+      empty-state-message="No hay facturas en este filtro."
+      @page-change="onInvoicePage"
+      @items-per-page-change="onInvoicePageSize"
+    >
+      <template #actions>
+        <div class="inline-flex rounded-xl bg-[#eef1f6] p-1">
           <button
             v-for="item in filters"
             :key="item.key"
             type="button"
-            class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
-            :class="filter === item.key ? 'bg-default text-highlighted shadow-sm' : 'text-muted hover:text-highlighted'"
+            class="rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors"
+            :class="filter === item.key ? 'bg-default text-highlighted shadow-sm' : 'text-toned hover:text-highlighted'"
             @click="changeFilter(item.key)"
           >
             {{ item.label }}
           </button>
         </div>
         <span class="flex items-center gap-1.5 text-xs text-muted"><span class="size-2 rounded-full bg-success" />Pago confirmado</span>
-        <span class="flex items-center gap-1.5 text-xs text-muted"><span class="size-2 rounded-full bg-neutral" />Enviado, por confirmar</span>
-        <UButton v-if="selectedIds.length" class="ml-auto" color="primary" icon="i-heroicons-banknotes" @click="openPayment(null)">
-          Pagar seleccionadas ({{ selectedIds.length }} · {{ usd(selectedTotal) }})
-        </UButton>
-      </div>
-      <DataTable
-        sticky-last-column
-        keep-spanish-headers
-        :data="invoices"
-        :columns="invoiceColumns"
-        :loading="loading"
-        :current-page="invoicePagination.current_page"
-        :total-pages="invoicePagination.last_page"
-        :total-records="invoicePagination.total"
-        :items-per-page="invoicePagination.per_page"
-        :show-primary-search="false"
-        :show-filters="false"
-        :show-export="false"
-        empty-state-message="No tienes facturas en este filtro."
-        @page-change="onInvoicePage"
-        @items-per-page-change="onInvoicePageSize"
-      />
-    </template>
+        <span class="flex items-center gap-1.5 text-xs text-muted"><span class="size-2 rounded-full bg-[#1d4f91]" />Enviado, por confirmar</span>
+        <span class="flex-1" />
+        <template v-if="selectedIds.length">
+          <span class="text-sm font-semibold text-highlighted">{{ selectedIds.length }} {{ selectedIds.length === 1 ? 'factura' : 'facturas' }} · {{ usd(selectedTotal) }}</span>
+          <UButton color="primary" @click="openPayment(null)">Pagar selección</UButton>
+        </template>
+      </template>
+    </DataTable>
 
     <DataTable
       v-else
       sticky-last-column
       keep-spanish-headers
+      filters-layout="inline"
+      :fill-viewport="false"
       :data="payments"
       :columns="paymentColumns"
       :loading="loading"
@@ -102,13 +112,13 @@ import ChinaPaymentForm from '~/components/china-billing/ChinaPaymentForm.vue'
 import SupplierPaymentTabs from '~/components/pago-proveedor/SupplierPaymentTabs.vue'
 import VoucherViewerModal from '~/components/pago-proveedor/VoucherViewerModal.vue'
 import {
-  CHINA_STATUS, CHINA_STATUS_COLOR, CHINA_STATUS_LABEL, PARTNER_STATUS_COLOR, PARTNER_STATUS_LABEL, PARTNER_TAB
+  CHINA_STATUS, CHINA_STATUS_LABEL, CHINA_STATUS_PILL, PARTNER_STATUS_LABEL, PARTNER_STATUS_PILL, PARTNER_TAB
 } from '~/constants/chinaBilling'
 import { usePartnerBilling } from '~/composables/china-billing/usePartnerBilling'
 import { useModal } from '~/composables/commons/useModal'
 import { ChinaBillingService } from '~/services/chinaBillingService'
 import type { ChinaDocumentTarget, ChinaOperation, ChinaPayment } from '~/types/china-billing'
-import { UBadge, UButton, UCheckbox } from '#components'
+import { UButton, UCheckbox, UIcon } from '#components'
 
 const {
   filter, invoices, payments, invoicePagination, paymentPagination, loading, cards, filters,
@@ -152,65 +162,71 @@ function differenceCell(row: ChinaOperation) {
     : h('span', { class: 'font-semibold text-success' }, `+${usd(Math.abs(row.difference))} a favor`)
 }
 
+const right = { th: 'text-right', td: 'text-right' }
+const pill = (label: string, classes: string) => h('span', { class: `inline-block whitespace-nowrap rounded-full px-3 py-1 text-[13px] font-medium ${classes}` }, label)
+
 const invoiceColumns: TableColumn<ChinaOperation>[] = [
   { id: 'select', header: '', cell: ({ row }) => h(UCheckbox, {
     modelValue: selectedIds.value.includes(row.original.id!),
     disabled: (row.original.pending || 0) <= 0,
     'onUpdate:modelValue': (value: boolean | 'indeterminate') => toggle(row.original, value === true)
   }) },
-  { accessorKey: 'code', header: 'N. OP', cell: ({ row }) => h('span', { class: 'font-bold' }, row.original.code) },
+  { accessorKey: 'code', header: 'N. OP', cell: ({ row }) => h('span', { class: 'font-semibold' }, row.original.code) },
   { accessorKey: 'issued_on', header: 'Fecha', cell: ({ row }) => h('span', { class: 'whitespace-nowrap' }, shortDate(row.original.issued_on)) },
   { accessorKey: 'description', header: 'Consolidado', cell: ({ row }) => h('div', { class: 'flex min-w-44 flex-col' }, [
     h('span', { class: 'font-semibold' }, row.original.description),
     h('span', { class: 'text-xs text-muted' }, `${row.original.service_name} · ${row.original.organization.country || '—'}`)
   ]) },
-  { id: 'cbm', header: 'CBM', cell: ({ row }) => h('span', row.original.cbm ? String(row.original.cbm) : '—') },
-  { accessorKey: 'total', header: 'Monto', cell: ({ row }) => h('span', { class: 'font-semibold' }, usd(row.original.total)) },
-  { accessorKey: 'confirmed', header: 'Pagado', cell: ({ row }) => h('div', { class: 'flex flex-col' }, [
-    h('span', { class: row.original.confirmed ? 'font-semibold text-success' : 'text-muted' }, row.original.confirmed ? usd(row.original.confirmed) : '—'),
-    row.original.in_confirmation ? h('span', { class: 'text-xs text-muted' }, usd(row.original.in_confirmation)) : null
-  ]) },
-  { id: 'difference', header: 'Diferencia USD', cell: ({ row }) => differenceCell(row.original) },
-  { accessorKey: 'balance_due', header: 'Saldo', cell: ({ row }) => (row.original.balance_due || 0) > 0
+  { id: 'cbm', header: 'CBM', meta: { class: right }, cell: ({ row }) => h('span', row.original.cbm ? String(row.original.cbm) : '—') },
+  { accessorKey: 'total', header: 'Monto', meta: { class: right }, cell: ({ row }) => h('span', { class: 'font-semibold' }, usd(row.original.total)) },
+  { accessorKey: 'confirmed', header: 'Pagado', meta: { class: right }, cell: ({ row }) => row.original.confirmed
+    ? h('span', { class: 'font-semibold text-success', title: 'Confirmado por Pro Business China' }, usd(row.original.confirmed))
+    : row.original.in_confirmation
+      ? h('span', { class: 'font-semibold text-[#1d4f91]', title: 'Enviado · por confirmar' }, usd(row.original.in_confirmation))
+      : h('span', { class: 'text-muted' }, '—') },
+  { id: 'difference', header: 'Diferencia USD', meta: { class: right }, cell: ({ row }) => differenceCell(row.original) },
+  { accessorKey: 'balance_due', header: 'Saldo', meta: { class: right }, cell: ({ row }) => (row.original.balance_due || 0) > 0
     ? h('span', { class: 'font-semibold text-error' }, usd(row.original.balance_due))
     : h('span', { class: 'text-muted' }, '—') },
-  { id: 'status', header: 'Estado', cell: ({ row }) => h(UBadge, {
-    color: PARTNER_STATUS_COLOR[row.original.partner_status || 'pending'], variant: 'soft', label: PARTNER_STATUS_LABEL[row.original.partner_status || 'pending']
-  }) },
-  { id: 'actions', header: '', cell: ({ row }) => h('div', { class: 'flex gap-1' }, [
-    h(UButton, { size: 'sm', color: 'neutral', variant: 'outline', icon: 'i-heroicons-eye', 'aria-label': 'Ver factura', onClick: () => { documentTarget.value = { kind: 'invoice', mode: 'partner', title: `Factura ${row.original.code}`, operationId: row.original.id! } } }),
+  { id: 'status', header: 'Estado', cell: ({ row }) => pill(
+    PARTNER_STATUS_LABEL[row.original.partner_status || 'pending'],
+    PARTNER_STATUS_PILL[row.original.partner_status || 'pending']
+  ) },
+  { id: 'actions', header: 'Acciones', cell: ({ row }) => h('div', { class: 'flex items-center gap-1' }, [
+    h(UButton, { size: 'sm', color: 'neutral', variant: 'ghost', icon: 'i-heroicons-eye', 'aria-label': 'Ver factura', title: 'Ver factura', onClick: () => { documentTarget.value = { kind: 'invoice', mode: 'partner', title: `Factura ${row.original.code}`, operationId: row.original.id! } } }),
     (row.original.pending || 0) > 0
-      ? h(UButton, { size: 'sm', color: 'primary', variant: 'soft', onClick: () => openPayment(row.original.id) }, () => 'Pagar')
+      ? h(UButton, { size: 'sm', color: 'neutral', variant: 'outline', onClick: () => openPayment(row.original.id) }, () => 'Pagar')
       : null
   ]) }
 ]
 
 const paymentColumns: TableColumn<ChinaPayment>[] = [
-  { accessorKey: 'paid_on', header: 'Fecha', cell: ({ row }) => h('div', { class: 'flex flex-col' }, [
-    h('span', { class: 'font-semibold' }, row.original.code),
-    h('span', { class: 'text-xs text-muted' }, shortDate(row.original.paid_on))
+  { accessorKey: 'code', header: 'N° pago', cell: ({ row }) => h('span', { class: 'font-semibold' }, row.original.code) },
+  { accessorKey: 'paid_on', header: 'Fecha', cell: ({ row }) => h('span', { class: 'whitespace-nowrap' }, shortDate(row.original.paid_on)) },
+  { id: 'invoices', header: 'Aplicado a', cell: ({ row }) => h('div', { class: 'flex min-w-32 flex-wrap gap-1.5' }, (row.original.allocations.length ? row.original.allocations.map((a) => a.code) : ['Sin asignar'])
+    .map((code) => h('span', { class: 'rounded-md bg-[#eef1f6] px-2 py-0.5 text-xs text-toned' }, code))) },
+  { accessorKey: 'amount_sent', header: 'Enviado', meta: { class: right }, cell: ({ row }) => h('span', { class: 'font-semibold' }, usd(row.original.amount_sent)) },
+  { accessorKey: 'amount_received', header: 'Recibido', meta: { class: right }, cell: ({ row }) => h('div', { class: 'flex flex-col items-end' }, [
+    h('span', row.original.amount_received === null ? '—' : usd(row.original.amount_received)),
+    row.original.shortfall > 0 ? h('span', { class: 'text-xs text-error' }, `Llegaron ${usd(row.original.shortfall)} menos`) : null,
+    row.original.credit_generated > 0 ? h('span', { class: 'text-xs text-success' }, `${usd(row.original.credit_generated)} a favor`) : null
   ]) },
-  { id: 'invoices', header: 'Facturas aplicadas', cell: ({ row }) => h('span', { class: 'text-sm' }, row.original.allocations.map((a) => a.code).join(', ') || '—') },
-  { accessorKey: 'amount_sent', header: 'Enviado', cell: ({ row }) => h('span', { class: 'font-semibold' }, usd(row.original.amount_sent)) },
-  { accessorKey: 'amount_received', header: 'Recibido por Pro Business', cell: ({ row }) => h('span', row.original.amount_received === null ? '—' : usd(row.original.amount_received)) },
-  { id: 'difference', header: 'Diferencia', cell: ({ row }) => {
-    if (row.original.shortfall > 0) return h('span', { class: 'text-error' }, `Llegaron ${usd(row.original.shortfall)} menos`)
-    return h('span', { class: 'text-success' }, row.original.credit_generated > 0 ? `${usd(row.original.credit_generated)} a favor` : '—')
-  } },
   { id: 'receipt', header: 'Comprobante', cell: ({ row }) => row.original.receipt_url
-    ? h(UButton, { size: 'xs', color: 'neutral', variant: 'link', onClick: () => { viewer.value = { url: row.original.receipt_url!, name: row.original.receipt_name } } }, () => 'Ver')
-    : h('span', { class: 'text-muted' }, '—') },
-  { id: 'status', header: 'Estado', cell: ({ row }) => h(UBadge, {
-    color: CHINA_STATUS_COLOR[row.original.status === CHINA_STATUS.TO_CONFIRM ? CHINA_STATUS.TO_CONFIRM : CHINA_STATUS.CONFIRMED],
-    variant: 'soft',
-    label: row.original.status === CHINA_STATUS.TO_CONFIRM ? CHINA_STATUS_LABEL[CHINA_STATUS.TO_CONFIRM] : CHINA_STATUS_LABEL[CHINA_STATUS.CONFIRMED]
-  }) },
-  { id: 'actions', header: '', cell: ({ row }) => row.original.status === CHINA_STATUS.TO_CONFIRM
-    ? h('div', { class: 'flex gap-1' }, [
-      h(UButton, { size: 'sm', color: 'neutral', variant: 'outline', icon: 'i-heroicons-pencil-square', 'aria-label': 'Editar', onClick: () => openPayment(null, false, row.original) }),
-      h(UButton, { size: 'sm', color: 'error', variant: 'ghost', icon: 'i-heroicons-trash', 'aria-label': 'Anular', onClick: () => cancelPayment(row.original) })
+    ? h('button', { type: 'button', class: 'flex items-center gap-1.5 text-sm text-toned hover:text-primary', onClick: () => { viewer.value = { url: row.original.receipt_url!, name: row.original.receipt_name } } }, [
+      h(UIcon, { name: 'i-heroicons-document-text', class: 'size-4' }), row.original.receipt_name || 'Ver'
     ])
-    : null }
+    : h('span', { class: 'text-muted' }, '—') },
+  { id: 'status', header: 'Estado', cell: ({ row }) => {
+    const pending = row.original.status === CHINA_STATUS.TO_CONFIRM
+    const key = pending ? CHINA_STATUS.TO_CONFIRM : CHINA_STATUS.CONFIRMED
+    return h('div', { class: 'flex min-w-32 flex-col items-start gap-1.5' }, [
+      pill(CHINA_STATUS_LABEL[key], CHINA_STATUS_PILL[key]),
+      pending ? h('div', { class: 'flex gap-3 text-xs font-medium' }, [
+        h('button', { type: 'button', class: 'text-primary hover:underline', onClick: () => openPayment(null, false, row.original) }, 'Editar'),
+        h('button', { type: 'button', class: 'text-error hover:underline', onClick: () => cancelPayment(row.original) }, 'Anular envío')
+      ]) : null
+    ])
+  } }
 ]
 
 /** Pagar una factura, las seleccionadas, o registrar un pago libre. */

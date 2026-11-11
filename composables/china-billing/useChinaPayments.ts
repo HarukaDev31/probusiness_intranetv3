@@ -9,6 +9,8 @@ export function useChinaPayments() {
   const { showError } = useModal()
   const status = ref<string>(CHINA_STATUS.ALL)
   const search = ref('')
+  const from = ref('')
+  const to = ref('')
   const rows = ref<ChinaPayment[]>([])
   const counts = ref<ChinaCounts>({})
   const pagination = ref<ChinaPagination>({ current_page: 1, last_page: 1, per_page: 15, total: 0 })
@@ -29,6 +31,8 @@ export function useChinaPayments() {
       const response = await ChinaBillingService.listPayments({
         status: status.value,
         search: search.value.trim(),
+        from: from.value,
+        to: to.value,
         page: pagination.value.current_page,
         per_page: pagination.value.per_page
       })
@@ -53,5 +57,5 @@ export function useChinaPayments() {
     return reload()
   }
 
-  return { status, search, rows, counts, pagination, loading, states, load, reload, changeStatus }
+  return { status, search, from, to, rows, counts, pagination, loading, states, load, reload, changeStatus }
 }

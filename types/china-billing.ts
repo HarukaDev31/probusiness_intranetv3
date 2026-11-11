@@ -68,7 +68,10 @@ export interface ChinaOperation {
 export interface ChinaPaymentAllocation {
   operation_id: number
   code: string
+  label?: string
   amount: number
+  /** Lo que realmente cuenta para la operación (el faltante se descuenta de la elegida). */
+  real_amount?: number
 }
 
 export interface ChinaPayment {
@@ -81,6 +84,7 @@ export interface ChinaPayment {
   amount_sent: number
   amount_received: number | null
   allocated: number
+  unassigned?: number
   shortfall: number
   credit_generated: number
   credit_used: number
@@ -100,8 +104,8 @@ export interface ChinaSummary {
   operations_count: number
   services_amount: number
   receivable: number
-  cashed_usd: number
-  cashed_rmb: number
+  income_usd: number
+  income_rmb: number
   total_billed: number
   paid: number
   in_confirmation: number
@@ -158,10 +162,23 @@ export interface ChinaPaymentFormPayload {
 
 export interface ChinaBankAccount {
   company: string
+  company_address: string
   beneficiary: string
-  intermediary_bank: string
-  payer_bank: string
+  beneficiary_address: string
+  beneficiary_country: string
+  beneficiary_state: string
+  beneficiary_city: string
   account_number: string
+  intermediary_bank: string
+  intermediary_swift: string
+  intermediary_country: string
+  intermediary_state: string
+  intermediary_city: string
+  payer_bank: string
+  payer_swift: string
+  payer_country: string
+  payer_state: string
+  payer_city: string
 }
 
 /** Factura o balance ya emitido (PDF generado por el backend). */

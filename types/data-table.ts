@@ -28,6 +28,8 @@ export interface FilterConfig {
   options?: FilterOption[]
   /** Si true, permite seleccionar varias opciones (USelect multiple). */
   multiple?: boolean
+  /** Texto que se muestra tras el filtro en el modo inline (por ejemplo «a» entre «Desde» y «Hasta»). */
+  separatorAfter?: string
 }
 export interface HeaderCountryRow {
   country: string
@@ -59,6 +61,8 @@ export interface DataTableKanbanColumn {
 export interface DataTableProps {
   /** 'panel' (por defecto): botón «Filtros» con panel. 'inline': buscador y filtros en una barra, como en las maquetas de China. */
   filtersLayout?: 'panel' | 'inline'
+  /** Texto del contador de la barra inline (por ejemplo «4 de 12»). Por defecto «N resultados». */
+  inlineCountText?: string
   // Basic props
   title?: string|null
   subtitle?: string|null

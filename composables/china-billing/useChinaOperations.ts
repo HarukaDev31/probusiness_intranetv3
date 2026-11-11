@@ -7,7 +7,7 @@ import type {
 } from '~/types/china-billing'
 
 const emptySummary = (): ChinaSummary => ({
-  operations_count: 0, services_amount: 0, receivable: 0, cashed_usd: 0, cashed_rmb: 0,
+  operations_count: 0, services_amount: 0, receivable: 0, income_usd: 0, income_rmb: 0,
   total_billed: 0, paid: 0, in_confirmation: 0, balance_due: 0, credit_balance: 0
 })
 
@@ -35,14 +35,6 @@ export function useChinaOperations() {
     })
     return [...seen].map(([value, label]) => ({ value: String(value), label }))
   })
-
-  const cards = computed(() => [
-    { label: 'Cantidad de operaciones', value: String(summary.value.operations_count), sub: '', tone: '' },
-    { label: 'Monto por servicios', value: usd(summary.value.services_amount), sub: '', tone: 'text-success' },
-    { label: 'Saldo por cobrar USD', value: usd(summary.value.receivable), sub: '', tone: 'text-error' },
-    { label: 'Ingresado a caja USD', value: usd(summary.value.cashed_usd), sub: '', tone: '' },
-    { label: 'Ingresado a caja RMB', value: rmb(summary.value.cashed_rmb), sub: '', tone: '' }
-  ])
 
   const states = computed(() => [
     CHINA_STATUS.ALL, CHINA_STATUS.DRAFT, CHINA_STATUS.PENDING, CHINA_STATUS.TO_CONFIRM, CHINA_STATUS.CONFIRMED, CHINA_STATUS.IN_CASH
@@ -92,6 +84,6 @@ export function useChinaOperations() {
 
   return {
     status, search, countryId, from, to, rows, counts, summary, credits, organizations, countries,
-    pagination, loading, cards, states, load, reload, changeStatus
+    pagination, loading, states, load, reload, changeStatus
   }
 }

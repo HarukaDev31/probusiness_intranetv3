@@ -1,20 +1,21 @@
 <template>
-  <div ref="componentRootRef" class="w-full min-w-0 max-w-full" data-manual-capture="data-table">
+  <div ref="componentRootRef" class="w-full min-w-0 max-w-full" :class="filtersLayout === 'inline' ? 'overflow-hidden rounded-2xl bg-default shadow-[0_6px_20px_rgba(30,42,59,.06)]' : ''" data-manual-capture="data-table">
 
     <!-- Sticky Top Section -->
-    <div v-if="!showTopSection" class="sticky top-0 z-40 bg-[#f0f4f9] dark:bg-gray-900">
+    <div v-if="!showTopSection" class="sticky top-0 z-40" :class="filtersLayout === 'inline' ? 'bg-default' : 'bg-[#f0f4f9] dark:bg-gray-900'">
   <slot name="filters" />
   <!-- Modo "inline": buscador, filtros y contador en una sola barra (en vez del panel «Filtros») -->
   <template v-if="!$slots.filters && filtersLayout === 'inline'">
     <div
-      class="mb-3 flex flex-wrap items-center gap-3 rounded-2xl bg-default p-3 ring ring-default"
+      v-if="showPrimarySearch || showFilters || $slots.actions || inlineCountText"
+      class="flex flex-wrap items-center gap-3 border-b border-default p-4"
       data-manual-capture="data-table-inline-filters"
     >
       <UInput
         v-if="showPrimarySearch"
         :model-value="primarySearchInternal"
         :placeholder="primarySearchPlaceholder || translations.primarySearchPlaceholder"
-        class="min-w-48 flex-1"
+        class="min-w-60 flex-1"
         icon="i-heroicons-magnifying-glass"
         @update:model-value="onPrimarySearchChange"
       />
@@ -46,23 +47,24 @@
             label-key="label"
             :aria-label="filter.label"
             :placeholder="filter.placeholder"
-            class="w-48"
+            class="w-52"
             :ui="filterSelectUi"
             @update:model-value="(value) => handleFilterChange(filter.key, value)"
           />
+          <span v-if="filter.type === 'date' && filter.separatorAfter" class="-mx-1 text-sm text-muted">{{ filter.separatorAfter }}</span>
         </template>
         <UButton
           v-if="hasActiveInlineFilters"
-          color="neutral"
-          variant="ghost"
-          icon="i-heroicons-x-mark"
-          :label="translations.clearFilters"
+          color="primary"
+          variant="link"
+          label="Limpiar"
           @click="handleClearFilters"
         />
       </template>
       <slot name="actions" />
-      <span class="ml-auto whitespace-nowrap text-sm text-muted">{{ totalRecords }} {{ totalRecords === 1 && translations.resultados === 'resultados' ? 'resultado' : translations.resultados }}</span>
+      <span v-if="showPrimarySearch || showFilters || inlineCountText" class="ml-auto whitespace-nowrap text-sm text-muted">{{ inlineCountText || `${totalRecords} ${totalRecords === 1 && translations.resultados === 'resultados' ? 'resultado' : translations.resultados}` }}</span>
     </div>
+    <slot name="inline-extra" />
   </template>
   <template v-else-if="!$slots.filters">
     <div class="flex flex-col md:flex-row flex-wrap gap-4 p-0 md:p-4 " data-manual-capture="data-table-toolbar">
@@ -501,7 +503,7 @@
         data-manual-capture="data-table-grid"
         ref="tableContainerRef"
         class="table-scroll-container"
-        :class="{ 'is-h-scroll': !isTableNarrow, 'sticky-last-column': stickyLastColumn }"
+        :class="{ 'is-h-scroll': !isTableNarrow, 'sticky-last-column': stickyLastColumn, 'flat-table': filtersLayout === 'inline' }"
         :style="tableScrollStyle"
         @mousemove="onTableMouseMove"
         @mouseleave="onTableMouseLeave"
@@ -509,7 +511,7 @@
       >
         <UTable ref="utableRef" :data="filteredData" sticky :columns="displayedColumns" :loading="isTableLoading"
           :class="['', isTableNarrow ? 'utable-narrow' : 'min-w-full']"   :meta="tableMeta"
-          :ui="Object.keys(tableMeta).length>0?{
+          :ui="filtersLayout === 'inline' ? flatTableUi : Object.keys(tableMeta).length>0?{
             // Importante: quitar overflow del root interno de UTable.
             // Si el root tiene overflow-* pero el scroll real ocurre en .table-scroll-container, sticky no se activa.
             root: 'relative overflow-visible',
@@ -569,7 +571,8 @@
     <!-- Sticky Bottom Section - Pagination -->
     <div
       v-if="showBottomSection && (!showKanban || listViewMode === 'table')"
-      class="md:sticky bottom-0 z-39 bg-[#f0f4f9] dark:bg-gray-900"
+      class="md:sticky bottom-0 z-39"
+      :class="filtersLayout === 'inline' ? 'border-t border-default bg-default' : 'bg-[#f0f4f9] dark:bg-gray-900'"
     >
       <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between p-4 gap-4">
         <div class="text-xs lg:text-sm text-gray-700 dark:text-gray-300 text-center lg:text-left w-full lg:w-auto">
@@ -630,6 +633,17 @@ const props = withDefaults(defineProps<DataTableProps>(), {
 const useEnglishHeaders = computed(() => !props.keepSpanishHeaders && usesEnglishTableHeaders(currentRole.value))
 const displayedTitle = computed(() => (props.keepSpanishHeaders ? props.title : translateTableText(props.title || '', currentRole.value) || props.title))
 const displayedColumns = computed(() => (props.keepSpanishHeaders ? props.columns || [] : applyEnglishTableHeaders(props.columns || [], currentRole.value)))
+
+/** Modo "inline": tabla plana dentro de una sola tarjeta (filas separadas por líneas finas, sin tarjetas por fila). */
+const flatTableUi = {
+  root: 'relative overflow-visible',
+  base: 'min-w-full',
+  thead: 'z-20 bg-default',
+  th: 'bg-default px-3 py-3.5 text-xs font-medium uppercase tracking-wider text-muted',
+  tbody: '[&>tr]:border-t [&>tr]:border-default [&>tr]:transition-colors [&>tr:hover]:bg-elevated/40',
+  tr: 'border-default',
+  td: 'bg-transparent px-3 py-3.5 text-sm text-default'
+}
 
 /** Evita ambigüedad con otros `loading` en plantilla; fuerza booleano para UTable */
 const isTableLoading = computed(() => Boolean(props.loading))
@@ -1956,6 +1970,28 @@ html.dark .min-w-full :deep(tbody tr + tr td) {
 }
 .dark .table-scroll-container tbody td.china-group-td {
   background-color: rgb(127 29 29 / 0.18);
+}
+
+/* Modo "inline": tabla plana dentro de una tarjeta (filas separadas por líneas finas, encabezado blanco). */
+.table-scroll-container.flat-table table thead,
+.table-scroll-container.flat-table table thead th {
+  background: var(--ui-bg) !important;
+  box-shadow: none;
+}
+.table-scroll-container.flat-table table tbody tr + tr td,
+.table-scroll-container.flat-table table tbody tr td {
+  border-top: 1px solid #eef1f6 !important;
+  background: transparent;
+}
+.table-scroll-container.flat-table table tbody tr:first-child td {
+  border-top: 1px solid #eef1f6 !important;
+}
+.table-scroll-container.flat-table table tbody tr:hover td {
+  background: #fafbfd;
+}
+.table-scroll-container.flat-table .sticky-last-column td:last-child,
+.table-scroll-container.flat-table.sticky-last-column td:last-child {
+  background: var(--ui-bg);
 }
 
 /* Última columna fija para no perder las acciones al hacer scroll horizontal */

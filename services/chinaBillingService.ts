@@ -86,6 +86,11 @@ export class ChinaBillingService extends BaseService {
     }>(`${this.baseUrl}/operations?${toQuery(filters)}`)
   }
 
+  /** KPIs del encabezado (operaciones y pagos del rango) y saldos a favor. */
+  static async summary(filters: { from?: string; to?: string }) {
+    return this.apiCall<{ success: boolean; summary: ChinaSummary; credits: ChinaCredit[] }>(`${this.baseUrl}/summary?${toQuery(filters)}`)
+  }
+
   static async createOperation(payload: ChinaOperationFormPayload) {
     return this.apiCall<One<ChinaOperation>>(`${this.baseUrl}/operations`, { method: 'POST', body: operationForm(payload) })
   }
@@ -131,6 +136,10 @@ export class ChinaBillingService extends BaseService {
   // --- Almacén China: cobros ---
   static async listPayments(filters: ChinaListFilters) {
     return this.apiCall<Page<ChinaPayment> & { counts: ChinaCounts }>(`${this.baseUrl}/payments?${toQuery(filters)}`)
+  }
+
+  static async getPayment(id: number) {
+    return this.apiCall<One<ChinaPayment>>(`${this.baseUrl}/payments/${id}`)
   }
 
   static async createPayment(payload: ChinaPaymentFormPayload) {
