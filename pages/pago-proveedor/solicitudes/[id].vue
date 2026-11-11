@@ -21,11 +21,11 @@
 
         <UCard>
           <div class="mb-4 flex items-center gap-3">
-            <UAvatar icon="i-lucide-user" size="md" color="primary" variant="soft" />
+            <UAvatar icon="i-lucide-user" size="md" class="bg-primary/10" :ui="{ icon: 'text-primary' }" />
             <h2 class="text-base font-bold text-highlighted">Datos del cliente</h2>
           </div>
           <dl class="grid gap-3 sm:grid-cols-2">
-            <div><dt class="text-sm text-muted">N.° de consolidado</dt><dd class="font-bold text-highlighted">{{ solicitud.consolidado ? `Consolidado ${solicitud.consolidado}` : '—' }}</dd></div>
+            <div><dt class="text-sm text-muted">N.° de consolidado</dt><dd class="font-bold text-highlighted">{{ solicitud.consolidado ? `Consolidado ${soloConsolidado(solicitud.consolidado)}` : '—' }}</dd></div>
             <div><dt class="text-sm text-muted">Nombre y apellido</dt><dd class="font-bold text-highlighted">{{ solicitud.cliente_nombre || '—' }}</dd></div>
             <div><dt class="text-sm text-muted">WhatsApp</dt><dd class="font-bold text-highlighted">{{ solicitud.cliente_whatsapp || '—' }}</dd></div>
             <div><dt class="text-sm text-muted">Correo electrónico</dt><dd class="font-bold text-highlighted">{{ solicitud.cliente_correo || '—' }}</dd></div>
@@ -41,7 +41,7 @@
 
         <UCard>
           <div class="mb-4 flex items-center gap-3">
-            <UAvatar icon="i-lucide-chart-no-axes-column" size="md" color="primary" variant="soft" />
+            <UAvatar icon="i-lucide-chart-no-axes-column" size="md" class="bg-primary/10" :ui="{ icon: 'text-primary' }" />
             <h2 class="text-base font-bold text-highlighted">Resumen financiero</h2>
           </div>
           <dl class="grid gap-3" :class="(solicitud.excedente || 0) > 0.004 ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'">
@@ -111,7 +111,7 @@
             @click="abrirPedirDatos"
           >
             Pedir datos del proveedor
-            <UBadge v-if="proveedoresSinDatos" :color="ctaPrincipal === 'datos' ? 'neutral' : 'primary'" variant="solid" size="sm" class="ml-1">{{ proveedoresSinDatos }}</UBadge>
+            <UBadge v-if="proveedoresSinDatos" color="primary" variant="solid" size="sm" class="ml-1" :class="ctaPrincipal === 'datos' ? 'bg-white text-primary' : ''">{{ proveedoresSinDatos }}</UBadge>
           </UButton>
           <UButton
             :color="ctaPrincipal === 'cuentas' ? 'primary' : 'neutral'"
@@ -128,35 +128,20 @@
           <UButton color="neutral" variant="outline" icon="i-lucide-check-badge" to="/pago-proveedor/aprobacion-pagos">Ir a Aprobación de pagos</UButton>
         </div>
 
-        <div v-if="documentosSolicitud.length" class="flex flex-wrap items-center gap-2 rounded-lg border border-default bg-elevated/60 px-3 py-2 text-xs text-muted">
-          <UIcon name="i-lucide-history" class="size-4 shrink-0" />
-          <span class="font-semibold text-highlighted">PDF emitidos:</span>
-          <UBadge
-            v-for="documento in documentosSolicitud"
-            :key="`${documento.documento}-${documento.alcance_id}`"
-            :color="documento.desactualizado ? 'warning' : 'neutral'"
-            variant="soft"
-            size="sm"
-          >
-            {{ documento.documento === 'resumen' ? 'Resumen' : `Balance ${proveedorDeAlcance(documento.alcance_id)}` }} · paso {{ documento.paso }}
-            <template v-if="documento.desactualizado"> · se regenerará</template>
-          </UBadge>
-          <span>Se reutilizan mientras el paso y los datos no cambien.</span>
-        </div>
       </header>
 
       <h2 class="text-xl font-bold text-highlighted">Seguimiento por proveedor</h2>
 
       <UCard v-for="proveedor in solicitud.proveedores || []" :key="proveedor.id" :ui="{ body: 'p-0 sm:p-0' }">
         <button type="button" class="flex w-full items-center gap-4 p-5 text-left" @click="toggleProveedor(proveedor.id)">
-          <UAvatar icon="i-lucide-store" size="lg" color="primary" variant="soft" />
+          <UAvatar icon="i-lucide-store" size="lg" class="bg-primary/10" :ui="{ icon: 'text-primary' }" />
           <div class="min-w-0 flex-1">
             <p class="flex flex-wrap items-center gap-2">
               <strong class="text-lg text-highlighted">{{ proveedor.code_supplier || proveedor.titulo }}</strong>
               <UBadge color="neutral" variant="soft">Proveedor {{ proveedor.orden }}</UBadge>
             </p>
             <p class="text-sm text-muted">
-              {{ [proveedor.nombre_proveedor, proveedor.producto, proveedor.moneda === 'RMB' ? 'RMB / Transferencia' : 'USD / T-T'].filter(Boolean).join(' · ') }}
+              {{ [proveedor.nombre_proveedor, proveedor.producto, proveedor.moneda === 'RMB' ? 'RMB / Transferencia' : 'USD / T-T', etiquetaModalidad(proveedor)].filter(Boolean).join(' · ') }}
               <strong v-if="proveedor.codigo_solicitud" class="text-highlighted"> · {{ proveedor.codigo_solicitud }}</strong>
             </p>
           </div>
@@ -203,7 +188,7 @@
           <div v-if="(vistaEtapa[proveedor.id] ?? proveedor.etapa) === 1 && proveedor.estado !== 'anulado'" class="mt-4 grid gap-3 lg:grid-cols-3">
             <UCard :ui="bloque" :class="datosPendientes(proveedor) ? 'bg-warning/10 ring-warning/30' : ''">
               <div class="mb-3 flex items-start gap-3">
-                <UAvatar icon="i-lucide-user" size="md" color="primary" variant="soft" />
+                <UAvatar icon="i-lucide-user" size="md" class="bg-primary/10" :ui="{ icon: 'text-primary' }" />
                 <div>
                   <h3 class="font-bold text-highlighted">{{ proveedor.moneda === 'RMB' ? 'Datos del proveedor' : 'Datos bancarios (T-T)' }}</h3>
                   <UBadge class="mt-1" :color="datosPendientes(proveedor) ? 'warning' : 'success'" variant="soft" :label="datosPendientes(proveedor) ? '! Pendientes' : '✓ Completos'" />
@@ -255,18 +240,26 @@
 
             <UCard :ui="bloque" :class="proveedor.saldo > 0.004 && proveedor.importe_abonado > 0 ? 'bg-warning/10 ring-warning/30' : ''">
               <div class="mb-3 flex items-center gap-3">
-                <UAvatar icon="i-lucide-file-text" size="md" color="primary" variant="soft" />
+                <UAvatar icon="i-lucide-file-text" size="md" class="bg-primary/10" :ui="{ icon: 'text-primary' }" />
                 <h3 class="font-bold text-highlighted">Comprobante de pago</h3>
               </div>
               <UAlert v-if="proveedor.puede_registrar_diferencia" class="mb-2" color="warning" variant="subtle" description="Administración dejó este pago por cobrar. Registra el comprobante de la diferencia." />
               <div v-for="item in abonosProveedor(proveedor.id)" :key="item.id" class="mb-2 flex items-start justify-between gap-2 text-sm">
                 <div>
-                  <strong class="text-highlighted">Abono #{{ item.id }} · ${{ dinero(montoAplicado(item, proveedor.id)) }}</strong>
+                  <strong class="text-highlighted">Abono #{{ numeroAbono(item) }} · ${{ dinero(montoAplicado(item, proveedor.id)) }}</strong>
                   <p class="text-muted">{{ fechaCorta(item.fecha_pago) }} · {{ item.banco.toUpperCase() }}</p>
                   <p class="text-muted">N.° de operación {{ item.numero_operacion || '—' }}<template v-if="item.aplicaciones.length > 1"> · voucher compartido</template></p>
+                  <UBadge
+                    v-if="item.estado === 'en_validacion'"
+                    class="mt-1"
+                    :color="slaOverdue(item.validacion_sla) ? 'error' : 'warning'"
+                    variant="soft"
+                    size="sm"
+                    :label="slaText(item.validacion_sla) ? `Pendiente · ${slaText(item.validacion_sla)}` : 'Pendiente de validación'"
+                  />
                 </div>
                 <div class="flex shrink-0 gap-1">
-                  <UButton v-if="item.voucher_url" size="xs" color="neutral" variant="outline" icon="i-lucide-receipt-text" title="Ver voucher" :to="item.voucher_url" target="_blank" />
+                  <UButton v-if="item.voucher_url" size="xs" color="neutral" variant="outline" icon="i-lucide-receipt-text" title="Ver voucher" @click="() => { voucherAbierto = item }" />
                   <template v-if="!soloLectura">
                     <UButton size="xs" color="neutral" variant="outline" icon="i-lucide-pencil" title="Editar abono" :disabled="!item.puede_editar" @click="editarAbono(item)" />
                     <UButton size="xs" color="neutral" variant="outline" icon="i-lucide-trash-2" title="Anular abono" :disabled="!item.puede_anular" @click="anularAbono(item)" />
@@ -281,7 +274,7 @@
 
             <UCard :ui="bloque">
               <div class="mb-3 flex items-center gap-3">
-                <UAvatar icon="i-lucide-circle-dollar-sign" size="md" color="primary" variant="soft" />
+                <UAvatar icon="i-lucide-circle-dollar-sign" size="md" class="bg-primary/10" :ui="{ icon: 'text-primary' }" />
                 <h3 class="font-bold text-highlighted">{{ proveedor.etapa > 1 ? 'Total abonado' : 'Total pendiente de abono' }}</h3>
               </div>
               <p class="text-3xl font-bold" :class="proveedor.saldo > 0.004 && proveedor.etapa === 1 ? 'text-warning' : 'text-highlighted'">${{ dinero(proveedor.etapa > 1 ? proveedor.importe_abonado : proveedor.saldo) }}</p>
@@ -324,11 +317,12 @@
           <UAlert
             v-if="!soloLectura && (vistaEtapa[proveedor.id] ?? proveedor.etapa) === proveedor.etapa && porRealizar(proveedor)"
             class="mt-3"
-            color="warning"
+            color="info"
             variant="subtle"
+            :ui="{ root: 'px-4 py-2.5 items-center', description: 'mt-0 text-sm' }"
           >
             <template #description>
-              <strong>Por realizar: </strong>{{ porRealizar(proveedor) }}
+              <strong class="text-highlighted">Por realizar: </strong>{{ porRealizar(proveedor) }}
             </template>
             <template #actions>
               <UButton v-if="abonoObservado(proveedor)" size="xs" color="warning" @click="editarAbono(abonoObservado(proveedor)!)">Corregir comprobante</UButton>
@@ -408,7 +402,7 @@
                   <tr v-for="(evento, index) in solicitud.historial" :key="`${evento.fecha}-${index}`" class="border-t border-default">
                     <td class="whitespace-nowrap py-2 pr-3 text-muted">{{ evento.fecha ? new Date(evento.fecha).toLocaleString('es-PE') : '—' }}</td>
                     <td class="py-2 pr-3">{{ evento.usuario || '—' }}</td>
-                    <td class="py-2">{{ evento.accion }}<span v-if="evento.detalle" class="text-muted"> · {{ evento.detalle }}</span></td>
+                    <td class="py-2">{{ textoHistorial(evento).accion }}<span v-if="textoHistorial(evento).detalle" class="text-muted"> · {{ textoHistorial(evento).detalle }}</span></td>
                   </tr>
                 </tbody>
               </table>
@@ -429,6 +423,7 @@
         :open="datosAbiertoId !== null"
         :title="datosProveedor ? `${datosProveedor.moneda === 'RMB' ? 'Datos del proveedor' : 'Datos bancarios del proveedor (T-T)'} — ${datosProveedor.code_supplier}` : ''"
         :subtitle="datosProveedor?.moneda !== 'RMB' && !ttSoloLectura ? 'Solo en casos excepcionales: quedan como borrador y el cliente debe autorizarlos antes de usarlos para el pago.' : ''"
+        :hint="datosProveedor && !ttSoloLectura ? '¿Falta algún dato? Usa «Pedir datos del proveedor» en la barra de acciones de arriba.' : ''"
         @close="cerrarDatos"
       >
         <template v-if="datosProveedor">
@@ -475,7 +470,7 @@
         @close="abonoContinuacion = null"
       >
         <template v-if="abonoContinuacion">
-          <p class="text-sm text-highlighted"><strong>Abono {{ abonoContinuacion.id }}: ${{ dinero(abonoContinuacion.importe) }}</strong> · N.° de operación {{ abonoContinuacion.numero_operacion || '—' }}</p>
+          <p class="text-sm text-highlighted"><strong>Abono #{{ numeroAbono(abonoContinuacion) }}: ${{ dinero(abonoContinuacion.importe) }}</strong> · N.° de operación {{ abonoContinuacion.numero_operacion || '—' }}</p>
           <UCard v-for="aplicacion in abonoContinuacion.aplicaciones" :key="aplicacion.solicitud_proveedor_id" variant="subtle" :ui="{ body: 'p-3 sm:p-3' }">
             <div class="flex items-center justify-between gap-3 text-sm">
               <UCheckbox
@@ -534,9 +529,14 @@
               <USelect v-model="abono.banco" :items="bancos" placeholder="Selecciona" class="w-full" />
             </UFormField>
             <UFormField label="Comprobante (voucher)" :required="!abonoEditandoId" class="sm:col-span-2">
-              <input type="file" accept=".pdf,.jpg,.jpeg,.png" class="block w-full text-sm text-highlighted" @change="elegirVoucher">
-              <p v-if="voucher" class="mt-1 text-xs text-muted">{{ voucher.name }}</p>
-              <p v-else-if="abonoEditandoId" class="mt-1 text-xs text-muted">Deja el archivo vacío para conservar el voucher actual.</p>
+              <div class="flex flex-wrap items-center gap-3">
+                <label class="inline-flex cursor-pointer">
+                  <UButton as="span" color="neutral" variant="outline" size="sm">Seleccionar archivo</UButton>
+                  <input type="file" accept=".pdf,.jpg,.jpeg,.png" class="sr-only" @change="elegirVoucher">
+                </label>
+                <span class="min-w-0 truncate text-xs text-muted">{{ voucher ? voucher.name : 'Sin archivos seleccionados' }}</span>
+              </div>
+              <p v-if="!voucher && abonoEditandoId" class="mt-1 text-xs text-muted">Deja el archivo vacío para conservar el voucher actual.</p>
             </UFormField>
           </UCard>
 
@@ -558,23 +558,29 @@
                   @update:model-value="(checked) => alternarProveedor(proveedor, !!checked)"
                 >
                   <template #label>
-                    <strong class="text-highlighted">{{ proveedor.code_supplier }}</strong>
-                    <span class="text-muted"> · Cotizado ${{ dinero(proveedor.importe_requerido) }}<template v-if="proveedor.importe_abonado > 0"> · Abonado ${{ dinero(proveedor.importe_abonado) }}</template> · <strong class="text-highlighted">Saldo ${{ dinero(proveedor.saldo) }}</strong></span>
+                    <span class="block">
+                      <strong class="text-highlighted">{{ proveedor.code_supplier }}</strong>
+                      <span class="text-highlighted">{{ [proveedor.nombre_proveedor, proveedor.producto].filter(Boolean).map(texto => ` · ${texto}`).join('') }}</span>
+                    </span>
+                    <span class="block text-xs text-muted">Cotizado ${{ dinero(proveedor.importe_requerido) }}<template v-if="abonadoOtros(proveedor) > 0"> · Abonado ${{ dinero(abonadoOtros(proveedor)) }}</template> · Saldo ${{ dinero(saldoParaAbono(proveedor)) }}</span>
                   </template>
                 </UCheckbox>
-                <UInput
-                  :model-value="abono.montos[proveedor.id]"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="Aplicar"
-                  class="w-28"
-                  @update:model-value="(valor) => aplicarMonto(proveedor, Number(valor))"
-                />
+                <div class="flex shrink-0 flex-col items-end gap-1">
+                  <UInput
+                    :model-value="abono.montos[proveedor.id] || undefined"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="Aplicar"
+                    class="w-28"
+                    :ui="{ base: 'text-right' }"
+                    @update:model-value="(valor) => aplicarMonto(proveedor, Number(valor))"
+                  />
+                  <p v-if="(abono.montos[proveedor.id] || 0) > 0" class="text-xs" :class="(abono.montos[proveedor.id] || 0) >= saldoParaAbono(proveedor) - 0.005 ? 'font-semibold text-success' : 'text-warning'">
+                    {{ (abono.montos[proveedor.id] || 0) >= saldoParaAbono(proveedor) - 0.005 ? 'Cubre completo ✓' : `Quedará saldo $${dinero(saldoParaAbono(proveedor) - (abono.montos[proveedor.id] || 0))}` }}
+                  </p>
+                </div>
               </div>
-              <p v-if="(abono.montos[proveedor.id] || 0) > 0" class="mt-1 text-xs" :class="(abono.montos[proveedor.id] || 0) >= proveedor.saldo - 0.005 ? 'font-semibold text-success' : 'text-warning'">
-                {{ (abono.montos[proveedor.id] || 0) >= proveedor.saldo - 0.005 ? 'Cubre completo ✓' : `Quedará saldo $${dinero(proveedor.saldo - (abono.montos[proveedor.id] || 0))}` }}
-              </p>
             </div>
             <p v-if="!proveedoresConSaldo.length" class="text-sm text-muted">Ningún proveedor tiene saldo pendiente.</p>
             <p class="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-default pt-2 text-sm text-muted">
@@ -588,9 +594,28 @@
         </form>
         <template #footer>
           <UButton color="neutral" variant="outline" @click="cerrarAbono">Cancelar</UButton>
-          <UButton type="submit" form="abono-form" color="primary" :disabled="aplicado <= 0 || sinAsignar < -0.005" :loading="guardandoAbono">
+          <UButton type="submit" form="abono-form" color="primary" :disabled="!abonoCompleto || aplicado <= 0 || sinAsignar < -0.005" :loading="guardandoAbono">
             {{ abonoEditandoId ? 'Guardar cambios' : 'Registrar comprobante' }}
           </UButton>
+        </template>
+      </SupplierPaymentWindow>
+
+      <SupplierPaymentWindow
+        :open="!!voucherAbierto"
+        :title="voucherAbierto ? `Voucher · Abono #${numeroAbono(voucherAbierto)}` : ''"
+        @close="voucherAbierto = null"
+      >
+        <template v-if="voucherAbierto">
+          <dl class="divide-y divide-default text-sm">
+            <div class="flex justify-between gap-3 py-2"><dt class="text-muted">Importe recibido</dt><dd class="font-semibold text-highlighted">${{ dinero(voucherAbierto.importe) }}</dd></div>
+            <div class="flex justify-between gap-3 py-2"><dt class="text-muted">Aplicado a</dt><dd class="text-right text-highlighted">{{ voucherAbierto.aplicaciones.map(item => `${nombreProveedor(item.solicitud_proveedor_id)} $${dinero(item.monto)}`).join(', ') || '—' }}</dd></div>
+            <div class="flex justify-between gap-3 py-2"><dt class="text-muted">Fecha | Banco</dt><dd class="text-highlighted">{{ fechaCorta(voucherAbierto.fecha_pago) }} | {{ voucherAbierto.banco.toUpperCase() }}</dd></div>
+          </dl>
+          <VoucherViewer :url="voucherAbierto.voucher_url" :name="voucherAbierto.voucher_nombre" />
+        </template>
+        <template #footer>
+          <UButton v-if="voucherAbierto?.voucher_url" color="neutral" variant="outline" icon="i-lucide-download" :to="voucherAbierto.voucher_url" target="_blank">Descargar</UButton>
+          <UButton color="neutral" variant="soft" @click="voucherAbierto = null">Cerrar</UButton>
         </template>
       </SupplierPaymentWindow>
 
@@ -624,7 +649,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import type { PagoProveedorAbono, PagoProveedorSolicitud, PagoProveedorSolicitudProveedor } from '~/types/pago-proveedor'
 import { PROVIDER_STATUS, SUPPLIER_PAYMENT_PROFILE } from '~/constants/supplierPayment'
 import { useModal } from '~/composables/commons/useModal'
@@ -635,6 +660,8 @@ import { whatsappHtml } from '~/utils/whatsappFormat'
 import FormularioBancario from '~/components/pago-proveedor/FormularioBancario.vue'
 import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
 import SupplierPaymentProgress from '~/components/pago-proveedor/SupplierPaymentProgress.vue'
+import VoucherViewer from '~/components/pago-proveedor/VoucherViewer.vue'
+import { useSlaCountdown } from '~/composables/pago-proveedor/useSlaCountdown'
 
 type TipoMotivo = 'observar' | 'anular' | 'levantar'
 
@@ -679,6 +706,8 @@ const pedirDatosAbierto = ref(false)
 const candidatosDatos = ref<Array<{ id: number; titulo: string; moneda: string; incompleto: boolean }>>([])
 const candidatosElegidos = ref<string[]>([])
 const voucher = ref<File | null>(null)
+const voucherAbierto = ref<PagoProveedorAbono | null>(null)
+const { slaText, slaOverdue } = useSlaCountdown()
 const vistaPrevia = ref<VistaPrevia | null>(null)
 const continuacion = reactive<Record<number, number[]>>({})
 const abono = reactive({
@@ -695,12 +724,6 @@ const bloque = { body: 'p-4 sm:p-4' }
 const bancos = [{ label: 'BCP', value: 'bcp' }, { label: 'Interbank', value: 'interbank' }]
 
 const dinero = (valor: number) => Number(valor || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-/** PDF ya emitidos de la solicitud: resumen general y balances por proveedor. */
-const documentosSolicitud = computed(() => solicitud.value?.documentos || [])
-const proveedorDeAlcance = (alcanceId: number) => {
-  const proveedor = (solicitud.value?.proveedores || []).find(item => item.id === alcanceId)
-  return proveedor?.code_supplier || proveedor?.titulo || `#${alcanceId}`
-}
 const abonoEnEdicion = computed(() => (solicitud.value?.abonos || []).find(item => item.id === abonoEditandoId.value) || null)
 const proveedoresConSaldo = computed(() => (solicitud.value?.proveedores || []).filter((item) => {
   if (abonoEnEdicion.value?.aplicaciones?.some(aplicacion => aplicacion.solicitud_proveedor_id === item.id)) return true
@@ -735,6 +758,14 @@ const todosPasaronEtapa1 = computed(() => {
 const proveedorAbierto = reactive<Record<number, boolean>>({})
 const vistaEtapa = reactive<Record<number, number>>({})
 const aplicado = computed(() => Object.values(abono.montos).reduce((suma, monto) => suma + (Number(monto) || 0), 0))
+/** Campos obligatorios del comprobante: sin ellos no se registra. */
+const abonoCompleto = computed(() => Number(abono.importe) > 0
+  && !!abono.fecha
+  && !!String(abono.operacion || '').trim()
+  && !!abono.banco
+  && (!!voucher.value || !!abonoEditandoId.value))
+/** Si Ventas no tocó los montos, el importe recibido se aplica solo a los proveedores (como en la maqueta). */
+const montosManuales = ref(false)
 const sinAsignar = computed(() => Math.round(((abono.importe || 0) - aplicado.value) * 100) / 100)
 
 function toggleProveedor(id: number) {
@@ -810,6 +841,28 @@ function datosEditables(proveedor: PagoProveedorSolicitudProveedor) {
   return !soloLectura.value && (proveedor.puede_editar_etapa1 || !!proveedor.observacion_china)
 }
 
+function soloConsolidado(valor: string) {
+  return String(valor || '').split(/\s*[-–]\s*/)[0]?.trim() || valor
+}
+
+/** Modalidad como en la cotización: Total, 2 abonos, 2 pagos al proveedor o 2 cuotas. */
+function etiquetaModalidad(proveedor: PagoProveedorSolicitudProveedor) {
+  const pago = proveedor.modalidad_pago === 'fraccionado'
+  const abonoFraccionado = proveedor.modalidad_abono === 'fraccionado'
+  if (pago && abonoFraccionado) return '2 cuotas'
+  if (pago) return '2 pagos al proveedor'
+  if (abonoFraccionado) return '2 abonos'
+  return 'Total'
+}
+
+/** Registros antiguos de creación («Creada · Proveedores en etapa 1.») con el texto de la maqueta. */
+function textoHistorial(evento: { accion: string; detalle?: string | null }) {
+  if (evento.accion === 'Creada' && solicitud.value?.cotizacion_codigo) {
+    return { accion: `Solicitud creada desde la cotización ${solicitud.value.cotizacion_codigo}`, detalle: '' }
+  }
+  return { accion: evento.accion, detalle: evento.detalle || '' }
+}
+
 function cuentaOculta(cuenta?: string | null) {
   return cuenta ? `•••• ${cuenta.replace(/\s/g, '').slice(-4)}` : '—'
 }
@@ -817,6 +870,13 @@ function cuentaOculta(cuenta?: string | null) {
 function fechaCorta(fecha?: string | null) {
   const partes = /^(\d{4})-(\d{2})-(\d{2})/.exec(fecha || '')
   return partes ? `${Number(partes[3])}/${Number(partes[2])}/${partes[1]}` : (fecha || '—')
+}
+
+/** N.° de abono dentro de la solicitud (1, 2…), no el id interno. */
+function numeroAbono(item: PagoProveedorAbono) {
+  if (item.numero) return item.numero
+  const ids = (solicitud.value?.abonos || []).map(abonoItem => abonoItem.id).sort((a, b) => a - b)
+  return ids.indexOf(item.id) + 1 || item.id
 }
 
 function montoAplicado(item: PagoProveedorAbono, proveedorId: number) {
@@ -1146,6 +1206,7 @@ function abrirAbono() {
   abono.banco = 'bcp'
   abono.interbancaria = false
   voucher.value = null
+  montosManuales.value = false
   abono.montos = {}
   for (const proveedor of proveedoresConSaldo.value) abono.montos[proveedor.id] = 0
   abonoAbierto.value = true
@@ -1169,6 +1230,7 @@ function editarAbono(abonoItem: PagoProveedorAbono) {
 
 // Marcar el proveedor sugiere aplicar lo que queda del importe recibido; desmarcarlo lo deja en cero.
 function alternarProveedor(proveedor: PagoProveedorSolicitudProveedor, checked: boolean) {
+  montosManuales.value = true
   if (!checked) {
     abono.montos[proveedor.id] = 0
     return
@@ -1178,28 +1240,50 @@ function alternarProveedor(proveedor: PagoProveedorSolicitudProveedor, checked: 
     .reduce((suma, [, monto]) => suma + (Number(monto) || 0), 0)
   const recibido = Number(abono.importe) || 0
   const disponible = Math.max(0, recibido - otros)
-  const monto = Math.min(proveedor.saldo, disponible) || proveedor.saldo
+  const monto = Math.min(saldoParaAbono(proveedor), disponible) || saldoParaAbono(proveedor)
   abono.montos[proveedor.id] = Math.round(monto * 100) / 100
   if (!recibido) abono.importe = Math.round((otros + monto) * 100) / 100
 }
 
 function aplicarMonto(proveedor: PagoProveedorSolicitudProveedor, valor: number) {
-  const monto = Math.min(Math.max(Number(valor) || 0, 0), proveedor.saldo)
+  montosManuales.value = true
+  const monto = Math.min(Math.max(Number(valor) || 0, 0), saldoParaAbono(proveedor))
   abono.montos[proveedor.id] = Math.round(monto * 100) / 100
 }
 
 function distribuir() {
   let resto = Number(abono.importe) || 0
   for (const proveedor of proveedoresConSaldo.value) {
-    const aplicadoProveedor = Math.min(proveedor.saldo, Math.max(0, resto))
+    const aplicadoProveedor = Math.min(saldoParaAbono(proveedor), Math.max(0, resto))
     abono.montos[proveedor.id] = Math.round(aplicadoProveedor * 100) / 100
     resto = Math.round((resto - aplicadoProveedor) * 100) / 100
   }
 }
 
 function elegirVoucher(evento: Event) {
-  voucher.value = (evento.target as HTMLInputElement).files?.[0] || null
+  const input = evento.target as HTMLInputElement
+  voucher.value = input.files?.[0] || null
+  input.value = ''
 }
+
+/** Lo que este abono le aplicó al proveedor antes de editarlo: vuelve a estar disponible para repartir. */
+function aplicadoPorAbonoEnEdicion(proveedor: PagoProveedorSolicitudProveedor) {
+  const aplicacion = abonoEnEdicion.value?.aplicaciones?.find(item => item.solicitud_proveedor_id === proveedor.id)
+  return aplicacion ? Number(aplicacion.monto) || 0 : 0
+}
+
+function saldoParaAbono(proveedor: PagoProveedorSolicitudProveedor) {
+  return Math.round((proveedor.saldo + aplicadoPorAbonoEnEdicion(proveedor)) * 100) / 100
+}
+
+function abonadoOtros(proveedor: PagoProveedorSolicitudProveedor) {
+  return Math.max(0, Math.round((proveedor.importe_abonado - aplicadoPorAbonoEnEdicion(proveedor)) * 100) / 100)
+}
+
+watch(() => abono.importe, () => {
+  if (!abonoAbierto.value || abonoEditandoId.value || montosManuales.value) return
+  distribuir()
+})
 
 async function guardarAbono() {
   if (!solicitud.value) return
