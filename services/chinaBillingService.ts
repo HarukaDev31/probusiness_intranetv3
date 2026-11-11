@@ -1,6 +1,8 @@
 import { BaseService } from './base/BaseService'
 import type {
   ChinaBankAccount,
+  ChinaClient,
+  ChinaClientPayload,
   ChinaCounts,
   ChinaCredit,
   ChinaDocument,
@@ -199,6 +201,27 @@ export class ChinaBillingService extends BaseService {
 
   static async partnerDeletePayment(id: number) {
     return this.apiCall<Done>(`${this.baseUrl}/partner/payments/${id}`, { method: 'DELETE' })
+  }
+
+  // --- Clientes de Almacén China (socios e importadores) ---
+  static async listClients(filters: ChinaListFilters & { type?: string }) {
+    return this.apiCall<Page<ChinaClient> & { counts: ChinaCounts; organizations: ChinaOrganizationOption[] }>(`${this.baseUrl}/clients?${toQuery(filters)}`)
+  }
+
+  static async getClient(id: number) {
+    return this.apiCall<One<ChinaClient>>(`${this.baseUrl}/clients/${id}`)
+  }
+
+  static async createClient(payload: ChinaClientPayload) {
+    return this.apiCall<One<ChinaClient>>(`${this.baseUrl}/clients`, { method: 'POST', body: payload })
+  }
+
+  static async updateClient(id: number, payload: ChinaClientPayload) {
+    return this.apiCall<One<ChinaClient>>(`${this.baseUrl}/clients/${id}`, { method: 'POST', body: payload })
+  }
+
+  static async deleteClient(id: number) {
+    return this.apiCall<Done>(`${this.baseUrl}/clients/${id}`, { method: 'DELETE' })
   }
 
   // --- Datos bancarios de China (los ve China y el socio; edita China) ---

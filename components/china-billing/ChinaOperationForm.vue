@@ -57,6 +57,19 @@
           <UFormField label="Tarifa por CBM (USD)" required>
             <UInputNumber v-model="form.rate" :min="0" :step="1" class="w-full" />
           </UFormField>
+          <div v-if="clientRates.length" class="flex flex-wrap items-center gap-2 text-sm sm:col-span-2">
+            <span class="text-muted">Tarifas del cliente:</span>
+            <UButton
+              v-for="rate in clientRates"
+              :key="rate.label"
+              size="xs"
+              :color="form.rate === rate.value ? 'primary' : 'neutral'"
+              :variant="form.rate === rate.value ? 'soft' : 'outline'"
+              @click="form.rate = rate.value"
+            >
+              {{ rate.label }} · {{ usd(rate.value) }}
+            </UButton>
+          </div>
         </template>
         <UFormField v-else label="Monto del servicio (USD)" required class="sm:col-span-2">
           <UInputNumber v-model="form.amount" :min="0" :step="1" class="w-full" />
@@ -170,6 +183,21 @@ const subtitle = computed(() => {
   if (props.draft) return 'Generada al cerrar el consolidado. Completa FOB y flete, revisa CBM y tarifa; al aprobar se crea el N° de orden.'
   return props.operation ? 'Los pagos aplicados a esta orden se mantienen.' : 'El número de orden se genera al guardar.'
 })
+/** Tarifas por CBM que se registraron para el socio en Clientes. */
+const clientRates = computed(() => {
+  const prices = props.organizations.find((org) => org.id === form.organization_id)?.prices
+  return [
+    { label: 'Tarifa 1', value: Number(prices?.consol || 0) },
+    { label: 'Tarifa 2', value: Number(prices?.consol_2 || 0) }
+  ].filter((rate) => rate.value > 0)
+})
+
+// Al crear una operación por CBM se precarga la tarifa 1 del cliente (se puede cambiar).
+watch(() => [form.organization_id, form.billing_type], () => {
+  if (isEdit.value || isDraft.value || form.billing_type !== CHINA_BILLING_TYPE.CBM || form.rate) return
+  if (clientRates.value.length) form.rate = clientRates.value[0].value
+})
+
 const saveLabel = computed(() => (props.draft ? 'Aprobar operación' : props.operation ? 'Guardar cambios' : 'Guardar'))
 const organizationItems = computed(() => props.organizations.map((org) => ({ value: org.id, label: `${org.name}${org.country ? ` · ${org.country}` : ''}` })))
 

@@ -124,6 +124,8 @@ export interface ChinaOrganizationOption {
   name: string
   country: string
   country_id: number | null
+  /** Tarifas del socio (USD por CBM) para precargar la operación. */
+  prices?: { consol?: number | null; consol_2?: number | null } | null
 }
 
 export interface ChinaPagination {
@@ -211,4 +213,58 @@ export interface ChinaListFilters {
   to?: string
   page?: number
   per_page?: number
+}
+
+export type ChinaClientType = 'partner' | 'importer'
+
+export interface ChinaClientPrices {
+  consol: number | null
+  consol_2: number | null
+}
+
+export interface ChinaClientService {
+  code: string | null
+  issued_on: string | null
+  service_name: string
+  description: string
+  total: number | null
+  received: number | null
+  balance: number | null
+  status: string
+}
+
+/** Cliente de Almacén China (socio u importador). Los totales los calcula el backend. */
+export interface ChinaClient {
+  id: number
+  number?: number
+  type: ChinaClientType
+  organization_id: number | null
+  name: string
+  country: string
+  registered_on: string | null
+  whatsapp: string
+  contact_name: string
+  email: string
+  prices: ChinaClientPrices | null
+  operations_count: number
+  service_amount: number
+  total_billed: number
+  paid: number
+  receivable: number
+  open_count: number
+  closed_count: number
+  can_delete: boolean
+  can_download_balance: boolean
+  services?: ChinaClientService[]
+}
+
+export interface ChinaClientPayload {
+  type?: ChinaClientType
+  organization_id?: number | null
+  name: string
+  country: string
+  whatsapp: string
+  contact_name: string
+  email: string
+  prices: { consol: number | null; consol_2: number | null } | null
 }

@@ -203,4 +203,65 @@ test.describe.serial('Operaciones China + Pagos Socio', () => {
     await expect(documents.getByRole('link', { name: 'Descargar PDF' })).toHaveCount(1)
     await shot(page, '13-china-factura-historial')
   })
+
+  test('China: clientes (importador, tarifas del socio) y tarifa precargada en la operación', async ({ page }) => {
+    await login(page, 'china@e2e.test')
+    await page.goto('/clientes-china')
+    await expect(page.getByRole('heading', { name: 'Clientes' })).toBeVisible({ timeout: 60_000 })
+    for (const column of ['Total servicio', 'Total facturado', 'Total pagado', 'Por cobrar', 'Operaciones']) {
+      await expect(page.getByRole('columnheader', { name: column })).toBeVisible()
+    }
+    const partner = page.locator('tr:visible', { hasText: 'Socio Ecuador Demo' })
+    await expect(partner).toContainText('Socio')
+    await expect(partner.getByRole('button', { name: /Los socios se administran/ })).toBeDisabled()
+
+    // Nuevo importador.
+    await page.getByRole('button', { name: 'Nuevo cliente' }).click()
+    const form = page.getByRole('dialog')
+    await form.getByRole('button', { name: 'Importador' }).click()
+    await form.getByLabel('Nombre o empresa').fill('Distribuidora Quito')
+    await form.getByLabel('País').fill('Ecuador')
+    await form.getByLabel('WhatsApp').fill('+593 98 220 1187')
+    await shot(page, '14-clientes-nuevo-importador')
+    await form.getByRole('button', { name: 'Crear cliente' }).click()
+    await expect(form).toBeHidden()
+    await expect(page.locator('tr:visible', { hasText: 'Distribuidora Quito' })).toContainText('Importador')
+
+    // Tarifas del socio (obligatorias).
+    await partner.getByRole('button', { name: 'Editar' }).click()
+    await expect(form).toContainText('Precios del socio')
+    await form.getByLabel('WhatsApp').fill('+593 99 812 4410')
+    await form.getByRole('button', { name: 'Guardar cambios' }).click()
+    await expect(form).toContainText('Ingresa las dos tarifas')
+    for (const [label, value] of [['Consolidado · tarifa 1 (USD/CBM)', '95'], ['Consolidado · tarifa 2 (USD/CBM)', '90']]) {
+      await form.getByLabel(label).fill(value)
+      await form.getByLabel(label).press('Tab')
+    }
+    await shot(page, '15-clientes-tarifas-socio')
+    await form.getByRole('button', { name: 'Guardar cambios' }).click()
+    await expect(form).toBeHidden()
+
+    // Filtro por tipo y detalle del socio con su balance.
+    await page.getByRole('button', { name: 'Importadores' }).click()
+    await expect(page.locator('tr:visible', { hasText: 'Socio Ecuador Demo' })).toHaveCount(0)
+    await page.getByRole('button', { name: 'Todos', exact: true }).click()
+    await page.locator('tr:visible', { hasText: 'Socio Ecuador Demo' }).getByRole('button', { name: 'Ver cliente' }).click()
+    const detail = page.getByRole('dialog')
+    await expect(detail).toContainText('Total facturado')
+    await expect(detail).toContainText('OP-0001')
+    await expect(detail.getByRole('button', { name: 'Descargar balance de pago' })).toBeVisible()
+    await shot(page, '16-clientes-detalle')
+    await page.keyboard.press('Escape')
+
+    // La tarifa 1 del socio se precarga al crear una operación por CBM.
+    await page.goto('/operaciones-china')
+    await page.getByRole('button', { name: 'Nueva operación' }).click()
+    const operation = page.getByRole('dialog')
+    await operation.getByText('Selecciona un cliente').click()
+    await page.getByRole('option', { name: /Socio Ecuador Demo/ }).click()
+    await operation.getByRole('button', { name: 'Por CBM' }).click()
+    await expect(operation.getByLabel('Tarifa por CBM (USD)')).toHaveValue(/95/)
+    await expect(operation).toContainText('Tarifa 2 · $90.00')
+    await shot(page, '17-operacion-tarifa-precargada')
+  })
 })
