@@ -244,7 +244,6 @@
                 <input type="file" class="sr-only" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" :disabled="!editable" @change="elegirProforma(indice, $event)" />
               </label>
               <span class="text-xs text-muted">{{ nombreProforma(proveedor, indice) }}</span>
-              <UBadge v-if="proformasPendientes[indice]" color="warning" variant="soft" size="sm">Pendiente de guardar</UBadge>
               <a v-if="proveedor.proforma_url && !proformasPendientes[indice]" :href="proveedor.proforma_url" target="_blank" class="text-sm font-semibold text-primary">Ver</a>
               <UButton
                 v-if="editable && (proformasPendientes[indice] || proveedor.proforma_nombre)"

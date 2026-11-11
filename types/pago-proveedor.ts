@@ -373,6 +373,10 @@ export interface SupplierPaymentProgress {
 
 export interface PagoProveedorAbono {
   id: number
+  /** N.° de abono dentro de la solicitud (1, 2…). */
+  numero?: number
+  /** Plazo de Administración para validar el depósito, mientras está en validación. */
+  validacion_sla?: SupplierPaymentSla | null
   importe: number
   fecha_pago: string
   numero_operacion: string
