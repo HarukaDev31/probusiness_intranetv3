@@ -36,20 +36,22 @@
       :total-pages="pagination.last_page"
       :total-records="unifiedTotal"
       :items-per-page="pagination.per_page"
-      :primary-search-value="search"
-      :show-primary-search="true"
-      :show-primary-search-label="false"
-      primary-search-placeholder="Cliente, proveedor, consolidado o código"
-      :show-filters="true"
-      :filter-config="filterConfig"
-      :filters-value="filters"
       :show-export="false"
       :empty-state-message="emptyMessage"
-      @update:primary-search="onSearch"
-      @filter-change="onFilter"
       @page-change="onPage"
       @items-per-page-change="onPageSize"
-    />
+    >
+      <template #filters>
+        <SupplierPaymentFilterBar
+          :search="search"
+          search-placeholder="Cliente, proveedor o código"
+          :fields="filterConfig"
+          :values="filters"
+          @update:search="onSearch"
+          @change="onFilter"
+        />
+      </template>
+    </DataTable>
     <p class="mt-2 text-xs text-muted">
       {{ bucket === APPROVAL_BUCKET.PENDING
         ? `Pagos con depósitos ya validados en Verificación. Pendiente: el sistema no los aprobó solo (la diferencia supera la tolerancia de ${Number(settingsForm.tolerance || 0).toFixed(2)}) o es un reembolso solicitado; apruébalos (asumiendo la diferencia, con motivo) o márcalos Por cobrar. Por cobrar: Ventas cobra la diferencia al cliente (plazo de ${settingsForm.remedy_days} días; al vencer vuelve a Pendiente).`
@@ -145,6 +147,7 @@
 import { computed, h, onMounted, reactive, ref } from 'vue'
 import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
 import SupplierPaymentRefunds from '~/components/pago-proveedor/SupplierPaymentRefunds.vue'
+import SupplierPaymentFilterBar from '~/components/pago-proveedor/SupplierPaymentFilterBar.vue'
 import type { TableColumn } from '@nuxt/ui'
 import ApprovalReviewModal from '~/components/pago-proveedor/ApprovalReviewModal.vue'
 import { APPROVAL_BUCKET, APPROVAL_STATUS } from '~/constants/supplierPayment'
@@ -232,7 +235,7 @@ const overdueCount = ref(0)
 const alertas = computed(() => {
   const items: string[] = []
   if (overdueCount.value > 0) {
-    items.push(`${overdueCount.value} observación${overdueCount.value > 1 ? 'es' : ''} vencida${overdueCount.value > 1 ? 's' : ''} (plazo de cobro / error de registro sin resolver).`)
+    items.push(`${overdueCount.value} observación${overdueCount.value > 1 ? 'es' : ''} vencida${overdueCount.value > 1 ? 's' : ''} (plazo de cobro sin resolver).`)
   }
   return items
 })
@@ -329,29 +332,14 @@ const filterConfig = computed(() => [
   {
     key: 'consolidado',
     label: 'Consolidado',
-    type: 'select',
-    placeholder: 'Consolidado',
     options: [
       { value: 'todos', label: 'Todos' },
       ...consolidadosDisponibles.value.map((item) => ({ value: item, label: item }))
     ]
   },
   {
-    key: 'banco',
-    label: 'Banco',
-    type: 'select',
-    placeholder: 'Banco',
-    options: [
-      { value: 'todos', label: 'Todos' },
-      { value: 'bcp', label: 'BCP' },
-      { value: 'interbank', label: 'Interbank' }
-    ]
-  },
-  {
     key: 'status',
     label: 'Estado',
-    type: 'select',
-    placeholder: 'Estado',
     options: bucket.value === APPROVAL_BUCKET.APPROVED
       ? [
           { value: APPROVAL_STATUS.ALL, label: 'Todos' },
@@ -364,13 +352,22 @@ const filterConfig = computed(() => [
           { value: APPROVAL_STATUS.TO_COLLECT, label: 'Por cobrar' },
           { value: FILTRO_REEMBOLSO, label: 'Reembolso solicitado' }
         ]
+  },
+  {
+    key: 'banco',
+    label: 'Banco',
+    options: [
+      { value: 'todos', label: 'Todos' },
+      { value: 'bcp', label: 'BCP' },
+      { value: 'interbank', label: 'Interbank' }
+    ]
   }
 ])
 
 const columns = computed<TableColumn<UnifiedRow>[]>(() => [
   { accessorKey: 'order_number', header: 'N.° de orden', cell: ({ row }) => row.original.order_number ?? '—' },
   { accessorKey: 'client_name', header: 'Cliente', cell: ({ row }) => h('span', { class: 'block w-28 whitespace-normal' }, row.original.client_name || '—') },
-  { accessorKey: 'consolidation', header: 'Consolidado' },
+  { accessorKey: 'consolidation', header: 'Consolidado', cell: ({ row }) => soloConsolidado(row.original.consolidation) },
   { accessorKey: 'supplier_code', header: 'Proveedor', cell: ({ row }) => h('div', [
     h('div', { class: 'font-semibold' }, row.original.supplier_code || '—'),
     h('div', { class: 'w-36 whitespace-normal text-xs text-muted' }, row.original.supplier_name || '')
@@ -472,6 +469,12 @@ function depositCell(row: SupplierPaymentApproval) {
     return `${row.deposits[0].bank_label} · ${paidOn}`
   }
   return `${row.deposits.length} depósitos`
+}
+
+/** Solo el número de consolidado, sin el año: «21 - 2026» → «21». */
+function soloConsolidado(value: string | null) {
+  if (!value) return '—'
+  return value.replace(/\s*-\s*\d{4}\s*$/, '').trim() || value
 }
 
 function formatDate(value: string | null) {

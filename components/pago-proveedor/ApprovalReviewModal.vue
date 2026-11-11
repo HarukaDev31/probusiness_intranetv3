@@ -33,7 +33,11 @@
             <SupplierPaymentFact v-if="payment.cargo_amount != null" label="Valor de carga" :value="`$${money(payment.cargo_amount)}`" />
             <SupplierPaymentFact v-if="payment.bank_fee_amount" label="Comisión bancaria / plataforma" :value="`$${money(payment.bank_fee_amount)}`" />
             <SupplierPaymentFact v-if="payment.admin_fee_amount" label="Comisión administrativa" :value="`$${money(payment.admin_fee_amount)}`" />
-            <SupplierPaymentFact label="Importe cobrado" :value="`$${money(payment.charged_amount)}`" />
+            <!-- Importe cobrado resaltado con fondo naranja, como la maqueta. -->
+            <div class="mt-1.5 flex items-center justify-between gap-3 rounded-lg border-l-4 border-orange-500 bg-orange-50 px-3 py-2 dark:bg-orange-950/30">
+              <span class="text-sm font-bold text-highlighted">Importe cobrado</span>
+              <span class="text-lg font-bold text-highlighted">${{ money(payment.charged_amount) }}</span>
+            </div>
           </div>
         </SupplierPaymentCard>
 
@@ -51,7 +55,7 @@
             </div>
             <div class="mt-1 flex items-center gap-2 text-xs text-muted">
               {{ deposit.bank_label }} · N.° {{ deposit.operation_number || '—' }}
-              <UButton v-if="deposit.voucher_url" size="xs" color="neutral" variant="outline" icon="i-lucide-eye" title="Ver voucher" :to="deposit.voucher_url" target="_blank" />
+              <UButton size="xs" color="neutral" variant="outline" icon="i-lucide-eye" title="Ver depósito" :loading="loadingDeposit === deposit.id" @click="openDeposit(deposit.id)" />
             </div>
             <div class="mt-1.5 flex justify-between gap-2 text-xs">
               <span class="text-muted">Importe ingresado (Banco)</span>
@@ -82,6 +86,9 @@
           </div>
           <p class="rounded-lg p-3 text-sm" :class="comparison.clase">
             <strong v-if="comparison.titulo">{{ comparison.titulo }}</strong>{{ comparison.texto }}
+            <template v-if="comparison.opciones">
+              <strong>Aprobar pago:</strong> lo asume Probusiness (motivo obligatorio). <strong>Por cobrar:</strong> Ventas cobra la diferencia al cliente.
+            </template>
           </p>
         </SupplierPaymentCard>
       </div>
@@ -115,12 +122,7 @@
         <textarea v-model="cancelReason" rows="2" class="w-full rounded-lg border border-default bg-default px-2.5 py-1.5" />
       </label>
     </UCard>
-    <UCard v-if="markingError" color="warning" variant="subtle">
-      <label class="block text-sm">
-        <span class="mb-1 block font-semibold">Qué debe corregir Ventas (error de registro)</span>
-        <textarea v-model="errorDetail" rows="2" class="w-full rounded-lg border border-default bg-default px-2.5 py-1.5" />
-      </label>
-    </UCard>
+    <DepositReviewModal :deposit="depositDetail" :reasons="[]" @close="depositDetail = null" @saved="onDepositSaved" />
 
     <template #footer>
       <UButton color="neutral" variant="outline" @click="emit('close')">{{ payment?.can_approve ? 'Cancelar' : 'Cerrar' }}</UButton>
@@ -132,8 +134,6 @@
         <UButton v-if="extending" color="primary" :loading="saving" @click="run('extend')">Confirmar extensión</UButton>
         <UButton v-if="payment?.can_cancel && !cancelling && !extending" color="error" variant="outline" @click="cancelling = true">Anular pago</UButton>
         <UButton v-if="cancelling" color="error" :loading="saving" @click="run('cancel')">Confirmar anulación</UButton>
-        <UButton v-if="payment?.can_mark_registration_error && !markingError" color="neutral" variant="outline" @click="markingError = true">Error de registro</UButton>
-        <UButton v-if="markingError" color="warning" :loading="saving" @click="run('registration_error')">Confirmar error de registro</UButton>
         <UButton v-if="payment?.can_collect" color="neutral" variant="outline" :loading="saving" @click="run('collect')">Por cobrar</UButton>
         <UButton v-if="payment?.can_approve" class="boton-naranja" :loading="saving" @click="run('approve')">Aprobar pago</UButton>
       </template>
@@ -146,9 +146,10 @@ import { computed, ref, watch } from 'vue'
 import SupplierPaymentCard from '~/components/pago-proveedor/SupplierPaymentCard.vue'
 import SupplierPaymentFact from '~/components/pago-proveedor/SupplierPaymentFact.vue'
 import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
+import DepositReviewModal from '~/components/pago-proveedor/DepositReviewModal.vue'
 import { APPROVAL_STATUS } from '~/constants/supplierPayment'
 import { PagoProveedorService } from '~/services/pagoProveedorService'
-import type { SupplierPaymentApproval } from '~/types/pago-proveedor'
+import type { SupplierPaymentApproval, SupplierPaymentDeposit } from '~/types/pago-proveedor'
 import { useModal } from '~/composables/commons/useModal'
 
 const props = defineProps<{ payment: SupplierPaymentApproval | null }>()
@@ -157,13 +158,14 @@ const { showSuccess, showError } = useModal()
 
 const reason = ref('')
 const cancelReason = ref('')
-const errorDetail = ref('')
 const extendReason = ref('')
 const extendDays = ref(7)
 const cancelling = ref(false)
 const extending = ref(false)
-const markingError = ref(false)
 const saving = ref(false)
+/** Depósito abierto con «ver»: la misma ventana de validación de Verificación. */
+const depositDetail = ref<SupplierPaymentDeposit | null>(null)
+const loadingDeposit = ref<number | null>(null)
 
 const deposits = computed(() => props.payment?.deposits || [])
 const depositsOpen = computed(() => !!props.payment?.can_approve && deposits.value.some((deposit) => deposit.status_label !== 'Validado'))
@@ -188,7 +190,7 @@ const comparison = computed(() => {
   const tolerancia = `$${money(payment.tolerance)}`
   if (Math.abs(difference) <= 0.004) return { clase: verde, titulo: '✓ ', texto: 'Los importes coinciden.' }
   if (!payment.needs_reason) return { clase: verde, titulo: '', texto: `${difference < 0 ? 'Faltan' : 'Sobran'} ${monto}: dentro de la tolerancia de ${tolerancia}.` }
-  if (difference < 0) return { clase: rojo, titulo: `Faltan ${monto}`, texto: `: supera la tolerancia de ${tolerancia}. Aprobar pago: lo asume Probusiness (motivo obligatorio). Por cobrar: Ventas cobra la diferencia al cliente.` }
+  if (difference < 0) return { clase: rojo, titulo: `Faltan ${monto}`, texto: `: supera la tolerancia de ${tolerancia}. `, opciones: true }
   return { clase: rojo, titulo: `Sobran ${monto}`, texto: `: supera la tolerancia de ${tolerancia}. Aprobar el pago pide motivo.` }
 })
 
@@ -205,26 +207,39 @@ const subtitle = computed(() => {
 watch(() => props.payment?.id, () => {
   reason.value = ''
   cancelReason.value = ''
-  errorDetail.value = ''
   extendReason.value = ''
   extendDays.value = 7
   cancelling.value = false
   extending.value = false
-  markingError.value = false
+  depositDetail.value = null
 })
 
 function money(value?: number | null) {
   return Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-async function run(action: 'approve' | 'collect' | 'extend' | 'cancel' | 'registration_error') {
+async function openDeposit(id: number) {
+  loadingDeposit.value = id
+  try {
+    const response = await PagoProveedorService.getDeposit(id)
+    depositDetail.value = response.data
+  } catch (error: any) {
+    showError('Depósito', error?.data?.message || error?.message || 'No se pudo abrir el depósito.')
+  } finally {
+    loadingDeposit.value = null
+  }
+}
+
+function onDepositSaved() {
+  // Si se deshizo la validación el pago cambia: se recarga la lista y se cierra el detalle.
+  emit('saved')
+  emit('close')
+}
+
+async function run(action: 'approve' | 'collect' | 'extend' | 'cancel') {
   if (!props.payment) return
   if (action === 'approve' && props.payment.needs_reason && !reason.value.trim()) {
     showError('Aprobar pago', 'Indica el motivo para asumir la diferencia.')
-    return
-  }
-  if (action === 'registration_error' && !errorDetail.value.trim()) {
-    showError('Error de registro', 'Indica qué debe corregir Ventas.')
     return
   }
   if (action === 'extend' && !extendReason.value.trim()) {
@@ -246,7 +261,6 @@ async function run(action: 'approve' | 'collect' | 'extend' | 'cancel' | 'regist
       })
     }
     if (action === 'cancel') await PagoProveedorService.cancelPayment(props.payment.id, cancelReason.value)
-    if (action === 'registration_error') await PagoProveedorService.markRegistrationError(props.payment.id, errorDetail.value)
     showSuccess('Aprobación', 'El pago quedó actualizado.')
     emit('saved')
     emit('close')

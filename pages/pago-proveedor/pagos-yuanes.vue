@@ -1,7 +1,8 @@
 <template>
   <SupplierPaymentPage
-    title="Pago a proveedores"
-    subtitle="Operaciones"
+    title="Pagos en yuanes"
+    subtitle="Pago a proveedor"
+    icon="i-heroicons-currency-yen"
   >
     <SupplierPaymentYuan />
   </SupplierPaymentPage>

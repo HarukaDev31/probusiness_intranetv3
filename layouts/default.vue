@@ -407,6 +407,16 @@ const sidebarCategories = computed(() => {
     modules.splice(desiredPosition, 0, item)
   }
 
+  // PRY-26-0003: «Verificación» va primero y luego «Pago a Proveedor» (el orden de BD los deja al revés).
+  const verificacionIndex = modules.findIndex((m: any) => m.route === '/verificacion')
+  const pagoProveedorIndex = modules.findIndex((m: any) =>
+    (m.children ?? []).some((c: any) => String(c.route || '').startsWith('/pago-proveedor'))
+  )
+  if (verificacionIndex !== -1 && pagoProveedorIndex !== -1 && pagoProveedorIndex < verificacionIndex) {
+    const [item] = modules.splice(pagoProveedorIndex, 1)
+    modules.splice(verificacionIndex, 0, item)
+  }
+
   // Una sola categoría que contiene todos los módulos padre (para que SidebarMenu los muestre como botones)
   return [
     {
