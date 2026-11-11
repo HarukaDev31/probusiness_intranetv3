@@ -334,7 +334,7 @@ const filterConfig = computed(() => [
     label: 'Consolidado',
     options: [
       { value: 'todos', label: 'Todos' },
-      ...consolidadosDisponibles.value.map((item) => ({ value: item, label: item }))
+      ...consolidadosDisponibles.value.map((item) => ({ value: item, label: soloConsolidado(item) }))
     ]
   },
   {

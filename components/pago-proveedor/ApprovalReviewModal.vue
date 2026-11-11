@@ -201,7 +201,7 @@ function fechaCorta(fecha?: string | null) {
 
 const subtitle = computed(() => {
   if (!props.payment) return ''
-  return `${props.payment.client_name || 'Cliente'} · Consolidado ${props.payment.consolidation || '—'}`
+  return `${props.payment.client_name || 'Cliente'} · Consolidado ${(props.payment.consolidation || '—').replace(/\s*-\s*\d{4}\s*$/, '')}`
 })
 
 watch(() => props.payment?.id, () => {
