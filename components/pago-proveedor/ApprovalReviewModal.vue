@@ -46,7 +46,7 @@
             :class="deposit.status_label === 'Validado' ? 'border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/30' : deposit.status_label === 'Observado' ? 'border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30' : 'border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30'"
           >
             <div class="flex items-start justify-between gap-2">
-              <strong>Abono #{{ deposit.id }} · {{ fechaCorta(deposit.paid_on) }}</strong>
+              <strong>Abono {{ deposit.number ?? deposit.id }} · {{ fechaCorta(deposit.paid_on) }}</strong>
               <span class="whitespace-nowrap text-xs font-semibold">{{ deposit.status_label === 'Validado' ? '✓ Validado' : deposit.status_label }}</span>
             </div>
             <div class="mt-1 flex items-center gap-2 text-xs text-muted">

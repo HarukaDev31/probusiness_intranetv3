@@ -22,7 +22,7 @@
         <div v-for="deposit in progress.verification.deposits" :key="deposit.id" class="mt-2 text-sm">
           <div class="flex items-start justify-between gap-2">
             <div>
-              <strong class="text-highlighted">Abono #{{ deposit.id }} · ${{ money(deposit.shared ? deposit.amount : deposit.applied_amount) }}</strong>
+              <strong class="text-highlighted">Abono {{ deposit.number ?? deposit.id }} · ${{ money(deposit.shared ? deposit.amount : deposit.applied_amount) }}</strong>
               <p class="text-muted">{{ fechaCorta(deposit.paid_on) }} · {{ deposit.bank_label }}</p>
               <p class="text-muted">N.° de operación {{ deposit.operation_number || '—' }}<template v-if="deposit.shared"> · voucher compartido</template></p>
             </div>
@@ -57,7 +57,7 @@
             <UBadge v-if="progress.verification.deposits.some(deposit => deposit.modified)" color="info" variant="soft" label="✎ Modificado" />
           </div>
           <div v-for="deposit in progress.verification.deposits" :key="`check-${deposit.id}`" class="mt-2 text-sm text-muted">
-            <strong v-if="progress.verification.deposits.length > 1" class="block text-highlighted">Abono #{{ deposit.id }}</strong>
+            <strong v-if="progress.verification.deposits.length > 1" class="block text-highlighted">Abono {{ deposit.number ?? deposit.id }}</strong>
             Importe ingresado (Banco): <strong class="text-highlighted">${{ money(deposit.amount) }}</strong>
             <em v-if="deposit.recorded_amount != null" class="block">Importe: ${{ money(deposit.recorded_amount) }} → ${{ money(deposit.amount) }}</em>
             <em v-for="change in deposit.corrections" :key="`${deposit.id}-${change.field}-${change.to}`" class="block">{{ change.field }}: {{ change.from }} → {{ change.to }}</em>

@@ -246,7 +246,7 @@
               <UAlert v-if="proveedor.puede_registrar_diferencia" class="mb-2" color="warning" variant="subtle" description="Administración dejó este pago por cobrar. Registra el comprobante de la diferencia." />
               <div v-for="item in abonosProveedor(proveedor.id)" :key="item.id" class="mb-2 flex items-start justify-between gap-2 text-sm">
                 <div>
-                  <strong class="text-highlighted">Abono #{{ numeroAbono(item) }} · ${{ dinero(montoAplicado(item, proveedor.id)) }}</strong>
+                  <strong class="text-highlighted">Abono {{ numeroAbono(item) }} · ${{ dinero(montoAplicado(item, proveedor.id)) }}</strong>
                   <p class="text-muted">{{ fechaCorta(item.fecha_pago) }} · {{ item.banco.toUpperCase() }}</p>
                   <p class="text-muted">N.° de operación {{ item.numero_operacion || '—' }}<template v-if="item.aplicaciones.length > 1"> · voucher compartido</template></p>
                   <UBadge
@@ -293,7 +293,7 @@
           <p v-if="(vistaEtapa[proveedor.id] ?? proveedor.etapa) !== proveedor.etapa" class="mt-3 text-sm text-muted">
             Estás revisando este paso en solo lectura. El paso actual del proveedor es {{ proveedor.etapa }}.
           </p>
-          <UAlert v-else-if="enManos(proveedor)" class="mt-3" color="info" variant="subtle" :description="enManos(proveedor)" />
+          <UAlert v-else-if="enManos(proveedor)" class="mt-3 w-fit max-w-full" color="info" variant="subtle" :description="enManos(proveedor)" />
 
           <SupplierPaymentProgress
             v-if="solicitud.id && proveedor.estado !== 'anulado'"
@@ -358,11 +358,11 @@
             <tbody>
               <template v-for="abono in solicitud.abonos" :key="abono.id">
                 <tr class="border-t border-default" :class="{ 'opacity-50': abono.estado === 'anulado' }">
-                  <td class="py-2 pr-3">{{ abono.id }}</td>
+                  <td class="py-2 pr-3">{{ abono.numero ?? abono.id }}</td>
                   <td class="whitespace-nowrap py-2 pr-3">{{ fechaCorta(abono.fecha_pago) }}</td>
                   <td class="py-2 pr-3">{{ abono.banco.toUpperCase() }}</td>
                   <td class="py-2 pr-3">${{ dinero(abono.importe) }}</td>
-                  <td class="py-2 pr-3">{{ abono.aplicaciones.map(item => `${nombreProveedor(item.solicitud_proveedor_id)} $${dinero(item.monto)}`).join(', ') }}</td>
+                  <td class="py-2 pr-3">{{ abono.aplicaciones.map(item => nombreProveedor(item.solicitud_proveedor_id)).join(', ') }}</td>
                   <td class="py-2 pr-3">
                     <template v-if="abono.excedente > 0">
                       ${{ dinero(abono.excedente) }} <span class="text-xs text-muted">{{ textoExcedente(abono) }}</span>
@@ -370,8 +370,8 @@
                     </template>
                     <template v-else>—</template>
                   </td>
-                  <td class="py-2 pr-3">{{ abono.estado_nombre }}</td>
-                  <td class="py-2"><UButton v-if="abono.voucher_url" size="xs" color="neutral" variant="outline" icon="i-lucide-receipt-text" title="Ver voucher" :to="abono.voucher_url" target="_blank" /></td>
+                  <td class="py-2 pr-3">{{ abono.estado === 'en_validacion' ? 'Pendiente de validación' : abono.estado_nombre }}</td>
+                  <td class="py-2"><UButton v-if="abono.voucher_url" size="xs" color="neutral" variant="outline" icon="i-lucide-receipt-text" title="Ver voucher" @click="voucherAbierto = abono" /></td>
                 </tr>
                 <tr v-if="abonoConDetalle(abono)">
                   <td colspan="8" class="pb-3">
@@ -450,18 +450,27 @@
       </SupplierPaymentWindow>
 
       <SupplierPaymentWindow :open="!!desglose" title="Desglose del cobro" :subtitle="desglose?.code_supplier || ''" @close="cerrarDesglose">
-        <dl v-if="desglose" class="divide-y divide-default text-sm">
-          <div class="flex justify-between gap-3 py-2"><dt class="text-muted">Valor de carga</dt><dd>${{ dinero(desglose.valor_carga_usd) }}</dd></div>
-          <div class="flex justify-between gap-3 py-2"><dt class="text-muted">Comisión bancaria / plataforma</dt><dd>{{ desglose.etiqueta_bancaria || `$${dinero(desglose.bancaria_monto)}` }}</dd></div>
-          <div class="flex justify-between gap-3 py-2"><dt class="text-muted">Comisión administrativa</dt><dd>${{ dinero(desglose.administrativa_monto) }}</dd></div>
-          <div class="flex justify-between gap-3 py-2 font-bold text-highlighted"><dt>Total a abonar</dt><dd>${{ dinero(desglose.importe_requerido) }}</dd></div>
-          <div class="flex justify-between gap-3 py-2"><dt class="text-muted">Abonado</dt><dd>${{ dinero(desglose.importe_abonado) }}</dd></div>
-          <div class="flex justify-between gap-3 py-2 font-bold text-warning"><dt>Saldo</dt><dd>${{ dinero(desglose.saldo) }}</dd></div>
+        <dl v-if="desglose" class="space-y-1 text-sm">
+          <div class="flex items-center gap-3 px-3 py-2"><UIcon name="i-lucide-package" class="size-5 shrink-0 text-muted" /><dt class="flex-1 text-highlighted">Valor de carga</dt><dd>${{ dinero(desglose.valor_carga_usd) }}</dd></div>
+          <div class="flex items-center gap-3 px-3 py-2"><UIcon name="i-lucide-landmark" class="size-5 shrink-0 text-muted" /><dt class="flex-1 text-highlighted">Comisión bancaria / plataforma</dt><dd>{{ desglose.etiqueta_bancaria || `$${dinero(desglose.bancaria_monto)}` }}</dd></div>
+          <div class="flex items-center gap-3 px-3 py-2"><UIcon name="i-lucide-shield-check" class="size-5 shrink-0 text-muted" /><dt class="flex-1 text-highlighted">Comisión administrativa</dt><dd>${{ dinero(desglose.administrativa_monto) }}</dd></div>
+          <div class="flex items-center gap-3 rounded-lg bg-primary/10 px-3 py-3 text-base font-bold text-highlighted"><UIcon name="i-lucide-calculator" class="size-5 shrink-0 text-primary" /><dt class="flex-1">Total a abonar</dt><dd>${{ dinero(desglose.importe_requerido) }}</dd></div>
+          <div class="flex items-center gap-3 px-3 py-2"><UIcon name="i-lucide-wallet" class="size-5 shrink-0 text-muted" /><dt class="flex-1 text-highlighted">Abonado</dt><dd>${{ dinero(desglose.importe_abonado) }}</dd></div>
+          <div class="flex items-center gap-3 rounded-lg bg-primary/10 px-3 py-3 text-base font-bold text-primary"><UIcon :name="desglose.saldo > 0.004 ? 'i-lucide-circle-alert' : 'i-lucide-circle-check'" class="size-5 shrink-0" /><dt class="flex-1">Saldo</dt><dd>${{ dinero(desglose.saldo) }}</dd></div>
         </dl>
         <template #footer>
           <UButton color="neutral" variant="outline" @click="cerrarDesglose">Cerrar</UButton>
         </template>
       </SupplierPaymentWindow>
+
+      <VoucherViewerModal
+        :open="!!voucherAbierto"
+        :url="voucherAbierto?.voucher_url || null"
+        :name="voucherAbierto?.voucher_nombre"
+        :title="voucherAbierto ? `Voucher · Abono ${voucherAbierto.numero ?? voucherAbierto.id}` : 'Voucher'"
+        :description="voucherAbierto ? `Importe recibido $${dinero(voucherAbierto.importe)} · Aplicado a ${voucherAbierto.aplicaciones.map(item => nombreProveedor(item.solicitud_proveedor_id)).join(', ')} · ${fechaCorta(voucherAbierto.fecha_pago)} | ${voucherAbierto.banco.toUpperCase()}` : null"
+        @close="voucherAbierto = null"
+      />
 
       <SupplierPaymentWindow
         :open="!!abonoContinuacion"
@@ -662,6 +671,7 @@ import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWi
 import SupplierPaymentProgress from '~/components/pago-proveedor/SupplierPaymentProgress.vue'
 import VoucherViewer from '~/components/pago-proveedor/VoucherViewer.vue'
 import { useSlaCountdown } from '~/composables/pago-proveedor/useSlaCountdown'
+import VoucherViewerModal from '~/components/pago-proveedor/VoucherViewerModal.vue'
 
 type TipoMotivo = 'observar' | 'anular' | 'levantar'
 
