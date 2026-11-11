@@ -317,6 +317,10 @@ export class PagoProveedorService extends BaseService {
     }>(`${this.baseUrl}/verificacion/depositos?${query.toString()}`)
   }
 
+  static async getDeposit(id: number) {
+    return this.apiCall<Uno<SupplierPaymentDeposit>>(`${this.baseUrl}/verificacion/depositos/${id}`)
+  }
+
   static async updateDeposit(id: number, body: { bank: string; paid_on: string; operation_number: string }) {
     return this.apiCall<Uno<SupplierPaymentDeposit>>(`${this.baseUrl}/verificacion/depositos/${id}`, {
       method: 'PUT',

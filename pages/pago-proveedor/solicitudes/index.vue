@@ -1,14 +1,8 @@
 <template>
   <div class="md:p-6">
-    <header class="mb-4 flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h1 class="text-xl font-bold text-highlighted">Pago a Proveedor</h1>
-        <p v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" class="mt-1 text-sm text-muted">Lo que te toca hacer está en Mis pendientes. El resto del pago lo ves en el detalle, en solo lectura.</p>
-      </div>
-      <div v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" class="flex gap-2">
-        <UButton color="neutral" variant="soft" to="/pago-proveedor/cotizaciones">Cotizaciones</UButton>
-        <UButton color="primary" @click="nuevaCotizacion = true">Nueva cotización</UButton>
-      </div>
+    <header class="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <PageHeader title="Solicitudes" subtitle="Pago a proveedor" icon="i-heroicons-clipboard-document-list" :hide-back-button="true" />
+      <UButton v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" label="Nueva cotización" icon="i-heroicons-plus" color="primary" class="h-11 font-normal" @click="nuevaCotizacion = true" />
     </header>
     <NuevaCotizacionModal v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" :open="nuevaCotizacion" @close="nuevaCotizacion = false" @accepted="(codigo) => navigateTo({ path: '/pago-proveedor/cotizaciones/nueva', query: { cc: codigo } })" />
     <template v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES">
@@ -70,7 +64,7 @@
             <p class="text-sm font-bold text-highlighted">{{ row.clientName || 'Cliente' }}</p>
             <p class="mt-1 text-sm text-muted">{{ taskText(row.provider) }}</p>
             <p class="mt-1 text-xs text-muted">
-              {{ row.consolidation || 'Sin consolidado' }} · {{ supplierLabel(row.provider) }} · {{ paymentLabel(row.provider) }}
+              {{ consolidadoNumero(row.consolidation) || 'Sin consolidado' }} · {{ supplierLabel(row.provider) }} · {{ paymentLabel(row.provider) }}
               <template v-if="row.provider.payment_shape === PAYMENT_SHAPE.CLIENT_INSTALLMENTS"> · Cuota {{ installmentTag(row.provider) }}</template>
             </p>
             <p v-if="compromisoCuota(row.provider)" class="mt-1 text-xs font-medium text-warning">{{ compromisoCuota(row.provider) }}</p>
@@ -109,34 +103,37 @@
       </details>
     </div>
 
-    <DataTable
-      v-else
-      title="Todas las solicitudes"
-      subtitle="Pago a proveedor"
-      :show-title="true"
-      icon="i-heroicons-clipboard-document-list"
-      :data="allRows"
-      :columns="columns"
-      :loading="loading"
-      :current-page="pagination.current_page"
-      :total-pages="pagination.last_page"
-      :total-records="pagination.total"
-      :items-per-page="pagination.per_page"
-      :primary-search-value="search"
-      :show-primary-search="true"
-      :show-primary-search-label="false"
-      primary-search-placeholder="Cliente, código de proveedor o N.°"
-      :show-filters="true"
-      :filter-config="filtrosConfig"
-      :filters-value="filtros"
-      :show-export="false"
-      empty-state-message="Todavía no hay solicitudes."
-      @update:primary-search="onSearch"
-      @page-change="onPage"
-      @items-per-page-change="onPageSize"
-      @filter-change="onFilter"
-      @clear-filters="onClearFilters"
-    />
+    <div v-else class="space-y-4">
+      <form class="grid w-full gap-3 rounded-xl border border-default bg-default p-4 lg:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto_auto]" @submit.prevent="aplicarFiltros">
+        <UFormField label="Buscar cliente o código de solicitud" :ui="{ label: 'text-[11px] font-semibold uppercase text-muted' }">
+          <UInput v-model="borrador.search" icon="i-heroicons-magnifying-glass" placeholder="Ej: María Torres, PE¥01" class="w-full" />
+        </UFormField>
+        <UFormField v-for="filtro in filtrosConfig" :key="filtro.key" :label="filtro.label" :ui="{ label: 'text-[11px] font-semibold uppercase text-muted' }">
+          <USelect v-model="borrador[filtro.key]" :items="filtro.options" value-key="value" label-key="label" class="w-full lg:w-44" />
+        </UFormField>
+        <div class="flex items-end gap-2">
+          <UButton type="submit" color="neutral" variant="outline" label="Aplicar" />
+          <UButton color="neutral" variant="outline" label="Limpiar" @click="onClearFilters" />
+        </div>
+      </form>
+
+      <DataTable
+        filters-layout="inline"
+        :data="allRows"
+        :columns="columns"
+        :loading="loading"
+        :current-page="pagination.current_page"
+        :total-pages="pagination.last_page"
+        :total-records="pagination.total"
+        :items-per-page="pagination.per_page"
+        :show-primary-search="false"
+        :show-filters="false"
+        :show-export="false"
+        empty-state-message="Todavía no hay solicitudes."
+        @page-change="onPage"
+        @items-per-page-change="onPageSize"
+      />
+    </div>
     </template>
   </div>
 </template>
@@ -190,6 +187,7 @@ const filtros = ref<Record<string, string>>({
   etapa: 'todos',
   estado: 'todos'
 })
+const borrador = ref<Record<string, string>>({ search: '', ...filtros.value })
 
 const lines = computed<RequestLine[]>(() => requests.value.flatMap((request) => (request.providers || []).map((provider, groupIndex) => ({
   groupIndex,
@@ -241,7 +239,7 @@ const filtrosConfig = computed<FilterConfig[]>(() => [
     placeholder: 'Consolidado',
     options: [
       { label: 'Todos', value: 'todos' },
-      ...consolidadosDisponibles.value.map((item) => ({ label: item, value: item }))
+      ...consolidadosDisponibles.value.map((item) => ({ label: consolidadoNumero(item), value: item }))
     ]
   },
   {
@@ -282,6 +280,38 @@ const filtrosConfig = computed<FilterConfig[]>(() => [
 
 function supplierLabel(provider: SupplierPaymentProviderRow) {
   return provider.supplier_name ? `${provider.supplier_code} · ${provider.supplier_name}` : (provider.supplier_code || 'Sin código')
+}
+
+/** «21 - 2026» → «21»: en Pago a proveedor solo va el número de consolidado. */
+function consolidadoNumero(consolidado: string | null) {
+  return (consolidado || '').split('-')[0]!.trim()
+}
+
+/** Responsable por etapa: 1 y 4 Ventas; 2 Administración; 3 Administración (USD) u Operaciones China (RMB). */
+function responsableEtapa(provider: SupplierPaymentProviderRow) {
+  if (provider.stage === REQUEST_STAGE.VALIDATION) return 'Administración'
+  if (provider.stage === REQUEST_STAGE.EXECUTION) return provider.currency === SUPPLIER_CURRENCY.RMB ? 'Operaciones China' : 'Administración'
+  return 'Asesor de Ventas'
+}
+
+function fechaCorta(fecha: string) {
+  const [anio, mes, dia] = fecha.slice(0, 10).split('-')
+  return `${dia}/${mes}/${anio}`
+}
+
+/** Forma de pago con la cuota en curso y, debajo, la fecha comprometida de la 2.ª cuota. */
+function formaDePago(provider: SupplierPaymentProviderRow) {
+  if (provider.payment_shape !== PAYMENT_SHAPE.CLIENT_INSTALLMENTS) {
+    return pill(paymentShapeLabel(provider.payment_shape), shapeColor(provider.payment_shape))
+  }
+  const cuota = provider.current_installment || 1
+  const cerrada = cuota === 2 && provider.status === PROVIDER_STATUS.COMPLETED
+  return h('div', { class: 'flex flex-col items-start gap-1' }, [
+    pill(`Cuotas ${cuota}/2${cerrada ? ' ✓' : ''}`, shapeColor(provider.payment_shape)),
+    cuota === 1 && provider.second_installment_on
+      ? h('span', { class: 'text-xs text-muted' }, `2.ª: ${fechaCorta(provider.second_installment_on)}`)
+      : null
+  ])
 }
 
 function ownerLabel(provider: SupplierPaymentProviderRow) {
@@ -408,24 +438,27 @@ const orderCell = {
 const columns: TableColumn<RequestLine>[] = [
   { accessorKey: 'orderNumber', header: 'N.°', meta: orderCell },
   { accessorKey: 'createdAt', header: 'Fecha', meta: orderCell, cell: ({ row }) => row.original.createdAt ? new Date(row.original.createdAt).toLocaleDateString('es-PE') : '—' },
-  { accessorKey: 'consolidation', header: 'Consolidado', meta: orderCell },
+  { accessorKey: 'consolidation', header: 'Consolidado', meta: orderCell, cell: ({ row }) => consolidadoNumero(row.original.consolidation) || '—' },
   { accessorKey: 'clientName', header: 'Cliente', meta: orderCell, cell: ({ row }) => h('span', { class: 'block w-32 whitespace-normal' }, row.original.clientName) },
-  { accessorKey: 'provider', header: 'Proveedor', cell: ({ row }) => supplierLabel(row.original.provider) },
+  { accessorKey: 'provider', header: 'Proveedor', cell: ({ row }) => row.original.provider.supplier_code || 'Sin código' },
   { accessorKey: 'requestCode', header: 'Código de solicitud', cell: ({ row }) => row.original.provider.request_code || '—' },
-  { accessorKey: 'paymentShape', header: 'Forma de pago', cell: ({ row }) => pill(paymentShapeLabel(row.original.provider.payment_shape), shapeColor(row.original.provider.payment_shape)) },
+  { accessorKey: 'paymentShape', header: 'Forma de pago', cell: ({ row }) => formaDePago(row.original.provider) },
   { accessorKey: 'paymentType', header: 'Tipo de pago', cell: ({ row }) => paymentLabel(row.original.provider) },
   { accessorKey: 'stage', header: 'Etapa', cell: ({ row }) => pill(`${row.original.provider.stage}. ${stageLabel(row.original.provider.stage)}`, 'info') },
   { accessorKey: 'status', header: 'Estado', cell: ({ row }) => pill(statusLabel(row.original.provider.status), statusColor(row.original.provider.status)) },
-  { accessorKey: 'owner', header: 'Responsable', cell: ({ row }) => row.original.provider.owner === REQUEST_OWNER.SALES ? 'Ventas' : 'Otra área' },
+  { accessorKey: 'owner', header: 'Responsable', cell: ({ row }) => responsableEtapa(row.original.provider) },
   {
     accessorKey: 'actions',
     header: 'Acciones',
+    meta: orderCell,
     cell: ({ row }) => h(UButton, {
-      size: 'xs',
-      color: 'primary',
-      variant: 'ghost',
-      label: 'Ver',
-      onClick: () => navigateTo(`/pago-proveedor/solicitudes/${row.original.requestId}`)
+      size: 'sm',
+      color: 'neutral',
+      variant: 'outline',
+      icon: 'i-lucide-eye',
+      title: 'Ver solicitud',
+      'aria-label': 'Ver solicitud',
+      onClick: () => { navigateTo(`/pago-proveedor/solicitudes/${row.original.requestId}`) }
     })
   }
 ]
@@ -451,8 +484,10 @@ async function loadRequests() {
   }
 }
 
-function onSearch(value: string) {
-  search.value = value
+function aplicarFiltros() {
+  const { search: texto, ...resto } = borrador.value
+  search.value = (texto || '').trim()
+  filtros.value = { ...filtros.value, ...resto }
   pagination.value.current_page = 1
   loadRequests()
 }
@@ -468,18 +503,10 @@ function onPageSize(size: number) {
   loadRequests()
 }
 
-function onFilter(clave: string, valor: unknown) {
-  const normalizado = valor && typeof valor === 'object' && 'value' in (valor as Record<string, unknown>)
-    ? (valor as Record<string, unknown>).value
-    : valor
-  const texto = normalizado === null || normalizado === undefined ? '' : String(normalizado)
-  filtros.value = { ...filtros.value, [clave]: texto || 'todos' }
-  pagination.value.current_page = 1
-  loadRequests()
-}
-
 function onClearFilters() {
   filtros.value = { consolidado: 'todos', tipo_pago: 'todos', etapa: 'todos', estado: 'todos' }
+  borrador.value = { search: '', ...filtros.value }
+  search.value = ''
   pagination.value.current_page = 1
   loadRequests()
 }

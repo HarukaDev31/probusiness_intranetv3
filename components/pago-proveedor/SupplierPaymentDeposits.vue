@@ -1,16 +1,16 @@
 <template>
   <div>
-    <div v-if="overdueCount || observedCount" class="mb-3 flex flex-wrap gap-2">
-      <UCard v-if="overdueCount" color="error" variant="subtle" :ui="{ body: 'px-3 py-2 sm:px-3 sm:py-2' }">
-        <p class="text-sm font-semibold text-error">
-          {{ overdueCount }} depósito{{ overdueCount === 1 ? '' : 's' }} con plazo vencido
-        </p>
-      </UCard>
-      <UCard v-if="observedCount" color="warning" variant="subtle" :ui="{ body: 'px-3 py-2 sm:px-3 sm:py-2' }">
-        <p class="text-sm font-semibold">
-          {{ observedCount }} depósito{{ observedCount === 1 ? '' : 's' }} observado{{ observedCount === 1 ? '' : 's' }}
-        </p>
-      </UCard>
+    <!-- Aviso como la maqueta: franja roja a todo el ancho con los depósitos fuera de plazo. -->
+    <div v-if="overdueCount" class="mb-3 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">
+      <UIcon name="i-lucide-alarm-clock" class="size-4 shrink-0" />
+      <span>
+        <strong>{{ overdueCount }} depósito{{ overdueCount === 1 ? '' : 's' }} fuera del plazo</strong>
+        de {{ verifyHours }} h para validar el ingreso del dinero.
+      </span>
+    </div>
+    <div v-if="observedCount" class="mb-3 flex items-center gap-2 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+      <UIcon name="i-lucide-circle-alert" class="size-4 shrink-0" />
+      <strong>{{ observedCount }} depósito{{ observedCount === 1 ? '' : 's' }} observado{{ observedCount === 1 ? '' : 's' }}</strong>
     </div>
     <DataTable
       sticky-last-column
@@ -23,20 +23,22 @@
       :total-pages="pagination.last_page"
       :total-records="pagination.total"
       :items-per-page="pagination.per_page"
-      :primary-search-value="search"
-      :show-primary-search="true"
-      :show-primary-search-label="false"
-      primary-search-placeholder="Cliente, N.° de operación, importe o código de solicitud"
-      :show-filters="true"
-      :filter-config="filterConfig"
-      :filters-value="filters"
       :show-export="false"
       empty-state-message="No hay depósitos con ese filtro."
-      @update:primary-search="onSearch"
-      @filter-change="onFilter"
       @page-change="onPage"
       @items-per-page-change="onPageSize"
-    />
+    >
+      <template #filters>
+        <SupplierPaymentFilterBar
+          :search="search"
+          search-placeholder="Cliente, N.° de operación, importe o código de solicitud"
+          :fields="filterConfig"
+          :values="filters"
+          @update:search="onSearch"
+          @change="onFilter"
+        />
+      </template>
+    </DataTable>
     <DepositReviewModal :deposit="selected" :reasons="reasons" @close="selected = null" @saved="load" />
     <VoucherPreviewModal :deposit="preview" @close="preview = null" />
   </div>
@@ -47,6 +49,7 @@ import { computed, h, onMounted, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import DepositReviewModal from '~/components/pago-proveedor/DepositReviewModal.vue'
 import VoucherPreviewModal from '~/components/pago-proveedor/VoucherPreviewModal.vue'
+import SupplierPaymentFilterBar from '~/components/pago-proveedor/SupplierPaymentFilterBar.vue'
 import { DEPOSIT_BANK, DEPOSIT_STATUS } from '~/constants/supplierPayment'
 import { PagoProveedorService } from '~/services/pagoProveedorService'
 import type { PagoProveedorPaginacion, SupplierPaymentDeposit, SupplierPaymentObservationReason } from '~/types/pago-proveedor'
@@ -72,6 +75,7 @@ const filters = ref({ status: DEPOSIT_STATUS.PENDING, bank: DEPOSIT_BANK.ALL, co
 
 const overdueCount = computed(() => rows.value.filter((row) => slaOverdue(row.sla)).length)
 const observedCount = computed(() => rows.value.filter((row) => row.status === DEPOSIT_STATUS.OBSERVED).length)
+const verifyHours = computed(() => rows.value.find((row) => row.sla?.hours)?.sla?.hours ?? 2)
 
 function isImageUrl(url: string | null) {
   return !!url && /\.(png|jpe?g|webp|gif|bmp|svg)(\?|$)/i.test(url)
@@ -104,10 +108,14 @@ function statusDetail(row: SupplierPaymentDeposit): string[] {
 
 const filterConfig = computed(() => [
   {
+    key: 'consolidation',
+    label: 'Consolidado',
+    options: [{ value: DEPOSIT_STATUS.ALL, label: 'Todos' }, ...consolidations.value.map((value) => ({ value, label: value }))]
+  },
+  { key: 'paid_on', label: 'Fecha del depósito', type: 'date-range' as const, fromKey: 'paid_from', toKey: 'paid_to' },
+  {
     key: 'status',
     label: 'Estado',
-    type: 'select',
-    placeholder: 'Todos los estados',
     options: [
       { value: DEPOSIT_STATUS.PENDING, label: 'Pendiente' },
       { value: DEPOSIT_STATUS.OBSERVED, label: 'Observado' },
@@ -119,23 +127,12 @@ const filterConfig = computed(() => [
   {
     key: 'bank',
     label: 'Banco',
-    type: 'select',
-    placeholder: 'Todos los bancos',
     options: [
       { value: DEPOSIT_BANK.ALL, label: 'Todos' },
       { value: DEPOSIT_BANK.BCP, label: 'BCP' },
       { value: DEPOSIT_BANK.INTERBANK, label: 'Interbank' }
     ]
-  },
-  {
-    key: 'consolidation',
-    label: 'Consolidado',
-    type: 'select',
-    placeholder: 'Todos los consolidados',
-    options: [{ value: DEPOSIT_STATUS.ALL, label: 'Todos' }, ...consolidations.value.map((value) => ({ value, label: value }))]
-  },
-  { key: 'paid_from', label: 'Desde', type: 'date', placeholder: 'Desde', options: [] },
-  { key: 'paid_to', label: 'Hasta', type: 'date', placeholder: 'Hasta', options: [] }
+  }
 ])
 
 const columns: TableColumn<SupplierPaymentDeposit>[] = [
@@ -206,10 +203,9 @@ const columns: TableColumn<SupplierPaymentDeposit>[] = [
       key: `detail-${index}`,
       class: 'text-xs text-muted'
     }, line)),
+    // Plazo en letra gris y pequeña, como la maqueta; el aviso rojo de arriba resume los vencidos.
     row.original.deadline_text
-      ? h('div', {
-        class: slaOverdue(row.original.sla) ? 'text-xs font-semibold text-error' : 'text-xs text-muted'
-      }, `${slaOverdue(row.original.sla) ? '⏰ ' : ''}${slaText(row.original.sla) || row.original.deadline_text}`)
+      ? h('div', { class: 'text-xs text-muted' }, slaText(row.original.sla) || row.original.deadline_text)
       : null
   ]) },
   { accessorKey: 'id', header: 'Acciones', cell: ({ row }) => h(UButton, {

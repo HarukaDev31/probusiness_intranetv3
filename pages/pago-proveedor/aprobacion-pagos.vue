@@ -1,7 +1,8 @@
 <template>
   <SupplierPaymentPage
-    title="Pago a Proveedor"
-    subtitle="Aprobación de pagos con depósitos validados en Verificación."
+    title="Aprobación de pagos"
+    subtitle="Pago a proveedor"
+    icon="i-heroicons-check-badge"
   >
     <SupplierPaymentApprovals />
   </SupplierPaymentPage>
