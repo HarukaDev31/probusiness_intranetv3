@@ -5,6 +5,49 @@
     :loading="loadingOperativa"
     :variant="varianteOperativa"
   />
+  <section v-else-if="isAdministracion" class="content-header px-4 xl:px-4 sm:px-2 pb-6">
+    <div class="mb-5">
+      <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Pendientes de hoy</h1>
+      <p class="mt-1 text-sm text-muted">Lo que Administración debe revisar o mover ahora.</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-6">
+      <button
+        v-for="card in adminActionCards"
+        :key="card.id"
+        type="button"
+        class="text-left rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 hover:border-primary-400 transition"
+        @click="navigateTo(card.to)"
+      >
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="text-sm text-muted">{{ card.label }}</p>
+            <p class="mt-1 text-3xl font-semibold tabular-nums text-gray-900 dark:text-white">{{ card.count }}</p>
+            <p class="mt-2 text-xs text-muted">{{ card.hint }}</p>
+          </div>
+          <UIcon :name="card.icon" class="w-8 h-8 text-primary-500 shrink-0" />
+        </div>
+      </button>
+    </div>
+
+    <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Desglose de verificación</h2>
+      <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2">
+        <button
+          v-for="row in adminVerificationRows"
+          :key="row.id"
+          type="button"
+          class="rounded-lg px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700/60 transition"
+          @click="navigateTo(row.to)"
+        >
+          <p class="text-xs text-muted">{{ row.label }}</p>
+          <p class="text-lg font-semibold tabular-nums" :class="row.count > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-gray-900 dark:text-white'">
+            {{ row.count }}
+          </p>
+        </button>
+      </div>
+    </div>
+  </section>
   <section v-else class="content-header px-4 xl:px-4 sm:px-2" style="height: 93vh;">
     <!-- Hero Section -->
     <div ref="heroRef" class="hero-section relative h-100 bg-cover bg-center bg-no-repeat mb-4 rounded-xl overflow-hidden opacity-0 translate-y-4 transition-all duration-700"
@@ -54,14 +97,16 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { esOrganizacionSocio, esRolSocio } from '~/constants/roles'
+import { esOrganizacionSocio, esRolSocio, ROLES } from '~/constants/roles'
 import { useHomeStats } from '~/composables/cargaconsolidada/home-stats'
 import { useUserRole } from '~/composables/auth/useUserRole'
+import { useVerificationCounts } from '~/composables/verificacion/useVerificationCounts'
 
 definePageMeta({ middleware: 'auth' })
 
-const { fetchCurrentUser, currentRole, userData, isContenedorAlmacen } = useUserRole()
+const { fetchCurrentUser, currentRole, userData, isContenedorAlmacen, hasRole } = useUserRole()
 const { stats: homeStats, loading: loadingOperativa, loadStats } = useHomeStats()
+const { counts: verificationCounts, refresh: refreshVerificationCounts } = useVerificationCounts()
 if (import.meta.client) {
   fetchCurrentUser()
 }
@@ -69,8 +114,53 @@ if (import.meta.client) {
 const orgId = computed(() => Number(userData.value?.organizacion?.id || userData.value?.raw?.organizacion?.id || 0))
 const isSocioHome = computed(() => esRolSocio(currentRole.value) || esOrganizacionSocio(orgId.value))
 const isOperativa = computed(() => isContenedorAlmacen.value || isSocioHome.value)
+const isAdministracion = computed(() => hasRole(ROLES.ADMINISTRACION))
 const varianteOperativa = computed(() => isContenedorAlmacen.value ? 'almacen' : 'socio')
 const statsOperativa = computed(() => homeStats.value?.cards || [])
+
+const adminActionCards = computed(() => [
+  {
+    id: 'verificacion',
+    label: 'Verificación pendiente',
+    count: verificationCounts.value.verificacion_total,
+    hint: 'Pagos por validar en consolidado, cursos y más',
+    icon: 'i-heroicons-clipboard-document-check',
+    to: '/verificacion'
+  },
+  {
+    id: 'approvals',
+    label: 'Por aprobar / reembolsos',
+    count: verificationCounts.value.supplier_approvals,
+    hint: 'Pago a proveedor listo para decisión',
+    icon: 'i-heroicons-hand-thumb-up',
+    to: '/pago-proveedor/aprobacion-pagos'
+  },
+  {
+    id: 'executions',
+    label: 'Pagos en dólares',
+    count: verificationCounts.value.supplier_executions,
+    hint: 'Ejecuciones pendientes de registrar',
+    icon: 'i-heroicons-banknotes',
+    to: '/pago-proveedor/pagos-dolares'
+  },
+  {
+    id: 'viaticos',
+    label: 'Viáticos y reintegros',
+    count: verificationCounts.value.viaticos,
+    hint: 'Solicitudes pendientes de revisión',
+    icon: 'i-heroicons-receipt-percent',
+    to: '/viaticos/pendientes'
+  }
+])
+
+const adminVerificationRows = computed(() => [
+  { id: 'consolidado', label: 'Consolidado', count: verificationCounts.value.consolidado, to: '/verificacion?tab=consolidado' },
+  { id: 'cursos', label: 'Cursos', count: verificationCounts.value.cursos, to: '/verificacion?tab=cursos' },
+  { id: 'delivery', label: 'Delivery', count: verificationCounts.value.delivery, to: '/verificacion?tab=delivery' },
+  { id: 'permisos', label: 'Permisos', count: verificationCounts.value.permisos, to: '/verificacion?tab=permisos' },
+  { id: 'boletin', label: 'Boletín químico', count: verificationCounts.value.boletin_quimico, to: '/verificacion?tab=boletin-quimico' },
+  { id: 'supplier', label: 'Pago a proveedor', count: verificationCounts.value.supplier_payment, to: '/verificacion?tab=supplier-payment' }
+])
 
 interface StatDef { id: string; value: number; label: string; suffix?: string; icon: string; color: string; delay?: number; current?: number; visible?: boolean }
 
@@ -101,6 +191,10 @@ const heroVisible = ref(false)
 onMounted(async () => {
   if (isOperativa.value) {
     await loadStats()
+    return
+  }
+  if (isAdministracion.value) {
+    await refreshVerificationCounts()
     return
   }
   if (!heroRef.value) return

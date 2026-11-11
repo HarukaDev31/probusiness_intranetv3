@@ -17,14 +17,14 @@
         :items="verificationTabs"
         :content="false"
         color="neutral"
-        size="sm"
+        size="md"
         variant="pill"
         class="w-max"
         :ui="{
           root: 'h-auto w-max',
-          list: 'flex-nowrap w-max gap-1 h-auto',
-          label: 'whitespace-nowrap',
-          trailingBadge: 'ml-1'
+          list: 'flex-nowrap w-max gap-1.5 h-auto',
+          label: 'whitespace-nowrap text-sm font-medium',
+          trailingBadge: 'ml-1.5 min-w-6 justify-center text-xs font-semibold'
         }"
       />
     </div>
@@ -126,7 +126,7 @@
     </div>
 
     <div v-else-if="activeTab === 'supplier-payment' && isAdministracion">
-      <SupplierPaymentDeposits @pending-count="supplierPaymentPending = $event" />
+      <SupplierPaymentDeposits @pending-count="onSupplierPaymentPending" />
     </div>
   </div>
 
@@ -158,8 +158,7 @@ import type { TramiteAduana, TramiteAduanaTipoPermisoItem } from '~/types/baseda
 import { TRAMITE_ESTADOS } from '~/types/basedatos/tramiteAduana'
 import { formatDateTimeToDmy } from '~/utils/formatters'
 import { BoletinQuimicoService } from '~/services/basedatos/boletinQuimicoService'
-import { PagoProveedorService } from '~/services/pagoProveedorService'
-import { DEPOSIT_STATUS } from '~/constants/supplierPayment'
+import { useVerificationCounts } from '~/composables/verificacion/useVerificationCounts'
 import type { BoletinQuimicoRow } from '~/services/basedatos/boletinQuimicoService'
 import type { PagosDetails } from '~/types/cargaconsolidada/clientes/pagos'
 
@@ -181,16 +180,29 @@ const tabs = computed(() => {
 })
 
 const activeTab = ref('consolidado')
-const supplierPaymentPending = ref(0)
+const { counts: verificationCounts, refresh: refreshVerificationCounts } = useVerificationCounts()
+
+const tabCountKey: Record<string, keyof typeof verificationCounts.value> = {
+  consolidado: 'consolidado',
+  cursos: 'cursos',
+  delivery: 'delivery',
+  permisos: 'permisos',
+  'boletin-quimico': 'boletin_quimico',
+  'supplier-payment': 'supplier_payment'
+}
 
 const verificationTabs = computed(() =>
-  tabs.value.map((tab) => ({
-    value: tab.value,
-    label: tab.label,
-    badge: tab.value === 'supplier-payment' && supplierPaymentPending.value > 0
-      ? { label: String(supplierPaymentPending.value), color: 'primary' as const, variant: 'solid' as const }
-      : undefined
-  }))
+  tabs.value.map((tab) => {
+    const key = tabCountKey[tab.value]
+    const count = key ? Number(verificationCounts.value[key] || 0) : 0
+    return {
+      value: tab.value,
+      label: tab.label,
+      badge: count > 0
+        ? { label: String(count), color: 'primary' as const, variant: 'solid' as const }
+        : undefined
+    }
+  })
 )
 
 const modalVisible = ref(false)
@@ -1274,11 +1286,9 @@ onMounted(async () => {
     await loadPermisosVerificacion({ page: 1 })
   } else if (activeTab.value === 'boletin-quimico') {
     await loadBoletin()
-  } else if (activeTab.value === 'supplier-payment' && isAdministracion.value) {
-    await loadSupplierPaymentPending()
   }
-  if (isAdministracion.value && activeTab.value !== 'supplier-payment') {
-    await loadSupplierPaymentPending()
+  if (isAdministracion.value) {
+    void refreshVerificationCounts()
   }
 })
 watch(activeTab, async (newTab, oldTab) => {
@@ -1314,11 +1324,8 @@ watch(activeTab, async (newTab, oldTab) => {
   }
 })
 
-async function loadSupplierPaymentPending() {
-  if (!isAdministracion.value) return
-  try {
-    const response = await PagoProveedorService.listDeposits({ status: DEPOSIT_STATUS.PENDING, page: 1, per_page: 1 })
-    supplierPaymentPending.value = response.pending_count || 0
-  } catch (e) { /* el listado de la pestaña muestra el error */ }
+function onSupplierPaymentPending(total: number) {
+  const { applyPartial } = useVerificationCounts()
+  applyPartial({ supplier_payment: Number(total) || 0 })
 }
 </script>

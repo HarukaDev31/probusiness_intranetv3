@@ -71,11 +71,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, onMounted, ref, watch } from 'vue'
+import { computed, h, onMounted, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import UsdExecutionModal from '~/components/pago-proveedor/UsdExecutionModal.vue'
 import SupplierPaymentTabs from '~/components/pago-proveedor/SupplierPaymentTabs.vue'
-import { useSupplierPaymentCounts } from '~/composables/pago-proveedor/useSupplierPaymentCounts'
 import { EXECUTION_BUCKET, EXECUTION_STATUS } from '~/constants/supplierPayment'
 import { PagoProveedorService } from '~/services/pagoProveedorService'
 import type { PagoProveedorPaginacion, SupplierPaymentExecution, SupplierPaymentExecutionTotals } from '~/types/pago-proveedor'
@@ -189,9 +188,6 @@ const executionTabs = computed(() => [
   { label: 'En proceso', value: EXECUTION_BUCKET.PENDING, count: pendingCount.value },
   { label: 'Pagados', value: EXECUTION_BUCKET.PAID }
 ])
-const { counts: contadoresMenu } = useSupplierPaymentCounts()
-watch(pendingCount, (total) => { contadoresMenu.value = { ...contadoresMenu.value, executions: total } })
-
 const emptyMessage = computed(() => {
   if (search.value.trim()) return `No hay pagos con «${search.value.trim()}» en esta bandeja.`
   return bucket.value === EXECUTION_BUCKET.PENDING

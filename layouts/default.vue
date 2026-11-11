@@ -81,8 +81,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, defineAsyncComponent } from 'vue'
-import { useSupplierPaymentCounts } from '~/composables/pago-proveedor/useSupplierPaymentCounts'
+import { ref, computed, onMounted, onBeforeUnmount, watch, defineAsyncComponent } from 'vue'
+import { useVerificationCounts } from '~/composables/verificacion/useVerificationCounts'
 import { isContentNarrow, setContentNarrow } from '~/composables/usePageLayout'
 import { useAuth } from '../composables/auth/useAuth'
 import { useMenuPrefetch } from '../composables/navigation/useMenuPrefetch'
@@ -245,16 +245,66 @@ const { schedulePrefetchFromStorage } = useMenuPrefetch()
 // Notificaciones modales vía evento window (ligero; no abre sockets extra)
 useWebSocketNotifications()
 
-const { counts: contadoresPagoProveedor, refresh: refrescarContadoresPagoProveedor } = useSupplierPaymentCounts()
+const {
+  counts: contadoresVerificacion,
+  refresh: refrescarContadoresVerificacion,
+  hydrateFromSession
+} = useVerificationCounts()
+
 const contadorSubmenu = (ruta: string) => {
-  if (ruta.includes('pago-proveedor/aprobacion-pagos')) return contadoresPagoProveedor.value.approvals
-  if (ruta.includes('pago-proveedor/pagos-dolares')) return contadoresPagoProveedor.value.executions
+  if (ruta.includes('pago-proveedor/aprobacion-pagos') || ruta.includes('pago-proveedor/solicitudes')) {
+    return contadoresVerificacion.value.supplier_approvals
+  }
+  if (ruta.includes('pago-proveedor/pagos-dolares')) return contadoresVerificacion.value.supplier_executions
+  if (ruta.includes('viaticos/pendientes') || (ruta.includes('/viaticos') && !ruta.includes('completados'))) {
+    return contadoresVerificacion.value.viaticos
+  }
   return 0
 }
-const veSubmenusPagoProveedor = computed(() => JSON.stringify(menu.value ?? []).includes('pago-proveedor/aprobacion-pagos'))
-watch([veSubmenusPagoProveedor, () => route.path], ([visible]) => {
-  if (visible && import.meta.client) refrescarContadoresPagoProveedor()
-}, { immediate: true })
+
+const contadorMenu = (ruta: string, nombre: string) => {
+  const r = (ruta || '').toLowerCase()
+  const n = (nombre || '').toLowerCase()
+  if (r.includes('verificacion') || n.includes('verificacion') || n.includes('verificación')) {
+    return contadoresVerificacion.value.verificacion_total
+  }
+  if (r.includes('viaticos') || n.includes('viático') || n.includes('viatico') || n.includes('reintegro')) {
+    return contadoresVerificacion.value.viaticos
+  }
+  return 0
+}
+
+const necesitaContadoresAdmin = computed(() => {
+  const raw = JSON.stringify(menu.value ?? []).toLowerCase()
+  return raw.includes('verificacion') || raw.includes('pago-proveedor') || raw.includes('viaticos')
+})
+
+if (import.meta.client) {
+  hydrateFromSession()
+  watch(necesitaContadoresAdmin, (visible) => {
+    if (visible) void refrescarContadoresVerificacion()
+  }, { immediate: true })
+
+  // Solo resincronizar tras un corte real (no en el primer connect)
+  let echoHabiaEstadoConectado = false
+  let echoEstuvoDesconectado = false
+  const onEchoConnected = () => {
+    if (echoHabiaEstadoConectado && echoEstuvoDesconectado && necesitaContadoresAdmin.value) {
+      void refrescarContadoresVerificacion(true)
+    }
+    echoHabiaEstadoConectado = true
+    echoEstuvoDesconectado = false
+  }
+  const onEchoDisconnected = () => {
+    if (echoHabiaEstadoConectado) echoEstuvoDesconectado = true
+  }
+  window.addEventListener('echo:connected', onEchoConnected)
+  window.addEventListener('echo:disconnected', onEchoDisconnected)
+  onBeforeUnmount(() => {
+    window.removeEventListener('echo:connected', onEchoConnected)
+    window.removeEventListener('echo:disconnected', onEchoDisconnected)
+  })
+}
 
 // Convertir menús del login al formato del sidebar
 const sidebarCategories = computed(() => {
@@ -313,7 +363,7 @@ const sidebarCategories = computed(() => {
         order: h.Nu_Orden ?? 0,
         isVisible: true,
         hasNotifications: false,
-        notificationCount: contadorSubmenu(childRoute || ''),
+        notificationCount: contadorSubmenu(childRoute || '') || contadorMenu(childRoute || '', childName),
         permissions: ['view'],
         children: subChildren
       }
@@ -341,7 +391,7 @@ const sidebarCategories = computed(() => {
       order: p.Nu_Orden ?? 0,
       isVisible: true,
       hasNotifications: false,
-      notificationCount: 0,
+      notificationCount: contadorMenu(parentRoute || '', parentName),
       permissions: ['view'],
       children
     }]

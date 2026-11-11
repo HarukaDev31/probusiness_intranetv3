@@ -148,11 +148,15 @@ export const useEcho = () => {
           if (typeof connection.bind === 'function') {
             
             connection.bind('connected', () => {
-              // Conexión establecida
+              if (import.meta.client) {
+                window.dispatchEvent(new CustomEvent('echo:connected'))
+              }
             })
 
             connection.bind('disconnected', () => {
-              
+              if (import.meta.client) {
+                window.dispatchEvent(new CustomEvent('echo:disconnected'))
+              }
             })
 
             connection.bind('error', (err: any) => {
@@ -163,11 +167,15 @@ export const useEcho = () => {
           else if (typeof connection.on === 'function') {
             
             connection.on('connected', () => {
-              
+              if (import.meta.client) {
+                window.dispatchEvent(new CustomEvent('echo:connected'))
+              }
             })
 
             connection.on('disconnected', () => {
-              
+              if (import.meta.client) {
+                window.dispatchEvent(new CustomEvent('echo:disconnected'))
+              }
             })
 
             connection.on('error', (err: any) => {
@@ -178,11 +186,15 @@ export const useEcho = () => {
           else if (typeof connection.addEventListener === 'function') {
             
             connection.addEventListener('connected', () => {
-              
+              if (import.meta.client) {
+                window.dispatchEvent(new CustomEvent('echo:connected'))
+              }
             })
 
             connection.addEventListener('disconnected', () => {
-              
+              if (import.meta.client) {
+                window.dispatchEvent(new CustomEvent('echo:disconnected'))
+              }
             })
 
             connection.addEventListener('error', (err: any) => {

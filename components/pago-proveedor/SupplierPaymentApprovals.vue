@@ -157,7 +157,6 @@ import type {
 } from '~/types/pago-proveedor'
 import { useModal } from '~/composables/commons/useModal'
 import SupplierPaymentTabs from '~/components/pago-proveedor/SupplierPaymentTabs.vue'
-import { useSupplierPaymentCounts } from '~/composables/pago-proveedor/useSupplierPaymentCounts'
 import { useSupplierPaymentRefunds } from '~/composables/pago-proveedor/useSupplierPaymentRefunds'
 import { UButton } from '#components'
 
@@ -214,8 +213,6 @@ const approvalTabs = computed(() => [
   { label: 'Por aprobar', value: APPROVAL_BUCKET.PENDING, count: totalPending.value },
   { label: 'Aprobados', value: APPROVAL_BUCKET.APPROVED }
 ])
-const { counts: contadoresMenu } = useSupplierPaymentCounts()
-watch(totalPending, (total) => { contadoresMenu.value = { ...contadoresMenu.value, approvals: total } })
 const pagination = ref<PagoProveedorPaginacion>({ current_page: 1, last_page: 1, per_page: 15, total: 0 })
 const filters = ref<{ status: string; consolidado: string; banco: string }>({ status: APPROVAL_STATUS.ALL, consolidado: 'todos', banco: 'todos' })
 const settingsOpen = ref(false)

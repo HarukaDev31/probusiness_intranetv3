@@ -15,6 +15,7 @@ import { registerContenedorAlmacenEvents } from './contenedor-almacen'
 import { registerCoordinacionEvents } from './coordinacion'
 import { registerUserEvents } from './user'
 import { registerReintegroEvents } from './reintegros'
+import { registerVerificacionEvents } from './verificacion'
 import { registerCalendarEvents } from './calendar'
 import { registerContabilidadEvents } from './contabilidad'
 import { registerAdministracionEvents } from './administracion'
@@ -35,6 +36,7 @@ export const registerAllRoleEvents = () => {
   registerCoordinacionEvents()
   registerUserEvents()
   registerReintegroEvents()
+  registerVerificacionEvents()
   registerCalendarEvents()
   registerContabilidadEvents()
   registerAdministracionEvents()

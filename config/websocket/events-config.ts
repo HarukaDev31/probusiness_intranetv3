@@ -46,8 +46,10 @@ export const WS_EVENTS = {
   SYSTEM_UPDATE: 'SystemUpdate',
   USER_ACTIVITY: 'UserActivity',
   DASHBOARD_UPDATE: 'DashboardUpdate',
-  //evnetos de administracion
+  //eventos de administracion
   REINTEGRO_REQUEST:'ViaticoCreado',
+  VERIFICACION_CONTADORES: 'VerificacionContadoresActualizados',
+
   // Eventos de Calendario (documentación, coordinación, jefe importaciones)
   CALENDAR_ACTIVITY_CREATED: 'CalendarActivityCreated',
   CALENDAR_ACTIVITY_UPDATED: 'CalendarActivityUpdated',
