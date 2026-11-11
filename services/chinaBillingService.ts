@@ -2,7 +2,9 @@ import { BaseService } from './base/BaseService'
 import type {
   ChinaBankAccount,
   ChinaClient,
+  ChinaClientGroup,
   ChinaClientPayload,
+  ChinaCountryOption,
   ChinaCounts,
   ChinaCredit,
   ChinaDocument,
@@ -10,6 +12,7 @@ import type {
   ChinaListFilters,
   ChinaOperation,
   ChinaOperationFormPayload,
+  ChinaOrganizationClient,
   ChinaOrganizationOption,
   ChinaPagination,
   ChinaPayment,
@@ -205,7 +208,16 @@ export class ChinaBillingService extends BaseService {
 
   // --- Clientes de Almacén China (socios e importadores) ---
   static async listClients(filters: ChinaListFilters & { type?: string }) {
-    return this.apiCall<Page<ChinaClient> & { counts: ChinaCounts; organizations: ChinaOrganizationOption[] }>(`${this.baseUrl}/clients?${toQuery(filters)}`)
+    return this.apiCall<Page<ChinaClient> & { counts: ChinaCounts; organizations: ChinaOrganizationOption[]; groups: ChinaClientGroup[] }>(`${this.baseUrl}/clients?${toQuery(filters)}`)
+  }
+
+  /** Clientes que registró una organización (solo lectura). */
+  static async organizationClients(filters: { organization_id: number; search?: string; page?: number; per_page?: number }) {
+    return this.apiCall<Page<ChinaOrganizationClient>>(`${this.baseUrl}/clients/database?${toQuery(filters)}`)
+  }
+
+  static async clientCountries() {
+    return this.apiCall<{ success: boolean; data: ChinaCountryOption[] }>(`${this.baseUrl}/clients/countries`)
   }
 
   static async getClient(id: number) {

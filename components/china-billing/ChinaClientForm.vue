@@ -25,13 +25,13 @@
           </div>
         </div>
 
-        <UFormField v-if="isPartner && !client" label="Organización del socio" required class="sm:col-span-2" hint="El nombre y el país vienen de la organización">
-          <USelectMenu v-model="form.organization_id" :items="organizationItems" value-key="value" placeholder="Selecciona la organización" class="w-full" @update:model-value="onOrganization" />
+        <UFormField label="Nombre o empresa" required :hint="isPartner && !client ? 'Se crea como organización del socio' : undefined">
+          <UInput v-model="form.name" :disabled="isPartner && !!client" placeholder="ej. Importaciones Sur SAC" class="w-full" />
         </UFormField>
-        <UFormField label="Nombre o empresa" required>
-          <UInput v-model="form.name" :disabled="isPartner" placeholder="ej. Importaciones Sur SAC" class="w-full" />
+        <UFormField v-if="isPartner && !client" label="País" required>
+          <USelectMenu v-model="form.country_id" :items="countryItems" value-key="value" placeholder="Selecciona el país" class="w-full" />
         </UFormField>
-        <UFormField label="País">
+        <UFormField v-else label="País">
           <UInput v-model="form.country" :disabled="isPartner" placeholder="ej. Perú" class="w-full" />
         </UFormField>
 
@@ -73,9 +73,9 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { ChinaBillingService } from '~/services/chinaBillingService'
-import type { ChinaClient, ChinaClientPayload, ChinaClientType, ChinaOrganizationOption } from '~/types/china-billing'
+import type { ChinaClient, ChinaClientPayload, ChinaClientType, ChinaCountryOption } from '~/types/china-billing'
 
-const props = defineProps<{ open: boolean; client?: ChinaClient | null; organizations: ChinaOrganizationOption[] }>()
+const props = defineProps<{ open: boolean; client?: ChinaClient | null }>()
 const emit = defineEmits<{ close: []; saved: [] }>()
 
 const typeOptions: { value: ChinaClientType; label: string }[] = [
@@ -85,7 +85,7 @@ const typeOptions: { value: ChinaClientType; label: string }[] = [
 
 const blank = () => ({
   type: 'partner' as ChinaClientType,
-  organization_id: null as number | null,
+  country_id: null as number | null,
   name: '',
   country: '',
   whatsapp: '',
@@ -98,17 +98,24 @@ const form = reactive(blank())
 const saving = ref(false)
 const errorMessage = ref('')
 const isPartner = computed(() => form.type === 'partner')
-const organizationItems = computed(() => props.organizations.map((org) => ({ value: org.id, label: `${org.name}${org.country ? ` · ${org.country}` : ''}` })))
+const countries = ref<ChinaCountryOption[]>([])
+const countryItems = computed(() => countries.value.map((country) => ({ value: country.value, label: country.label })))
 
-watch(() => [props.open, props.client], () => {
+watch(() => [props.open, props.client], async () => {
   if (!props.open) return
   errorMessage.value = ''
   Object.assign(form, blank())
+  if (!countries.value.length) {
+    try {
+      countries.value = (await ChinaBillingService.clientCountries()).data
+    } catch {
+      countries.value = []
+    }
+  }
   const client = props.client
   if (!client) return
   Object.assign(form, {
     type: client.type,
-    organization_id: client.organization_id,
     name: client.name,
     country: client.country,
     whatsapp: client.whatsapp,
@@ -118,21 +125,14 @@ watch(() => [props.open, props.client], () => {
   })
 }, { immediate: true })
 
-function onOrganization(id: number | null) {
-  const org = props.organizations.find((item) => item.id === id)
-  form.name = org?.name || ''
-  form.country = org?.country || ''
-  form.prices.consol = org?.prices?.consol ?? null
-  form.prices.consol_2 = org?.prices?.consol_2 ?? null
-}
-
 function fail(message: string) {
   errorMessage.value = message
 }
 
 async function save() {
   errorMessage.value = ''
-  if (!form.name.trim()) return fail(isPartner.value ? 'Elige la organización del socio.' : 'Ingresa el nombre del cliente.')
+  if (!form.name.trim()) return fail('Ingresa el nombre del cliente.')
+  if (isPartner.value && !props.client && !form.country_id) return fail('Elige el país de la organización.')
   if (!form.whatsapp.trim()) return fail('Ingresa el WhatsApp del cliente.')
   if (isPartner.value && (!(form.prices.consol && form.prices.consol > 0) || !(form.prices.consol_2 && form.prices.consol_2 > 0))) {
     return fail('Ingresa las dos tarifas de consolidado del socio.')
@@ -141,7 +141,8 @@ async function save() {
   try {
     const payload: ChinaClientPayload = {
       type: form.type,
-      organization_id: isPartner.value ? form.organization_id : null,
+      organization_id: props.client?.organization_id ?? null,
+      country_id: isPartner.value && !props.client ? form.country_id : null,
       name: form.name.trim(),
       country: form.country.trim(),
       whatsapp: form.whatsapp.trim(),

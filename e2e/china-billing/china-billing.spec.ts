@@ -227,6 +227,33 @@ test.describe.serial('Operaciones China + Pagos Socio', () => {
     await expect(form).toBeHidden()
     await expect(page.locator('tr:visible', { hasText: 'Distribuidora Quito' })).toContainText('Importador')
 
+    // Nuevo socio: se crea su organización y queda como pestaña propia.
+    await page.getByRole('button', { name: 'Nuevo cliente' }).click()
+    await form.getByLabel('Nombre o empresa').fill('Socio Peru E2E')
+    await form.getByText('Selecciona el país').click()
+    await page.getByRole('option', { name: /Per/ }).click()
+    await page.getByRole('listbox').waitFor({ state: 'hidden' })
+    await form.getByLabel('WhatsApp').fill('+51 987 654 321')
+    for (const [label, value] of [['Consolidado · tarifa 1 (USD/CBM)', '98'], ['Consolidado · tarifa 2 (USD/CBM)', '93']]) {
+      await form.getByLabel(label).fill(value)
+      await form.getByLabel(label).press('Tab')
+    }
+    await shot(page, '14b-clientes-nuevo-socio')
+    await form.getByRole('button', { name: 'Crear cliente' }).click()
+    await expect(form).toBeHidden()
+    await expect(page.locator('tr:visible', { hasText: 'Socio Peru E2E' })).toContainText('Socio')
+    await expect(page.getByRole('button', { name: /^Socio Peru E2E/ })).toBeVisible()
+
+    // Los clientes que registró cada organización, agrupados por pestaña (solo lectura).
+    await page.getByRole('button', { name: /^Socio Ecuador Demo/ }).click()
+    const registered = page.locator('tr:visible', { hasText: 'Importadora Costa Azul' })
+    await expect(registered).toContainText('0992345678001')
+    await registered.getByRole('button', { name: 'Ver cliente' }).click()
+    await expect(page.getByRole('dialog')).toContainText('solo lectura')
+    await shot(page, '14c-clientes-por-organizacion')
+    await page.keyboard.press('Escape')
+    await page.getByRole('button', { name: /^China/ }).click()
+
     // Tarifas del socio (obligatorias).
     await partner.getByRole('button', { name: 'Editar' }).click()
     await expect(form).toContainText('Precios del socio')

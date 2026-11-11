@@ -261,10 +261,40 @@ export interface ChinaClient {
 export interface ChinaClientPayload {
   type?: ChinaClientType
   organization_id?: number | null
+  /** País de la organización nueva (solo al crear un socio). */
+  country_id?: number | null
   name: string
   country: string
   whatsapp: string
   contact_name: string
   email: string
   prices: { consol: number | null; consol_2: number | null } | null
+}
+
+/** Pestaña por organización: cuántos clientes registró. */
+export interface ChinaClientGroup {
+  organization_id: number
+  name: string
+  country: string
+  count: number
+}
+
+export interface ChinaCountryOption {
+  value: number
+  label: string
+}
+
+/** Cliente que registró una organización (solo lectura). */
+export interface ChinaOrganizationClient {
+  id: number
+  number: number
+  registered_on: string | null
+  name: string
+  document: string
+  phone: string
+  email: string
+  province: string
+  origin: string
+  service: string
+  category: string
 }

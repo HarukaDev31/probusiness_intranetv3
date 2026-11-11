@@ -4,7 +4,17 @@
       <UButton color="primary" icon="i-heroicons-plus" @click="openForm(null)">Nuevo cliente</UButton>
     </template>
 
+    <SupplierPaymentTabs v-model="tab" :items="tabs" class="mb-4" />
+
+    <ChinaOrganizationClients
+      v-if="activeGroup"
+      :organization-id="activeGroup.organization_id"
+      :name="activeGroup.name"
+      :country="activeGroup.country"
+    />
+
     <DataTable
+      v-show="!activeGroup"
       sticky-last-column
       keep-spanish-headers
       filters-layout="inline"
@@ -45,26 +55,36 @@
     </DataTable>
 
     <ChinaClientDetail :client="detail" @close="detail = null" @balance="openBalance" />
-    <ChinaClientForm :open="formOpen" :client="editing" :organizations="organizations" @close="formOpen = false" @saved="onSaved" />
+    <ChinaClientForm :open="formOpen" :client="editing" @close="formOpen = false" @saved="onSaved" />
     <ChinaDocumentsModal :target="documentTarget" @close="documentTarget = null" />
   </SupplierPaymentPage>
 </template>
 
 <script setup lang="ts">
-import { h, onMounted, ref } from 'vue'
+import { computed, h, onMounted, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import ChinaClientDetail from '~/components/china-billing/ChinaClientDetail.vue'
 import ChinaClientForm from '~/components/china-billing/ChinaClientForm.vue'
 import ChinaDocumentsModal from '~/components/china-billing/ChinaDocumentsModal.vue'
+import ChinaOrganizationClients from '~/components/china-billing/ChinaOrganizationClients.vue'
 import SupplierPaymentPage from '~/components/pago-proveedor/SupplierPaymentPage.vue'
+import SupplierPaymentTabs from '~/components/pago-proveedor/SupplierPaymentTabs.vue'
 import { useChinaClients } from '~/composables/china-billing/useChinaClients'
 import { useModal } from '~/composables/commons/useModal'
 import { ChinaBillingService } from '~/services/chinaBillingService'
 import type { ChinaClient, ChinaDocumentTarget } from '~/types/china-billing'
 import { UIcon } from '#components'
 
-const { type, search, rows, counts, organizations, pagination, loading, load, reload, changeType } = useChinaClients()
+const { type, search, rows, counts, groups, pagination, loading, load, reload, changeType } = useChinaClients()
 const { showConfirmation, showError } = useModal()
+
+// Pestaña «China»: socios e importadores. Una pestaña por organización: los clientes que registró.
+const tab = ref('china')
+const tabs = computed(() => [
+  { label: 'China', value: 'china', count: counts.value.all ?? 0 },
+  ...groups.value.map((group) => ({ label: group.name, value: `org-${group.organization_id}`, count: group.count }))
+])
+const activeGroup = computed(() => groups.value.find((group) => `org-${group.organization_id}` === tab.value) || null)
 
 const detail = ref<ChinaClient | null>(null)
 const editing = ref<ChinaClient | null>(null)
