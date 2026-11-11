@@ -1,17 +1,13 @@
 <template>
   <div>
-    <div class="mb-4 flex items-center gap-3 rounded-2xl bg-default px-5 py-4 shadow-[0_6px_20px_rgba(30,42,59,.06)]">
-      <UIcon name="i-heroicons-circle-stack" class="size-6 text-primary" />
-      <div class="flex flex-col">
-        <span class="font-semibold text-highlighted">Clientes de {{ name }}{{ country ? ` · ${country}` : '' }}</span>
-        <span class="text-xs text-muted">Registrados por la organización · solo visualización</span>
-      </div>
-    </div>
-
+    <!-- Misma tabla (DataTable v1) que la Base de datos de clientes de Carga Consolidada. -->
     <DataTable
+      :title="`Base de datos de clientes · ${label}`"
+      :subtitle="`Registrada por ${name} · solo visualización`"
+      :show-title="true"
+      icon="i-heroicons-users"
       keep-spanish-headers
-      filters-layout="inline"
-      :fill-viewport="false"
+      :hide-back-button="true"
       :data="rows"
       :columns="columns"
       :loading="loading"
@@ -22,7 +18,7 @@
       :primary-search-value="search"
       :show-primary-search="true"
       :show-primary-search-label="false"
-      primary-search-placeholder="Buscar por nombre, documento, teléfono o correo"
+      primary-search-placeholder="Buscar por"
       :show-filters="false"
       :show-export="false"
       :empty-state-message="search ? 'No hay clientes que coincidan con la búsqueda.' : `${name} aún no tiene clientes registrados.`"
@@ -57,7 +53,7 @@ import { ChinaBillingService } from '~/services/chinaBillingService'
 import type { ChinaOrganizationClient, ChinaPagination } from '~/types/china-billing'
 import { UIcon } from '#components'
 
-const props = defineProps<{ organizationId: number; name: string; country: string }>()
+const props = defineProps<{ organizationId: number; name: string; label: string }>()
 
 const { showError } = useModal()
 const rows = ref<ChinaOrganizationClient[]>([])

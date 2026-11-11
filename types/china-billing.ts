@@ -274,6 +274,8 @@ export interface ChinaClientPayload {
 /** Pestaña por organización: cuántos clientes registró. */
 export interface ChinaClientGroup {
   organization_id: number
+  /** Nombre de la pestaña (país, o la organización si no tiene país). */
+  label: string
   name: string
   country: string
   count: number

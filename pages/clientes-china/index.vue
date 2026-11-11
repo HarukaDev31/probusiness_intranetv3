@@ -10,7 +10,7 @@
       v-if="activeGroup"
       :organization-id="activeGroup.organization_id"
       :name="activeGroup.name"
-      :country="activeGroup.country"
+      :label="activeGroup.label"
     />
 
     <DataTable
@@ -82,7 +82,7 @@ const { showConfirmation, showError } = useModal()
 const tab = ref('china')
 const tabs = computed(() => [
   { label: 'China', value: 'china', count: counts.value.all ?? 0 },
-  ...groups.value.map((group) => ({ label: group.name, value: `org-${group.organization_id}`, count: group.count }))
+  ...groups.value.map((group) => ({ label: group.label, value: `org-${group.organization_id}`, count: group.count }))
 ])
 const activeGroup = computed(() => groups.value.find((group) => `org-${group.organization_id}` === tab.value) || null)
 

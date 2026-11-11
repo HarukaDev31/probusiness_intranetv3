@@ -242,10 +242,12 @@ test.describe.serial('Operaciones China + Pagos Socio', () => {
     await form.getByRole('button', { name: 'Crear cliente' }).click()
     await expect(form).toBeHidden()
     await expect(page.locator('tr:visible', { hasText: 'Socio Peru E2E' })).toContainText('Socio')
-    await expect(page.getByRole('button', { name: /^Socio Peru E2E/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: /^(Socio Peru E2E|Perú)/ }).first()).toBeVisible()
 
     // Los clientes que registró cada organización, agrupados por pestaña (solo lectura).
-    await page.getByRole('button', { name: /^Socio Ecuador Demo/ }).click()
+    // Las pestañas se nombran por país (Ecuador = Socio Ecuador Demo) y usan la tabla v1 de Base de datos de clientes.
+    await page.getByRole('button', { name: /^Ecuador/ }).click()
+    await expect(page.getByText('Base de datos de clientes · Ecuador')).toBeVisible()
     const registered = page.locator('tr:visible', { hasText: 'Importadora Costa Azul' })
     await expect(registered).toContainText('0992345678001')
     await registered.getByRole('button', { name: 'Ver cliente' }).click()
