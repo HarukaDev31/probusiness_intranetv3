@@ -25,7 +25,7 @@
           </div>
         </div>
 
-        <UFormField label="Nombre o empresa" required :hint="isPartner && !client ? 'Se crea como organización del socio' : undefined">
+        <UFormField label="Nombre o empresa" required :help="isPartner && !client ? 'Se crea como organización del socio.' : undefined">
           <UInput v-model="form.name" :disabled="isPartner && !!client" placeholder="ej. Importaciones Sur SAC" class="w-full" />
         </UFormField>
         <UFormField v-if="isPartner && !client" label="País" required>
