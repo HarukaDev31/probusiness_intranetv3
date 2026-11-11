@@ -276,6 +276,7 @@ export interface SupplierPaymentProgressItem {
 
 export interface SupplierPaymentProgressDeposit {
   id: number
+  number?: number
   amount: number
   applied_amount: number
   recorded_amount: number | null
@@ -373,6 +374,7 @@ export interface SupplierPaymentProgress {
 
 export interface PagoProveedorAbono {
   id: number
+  numero?: number
   importe: number
   fecha_pago: string
   numero_operacion: string
@@ -455,6 +457,7 @@ export interface SupplierPaymentDepositComparison {
 
 export interface SupplierPaymentDeposit {
   id: number
+  number?: number
   request_id: number
   order_number: number | null
   client_name: string | null
@@ -496,6 +499,7 @@ export interface SupplierPaymentDeposit {
 
 export interface SupplierPaymentApprovalDeposit {
   id: number
+  number?: number
   paid_on: string | null
   bank: string
   bank_label: string
