@@ -34,59 +34,65 @@
       </div>
 
       <div class="flex flex-col gap-3.5">
-        <SupplierPaymentCard title="Datos registrados por Ventas">
+        <!-- h-auto/shrink-0: cada tarjeta mide lo que su contenido (antes se recortaban y el botón Editar quedaba oculto). -->
+        <SupplierPaymentCard title="Datos registrados por Ventas" class="h-auto shrink-0">
+          <SupplierPaymentFact label="Cliente" :value="deposit.client_name || '—'" />
+          <SupplierPaymentFact label="N.° de consolidado" :value="deposit.consolidation || '—'" />
+          <SupplierPaymentFact label="Código de solicitud">
+            <span v-if="providerCodes.length" class="flex flex-col items-end gap-0.5">
+              <a
+                v-for="code in providerCodes"
+                :key="code"
+                :href="`/pago-proveedor/aprobacion-pagos?codigo=${encodeURIComponent(code)}`"
+                class="font-mono text-xs font-semibold text-primary hover:underline"
+                :title="`Ir a Aprobación de pagos · ${code}`"
+              >{{ code }}</a>
+            </span>
+            <span v-else class="italic text-muted" title="Se genera cuando el abono del proveedor está completo y avanza a Validación">Pendiente</span>
+          </SupplierPaymentFact>
+          <!-- Como la maqueta: al editar, banco, fecha y N.° de operación pasan a campos en la misma fila. -->
           <template v-if="editing">
-            <UFormField label="Banco">
-              <USelect v-model="form.bank" :items="bancos" class="w-full" />
-            </UFormField>
-            <UFormField label="Fecha del depósito">
-              <UInput v-model="form.paid_on" type="date" class="w-full" />
-            </UFormField>
-            <UFormField label="N.° de operación">
-              <UInput v-model="form.operation_number" class="w-full" />
-            </UFormField>
+            <SupplierPaymentFact label="Banco">
+              <USelect v-model="form.bank" :items="bancos" size="sm" class="w-40" />
+            </SupplierPaymentFact>
+            <SupplierPaymentFact label="Fecha del depósito">
+              <UInput v-model="form.paid_on" type="date" size="sm" class="w-40" />
+            </SupplierPaymentFact>
+            <SupplierPaymentFact label="N.° de operación">
+              <UInput v-model="form.operation_number" size="sm" class="w-40" :ui="{ base: 'text-right' }" />
+            </SupplierPaymentFact>
           </template>
           <template v-else>
-            <SupplierPaymentFact label="Cliente" :value="deposit.client_name || '—'" />
-            <SupplierPaymentFact label="N.° de consolidado" :value="deposit.consolidation || '—'" />
-            <SupplierPaymentFact label="Código de solicitud">
-              <span v-if="providerCodes.length" class="flex flex-col items-end gap-0.5">
-                <a
-                  v-for="code in providerCodes"
-                  :key="code"
-                  :href="`/pago-proveedor/aprobacion-pagos?codigo=${encodeURIComponent(code)}`"
-                  class="font-mono text-xs font-semibold text-primary hover:underline"
-                  :title="`Ir a Aprobación de pagos · ${code}`"
-                >{{ code }}</a>
-              </span>
-              <span v-else class="italic text-muted" title="Se genera cuando el abono del proveedor está completo y avanza a Validación">Pendiente</span>
-            </SupplierPaymentFact>
             <SupplierPaymentFact label="Banco">
               {{ bankLabel }}
               <UBadge v-if="deposit.interbank" size="sm" color="neutral" variant="subtle" label="Interbancaria / cajero" />
             </SupplierPaymentFact>
             <SupplierPaymentFact label="Fecha del depósito" :value="deposit.paid_on || '—'" />
             <SupplierPaymentFact label="N.° de operación" :value="deposit.operation_number || '—'" />
-            <SupplierPaymentFact v-if="deposit.purpose === 'exchange_difference'" label="Tipo de abono" :value="deposit.purpose_label || 'Diferencia de cambio'" />
           </template>
+          <SupplierPaymentFact v-if="deposit.purpose === 'exchange_difference'" label="Tipo de abono" :value="deposit.purpose_label || 'Diferencia de cambio'" />
 
-          <div v-if="deposit.can_validate" class="mt-2 flex flex-wrap items-center gap-2">
+          <div v-if="deposit.can_validate && !editing" class="mt-2 flex items-start gap-3">
             <UButton
-              v-if="!editing"
-              size="xs"
+              size="sm"
               color="neutral"
               variant="outline"
-              icon="i-heroicons-pencil-square"
+              icon="i-heroicons-pencil"
+              class="shrink-0"
               title="Corregir banco, fecha o número de operación"
               @click="startEdit"
             >
               Editar
             </UButton>
-            <template v-else>
-              <UButton size="xs" color="primary" :loading="saving" icon="i-heroicons-check" @click="saveDetails">Guardar cambios</UButton>
-              <UButton size="xs" color="neutral" variant="ghost" @click="editing = false">Cancelar</UButton>
-            </template>
-            <p class="text-xs text-muted">Guardar no valida el depósito.</p>
+            <p class="text-xs text-muted">Si Ventas se equivocó al digitar el banco, la fecha o el N.° de operación, edítalo: queda registrado y se avisa a Ventas.</p>
+          </div>
+          <div v-else-if="deposit.can_validate" class="mt-2 flex flex-col gap-2">
+            <p class="text-xs text-muted">Editando: corrige lo que Ventas digitó mal y guarda los cambios.</p>
+            <div class="flex flex-wrap items-center gap-2">
+              <UButton size="sm" class="boton-naranja" :loading="saving" @click="saveDetails">Guardar cambios</UButton>
+              <UButton size="sm" color="neutral" variant="outline" @click="editing = false">Cancelar</UButton>
+              <span class="text-xs text-muted">Guardar no valida el depósito.</span>
+            </div>
           </div>
 
           <p v-if="deposit.corrected_by_admin" class="mt-2 text-xs text-muted">
@@ -106,23 +112,7 @@
           :description="deposit.observation_detail || (slaText(deposit.sla) || undefined)"
         />
 
-        <SupplierPaymentCard title="Plazo de verificación">
-          <SupplierPaymentFact label="Registrado" :value="dateText(deposit.sla?.registered_at)" />
-          <SupplierPaymentFact label="Vence" :value="dateText(deposit.sla?.deadline_at)" />
-          <SupplierPaymentFact label="Tiempo restante">
-            <span :class="slaOverdue(deposit.sla) ? 'font-semibold text-error' : 'font-semibold text-highlighted'">
-              {{ slaText(deposit.sla) || '—' }}
-            </span>
-          </SupplierPaymentFact>
-          <p class="mt-1 text-xs text-muted">
-            Plazo de {{ deposit.sla?.hours ?? 0 }} h definido por Administración. Los tiempos los calcula el servidor.
-          </p>
-          <p v-if="deposit.sla?.server_now" class="mt-0.5 text-[11px] text-muted">
-            Hora del servidor: {{ dateText(deposit.sla.server_now) }}
-          </p>
-        </SupplierPaymentCard>
-
-        <SupplierPaymentCard title="Importes (USD)">
+        <SupplierPaymentCard title="Importes (USD)" class="h-auto shrink-0">
           <div class="grid gap-2 sm:grid-cols-2">
             <UCard variant="subtle" :ui="{ body: 'px-3 py-2 sm:px-3 sm:py-2' }">
               <p class="text-[11px] font-bold uppercase tracking-wide text-muted">Importe registrado (Ventas)</p>
@@ -377,14 +367,6 @@ function money(value: number) {
   return Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-function dateText(value?: string | null) {
-  if (!value) return '—'
-  const date = new Date(value)
-  return Number.isNaN(date.getTime())
-    ? value
-    : date.toLocaleString('es-PE', { dateStyle: 'medium', timeStyle: 'short' })
-}
-
 function startEdit() {
   if (!props.deposit) return
   form.value = {
@@ -472,3 +454,10 @@ function cancelPayment() {
   )
 }
 </script>
+
+<style scoped>
+.boton-naranja {
+  background: #f97316 !important;
+  color: #fff !important;
+}
+</style>
