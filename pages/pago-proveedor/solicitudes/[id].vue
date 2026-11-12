@@ -85,7 +85,7 @@
             variant="outline"
             icon="i-lucide-pencil"
             :disabled="!hayAccionEtapa1"
-            :to="hayAccionEtapa1 ? `/pago-proveedor/cotizaciones/${solicitud.cotizacion_id}` : undefined"
+            :to="hayAccionEtapa1 ? `/pago-proveedor/cotizaciones/${solicitud.cotizacion_id}?desde=solicitud` : undefined"
           >
             Formulario de la solicitud
           </UButton>

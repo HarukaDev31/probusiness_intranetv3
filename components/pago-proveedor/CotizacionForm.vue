@@ -1,10 +1,21 @@
 <template>
   <div class="mx-auto max-w-5xl p-6">
+    <!-- Abierto desde «Formulario de la solicitud»: como la maqueta, arriba el botón para volver a la solicitud. -->
+    <UButton
+      v-if="urlSolicitudOrigen"
+      color="primary"
+      variant="outline"
+      icon="i-heroicons-arrow-left"
+      class="mb-3"
+      :to="urlSolicitudOrigen"
+    >
+      Regresar a la solicitud
+    </UButton>
     <PageHeader
       :title="titulo"
       :subtitle="subtitulo"
       icon="i-heroicons-banknotes"
-      :hide-back-button="false"
+      :hide-back-button="!!urlSolicitudOrigen"
       @back="navigateTo('/pago-proveedor/cotizaciones')"
     >
       <template v-if="cotizacion?.vigencia_texto" #actions>
@@ -36,7 +47,7 @@
     </div>
 
     <form v-else-if="cotizacion" class="mt-4 space-y-4" @submit.prevent="guardar">
-      <p v-if="cotizacion.solicitud_id" class="text-sm">
+      <p v-if="cotizacion.solicitud_id && !urlSolicitudOrigen" class="text-sm">
         <NuxtLink :to="`/pago-proveedor/solicitudes/${cotizacion.solicitud_id}`" class="font-semibold text-primary">Ver solicitud</NuxtLink>
       </p>
 
@@ -271,9 +282,16 @@
 
           <div class="mt-4">
             <p class="text-sm font-semibold">Comisiones a aplicar sobre este proveedor</p>
-            <div class="mt-2 flex flex-col gap-2">
-              <UCheckbox v-model="proveedor.comision_bancaria" :disabled="!editable"><template #label>Comisión bancaria / plataforma <span class="text-[11px] font-normal text-muted">(tarifa fija configurada)</span></template></UCheckbox>
-              <UCheckbox v-model="proveedor.comision_administrativa" :disabled="!editable"><template #label>Comisión administrativa <span class="text-[11px] font-normal text-muted">(tarifa fija configurada)</span></template></UCheckbox>
+            <!-- Solo el cuadro marca/desmarca: el texto va aparte para no cambiarlo por un clic accidental en la fila. -->
+            <div class="mt-2 flex flex-col items-start gap-2">
+              <div class="flex items-center gap-2">
+                <UCheckbox v-model="proveedor.comision_bancaria" :disabled="!editable" aria-label="Comisión bancaria / plataforma" />
+                <span class="text-sm font-medium" :class="editable ? 'text-default' : 'text-muted'">Comisión bancaria / plataforma <span class="text-[11px] font-normal text-muted">(tarifa fija configurada)</span></span>
+              </div>
+              <div class="flex items-center gap-2">
+                <UCheckbox v-model="proveedor.comision_administrativa" :disabled="!editable" aria-label="Comisión administrativa" />
+                <span class="text-sm font-medium" :class="editable ? 'text-default' : 'text-muted'">Comisión administrativa <span class="text-[11px] font-normal text-muted">(tarifa fija configurada)</span></span>
+              </div>
             </div>
           </div>
 
@@ -329,15 +347,16 @@
             >
               ✓ Confirmar tipo de cambio
             </UButton>
+            <!-- Como la maqueta: confirmado, el aviso ocupa el lugar del botón (esquina derecha del cuadro). -->
+            <span v-else-if="muestraEstadoTc && (tcCreadaHoy || tcConfirmadoSesion)" class="ml-auto text-sm font-semibold text-success">✓ Tipo de cambio confirmado</span>
           </div>
         </div>
         <!-- Como la maqueta: el tipo de cambio de la cotización va debajo del cuadro, no dentro. -->
-        <p v-if="pideConfirmacionTc" class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
+        <p v-if="muestraEstadoTc" class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
           <span>
             Tipo de cambio de la cotización{{ fechaTcCotizacion ? ` (${fechaTcCotizacion})` : '' }}:
             1 USD = {{ cotizacion.tipo_cambio || '—' }} RMB
           </span>
-          <span v-if="tcConfirmadoSesion" class="font-semibold text-success">✓ Tipo de cambio confirmado</span>
         </p>
 
         <div class="mt-4 flex flex-wrap items-center justify-between gap-2 border-b border-default pb-2">
@@ -587,8 +606,16 @@ const fechaDocumento = (valor: string) => new Date(valor).toLocaleString('es-PE'
   hour: '2-digit',
   minute: '2-digit'
 })
+const route = useRoute()
+/** Solo cuando se llega desde la solicitud (?desde=solicitud) y la cotización ya tiene una. */
+const urlSolicitudOrigen = computed(() => route.query.desde === 'solicitud' && cotizacion.value?.solicitud_id
+  ? `/pago-proveedor/solicitudes/${cotizacion.value.solicitud_id}`
+  : null)
 const titulo = computed(() => {
   if (cargando.value && props.quoteId) return 'Cotización'
+  if (urlSolicitudOrigen.value && cotizacion.value?.solicitud_numero) {
+    return `Solicitud N.° ${cotizacion.value.solicitud_numero} — ${cotizacion.value.cliente_nombre || ''}`.trim()
+  }
   if (!cotizacion.value?.id) return 'Nueva cotización'
   return cotizacion.value.codigo || 'Nueva cotización'
 })
@@ -613,7 +640,15 @@ const proveedoresConValor = computed(() => proveedores.value.filter((proveedor, 
 }))
 const etiquetaGuardarCotizacion = computed(() => cotizacion.value?.puede_renovar ? 'Renovar cotización' : 'Guardar cotización')
 const etiquetaCrearSolicitud = computed(() => esNueva.value ? 'Guardar y crear solicitud' : 'Crear solicitud')
-const pideConfirmacionTc = computed(() => !esNueva.value && editable.value && hayYuanes.value && cotizacion.value?.estado === 'pendiente' && !cotizacion.value?.puede_renovar)
+const muestraEstadoTc = computed(() => !esNueva.value && editable.value && hayYuanes.value && cotizacion.value?.estado === 'pendiente' && !cotizacion.value?.puede_renovar)
+/** Creada hoy (hora de Lima): su tipo de cambio ya es el del día, no se vuelve a pedir confirmarlo (igual que el back). */
+const tcCreadaHoy = computed(() => {
+  const creado = cotizacion.value?.creado_en
+  if (!creado) return false
+  const diaLima = (fecha: Date) => fecha.toLocaleDateString('en-CA', { timeZone: 'America/Lima' })
+  return diaLima(new Date(creado)) === diaLima(new Date())
+})
+const pideConfirmacionTc = computed(() => muestraEstadoTc.value && !tcCreadaHoy.value)
 const fechaTcCotizacion = computed(() => {
   const fin = cotizacion.value?.creado_en
   if (!fin) return ''
@@ -1109,7 +1144,7 @@ async function confirmarTc() {
 function payload() {
   const tc = Number(tipoCambio.value) || 0
   const confirmado = !hayYuanes.value
-    || (esNueva.value ? tc > 0 : tcConfirmadoSesion.value)
+    || ((esNueva.value || tcCreadaHoy.value) ? tc > 0 : tcConfirmadoSesion.value)
   return {
     tipo_cambio: hayYuanes.value ? (tc > 0 ? tc : null) : tipoCambio.value,
     tipo_cambio_confirmado: confirmado,

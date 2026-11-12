@@ -82,6 +82,7 @@
       title="Crear solicitud"
       :subtitle="solicitudCotizacion ? `${solicitudCotizacion.cliente_nombre || ''} · Consolidado ${soloConsolidado(solicitudCotizacion.consolidado)}` : ''"
       :code="solicitudCotizacion?.codigo"
+      code-right
       @close="solicitudCotizacion = null"
     >
       <template v-if="solicitudCotizacion">
@@ -243,6 +244,9 @@ function soloConsolidado(valor: string | null | undefined) {
   return String(valor || '').split(/\s*[-–]\s*/)[0]?.trim() || '—'
 }
 
+/** Dato principal de la celda en negro (sin negrita); los textos secundarios siguen en gris (text-muted). */
+const NEGRO = 'text-highlighted'
+
 const dinero = (valor: number) => `$${Number(valor || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 const columns: TableColumn<PagoProveedorCotizacion>[] = [
@@ -256,13 +260,13 @@ const columns: TableColumn<PagoProveedorCotizacion>[] = [
         : null
     ])
   },
-  { accessorKey: 'creado_en', header: 'Fecha', cell: ({ row }) => formatDate(row.original.creado_en) },
+  { accessorKey: 'creado_en', header: 'Fecha', cell: ({ row }) => h('span', { class: NEGRO }, formatDate(row.original.creado_en)) },
   {
     accessorKey: 'antiguedad_texto',
     header: 'Antigüedad',
     cell: ({ row }) => {
       const text = row.original.antiguedad_texto || '—'
-      if (!row.original.resaltar) return text
+      if (!row.original.resaltar) return h('span', { class: NEGRO }, text)
       return h(UBadge, { color: 'warning', variant: 'soft', label: `${text} · seguimiento` })
     }
   },
@@ -272,15 +276,15 @@ const columns: TableColumn<PagoProveedorCotizacion>[] = [
     cell: ({ row }) => {
       if (row.original.estado === 'confirmada') return '—'
       return h('div', [
-        h('span', { class: row.original.vencida ? 'font-semibold text-error' : '' }, row.original.vigencia_texto || '—'),
+        h('span', { class: row.original.vencida ? 'font-semibold text-error' : NEGRO }, row.original.vigencia_texto || '—'),
         row.original.vigencia_hasta
           ? h('div', { class: 'text-[11px] text-muted' }, `hasta el ${row.original.vigencia_hasta}`)
           : null
       ])
     }
   },
-  { accessorKey: 'consolidado', header: 'Consolidado', cell: ({ row }) => soloConsolidado(row.original.consolidado) },
-  { accessorKey: 'cliente_nombre', header: 'Cliente' },
+  { accessorKey: 'consolidado', header: 'Consolidado', cell: ({ row }) => h('span', { class: NEGRO }, soloConsolidado(row.original.consolidado)) },
+  { accessorKey: 'cliente_nombre', header: 'Cliente', cell: ({ row }) => h('span', { class: NEGRO }, row.original.cliente_nombre || '—') },
   { accessorKey: 'proveedores', header: 'Proveedores', cell: ({ row }) => supplierSummary(row.original) },
   {
     accessorKey: 'total_ahora',
@@ -291,7 +295,7 @@ const columns: TableColumn<PagoProveedorCotizacion>[] = [
       const ahoraNum = Number(row.original.total_ahora || 0)
       const tieneCuotas = total > ahoraNum + 0.004
       return h('div', [
-        h('span', ahora),
+        h('span', { class: NEGRO }, ahora),
         tieneCuotas
           ? h('div', { class: 'text-[11px] text-muted' }, `ahora · total en 2 cuotas ${dinero(total)}`)
           : null
@@ -304,7 +308,7 @@ const columns: TableColumn<PagoProveedorCotizacion>[] = [
     cell: ({ row }) => {
       if (!row.original.tipo_cambio) return '—'
       return h('div', [
-        h('div', String(row.original.tipo_cambio)),
+        h('div', { class: NEGRO }, String(row.original.tipo_cambio)),
         row.original.tipo_cambio_fecha
           ? h('div', { class: 'text-[11px] text-muted' }, `(${row.original.tipo_cambio_fecha})`)
           : null
@@ -316,7 +320,8 @@ const columns: TableColumn<PagoProveedorCotizacion>[] = [
     header: 'Estado',
     cell: ({ row }) => h('div', { class: 'flex flex-col items-start gap-1' }, [
       h(UBadge, {
-        color: row.original.estado === 'confirmada' ? 'success' : row.original.vencida ? 'error' : 'warning',
+        // Pendiente en gris (neutral), como pidió Ventas.
+        color: row.original.estado === 'confirmada' ? 'success' : row.original.vencida ? 'error' : 'neutral',
         variant: 'soft',
         label: row.original.estado === 'confirmada' ? 'Confirmada' : row.original.vencida ? 'Vencida' : 'Pendiente'
       }),
@@ -324,7 +329,7 @@ const columns: TableColumn<PagoProveedorCotizacion>[] = [
         ? h('a', {
             class: 'cursor-pointer text-xs font-medium text-primary hover:underline',
             onClick: () => { void navigateTo(`/pago-proveedor/solicitudes/${row.original.solicitud_id}`) }
-          }, "Ver solicitud ↗")
+          }, row.original.solicitud_numero ? `Solicitud N.° ${row.original.solicitud_numero} ↗` : 'Ver solicitud ↗')
         : null
     ])
   },
