@@ -284,7 +284,8 @@ const columns: TableColumn<PagoProveedorCotizacion>[] = [
     }
   },
   { accessorKey: 'consolidado', header: 'Consolidado', cell: ({ row }) => h('span', { class: NEGRO }, soloConsolidado(row.original.consolidado)) },
-  { accessorKey: 'cliente_nombre', header: 'Cliente', cell: ({ row }) => h('span', { class: NEGRO }, row.original.cliente_nombre || '—') },
+  // Cliente y el detalle de cuotas pueden partirse en 2 líneas para que «Acciones» entre a 1920 px.
+  { accessorKey: 'cliente_nombre', header: 'Cliente', cell: ({ row }) => h('span', { class: `${NEGRO} block max-w-44 whitespace-normal` }, row.original.cliente_nombre || '—') },
   { accessorKey: 'proveedores', header: 'Proveedores', cell: ({ row }) => supplierSummary(row.original) },
   {
     accessorKey: 'total_ahora',
@@ -297,7 +298,7 @@ const columns: TableColumn<PagoProveedorCotizacion>[] = [
       return h('div', [
         h('span', { class: NEGRO }, ahora),
         tieneCuotas
-          ? h('div', { class: 'text-[11px] text-muted' }, `ahora · total en 2 cuotas ${dinero(total)}`)
+          ? h('div', { class: 'max-w-38 whitespace-normal text-[11px] text-muted' }, `ahora · total en 2 cuotas ${dinero(total)}`)
           : null
       ])
     }
