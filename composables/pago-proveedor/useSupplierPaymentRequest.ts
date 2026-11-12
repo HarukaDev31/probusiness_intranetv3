@@ -14,6 +14,14 @@ export function useSupplierPaymentRequest() {
 
   const previewSummary = (cotizacionId: number) => PagoProveedorService.vistaPreviaWhatsapp(cotizacionId)
 
+  const sendSummary = (cotizacionId: number) => PagoProveedorService.enviarWhatsapp(cotizacionId)
+
+  const previewProviderData = (solicitudId: number, proveedores: number[]) =>
+    PagoProveedorService.pedirDatosVistaPrevia(solicitudId, proveedores)
+
+  const sendProviderData = (solicitudId: number, proveedores: number[]) =>
+    PagoProveedorService.enviarPedirDatos(solicitudId, proveedores)
+
   const downloadSummary = (cotizacionId: number) => PagoProveedorService.descargarPdf(cotizacionId)
 
   const getBankAccounts = (solicitudId: number) => PagoProveedorService.cuentas(solicitudId)
@@ -59,6 +67,9 @@ export function useSupplierPaymentRequest() {
     getDataCandidates,
     askProviderData,
     previewSummary,
+    sendSummary,
+    previewProviderData,
+    sendProviderData,
     downloadSummary,
     getBankAccounts,
     liftChina,
