@@ -783,7 +783,7 @@ const pasos = [
   { n: 4, nombre: 'Confirmación' }
 ]
 const datosProveedor = computed(() => (solicitud.value?.proveedores || []).find(item => item.id === datosAbiertoId.value) || null)
-const proveedoresSinDatos = computed(() => (solicitud.value?.proveedores || []).filter(item => item.puede_editar_etapa1 && datosPendientes(item)).length)
+const proveedoresSinDatos = computed(() => (solicitud.value?.proveedores || []).filter(item => item.puede_editar_etapa1 && !item.observacion_ventas && datosPendientes(item)).length)
 const hayProveedoresActivos = computed(() => (solicitud.value?.proveedores || []).some(item => item.etapa <= 2 && !['completado', 'anulado'].includes(item.estado)))
 const todosPasaronEtapa1 = computed(() => {
   const proveedores = solicitud.value?.proveedores || []
