@@ -85,30 +85,45 @@
       @close="solicitudCotizacion = null"
     >
       <template v-if="solicitudCotizacion">
+        <p class="text-xs font-semibold uppercase text-muted">Proveedores</p>
         <div class="rounded-lg border border-default">
-          <div v-for="(provider, i) in solicitudCotizacion.proveedores || []" :key="i" class="flex items-center justify-between gap-2 border-b border-default px-3 py-2 text-sm last:border-b-0">
-            <strong>{{ provider.code_supplier }}</strong>
+          <div v-for="(provider, i) in solicitudCotizacion.proveedores || []" :key="i" class="flex items-center gap-3 border-b border-default px-3 py-2 text-sm last:border-b-0">
+            <strong class="w-24 shrink-0">{{ provider.code_supplier || '—' }}</strong>
+            <span class="min-w-0 flex-1 truncate text-default">{{ provider.producto || '' }}</span>
+            <UBadge v-if="provider.modalidad_abono === MODO_CUOTAS" color="neutral" variant="soft" size="sm">2 cuotas</UBadge>
             <UBadge :color="provider.moneda === 'RMB' ? 'warning' : 'info'" variant="soft" size="sm">{{ provider.moneda === 'RMB' ? 'RMB' : 'USD T-T' }}</UBadge>
           </div>
         </div>
-        <div class="flex justify-between rounded-lg bg-primary-50 px-3 py-2 text-sm">
-          <span class="text-muted">Total a pagar</span><strong class="text-primary-700">{{ dinero(solicitudCotizacion.total_ahora || solicitudCotizacion.total) }}</strong>
+        <div class="flex items-center justify-between rounded-lg bg-primary-50 px-3 py-2 text-sm">
+          <span class="text-muted">{{ solicitudConCuotas ? 'Total a pagar ahora (cuota 1)' : 'Total a pagar' }}</span>
+          <strong class="text-lg text-primary-700">{{ dinero(solicitudConCuotas ? solicitudCotizacion.total_ahora : solicitudCotizacion.total) }}</strong>
         </div>
         <p class="text-xs font-semibold uppercase text-muted">Requisitos para crear la solicitud</p>
-        <UAlert
-          :color="solicitudCotizacion.faltantes?.length ? 'warning' : 'success'"
-          variant="subtle"
-          :title="solicitudCotizacion.faltantes?.length ? `Falta${solicitudCotizacion.faltantes.length > 1 ? 'n' : ''} ${solicitudCotizacion.faltantes.length} dato${solicitudCotizacion.faltantes.length > 1 ? 's' : ''} para crear la solicitud` : 'Todo listo para crear la solicitud'"
-        />
-        <ul v-if="solicitudCotizacion.faltantes?.length" class="list-disc pl-5 text-sm text-error">
-          <li v-for="falta in solicitudCotizacion.faltantes" :key="falta">{{ falta }}</li>
+        <div v-if="solicitudFaltanCount" class="rounded-lg bg-warning-50 px-3 py-2 text-sm font-semibold text-warning-700">
+          Falta{{ solicitudFaltanCount > 1 ? 'n' : '' }} {{ solicitudFaltanCount }} dato{{ solicitudFaltanCount > 1 ? 's' : '' }} para crear la solicitud
+        </div>
+        <div class="rounded-lg border border-default">
+          <div v-for="req in solicitudRequisitos" :key="req.key" class="flex items-start gap-3 border-b border-default px-3 py-2 text-sm last:border-b-0">
+            <span
+              class="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
+              :class="req.ok ? 'bg-success-50 text-success-600' : 'bg-warning-50 text-warning-600'"
+            >{{ req.ok ? '✓' : '!' }}</span>
+            <div class="min-w-0 flex-1">
+              <p class="text-highlighted">{{ req.titulo }}</p>
+              <p class="text-[11px] text-muted">{{ req.ayuda }}</p>
+            </div>
+            <span class="shrink-0 text-xs" :class="req.ok ? 'text-muted' : 'font-semibold text-warning-700'">{{ req.detalle }}</span>
+          </div>
+        </div>
+        <ul v-if="solicitudOtrosFaltantes.length" class="list-disc pl-5 text-sm text-error">
+          <li v-for="falta in solicitudOtrosFaltantes" :key="falta">{{ falta }}</li>
         </ul>
-        <p v-else class="text-xs text-muted">Al crearla se genera la solicitud con su N.° de orden, la cotización pasa a Confirmada y los proveedores entran a la etapa 1.</p>
+        <p v-if="!solicitudFaltanCount" class="rounded-lg bg-elevated px-3 py-2 text-xs text-muted">Al crearla se genera la solicitud con su N.° de orden, la cotización pasa a <strong>Confirmada</strong> y los proveedores entran a la etapa 1.</p>
       </template>
       <template #footer>
         <UButton color="neutral" variant="outline" @click="solicitudCotizacion = null">Cancelar</UButton>
         <UButton v-if="solicitudCotizacion?.faltantes?.length" color="neutral" variant="outline" @click="completarEnFormulario">Completar en el formulario</UButton>
-        <UButton color="primary" :loading="creandoSolicitud" :disabled="!solicitudCotizacion?.puede_crear_solicitud" @click="confirmarCrearSolicitud">Crear solicitud</UButton>
+        <UButton color="primary" class="disabled:opacity-40" :loading="creandoSolicitud" :disabled="!solicitudCotizacion?.puede_crear_solicitud" @click="confirmarCrearSolicitud">Crear solicitud</UButton>
       </template>
     </SupplierPaymentWindow>
 
@@ -573,6 +588,51 @@ async function confirmarRenovar() {
 }
 
 const solicitudCotizacion = ref<PagoProveedorCotizacion | null>(null)
+
+const MODO_CUOTAS = 'fraccionado'
+const solicitudConCuotas = computed(() => (solicitudCotizacion.value?.proveedores || []).some(p => p.modalidad_abono === MODO_CUOTAS))
+
+function listaCodigos(codigos: string[]) {
+  return codigos.length > 1 ? `${codigos.slice(0, -1).join(', ')} y ${codigos[codigos.length - 1]}` : codigos[0] || ''
+}
+
+/** Requisitos de la maqueta: proforma (siempre), tipo de cambio (si hay yuanes) y fecha de la cuota 2 (si hay cuotas). */
+const solicitudRequisitos = computed(() => {
+  const cot = solicitudCotizacion.value
+  if (!cot) return []
+  const proveedores = cot.proveedores || []
+  const codigo = (p: (typeof proveedores)[number]) => p.code_supplier || `Proveedor ${p.orden}`
+  const sinProforma = proveedores.filter(p => !p.proforma_url).map(codigo)
+  const reqs = [{
+    key: 'proforma',
+    titulo: 'Proforma de cada proveedor',
+    ayuda: 'Se pide siempre',
+    ok: sinProforma.length === 0,
+    detalle: sinProforma.length ? `falta${sinProforma.length > 1 ? 'n' : ''} ${listaCodigos(sinProforma)}` : `${proveedores.length} de ${proveedores.length}`
+  }]
+  if (proveedores.some(p => p.moneda === 'RMB')) {
+    const ok = !!cot.tipo_cambio_confirmado && Number(cot.tipo_cambio) > 0
+    reqs.push({ key: 'tc', titulo: 'Tipo de cambio de hoy confirmado', ayuda: 'Porque hay proveedores en yuanes', ok, detalle: ok ? String(cot.tipo_cambio) : 'Confirmar el de hoy' })
+  }
+  const enCuotas = proveedores.filter(p => p.modalidad_abono === MODO_CUOTAS)
+  if (enCuotas.length) {
+    const sinFecha = enCuotas.filter(p => !p.fecha_cuota_2).map(codigo)
+    const unico = enCuotas.length === 1 ? enCuotas[0]?.fecha_cuota_2 : null
+    reqs.push({
+      key: 'cuota2',
+      titulo: 'Fecha aproximada de la cuota 2',
+      ayuda: 'Porque el cliente paga en cuotas',
+      ok: sinFecha.length === 0,
+      detalle: sinFecha.length ? `falta ${listaCodigos(sinFecha)}` : (unico ? unico.split('-').reverse().join('/') : `${enCuotas.length} de ${enCuotas.length}`)
+    })
+  }
+  return reqs
+})
+
+/** Lo que falta y no es uno de los 3 requisitos (código, producto, valor, porcentajes). */
+const solicitudOtrosFaltantes = computed(() => (solicitudCotizacion.value?.faltantes || [])
+  .filter(f => !/proforma|tipo de cambio|cuota 2/i.test(f)))
+const solicitudFaltanCount = computed(() => solicitudRequisitos.value.filter(r => !r.ok).length + solicitudOtrosFaltantes.value.length)
 const creandoSolicitud = ref(false)
 
 function createRequest(quote: PagoProveedorCotizacion) {

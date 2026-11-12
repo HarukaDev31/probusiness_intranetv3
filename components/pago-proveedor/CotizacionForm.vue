@@ -1241,11 +1241,6 @@ async function descargarPdf() {
       ? await downloadDraftPdf(datosResumen())
       : await downloadQuotePdf(cotizacion.value.id)
     descargarBinario(respuesta.data)
-    if (respuesta.data.generado) {
-      showSuccess('PDF emitido', `Paso ${respuesta.data.paso}: ${respuesta.data.paso_nombre}. Se reutiliza si los datos y el paso no cambian.`)
-    } else {
-      showSuccess('PDF al día', `Se descargó el PDF ya emitido en el paso ${respuesta.data.paso}.`)
-    }
     await refrescarDocumento()
   } catch (error: any) {
     showError('PDF', error.message || 'No se pudo generar el resumen.')
