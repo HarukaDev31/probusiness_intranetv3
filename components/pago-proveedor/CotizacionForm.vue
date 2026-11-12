@@ -908,6 +908,9 @@ function notaPago(proveedor: PagoProveedorProveedor) {
   return ''
 }
 
+/** Porcentaje para mostrar: hasta 2 decimales (se guarda con 4). */
+const pct = (valor: number) => String(Math.round(valor * 100) / 100)
+
 function partes(proveedor: PagoProveedorProveedor) {
   const indice = proveedores.value.indexOf(proveedor)
   const valor = Number(valoresNativos.value[indice] ?? (proveedor.moneda === 'RMB' ? 0 : proveedor.valor_carga_usd)) || 0
@@ -921,7 +924,7 @@ function partes(proveedor: PagoProveedorProveedor) {
   if (!ok) {
     return { ok: false, porcentaje1: '—', monto1: '', porcentaje2: '—', monto2: '', total: proveedor.moneda && valor > 0 ? 'Elige cómo se reparte el pago.' : 'Ingresa la moneda y el valor de carga para ver los montos.' }
   }
-  return { ok: true, porcentaje1: `${primero}%`, monto1: monto(monto1), porcentaje2: `${segundo}%`, monto2: monto(monto2), total: `Total ${monto(valor)} — Correcto` }
+  return { ok: true, porcentaje1: `${pct(primero)}%`, monto1: monto(monto1), porcentaje2: `${pct(segundo)}%`, monto2: monto(monto2), total: `Total ${monto(valor)} — Correcto` }
 }
 
 function esPreset(proveedor: PagoProveedorProveedor, porcentaje: number) {
@@ -939,7 +942,7 @@ function etiquetaOtro(proveedor: PagoProveedorProveedor, indice: number) {
   const primero = Number(proveedor.porcentaje_1) || 0
   const segundo = Number(proveedor.porcentaje_2 ?? (100 - primero)) || 0
   if (!(primero > 0)) return 'Otro'
-  return `Otro: ${primero}% – ${segundo}%`
+  return `Otro: ${pct(primero)}% – ${pct(segundo)}%`
 }
 
 function elegirPreset(proveedor: PagoProveedorProveedor, indice: number, primero: number, segundo: number) {
@@ -967,9 +970,10 @@ function alMontoOtro(proveedor: PagoProveedorProveedor, raw: string | number) {
   const valor = Number(valoresNativos.value[indice] ?? (proveedor.moneda === 'RMB' ? 0 : proveedor.valor_carga_usd)) || 0
   const monto = Number(raw) || 0
   if (valor > 0 && monto > 0 && monto < valor) {
-    const primero = Math.round((monto / valor) * 10000) / 100
+    // 4 decimales (la BD los guarda así) para que el monto escrito no cambie al recalcularlo (6000 → 5999.99).
+    const primero = Math.round((monto / valor) * 1000000) / 10000
     proveedor.porcentaje_1 = primero
-    proveedor.porcentaje_2 = Math.round((100 - primero) * 100) / 100
+    proveedor.porcentaje_2 = Math.round((100 - primero) * 10000) / 10000
   }
 }
 
