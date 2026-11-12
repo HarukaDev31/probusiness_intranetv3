@@ -455,6 +455,7 @@
     <SupplierPaymentWindow
       :open="!!guardadaResumen"
       title="Cotización guardada"
+      code-right
       :subtitle="guardadaResumen ? `${guardadaResumen.cliente} · Consolidado ${guardadaResumen.consolidado}` : ''"
       :code="guardadaResumen?.codigo"
       @close="irAlListado"

@@ -13,9 +13,10 @@
     @update:open="onOpen"
   >
     <template v-if="code || $slots.pill" #actions>
-      <!-- Como la maqueta: el código y el plazo / la diferencia van en la esquina derecha, junto a la X (que es absoluta). -->
-      <div class="ms-auto me-8 flex items-center gap-2">
-        <UBadge v-if="code" color="neutral" variant="subtle" class="font-mono text-sm font-bold">{{ code }}</UBadge>
+      <UBadge v-if="code && !codeRight" color="neutral" variant="subtle" class="font-mono text-sm font-bold">{{ code }}</UBadge>
+      <!-- Como la maqueta: el plazo / la diferencia (y el código si codeRight) van en la esquina derecha, junto a la X (que es absoluta). -->
+      <div v-if="$slots.pill || (code && codeRight)" class="ms-auto me-8 flex items-center gap-2">
+        <UBadge v-if="code && codeRight" color="neutral" variant="subtle" class="font-mono text-sm font-bold">{{ code }}</UBadge>
         <slot name="pill" />
       </div>
     </template>
@@ -42,11 +43,14 @@ const props = withDefaults(defineProps<{
   hint?: string
   wide?: boolean
   widthClass?: string
+  /** Código en la esquina derecha (p. ej. «Cotización guardada»); por defecto va junto al título. */
+  codeRight?: boolean
 }>(), {
   subtitle: '',
   code: null,
   hint: '',
   wide: false,
+  codeRight: false,
   widthClass: ''
 })
 
