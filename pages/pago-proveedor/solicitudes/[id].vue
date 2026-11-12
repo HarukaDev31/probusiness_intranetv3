@@ -309,6 +309,7 @@
             @lift="abrirMotivo(proveedor, 'levantar')"
             @lift-china="levantarChina(proveedor)"
             @edit-deposit="(id) => editarAbonoPorId(id)"
+            @view-voucher="(id) => verVoucherPorId(id)"
             @register-difference="abrirAbono()"
             @choose-providers="abrirContinuacion(proveedor)"
             @decide-surplus="(id, decision) => decidir(id, decision)"
@@ -1193,6 +1194,10 @@ function enManos(proveedor: PagoProveedorSolicitudProveedor) {
 function editarAbonoPorId(id: number) {
   const item = (solicitud.value?.abonos || []).find(abonoItem => abonoItem.id === id)
   if (item) editarAbono(item)
+}
+
+function verVoucherPorId(id: number) {
+  voucherAbierto.value = (solicitud.value?.abonos || []).find(abonoItem => abonoItem.id === id) || null
 }
 
 function abrirContinuacion(proveedor: PagoProveedorSolicitudProveedor) {
