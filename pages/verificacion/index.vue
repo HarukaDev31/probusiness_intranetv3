@@ -21,25 +21,25 @@
                 'px-4 py-2 rounded-md text-sm font-medium transition',
                 isConsolidado ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
               ]">
-                Consolidado
+                Consolidado<span v-if="countFor('consolidado')" class="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-primary-500 px-1.5 text-[11px] font-semibold text-white">{{ countFor('consolidado') }}</span>
               </button>
               <button type="button" @click="activeTab = 'cursos'" :class="[
                 'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
                 isCursos ? 'bg-white dark:bg-gray-800 border border-gray-200 shadow-sm' : 'text-gray-600'
               ]">
-                Cursos
+                Cursos<span v-if="countFor('cursos')" class="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-primary-500 px-1.5 text-[11px] font-semibold text-white">{{ countFor('cursos') }}</span>
               </button>
               <button type="button" @click="activeTab = 'delivery'" :class="[
                 'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
                 isDelivery ? 'bg-white dark:bg-gray-800 border border-gray-200 shadow-sm' : 'text-gray-600'
               ]">
-                Delivery
+                Delivery<span v-if="countFor('delivery')" class="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-primary-500 px-1.5 text-[11px] font-semibold text-white">{{ countFor('delivery') }}</span>
               </button>
               <button v-if="isAdministracion" type="button" @click="activeTab = 'permisos'" :class="[
                 'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
                 isPermisos ? 'bg-white dark:bg-gray-800 border border-gray-200 shadow-sm' : 'text-gray-600'
               ]">
-                Permisos
+                Permisos<span v-if="countFor('permisos')" class="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-primary-500 px-1.5 text-[11px] font-semibold text-white">{{ countFor('permisos') }}</span>
               </button>
               <button type="button" @click="activeTab = 'boletin-quimico'" :class="[
                 'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
@@ -77,25 +77,25 @@
                 'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
                 isConsolidado ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
               ]">
-                Consolidado
+                Consolidado<span v-if="countFor('consolidado')" class="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-primary-500 px-1.5 text-[11px] font-semibold text-white">{{ countFor('consolidado') }}</span>
               </button>
               <button type="button" @click="activeTab = 'cursos'" :class="[
                 'px-4 py-2 rounded-md text-sm font-medium transition',
                 isCursos ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
               ]">
-                Cursos
+                Cursos<span v-if="countFor('cursos')" class="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-primary-500 px-1.5 text-[11px] font-semibold text-white">{{ countFor('cursos') }}</span>
               </button>
               <button type="button" @click="activeTab = 'delivery'" :class="[
                 'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
                 isDelivery ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
               ]">
-                Delivery
+                Delivery<span v-if="countFor('delivery')" class="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-primary-500 px-1.5 text-[11px] font-semibold text-white">{{ countFor('delivery') }}</span>
               </button>
               <button v-if="isAdministracion" type="button" @click="activeTab = 'permisos'" :class="[
                 'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
                 isPermisos ? 'bg-white dark:bg-gray-800 border border-gray-200 shadow-sm' : 'text-gray-600'
               ]">
-                Permisos
+                Permisos<span v-if="countFor('permisos')" class="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-primary-500 px-1.5 text-[11px] font-semibold text-white">{{ countFor('permisos') }}</span>
               </button>
               <button type="button" @click="activeTab = 'boletin-quimico'" :class="[
                 'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
@@ -127,10 +127,10 @@
         <template #body-top>
           <div class="w-50 mb-6 flex items-center">
             <div class="inline-flex rounded-md bg-gray-100 dark:bg-gray-900 p-1 gap-2">
-              <button type="button" @click="activeTab = 'consolidado'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isConsolidado ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Consolidado</button>
-              <button type="button" @click="activeTab = 'cursos'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isCursos ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Cursos</button>
-              <button type="button" @click="activeTab = 'delivery'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isDelivery ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Delivery</button>
-              <button type="button" @click="activeTab = 'permisos'" :class="['px-4 py-2 rounded-md text-sm font-medium transition', isPermisos ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600']">Permisos</button>
+              <button type="button" @click="activeTab = 'consolidado'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isConsolidado ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Consolidado<span v-if="countFor('consolidado')" class="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-primary-500 px-1.5 text-[11px] font-semibold text-white">{{ countFor('consolidado') }}</span></button>
+              <button type="button" @click="activeTab = 'cursos'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isCursos ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Cursos<span v-if="countFor('cursos')" class="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-primary-500 px-1.5 text-[11px] font-semibold text-white">{{ countFor('cursos') }}</span></button>
+              <button type="button" @click="activeTab = 'delivery'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isDelivery ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Delivery<span v-if="countFor('delivery')" class="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-primary-500 px-1.5 text-[11px] font-semibold text-white">{{ countFor('delivery') }}</span></button>
+              <button type="button" @click="activeTab = 'permisos'" :class="['px-4 py-2 rounded-md text-sm font-medium transition', isPermisos ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600']">Permisos<span v-if="countFor('permisos')" class="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-primary-500 px-1.5 text-[11px] font-semibold text-white">{{ countFor('permisos') }}</span></button>
               <button type="button" @click="activeTab = 'boletin-quimico'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isBoletinQuimico ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Boletín Químico</button>
             </div>
           </div>
@@ -161,25 +161,25 @@
                 'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
                 isConsolidado ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
               ]">
-                Consolidado
+                Consolidado<span v-if="countFor('consolidado')" class="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-primary-500 px-1.5 text-[11px] font-semibold text-white">{{ countFor('consolidado') }}</span>
               </button>
               <button type="button" @click="activeTab = 'cursos'" :class="[
                 'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
                 isCursos ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
               ]">
-                Cursos
+                Cursos<span v-if="countFor('cursos')" class="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-primary-500 px-1.5 text-[11px] font-semibold text-white">{{ countFor('cursos') }}</span>
               </button>
               <button type="button" @click="activeTab = 'delivery'" :class="[
                 'px-4 py-2 rounded-md text-sm font-medium transition',
                 isDelivery ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
               ]">
-                Delivery
+                Delivery<span v-if="countFor('delivery')" class="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-primary-500 px-1.5 text-[11px] font-semibold text-white">{{ countFor('delivery') }}</span>
               </button>
               <button v-if="isAdministracion" type="button" @click="activeTab = 'permisos'" :class="[
                 'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
                 isPermisos ? 'bg-white dark:bg-gray-800 border border-gray-200 shadow-sm' : 'text-gray-600'
               ]">
-                Permisos
+                Permisos<span v-if="countFor('permisos')" class="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-primary-500 px-1.5 text-[11px] font-semibold text-white">{{ countFor('permisos') }}</span>
               </button>
               <button type="button" @click="activeTab = 'boletin-quimico'" :class="[
                 'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
@@ -223,10 +223,10 @@
         <template #body-top>
           <div class="w-50 mb-6 flex items-center">
             <div class="inline-flex rounded-md bg-gray-100 dark:bg-gray-900 p-1 gap-2">
-              <button type="button" @click="activeTab = 'consolidado'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isConsolidado ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Consolidado</button>
-              <button type="button" @click="activeTab = 'cursos'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isCursos ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Cursos</button>
-              <button type="button" @click="activeTab = 'delivery'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isDelivery ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Delivery</button>
-              <button v-if="isAdministracion" type="button" @click="activeTab = 'permisos'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isPermisos ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Permisos</button>
+              <button type="button" @click="activeTab = 'consolidado'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isConsolidado ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Consolidado<span v-if="countFor('consolidado')" class="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-primary-500 px-1.5 text-[11px] font-semibold text-white">{{ countFor('consolidado') }}</span></button>
+              <button type="button" @click="activeTab = 'cursos'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isCursos ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Cursos<span v-if="countFor('cursos')" class="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-primary-500 px-1.5 text-[11px] font-semibold text-white">{{ countFor('cursos') }}</span></button>
+              <button type="button" @click="activeTab = 'delivery'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isDelivery ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Delivery<span v-if="countFor('delivery')" class="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-primary-500 px-1.5 text-[11px] font-semibold text-white">{{ countFor('delivery') }}</span></button>
+              <button v-if="isAdministracion" type="button" @click="activeTab = 'permisos'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isPermisos ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Permisos<span v-if="countFor('permisos')" class="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-primary-500 px-1.5 text-[11px] font-semibold text-white">{{ countFor('permisos') }}</span></button>
               <button type="button" @click="activeTab = 'boletin-quimico'" :class="['px-4 py-2 rounded-md text-sm font-medium transition', isBoletinQuimico ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600']">Boletín Químico</button>
             </div>
           </div>
@@ -262,6 +262,7 @@ import type { TramiteAduana, TramiteAduanaTipoPermisoItem } from '~/types/baseda
 import { TRAMITE_ESTADOS } from '~/types/basedatos/tramiteAduana'
 import { formatDateTimeToDmy } from '~/utils/formatters'
 import { BoletinQuimicoService } from '~/services/basedatos/boletinQuimicoService'
+import { useVerificationCounts } from '~/composables/verificacion/useVerificationCounts'
 import type { BoletinQuimicoRow } from '~/services/basedatos/boletinQuimicoService'
 import type { PagosDetails } from '~/types/cargaconsolidada/clientes/pagos'
 
@@ -281,6 +282,9 @@ const tabs = computed(() => {
 })
 
 const activeTab = ref('consolidado')
+const { counts: verificationCounts, refresh: refreshVerificationCounts } = useVerificationCounts()
+const countFor = (key: 'consolidado' | 'cursos' | 'delivery' | 'permisos' | 'boletin_quimico') =>
+  Number(verificationCounts.value[key] || 0)
 
 const isConsolidado = computed(() => activeTab.value === 'consolidado')
 const isCursos = computed(() => activeTab.value === 'cursos')
@@ -1369,6 +1373,9 @@ onMounted(async () => {
     await loadPermisosVerificacion({ page: 1 })
   } else if (activeTab.value === 'boletin-quimico') {
     await loadBoletin()
+  }
+  if (isAdministracion.value) {
+    void refreshVerificationCounts()
   }
 })
 watch(activeTab, async (newTab, oldTab) => {

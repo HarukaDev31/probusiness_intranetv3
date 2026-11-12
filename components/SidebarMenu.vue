@@ -52,6 +52,10 @@
                       :aria-label="collapsed ? displayMenuName(item.name, undefined, item.nameEn) : undefined">
                       <UIcon :name="item.icon || 'i-heroicons-archive-box'" class="w-5 h-5 text-gray-400" />
                       <span v-if="!collapsed" class="truncate">{{ displayMenuName(item.name, undefined, item.nameEn) }} </span>
+                      <span
+                        v-if="!collapsed && item.notificationCount"
+                        class="ml-auto rounded-full bg-orange-500 px-1.5 text-[11px] font-bold text-white"
+                      >{{ item.notificationCount }}</span>
                     </button>
 
                     <!-- Right: chevron toggle (oculto al colapsar para no descentrar el icono) -->
@@ -145,6 +149,10 @@
                                 </span>
                               </span>
                               <span v-if="!collapsed">{{ displayMenuName(child.name, item.name, child.nameEn) }}</span>
+                              <span
+                                v-if="!collapsed && child.notificationCount"
+                                class="ml-auto rounded-full bg-orange-500 px-1.5 text-[11px] font-bold text-white"
+                              >{{ child.notificationCount }}</span>
                             </template>
                           </UButton>
                         </div>
@@ -155,12 +163,21 @@
 
                 <!-- Item simple (sin hijos) -->
                 <div v-else>
-                  <UButton :label="collapsed ? '' : displayMenuName(item.name, undefined, item.nameEn)" :icon="item.icon || 'i-heroicons-home'" variant="ghost"
+                  <UButton variant="ghost"
                     class="w-full text-sm gap-3 py-2 rounded-md"
                     :class="[isActiveRoute(item.route) ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/10 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700', collapsed ? 'justify-center px-0 gap-0' : 'justify-start px-3']"
                     :aria-label="collapsed ? displayMenuName(item.name, undefined, item.nameEn) : undefined"
                     @mouseenter="onMenuHover(item.route)"
-                    @click="handleNavigation(item.route)" />
+                    @click="handleNavigation(item.route)">
+                    <template #default>
+                      <UIcon :name="item.icon || 'i-heroicons-home'" class="w-5 h-5 shrink-0" />
+                      <span v-if="!collapsed" class="truncate">{{ displayMenuName(item.name, undefined, item.nameEn) }}</span>
+                      <span
+                        v-if="!collapsed && item.notificationCount"
+                        class="ml-auto rounded-full bg-orange-500 px-1.5 text-[11px] font-bold text-white"
+                      >{{ item.notificationCount }}</span>
+                    </template>
+                  </UButton>
                 </div>
               </template>
             </div>

@@ -21,6 +21,7 @@ import { registerAdministracionEvents } from './administracion'
 import { registerJefeImportacionEvents } from './jefe-importacion'
 import { registerWaCopilotoEvents } from './wa-copiloto'
 import { registerRRHHEvents } from './rrhh'
+import { registerVerificacionEvents } from './verificacion'
 /**
  * Registra todos los eventos de todos los roles
  * Esta función se ejecuta antes de la suscripción a los canales
@@ -40,5 +41,6 @@ export const registerAllRoleEvents = () => {
   registerAdministracionEvents()
   registerJefeImportacionEvents()
   registerRRHHEvents()
+  registerVerificacionEvents()
 }
 
