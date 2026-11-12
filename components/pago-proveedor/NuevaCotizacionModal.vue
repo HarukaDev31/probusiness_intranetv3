@@ -42,7 +42,7 @@
           </span>
         </template>
         <template #item-trailing="{ item }">
-          <span class="text-xs text-muted">{{ soloConsolidado(item.consolidado) }}</span>
+          <span class="text-xs text-muted">{{ item.consolidado || '—' }}</span>
         </template>
         <template #empty>
           <div v-if="buscandoLista" class="space-y-2 px-1 py-1">
@@ -112,7 +112,7 @@
         </div>
         <div>
           <dt class="text-[11px] font-bold uppercase tracking-wide text-muted">Consolidado</dt>
-          <dd class="font-bold text-highlighted">{{ soloConsolidado(resultado.consolidado) }}</dd>
+          <dd class="font-bold text-highlighted">{{ resultado.consolidado || '—' }}</dd>
         </div>
         <div>
           <dt class="text-[11px] font-bold uppercase tracking-wide text-muted">Proveedores</dt>
@@ -136,10 +136,7 @@
 </template>
 
 <script setup lang="ts">
-function soloConsolidado(valor: string | null | undefined) {
-  return String(valor || '').split(/\s*[-–]\s*/)[0]?.trim() || '—'
-}
-
+// Aquí el consolidado va con su año (21 - 2026): se busca por cliente o DNI/RUC y el año los distingue.
 import { computed, ref, watch } from 'vue'
 import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
 import { PagoProveedorService } from '~/services/pagoProveedorService'

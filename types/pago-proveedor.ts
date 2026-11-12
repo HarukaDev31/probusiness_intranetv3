@@ -54,6 +54,8 @@ export interface PagoProveedorProveedor {
   moneda: 'RMB' | 'USD'
   tipo_pago: 'transferencia' | 'tt' | 'tarjeta'
   valor_carga_usd: number
+  /** Valor en yuanes tal cual lo digitó Ventas (solo RMB). */
+  valor_carga_rmb?: number | null
   modalidad_abono: 'total' | 'fraccionado'
   modalidad_pago: 'total' | 'fraccionado'
   porcentaje_1: number
