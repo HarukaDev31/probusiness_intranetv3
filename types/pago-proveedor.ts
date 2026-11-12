@@ -72,6 +72,7 @@ export interface PagoProveedorCotizacion {
   id: number
   codigo: string
   solicitud_id?: number | null
+  solicitud_numero?: number | null
   estado: 'pendiente' | 'confirmada'
   cod_cotizacion_cc: string
   consolidado: string | null
