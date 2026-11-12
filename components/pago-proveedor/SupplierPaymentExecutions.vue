@@ -46,20 +46,23 @@
       :total-pages="pagination.last_page"
       :total-records="pagination.total"
       :items-per-page="pagination.per_page"
-      :primary-search-value="search"
-      :show-primary-search="true"
-      :show-primary-search-label="false"
-      primary-search-placeholder="Cliente, proveedor, consolidado o código"
-      :show-filters="true"
-      :filter-config="filterConfig"
-      :filters-value="filters"
       :show-export="false"
       :empty-state-message="emptyMessage"
-      @update:primary-search="onSearch"
-      @filter-change="onFilter"
       @page-change="onPage"
       @items-per-page-change="onPageSize"
-    />
+    >
+      <!-- Maqueta: barra de filtros abierta (Buscar, Consolidado, Pagado el). Sin Banco: la tabla no lo muestra. -->
+      <template #filters>
+        <SupplierPaymentFilterBar
+          :search="search"
+          search-placeholder="Cliente, proveedor o código"
+          :fields="filterConfig"
+          :values="filters"
+          @update:search="onSearch"
+          @change="onFilter"
+        />
+      </template>
+    </DataTable>
     <p class="mt-2 text-xs text-muted">
       {{ bucket === EXECUTION_BUCKET.PENDING
         ? 'Pagos en dólares (T-T y tarjeta) que ejecuta Administración. Pendiente: todo está listo, falta transferir. Al registrar el pago con su constancia, pasa a la pestaña Pagados.'
@@ -75,6 +78,7 @@ import { computed, h, onMounted, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import UsdExecutionModal from '~/components/pago-proveedor/UsdExecutionModal.vue'
 import SupplierPaymentTabs from '~/components/pago-proveedor/SupplierPaymentTabs.vue'
+import SupplierPaymentFilterBar from '~/components/pago-proveedor/SupplierPaymentFilterBar.vue'
 import { EXECUTION_BUCKET, EXECUTION_STATUS } from '~/constants/supplierPayment'
 import { PagoProveedorService } from '~/services/pagoProveedorService'
 import type { PagoProveedorPaginacion, SupplierPaymentExecution, SupplierPaymentExecutionTotals } from '~/types/pago-proveedor'
@@ -89,7 +93,7 @@ const search = ref('')
 const pendingCount = ref(0)
 const bucket = ref<typeof EXECUTION_BUCKET[keyof typeof EXECUTION_BUCKET]>(EXECUTION_BUCKET.PENDING)
 const pagination = ref<PagoProveedorPaginacion>({ current_page: 1, last_page: 1, per_page: 15, total: 0 })
-const filters = ref({ paid_from: '', paid_to: '', consolidado: 'todos', estado: 'todos', banco: 'todos' })
+const filters = ref({ paid_from: '', paid_to: '', consolidado: 'todos', estado: 'todos' })
 const totals = ref<SupplierPaymentExecutionTotals>({
   count: 0,
   cargo: 0,
@@ -101,38 +105,21 @@ const totals = ref<SupplierPaymentExecutionTotals>({
 })
 
 const filterConfig = computed(() => {
-  const base = [
-    {
-      key: 'consolidado',
-      label: 'Consolidado',
-      type: 'select',
-      placeholder: 'Consolidado',
-      options: [
-        { value: 'todos', label: 'Todos' },
-        ...[...new Set(rows.value.map((row) => row.consolidation).filter((value): value is string => !!value))].sort()
-          .map((item) => ({ value: item, label: item }))
-      ]
-    },
-    {
-      key: 'banco',
-      label: 'Banco',
-      type: 'select',
-      placeholder: 'Banco',
-      options: [
-        { value: 'todos', label: 'Todos' },
-        { value: 'bcp', label: 'BCP' },
-        { value: 'interbank', label: 'Interbank' }
-      ]
-    }
-  ]
+  const consolidado = {
+    key: 'consolidado',
+    label: 'Consolidado',
+    options: [
+      { value: 'todos', label: 'Todos' },
+      ...[...new Set(rows.value.map((row) => row.consolidation).filter((value): value is string => !!value))].sort()
+        .map((item) => ({ value: item, label: item }))
+    ]
+  }
   if (bucket.value === EXECUTION_BUCKET.PENDING) {
     return [
-      ...base,
+      consolidado,
       {
         key: 'estado',
         label: 'Estado',
-        type: 'select',
-        placeholder: 'Estado',
         options: [
           { value: 'todos', label: 'Todos' },
           { value: 'pendiente', label: 'Pendiente' }
@@ -141,9 +128,8 @@ const filterConfig = computed(() => {
     ]
   }
   return [
-    ...base,
-    { key: 'paid_from', label: 'Pagado el (desde)', type: 'date', placeholder: 'Desde', options: [] },
-    { key: 'paid_to', label: 'Pagado el (hasta)', type: 'date', placeholder: 'Hasta', options: [] }
+    consolidado,
+    { key: 'paid', label: 'Pagado el', type: 'date-range' as const, fromKey: 'paid_from', toKey: 'paid_to' }
   ]
 })
 
@@ -292,7 +278,6 @@ async function load() {
       search: search.value,
       paid_from: filters.value.paid_from,
       paid_to: filters.value.paid_to,
-      banco: filters.value.banco,
       consolidado: filters.value.consolidado,
       page: pagination.value.current_page,
       per_page: pagination.value.per_page
@@ -310,7 +295,7 @@ async function load() {
 
 function changeBucket(next: typeof EXECUTION_BUCKET[keyof typeof EXECUTION_BUCKET]) {
   bucket.value = next
-  filters.value = { paid_from: '', paid_to: '', consolidado: 'todos', estado: 'todos', banco: 'todos' }
+  filters.value = { paid_from: '', paid_to: '', consolidado: 'todos', estado: 'todos' }
   pagination.value.current_page = 1
   load()
 }

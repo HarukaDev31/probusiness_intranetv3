@@ -200,30 +200,31 @@
                 >
               </label>
 
-              <div class="mt-3 rounded-lg border border-default px-3 py-2">
-                <div class="mb-1 flex items-center justify-between gap-2">
-                  <p class="text-xs font-bold">Aviso al cliente</p>
-                  <UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-clipboard-document" :disabled="!receipt" title="Copiar aviso" @click="copy(notice, 'Aviso al cliente')" />
-                </div>
+              <!-- Maqueta: el título «Aviso al cliente» va fuera del cuadro, como el de la constancia. -->
+              <div class="mb-2 mt-3 flex items-center justify-between gap-2">
+                <p class="text-xs font-bold uppercase tracking-wider text-muted">Aviso al cliente</p>
+                <UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-clipboard-document" :disabled="!receipt" title="Copiar aviso" @click="copy(notice, 'Aviso al cliente')" />
+              </div>
+              <div class="rounded-lg border border-default px-3 py-2">
                 <!-- eslint-disable-next-line vue/no-v-html -->
                 <pre class="max-h-32 overflow-auto whitespace-pre-wrap font-sans text-[11px] leading-snug" v-html="whatsappHtml(notice) || 'Cargando aviso…'" />
                 <p v-if="noticeSent" class="mt-1 flex items-center gap-1 text-xs font-semibold text-success">
                   <UIcon name="i-heroicons-check-circle" class="size-4" /> Mensaje enviado al cliente
                 </p>
                 <p v-else-if="!receipt" class="mt-1 text-xs text-muted">Adjunta la constancia para habilitar el envío.</p>
-                <UButton
-                  v-if="!noticeSent"
-                  class="mt-2"
-                  size="xs"
-                  color="warning"
-                  variant="soft"
-                  icon="i-mdi-whatsapp"
-                  :loading="saving"
-                  :disabled="!receipt"
-                  @click="sendNotice"
-                >
-                  Enviar mensaje por WhatsApp
-                </UButton>
+                <div v-if="!noticeSent" class="mt-2 flex justify-end">
+                  <UButton
+                    size="xs"
+                    color="warning"
+                    variant="soft"
+                    icon="i-mdi-whatsapp"
+                    :loading="saving"
+                    :disabled="!receipt"
+                    @click="sendNotice"
+                  >
+                    Enviar mensaje por WhatsApp
+                  </UButton>
+                </div>
               </div>
             </template>
           </div>
@@ -237,7 +238,7 @@
       </UButton>
       <UButton
         v-if="payment?.can_register"
-        color="warning"
+        color="primary"
         :loading="saving"
         :disabled="!canSave"
         :title="saveDisabledReason"
@@ -300,7 +301,7 @@ const subtitle = computed(() => {
 })
 
 const hintText = computed(() => (props.payment?.can_register
-  ? 'Adjunta la constancia, envía el aviso al cliente por WhatsApp y recién entonces registra el pago.'
+  ? 'Adjunta la constancia y envía el aviso al cliente para habilitar el registro.'
   : ''))
 
 const executedOn = computed(() => {
