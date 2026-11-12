@@ -63,7 +63,7 @@
     <SupplierPaymentWindow
       :open="settingsOpen"
       title="Tolerancia y plazos"
-      subtitle="Aplican a la comparación del importe cobrado contra el del banco."
+      subtitle="Los define Administración. Se aplican a las verificaciones de depósitos y a las observaciones."
       @close="settingsOpen = false"
     >
       <div class="grid gap-3 rounded-2xl border border-default bg-elevated p-4 sm:grid-cols-2">
@@ -73,8 +73,8 @@
         <div class="sm:col-span-2">
           <UCheckbox
             v-model="settingsForm.auto_approve"
-            label="Aprobar automáticamente los pagos sin diferencias (o dentro de la tolerancia)."
-            description="Si la diferencia supera la tolerancia pero no el límite excepcional, Administración decide a mano (asumir, cobrar o anular)."
+            label="Aprobar automáticamente los pagos sin diferencias."
+            description="Se aprueban solos cuando todos sus depósitos están validados, el importe está completo (o la diferencia está dentro de la tolerancia) y no hay observaciones. El resto lo aprueba Administración."
           />
         </div>
       </div>
@@ -96,7 +96,7 @@
         <UFormField label="Dólares ($)">
           <UInput v-model.number="tariffs.admin_usd" type="number" min="0" class="w-full" />
         </UFormField>
-        <UFormField label="Yuanes ($)">
+        <UFormField label="Yuanes (¥)">
           <UInput v-model.number="tariffs.admin_rmb" type="number" min="0" class="w-full" />
         </UFormField>
       </div>
@@ -134,7 +134,7 @@
           </tbody>
         </table>
       </div>
-      <p class="mt-3 text-xs text-muted">Aplica a las nuevas solicitudes desde que se guarda; no cambia las ya creadas.</p>
+      <p class="mt-3 text-xs text-muted">Tarifa configurable solo por usuarios autorizados. Aplica a las nuevas solicitudes desde el momento en que se guarda — no afecta solicitudes ya creadas.</p>
       <template #footer>
         <UButton color="neutral" variant="outline" @click="() => { tariffsOpen = false }">Cancelar</UButton>
         <UButton color="primary" :loading="savingTariffs" @click="saveTariffs">Guardar tarifa</UButton>
@@ -320,12 +320,12 @@ const settingsForm = reactive<SupplierPaymentApprovalSettings>({
 
 const settingFields = [
   { key: 'tolerance' as const, label: 'Tolerancia de importe (USD)' },
-  { key: 'exception_limit' as const, label: 'Límite excepcional (USD)' },
+  { key: 'exception_limit' as const, label: 'Límite excepcional (USD, con motivo)' },
   { key: 'verify_hours' as const, label: 'Plazo para verificar un depósito (horas)' },
   { key: 'remedy_days' as const, label: 'Plazo para subsanar una observación (días)' },
-  { key: 'undo_minutes' as const, label: 'Deshacer sin aviso a Ventas (minutos)' },
+  { key: 'undo_minutes' as const, label: 'Deshacer una verificación sin aviso (minutos)' },
   { key: 'undo_hours' as const, label: 'Deshacer con aviso a Ventas (horas)' },
-  { key: 'decision_hours' as const, label: 'Plazo de Ventas para pago 2 o reembolso (horas)' }
+  { key: 'decision_hours' as const, label: 'Plazo para que Ventas decida el pago 2 o el reembolso (horas)' }
 ]
 
 const filterConfig = computed(() => [
@@ -366,11 +366,11 @@ const filterConfig = computed(() => [
 
 const columns = computed<TableColumn<UnifiedRow>[]>(() => [
   { accessorKey: 'order_number', header: 'N.° de orden', cell: ({ row }) => row.original.order_number ?? '—' },
-  { accessorKey: 'client_name', header: 'Cliente', cell: ({ row }) => h('span', { class: 'block w-28 whitespace-normal' }, row.original.client_name || '—') },
+  { accessorKey: 'client_name', header: 'Cliente', cell: ({ row }) => h('span', { class: 'block min-w-36 max-w-72 whitespace-normal' }, row.original.client_name || '—') },
   { accessorKey: 'consolidation', header: 'Consolidado', cell: ({ row }) => soloConsolidado(row.original.consolidation) },
   { accessorKey: 'supplier_code', header: 'Proveedor', cell: ({ row }) => h('div', [
     h('div', { class: 'font-semibold' }, row.original.supplier_code || '—'),
-    h('div', { class: 'w-36 whitespace-normal text-xs text-muted' }, row.original.supplier_name || '')
+    h('div', { class: 'min-w-40 max-w-64 whitespace-normal text-xs text-muted' }, row.original.supplier_name || '')
   ]) },
   { accessorKey: 'request_code', header: 'Código de solicitud', cell: ({ row }) => row.original.request_code || '—' },
   {

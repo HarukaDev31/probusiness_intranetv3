@@ -20,9 +20,8 @@
       <div class="grid gap-4 lg:grid-cols-2">
         <SupplierPaymentCard title="Solicitud">
           <SupplierPaymentFact label="Cliente" :value="payment.client_name || '—'" />
-          <SupplierPaymentFact label="Consolidado" :value="payment.consolidation || '—'" />
           <SupplierPaymentFact label="Código de proveedor" :value="payment.supplier_code || '—'" />
-          <SupplierPaymentFact v-if="payment.supplier_name" label="Proveedor" :value="payment.supplier_name" />
+          <SupplierPaymentFact label="Proveedor" :value="payment.supplier_name || '—'" />
           <SupplierPaymentFact label="Producto" :value="payment.product || '—'" />
           <SupplierPaymentFact label="Tipo de pago" :value="paymentTypeLabel" />
           <SupplierPaymentFact label="Modalidad" :value="modalityLabel" />
@@ -283,17 +282,24 @@ const previewOpen = ref<{ url: string | null; name: string | null; title: string
 /** Etiquetas: el backend ya manda el tipo legible y la modalidad de la maqueta. */
 const paymentTypeLabel = computed(() => props.payment?.payment_type_label
   || (props.payment?.currency === 'RMB' ? 'RMB / Transferencia' : 'USD / T-T'))
+/** Maqueta: «2 cuotas 50%–50% · cuota 1 de 2». La modalidad ya trae la cuota; se usa la de este pago sin repetirla. */
 const modalityLabel = computed(() => {
-  const parts = [props.payment?.modality_label].filter(Boolean)
-  if (props.payment?.installment_label) parts.push(props.payment.installment_label)
+  const base = (props.payment?.modality_label || '').replace(/\s*·\s*cuota \d+ de \d+\s*$/i, '').trim()
+  const parts = [base].filter(Boolean)
+  if (props.payment?.installment_label) parts.push(props.payment.installment_label.toLowerCase())
   return parts.join(' · ') || 'Total'
 })
+
+/** Solo el número de consolidado, sin el año: «21 - 2026» → «21». */
+function soloConsolidado(value: string) {
+  return value.replace(/\s*-\s*\d{4}\s*$/, '').trim() || value
+}
 
 const subtitle = computed(() => {
   if (!props.payment) return ''
   const parts = [
     props.payment.client_name || 'Cliente',
-    `Consolidado ${props.payment.consolidation || 'sin identificar'}`
+    `Consolidado ${props.payment.consolidation ? soloConsolidado(props.payment.consolidation) : 'sin identificar'}`
   ]
   if (props.payment.installment_label) parts.push(props.payment.installment_label)
   return parts.join(' · ')

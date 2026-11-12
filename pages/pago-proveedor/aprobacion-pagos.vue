@@ -3,6 +3,7 @@
     title="Aprobación de pagos"
     subtitle="Pago a proveedor"
     icon="i-heroicons-check-badge"
+    wide-tables
   >
     <SupplierPaymentApprovals />
   </SupplierPaymentPage>
