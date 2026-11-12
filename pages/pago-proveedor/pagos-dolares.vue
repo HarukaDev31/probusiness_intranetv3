@@ -1,8 +1,9 @@
 <template>
   <SupplierPaymentPage
-    title="Pagos en dólares"
+    title="Pago en Dólares (T-T)"
     subtitle="Pago a proveedor"
     icon="i-heroicons-banknotes"
+    wide-tables
   >
     <SupplierPaymentExecutions />
   </SupplierPaymentPage>

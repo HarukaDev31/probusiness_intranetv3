@@ -3,6 +3,7 @@
     title="Pagos en yuanes"
     subtitle="Pago a proveedor"
     icon="i-heroicons-currency-yen"
+    wide-tables
   >
     <SupplierPaymentYuan />
   </SupplierPaymentPage>

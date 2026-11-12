@@ -46,20 +46,23 @@
       :total-pages="pagination.last_page"
       :total-records="pagination.total"
       :items-per-page="pagination.per_page"
-      :primary-search-value="search"
-      :show-primary-search="true"
-      :show-primary-search-label="false"
-      primary-search-placeholder="Cliente, proveedor, consolidado o código"
-      :show-filters="true"
-      :filter-config="filterConfig"
-      :filters-value="filters"
       :show-export="false"
       :empty-state-message="emptyMessage"
-      @update:primary-search="onSearch"
-      @filter-change="onFilter"
       @page-change="onPage"
       @items-per-page-change="onPageSize"
-    />
+    >
+      <!-- Barra de filtros abierta como la maqueta, sin «Banco»: la tabla no muestra el banco. -->
+      <template #filters>
+        <SupplierPaymentFilterBar
+          :search="search"
+          search-placeholder="Cliente, proveedor o código"
+          :fields="filterConfig"
+          :values="filters"
+          @update:search="onSearch"
+          @change="onFilter"
+        />
+      </template>
+    </DataTable>
     <p class="mt-2 text-xs text-muted">
       {{ bucket === EXECUTION_BUCKET.PENDING
         ? 'Pagos en dólares (T-T y tarjeta) que ejecuta Administración. Pendiente: todo está listo, falta transferir. Al registrar el pago con su constancia, pasa a la pestaña Pagados.'
@@ -75,6 +78,7 @@ import { computed, h, onMounted, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import UsdExecutionModal from '~/components/pago-proveedor/UsdExecutionModal.vue'
 import SupplierPaymentTabs from '~/components/pago-proveedor/SupplierPaymentTabs.vue'
+import SupplierPaymentFilterBar from '~/components/pago-proveedor/SupplierPaymentFilterBar.vue'
 import { EXECUTION_BUCKET, EXECUTION_STATUS } from '~/constants/supplierPayment'
 import { PagoProveedorService } from '~/services/pagoProveedorService'
 import type { PagoProveedorPaginacion, SupplierPaymentExecution, SupplierPaymentExecutionTotals } from '~/types/pago-proveedor'
@@ -89,7 +93,7 @@ const search = ref('')
 const pendingCount = ref(0)
 const bucket = ref<typeof EXECUTION_BUCKET[keyof typeof EXECUTION_BUCKET]>(EXECUTION_BUCKET.PENDING)
 const pagination = ref<PagoProveedorPaginacion>({ current_page: 1, last_page: 1, per_page: 15, total: 0 })
-const filters = ref({ paid_from: '', paid_to: '', consolidado: 'todos', estado: 'todos', banco: 'todos' })
+const filters = ref({ paid_from: '', paid_to: '', consolidado: 'todos', estado: 'todos' })
 const totals = ref<SupplierPaymentExecutionTotals>({
   count: 0,
   cargo: 0,
@@ -101,38 +105,23 @@ const totals = ref<SupplierPaymentExecutionTotals>({
 })
 
 const filterConfig = computed(() => {
-  const base = [
-    {
-      key: 'consolidado',
-      label: 'Consolidado',
-      type: 'select',
-      placeholder: 'Consolidado',
-      options: [
-        { value: 'todos', label: 'Todos' },
-        ...[...new Set(rows.value.map((row) => row.consolidation).filter((value): value is string => !!value))].sort()
-          .map((item) => ({ value: item, label: item }))
-      ]
-    },
-    {
-      key: 'banco',
-      label: 'Banco',
-      type: 'select',
-      placeholder: 'Banco',
-      options: [
-        { value: 'todos', label: 'Todos' },
-        { value: 'bcp', label: 'BCP' },
-        { value: 'interbank', label: 'Interbank' }
-      ]
-    }
-  ]
+  const consolidado = {
+    key: 'consolidado',
+    label: 'Consolidado',
+    type: 'select' as const,
+    options: [
+      { value: 'todos', label: 'Todos' },
+      ...[...new Set(rows.value.map((row) => row.consolidation).filter((value): value is string => !!value))].sort()
+        .map((item) => ({ value: item, label: soloConsolidado(item) }))
+    ]
+  }
   if (bucket.value === EXECUTION_BUCKET.PENDING) {
     return [
-      ...base,
+      consolidado,
       {
         key: 'estado',
         label: 'Estado',
-        type: 'select',
-        placeholder: 'Estado',
+        type: 'select' as const,
         options: [
           { value: 'todos', label: 'Todos' },
           { value: 'pendiente', label: 'Pendiente' }
@@ -141,11 +130,16 @@ const filterConfig = computed(() => {
     ]
   }
   return [
-    ...base,
-    { key: 'paid_from', label: 'Pagado el (desde)', type: 'date', placeholder: 'Desde', options: [] },
-    { key: 'paid_to', label: 'Pagado el (hasta)', type: 'date', placeholder: 'Hasta', options: [] }
+    consolidado,
+    { key: 'paid_on', label: 'Pagado el', type: 'date-range' as const, fromKey: 'paid_from', toKey: 'paid_to' }
   ]
 })
+
+/** Solo el número de consolidado, sin el año: «21 - 2026» → «21». */
+function soloConsolidado(value: string | null) {
+  if (!value) return '—'
+  return value.replace(/\s*-\s*\d{4}\s*$/, '').trim() || value
+}
 
 function money(value: number) {
   const amount = Number(value || 0)
@@ -196,22 +190,23 @@ const emptyMessage = computed(() => {
 })
 
 const columns = computed<TableColumn<SupplierPaymentExecution>[]>(() => [
-  { accessorKey: 'order_number', header: 'N.° de orden', cell: ({ row }) => row.original.order_number ?? '—' },
-  { accessorKey: 'client_name', header: 'Cliente', cell: ({ row }) => h('span', { class: 'block w-24 whitespace-normal' }, row.original.client_name || '—') },
-  { accessorKey: 'consolidation', header: 'Consolidado', cell: ({ row }) => row.original.consolidation || '—' },
+  // Numeración correlativa de la bandeja (como la maqueta): el número de la solicitud ya va en el código.
+  { accessorKey: 'order_number', header: 'N.° de orden', cell: ({ row }) => (pagination.value.current_page - 1) * pagination.value.per_page + row.index + 1 },
+  { accessorKey: 'client_name', header: 'Cliente', cell: ({ row }) => h('span', { class: 'block min-w-36 max-w-72 whitespace-normal' }, row.original.client_name || '—') },
+  { accessorKey: 'consolidation', header: 'Consolidado', cell: ({ row }) => soloConsolidado(row.original.consolidation) },
   {
     accessorKey: 'supplier_code',
     header: 'Proveedor',
     cell: ({ row }) => h('div', [
       h('div', { class: 'font-semibold' }, row.original.supplier_code || '—'),
-      h('div', { class: 'w-32 whitespace-normal text-xs text-muted' }, [row.original.supplier_name, row.original.product].filter(Boolean).join(' · '))
+      h('div', { class: 'min-w-40 max-w-64 whitespace-normal text-xs text-muted' }, [row.original.supplier_name, row.original.product].filter(Boolean).join(' · '))
     ])
   },
   {
     accessorKey: 'request_code',
     header: 'Código de solicitud',
     cell: ({ row }) => row.original.request_code
-      ? h('span', { class: 'font-mono text-xs font-semibold' }, row.original.request_code)
+      ? h('span', { class: 'whitespace-nowrap font-semibold' }, row.original.request_code)
       : '—'
   },
   {
@@ -246,7 +241,7 @@ const columns = computed<TableColumn<SupplierPaymentExecution>[]>(() => [
             const text = payment.bank_ready
               ? payment.observation || 'Listo para transferir'
               : 'Faltan los datos bancarios del proveedor (T-T)'
-            return h('span', { class: 'block w-24 whitespace-normal text-sm font-semibold text-error' }, text)
+            return h('span', { class: 'block min-w-28 max-w-48 whitespace-normal text-sm font-semibold text-error' }, text)
           }
         }
       ]
@@ -292,7 +287,6 @@ async function load() {
       search: search.value,
       paid_from: filters.value.paid_from,
       paid_to: filters.value.paid_to,
-      banco: filters.value.banco,
       consolidado: filters.value.consolidado,
       page: pagination.value.current_page,
       per_page: pagination.value.per_page
@@ -310,7 +304,7 @@ async function load() {
 
 function changeBucket(next: typeof EXECUTION_BUCKET[keyof typeof EXECUTION_BUCKET]) {
   bucket.value = next
-  filters.value = { paid_from: '', paid_to: '', consolidado: 'todos', estado: 'todos', banco: 'todos' }
+  filters.value = { paid_from: '', paid_to: '', consolidado: 'todos', estado: 'todos' }
   pagination.value.current_page = 1
   load()
 }
