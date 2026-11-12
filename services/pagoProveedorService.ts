@@ -193,6 +193,21 @@ export class PagoProveedorService extends BaseService {
     )
   }
 
+  /** Solo vista previa (no registra nada): se usa mientras se eligen los proveedores. */
+  static async pedirDatosVistaPrevia(solicitudId: number, proveedores: number[]) {
+    return this.apiCall<Uno<{ texto: string; destinatario: string | null; puede_enviar: boolean; nota: string }>>(
+      `${this.baseUrl}/solicitudes/${solicitudId}/pedir-datos`,
+      { method: 'POST', body: { proveedores, vista_previa: true } }
+    )
+  }
+
+  static async enviarPedirDatos(solicitudId: number, proveedores: number[]) {
+    return this.apiCall<Uno<{ texto: string; enviado: boolean; nota: string; solicitud: PagoProveedorSolicitud }>>(
+      `${this.baseUrl}/solicitudes/${solicitudId}/pedir-datos/enviar`,
+      { method: 'POST', body: { proveedores } }
+    )
+  }
+
   static async cuentas(solicitudId: number) {
     return this.apiCall<Uno<{ texto: string; nota: string }>>(`${this.baseUrl}/solicitudes/${solicitudId}/cuentas`, {
       method: 'POST'

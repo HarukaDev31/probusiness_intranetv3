@@ -55,12 +55,13 @@
             </UCard>
             <UCard
               variant="subtle"
-              :class="(solicitud.saldo_pendiente || 0) > 0.004 ? 'bg-warning/10 ring-warning/30' : 'bg-success/10 ring-success/30'"
+              :class="(solicitud.saldo_pendiente || 0) > 0.004 ? 'bg-primary/10 ring-primary/40' : 'bg-success/10 ring-success/30'"
               :ui="{ body: 'p-4 sm:p-4' }"
             >
-              <dt class="text-sm" :class="(solicitud.saldo_pendiente || 0) > 0.004 ? 'text-warning' : 'text-success'">Saldo pendiente</dt>
-              <dd class="mt-1 text-3xl font-bold" :class="(solicitud.saldo_pendiente || 0) > 0.004 ? 'text-warning' : 'text-success'">${{ dinero(solicitud.saldo_pendiente || 0) }}</dd>
-              <em class="mt-1 block text-sm font-semibold not-italic" :class="(solicitud.saldo_pendiente || 0) > 0.004 ? 'text-warning' : 'text-success'">{{ (solicitud.saldo_pendiente || 0) > 0.004 ? 'Falta abonar' : '✓ Cubierto' }}</em>
+              <!-- Naranja de la maqueta (primario), no el ámbar de warning. -->
+              <dt class="text-sm" :class="(solicitud.saldo_pendiente || 0) > 0.004 ? 'text-primary' : 'text-success'">Saldo pendiente</dt>
+              <dd class="mt-1 text-3xl font-bold" :class="(solicitud.saldo_pendiente || 0) > 0.004 ? 'text-primary' : 'text-success'">${{ dinero(solicitud.saldo_pendiente || 0) }}</dd>
+              <em class="mt-1 block text-sm font-semibold not-italic" :class="(solicitud.saldo_pendiente || 0) > 0.004 ? 'text-primary-800' : 'text-success'">{{ (solicitud.saldo_pendiente || 0) > 0.004 ? 'Falta abonar' : '✓ Cubierto' }}</em>
             </UCard>
             <UCard v-if="(solicitud.excedente || 0) > 0.004" variant="subtle" class="bg-info/10 ring-info/30" :ui="{ body: 'p-4 sm:p-4' }">
               <dt class="text-sm text-info">Excedente</dt>
@@ -494,18 +495,38 @@
       <SupplierPaymentWindow
         :open="pedirDatosAbierto"
         title="Pedir datos del proveedor"
-        subtitle="Elige a quién le pides los datos."
+        :subtitle="solicitud.cliente_whatsapp ? `Destino: ${solicitud.cliente_whatsapp}` : 'Elige a quién le pides los datos.'"
+        width-class="max-w-xl sm:max-w-xl"
         @close="cerrarPedirDatos"
       >
         <p v-if="!candidatosDatos.length" class="text-sm text-muted">Todos los proveedores ya tienen sus datos.</p>
-        <UCheckboxGroup
-          v-else
-          v-model="candidatosElegidos"
-          :items="candidatosDatos.map(candidato => ({ label: `${candidato.titulo} · ${candidato.moneda}`, value: String(candidato.id) }))"
-        />
+        <template v-else>
+          <!-- Una sola ventana: arriba se eligen los proveedores y abajo se ve el mensaje que se enviará. -->
+          <p class="text-sm font-semibold text-highlighted">¿De qué proveedores pides los datos?</p>
+          <UCheckboxGroup
+            v-model="candidatosElegidos"
+            :items="candidatosDatos.map(candidato => ({ label: `${candidato.titulo} · ${candidato.moneda}`, value: String(candidato.id) }))"
+          />
+          <UCard variant="subtle">
+            <p v-if="!candidatosElegidos.length" class="text-sm text-muted">Elige al menos un proveedor para ver el mensaje.</p>
+            <p v-else-if="pedidoDatos.cargando && !pedidoDatos.texto" class="text-sm text-muted">Preparando mensaje…</p>
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <pre v-else class="max-h-80 overflow-auto whitespace-pre-wrap font-sans text-sm text-highlighted" :class="pedidoDatos.cargando ? 'opacity-60' : ''" v-html="whatsappHtml(pedidoDatos.texto)" />
+          </UCard>
+          <p v-if="pedidoDatos.nota && candidatosElegidos.length" class="text-sm text-muted">{{ pedidoDatos.nota }}</p>
+        </template>
         <template #footer>
-          <UButton color="neutral" variant="outline" @click="cerrarPedirDatos">Cancelar</UButton>
-          <UButton color="primary" :disabled="!candidatosElegidos.length" :loading="guardandoAviso" @click="confirmarPedirDatos">Preparar aviso</UButton>
+          <UButton color="neutral" variant="outline" @click="cerrarPedirDatos">Cerrar</UButton>
+          <UButton
+            v-if="candidatosDatos.length"
+            color="success"
+            icon="i-heroicons-paper-airplane"
+            :loading="guardandoAviso"
+            :disabled="!candidatosElegidos.length || pedidoDatos.cargando || !pedidoDatos.puedeEnviar"
+            @click="enviarPedirDatos"
+          >
+            Enviar mensaje al cliente
+          </UButton>
         </template>
       </SupplierPaymentWindow>
 
@@ -623,9 +644,8 @@
 
       <SupplierPaymentWindow
         :open="!!vistaPrevia"
-        title="Vista previa de WhatsApp"
+        :title="vistaPrevia?.tipo === 'resumen' && solicitud.cotizacion_codigo ? `WhatsApp · ${solicitud.cotizacion_codigo}` : 'Vista previa de WhatsApp'"
         :subtitle="solicitud.cliente_whatsapp ? `Destino: ${solicitud.cliente_whatsapp}` : ''"
-        wide
         @close="cerrarVistaPrevia"
       >
         <template v-if="vistaPrevia">
@@ -643,7 +663,14 @@
           <p v-if="vistaPrevia.nota" class="text-sm text-muted">{{ vistaPrevia.nota }}</p>
         </template>
         <template #footer>
-          <UButton color="neutral" variant="soft" @click="cerrarVistaPrevia">Cerrar</UButton>
+          <template v-if="vistaPrevia?.tipo === 'resumen'">
+            <UButton color="neutral" variant="outline" @click="cerrarVistaPrevia">Cerrar</UButton>
+            <UButton color="neutral" variant="outline" icon="i-heroicons-document-arrow-down" :loading="guardandoAviso" @click="descargarResumen">Descargar PDF</UButton>
+            <UButton color="success" icon="i-heroicons-paper-airplane" :loading="enviandoResumen" :disabled="!vistaPrevia.puede_enviar" @click="enviarResumenWhatsapp">
+              Enviar por WhatsApp
+            </UButton>
+          </template>
+          <UButton v-else color="neutral" variant="soft" @click="cerrarVistaPrevia">Cerrar</UButton>
         </template>
       </SupplierPaymentWindow>
     </template>
@@ -673,6 +700,7 @@ interface VistaPrevia {
   nota?: string
   imagen?: string
   tipo?: string
+  puede_enviar?: boolean
 }
 
 const route = useRoute()
@@ -707,6 +735,9 @@ const abonoEditandoId = ref<number | null>(null)
 const pedirDatosAbierto = ref(false)
 const candidatosDatos = ref<Array<{ id: number; titulo: string; moneda: string; incompleto: boolean }>>([])
 const candidatosElegidos = ref<string[]>([])
+const pedidoDatos = reactive({ texto: '', nota: '', puedeEnviar: false, cargando: false })
+let pedidoDatosTurno = 0
+const enviandoResumen = ref(false)
 const voucher = ref<File | null>(null)
 const voucherAbierto = ref<PagoProveedorAbono | null>(null)
 const { slaText, slaOverdue } = useSlaCountdown()
@@ -787,8 +818,38 @@ function abrirDesglose(proveedor: PagoProveedorSolicitudProveedor) {
 }
 
 function cerrarPedirDatos() {
+  if (guardandoAviso.value) return
   pedirDatosAbierto.value = false
 }
+
+/** Vista previa sin registrar nada: se rehace cada vez que cambia la elección de proveedores. */
+async function cargarPedidoDatos() {
+  const turno = ++pedidoDatosTurno
+  if (!pedirDatosAbierto.value || !candidatosElegidos.value.length) {
+    pedidoDatos.texto = ''
+    pedidoDatos.nota = ''
+    pedidoDatos.puedeEnviar = false
+    pedidoDatos.cargando = false
+    return
+  }
+  pedidoDatos.cargando = true
+  try {
+    const respuesta = await api.previewProviderData(solicitud.value!.id, candidatosElegidos.value.map(Number))
+    if (turno !== pedidoDatosTurno) return
+    pedidoDatos.texto = respuesta.data.texto || ''
+    pedidoDatos.nota = respuesta.data.nota || ''
+    pedidoDatos.puedeEnviar = respuesta.data.puede_enviar !== false
+  } catch (error: any) {
+    if (turno !== pedidoDatosTurno) return
+    pedidoDatos.texto = ''
+    pedidoDatos.nota = error?.data?.message || error.message || 'No se pudo preparar el mensaje.'
+    pedidoDatos.puedeEnviar = false
+  } finally {
+    if (turno === pedidoDatosTurno) pedidoDatos.cargando = false
+  }
+}
+
+watch(candidatosElegidos, () => { void cargarPedidoDatos() })
 
 function cerrarAbono() {
   abonoAbierto.value = false
@@ -807,6 +868,7 @@ function cerrarDesglose() {
 }
 
 function cerrarVistaPrevia() {
+  if (enviandoResumen.value) return
   vistaPrevia.value = null
 }
 
@@ -916,26 +978,29 @@ async function abrirPedirDatos() {
   try {
     const respuesta = await api.getDataCandidates(solicitud.value!.id)
     candidatosDatos.value = respuesta.data || []
-    candidatosElegidos.value = candidatosDatos.value.map(item => String(item.id))
+    pedidoDatos.texto = ''
+    pedidoDatos.nota = ''
     pedirDatosAbierto.value = true
+    // El watch de candidatosElegidos arma la vista previa.
+    candidatosElegidos.value = candidatosDatos.value.map(item => String(item.id))
   } catch (error: any) {
     showError('Pedir datos', error?.data?.message || error.message || 'No se pudo cargar los proveedores.')
   }
 }
 
-async function confirmarPedirDatos() {
-  if (!candidatosElegidos.value.length) return
+async function enviarPedirDatos() {
+  if (!candidatosElegidos.value.length || !pedidoDatos.puedeEnviar) return
   guardandoAviso.value = true
   try {
     const respuesta = await withSpinner(
-      () => api.askProviderData(solicitud.value!.id, candidatosElegidos.value.map(Number)),
-      'Preparando aviso…'
+      () => api.sendProviderData(solicitud.value!.id, candidatosElegidos.value.map(Number)),
+      'Enviando WhatsApp…'
     )
-    vistaPrevia.value = respuesta.data
     aplicar(respuesta.data.solicitud)
     pedirDatosAbierto.value = false
+    showSuccess('WhatsApp enviado', respuesta.data.nota || 'Pedido de datos enviado al cliente.')
   } catch (error: any) {
-    showError('Pedir datos', error?.data?.message || error.message || 'No se pudo preparar el mensaje.')
+    showError('Pedir datos', error?.data?.message || error.message || 'No se pudo enviar el mensaje.')
   } finally {
     guardandoAviso.value = false
   }
@@ -946,11 +1011,31 @@ async function enviarResumen() {
   guardandoAviso.value = true
   try {
     const respuesta = await withSpinner(() => api.previewSummary(solicitud.value!.cotizacion_id), 'Preparando resumen…')
-    vistaPrevia.value = { texto: respuesta.data.texto, nota: respuesta.data.nota }
+    vistaPrevia.value = {
+      tipo: 'resumen',
+      texto: respuesta.data.texto,
+      nota: respuesta.data.nota,
+      puede_enviar: respuesta.data.puede_enviar !== false && !!(respuesta.data.destinatario || solicitud.value?.cliente_whatsapp)
+    }
   } catch (error: any) {
     showError('Resumen', error?.data?.message || error.message || 'No se pudo preparar el resumen.')
   } finally {
     guardandoAviso.value = false
+  }
+}
+
+async function enviarResumenWhatsapp() {
+  if (!solicitud.value?.cotizacion_id || !vistaPrevia.value?.puede_enviar) return
+  enviandoResumen.value = true
+  try {
+    const respuesta = await withSpinner(() => api.sendSummary(solicitud.value!.cotizacion_id), 'Enviando WhatsApp…')
+    vistaPrevia.value = null
+    showSuccess('WhatsApp enviado', respuesta.data.nota || 'Resumen enviado al cliente.')
+    await cargar()
+  } catch (error: any) {
+    showError('WhatsApp', error?.data?.message || error.message || 'No se pudo enviar el mensaje.')
+  } finally {
+    enviandoResumen.value = false
   }
 }
 
