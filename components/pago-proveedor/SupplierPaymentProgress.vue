@@ -27,7 +27,7 @@
               <p class="text-muted">N.° de operación {{ deposit.operation_number || '—' }}<template v-if="deposit.shared"> · voucher compartido</template></p>
             </div>
             <div class="flex shrink-0 gap-1">
-              <UButton v-if="deposit.voucher_url" size="xs" color="neutral" variant="outline" icon="i-lucide-receipt-text" title="Ver voucher" :to="deposit.voucher_url" target="_blank" />
+              <UButton v-if="deposit.voucher_url" size="xs" color="neutral" variant="outline" icon="i-lucide-receipt-text" title="Ver voucher" @click="emit('view-voucher', deposit.id)" />
               <UButton v-if="!readonly && deposit.can_edit" size="xs" color="neutral" variant="outline" icon="i-lucide-pencil" title="Editar voucher" @click="emit('edit-deposit', deposit.id)" />
             </div>
           </div>
@@ -414,6 +414,7 @@ const emit = defineEmits<{
   lift: []
   'lift-china': []
   'edit-deposit': [depositId: number]
+  'view-voucher': [depositId: number]
   'register-difference': []
   'choose-providers': []
   'go-step': [step: number]

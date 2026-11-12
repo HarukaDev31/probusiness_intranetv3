@@ -309,6 +309,7 @@
             @lift="abrirMotivo(proveedor, 'levantar')"
             @lift-china="levantarChina(proveedor)"
             @edit-deposit="(id) => editarAbonoPorId(id)"
+            @view-voucher="(id) => verVoucherPorId(id)"
             @register-difference="abrirAbono()"
             @choose-providers="abrirContinuacion(proveedor)"
             @decide-surplus="(id, decision) => decidir(id, decision)"
@@ -463,14 +464,6 @@
         </template>
       </SupplierPaymentWindow>
 
-      <VoucherViewerModal
-        :open="!!voucherAbierto"
-        :url="voucherAbierto?.voucher_url || null"
-        :name="voucherAbierto?.voucher_nombre"
-        :title="voucherAbierto ? `Voucher · Abono ${voucherAbierto.numero ?? voucherAbierto.id}` : 'Voucher'"
-        :description="voucherAbierto ? `Importe recibido $${dinero(voucherAbierto.importe)} · Aplicado a ${voucherAbierto.aplicaciones.map(item => nombreProveedor(item.solicitud_proveedor_id)).join(', ')} · ${fechaCorta(voucherAbierto.fecha_pago)} | ${voucherAbierto.banco.toUpperCase()}` : null"
-        @close="voucherAbierto = null"
-      />
 
       <SupplierPaymentWindow
         :open="!!abonoContinuacion"
@@ -611,7 +604,7 @@
 
       <SupplierPaymentWindow
         :open="!!voucherAbierto"
-        :title="voucherAbierto ? `Voucher · Abono #${numeroAbono(voucherAbierto)}` : ''"
+        :title="voucherAbierto ? `Voucher · Abono ${numeroAbono(voucherAbierto)}` : ''"
         @close="voucherAbierto = null"
       >
         <template v-if="voucherAbierto">
@@ -671,7 +664,6 @@ import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWi
 import SupplierPaymentProgress from '~/components/pago-proveedor/SupplierPaymentProgress.vue'
 import VoucherViewer from '~/components/pago-proveedor/VoucherViewer.vue'
 import { useSlaCountdown } from '~/composables/pago-proveedor/useSlaCountdown'
-import VoucherViewerModal from '~/components/pago-proveedor/VoucherViewerModal.vue'
 
 type TipoMotivo = 'observar' | 'anular' | 'levantar'
 
@@ -1202,6 +1194,10 @@ function enManos(proveedor: PagoProveedorSolicitudProveedor) {
 function editarAbonoPorId(id: number) {
   const item = (solicitud.value?.abonos || []).find(abonoItem => abonoItem.id === id)
   if (item) editarAbono(item)
+}
+
+function verVoucherPorId(id: number) {
+  voucherAbierto.value = (solicitud.value?.abonos || []).find(abonoItem => abonoItem.id === id) || null
 }
 
 function abrirContinuacion(proveedor: PagoProveedorSolicitudProveedor) {
