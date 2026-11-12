@@ -330,17 +330,15 @@
               ✓ Confirmar tipo de cambio
             </UButton>
           </div>
-          <div v-if="pideConfirmacionTc" class="mt-3 rounded-lg border px-3 py-2 text-sm" :class="tcConfirmadoSesion ? 'border-success/40 bg-success/10 text-success' : 'border-warning/40 bg-warning/10 text-warning'">
-            <p class="text-xs text-muted">
-              Tipo de cambio de la cotización{{ fechaTcCotizacion ? ` (${fechaTcCotizacion})` : '' }}:
-              1 USD = {{ cotizacion.tipo_cambio || '—' }} RMB
-            </p>
-            <div class="mt-2 flex flex-wrap items-center gap-2">
-              <p v-if="tcConfirmadoSesion" class="font-semibold">✓ Tipo de cambio confirmado</p>
-
-            </div>
-          </div>
         </div>
+        <!-- Como la maqueta: el tipo de cambio de la cotización va debajo del cuadro, no dentro. -->
+        <p v-if="pideConfirmacionTc" class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
+          <span>
+            Tipo de cambio de la cotización{{ fechaTcCotizacion ? ` (${fechaTcCotizacion})` : '' }}:
+            1 USD = {{ cotizacion.tipo_cambio || '—' }} RMB
+          </span>
+          <span v-if="tcConfirmadoSesion" class="font-semibold text-success">✓ Tipo de cambio confirmado</span>
+        </p>
 
         <div class="mt-4 flex flex-wrap items-center justify-between gap-2 border-b border-default pb-2">
           <h3 class="flex items-center gap-2 font-bold uppercase tracking-wide">
@@ -463,7 +461,17 @@
       <div v-if="guardadaResumen" class="divide-y divide-default overflow-hidden rounded-xl border border-default text-sm">
         <div class="flex justify-between gap-4 px-4 py-3"><span class="text-muted">Proveedores</span><strong>{{ guardadaResumen.proveedores }}</strong></div>
         <div class="flex justify-between gap-4 px-4 py-3"><span class="text-muted">Vigente hasta</span><strong>{{ guardadaResumen.vigencia }}</strong></div>
-        <div class="flex justify-between gap-4 bg-primary-50 px-4 py-3"><span class="text-muted">Total a pagar</span><strong class="text-lg text-primary-700">${{ dinero(guardadaResumen.total) }}</strong></div>
+        <template v-if="guardadaResumen.cuotas">
+          <div class="flex justify-between gap-4 bg-elevated px-4 py-3"><span class="text-muted">{{ guardadaResumen.varios ? 'Total de la cotización (2 cuotas)' : 'Total del proveedor (2 cuotas)' }}</span><strong>${{ dinero(guardadaResumen.total) }}</strong></div>
+          <div class="flex items-center justify-between gap-4 border-l-4 border-l-primary-500 bg-primary-50 px-4 py-3">
+            <span>
+              <span class="block font-semibold text-primary-700">Total a pagar ahora</span>
+              <span class="text-xs text-muted">Cuota 1 de 2</span>
+            </span>
+            <strong class="text-2xl text-primary-700">${{ dinero(guardadaResumen.totalAhora) }}</strong>
+          </div>
+        </template>
+        <div v-else class="flex justify-between gap-4 bg-primary-50 px-4 py-3"><span class="text-muted">Total a pagar</span><strong class="text-lg text-primary-700">${{ dinero(guardadaResumen.total) }}</strong></div>
       </div>
       <template #footer>
         <UButton type="button" color="primary" @click="irAlListado">Ir al listado</UButton>
@@ -534,7 +542,7 @@ const proveedores = ref<PagoProveedorProveedor[]>([])
 const tipoCambio = ref<number | null>(null)
 const tcConfirmadoSesion = ref(false)
 const valoresNativos = ref<Record<number, number>>({})
-const guardadaResumen = ref<{ codigo: string; cliente: string; consolidado: string; proveedores: string; vigencia: string; total: number } | null>(null)
+const guardadaResumen = ref<{ codigo: string; cliente: string; consolidado: string; proveedores: string; vigencia: string; total: number; totalAhora: number; cuotas: boolean; varios: boolean } | null>(null)
 async function irAlListado() {
   guardadaResumen.value = null
   await navigateTo('/pago-proveedor/cotizaciones', { replace: esNueva.value })
@@ -609,7 +617,7 @@ const pideConfirmacionTc = computed(() => !esNueva.value && editable.value && ha
 const fechaTcCotizacion = computed(() => {
   const fin = cotizacion.value?.creado_en
   if (!fin) return ''
-  return new Date(fin).toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' })
+  return new Date(fin).toLocaleDateString('es-PE', { day: 'numeric', month: 'numeric', year: 'numeric' })
 })
 const puedeAgregarProveedor = computed(() => (cotizacion.value?.codigos_disponibles?.length || 0) > proveedores.value.length)
 const faltantesProforma = computed(() => proveedores.value
@@ -663,9 +671,20 @@ function valorNativo(indice: number) {
   if (proveedor.moneda === 'RMB') {
     const tc = Number(tipoCambio.value) || 0
     if (!(tc > 0)) return ''
-    return redondear(Number(proveedor.valor_carga_usd || 0) * tc)
+    return yuanesDesdeUsd(Number(proveedor.valor_carga_usd || 0), tc)
   }
   return Number(proveedor.valor_carga_usd || 0)
+}
+
+/**
+ * Cotizaciones guardadas antes de tener el valor en yuanes: si un monto entero en yuanes da el mismo USD
+ * guardado (¥10,000 ÷ 7 = $1,428.57), se usa ese y no el reconvertido (¥9,999.99).
+ */
+function yuanesDesdeUsd(usd: number, tc: number) {
+  const exacto = redondear(usd * tc)
+  const entero = Math.round(usd * tc)
+  // Hasta 1 centavo de diferencia: el USD pudo recalcularse desde un yuan ya reconvertido.
+  return Math.abs(redondear(entero / tc) - redondear(usd)) <= 0.011 ? entero : exacto
 }
 
 function sincronizarUsdDesdeNativo(indice: number) {
@@ -690,7 +709,7 @@ function etiquetaValorCarga(proveedor: PagoProveedorProveedor, cargaUsd: number)
   if (proveedor.moneda !== 'RMB') return `$${dinero(cargaUsd)}`
   const tc = Number(tipoCambio.value) || 0
   const indice = proveedores.value.indexOf(proveedor)
-  const yuan = Number(valoresNativos.value[indice] ?? (tc > 0 ? Number(proveedor.valor_carga_usd || 0) * tc : 0))
+  const yuan = Number(valoresNativos.value[indice] ?? (tc > 0 ? yuanesDesdeUsd(Number(proveedor.valor_carga_usd || 0), tc) : 0))
   if (!(tc > 0) || !(yuan > 0)) return `$${dinero(cargaUsd)}`
   return `¥${dinero(yuan)} ÷ ${tc} = $${dinero(cargaUsd)}`
 }
@@ -1045,7 +1064,10 @@ function aplicar(datos: PagoProveedorCotizacion) {
     const usd = Number(proveedor.valor_carga_usd) || 0
     const tc = Number(datos.tipo_cambio) || 0
     if (proveedor.moneda === 'RMB') {
-      if (tc > 0) nativos[indice] = redondear(usd * tc)
+      // El valor en yuanes guardado manda; reconvertirlo desde el USD redondeado daba ¥9,999.99.
+      const rmb = Number(proveedor.valor_carga_rmb) || 0
+      if (rmb > 0) nativos[indice] = rmb
+      else if (tc > 0) nativos[indice] = yuanesDesdeUsd(usd, tc)
     } else {
       nativos[indice] = usd
     }
@@ -1091,7 +1113,7 @@ function payload() {
   return {
     tipo_cambio: hayYuanes.value ? (tc > 0 ? tc : null) : tipoCambio.value,
     tipo_cambio_confirmado: confirmado,
-    proveedores: proveedores.value.map((proveedor) => ({
+    proveedores: proveedores.value.map((proveedor, indice) => ({
       id: proveedor.id,
       code_supplier: proveedor.code_supplier || null,
       nombre_proveedor: proveedor.nombre_proveedor,
@@ -1099,6 +1121,7 @@ function payload() {
       moneda: proveedor.moneda,
       tipo_pago: proveedor.moneda === 'USD' ? 'tt' : 'transferencia',
       valor_carga_usd: proveedor.valor_carga_usd || 0,
+      valor_carga_rmb: proveedor.moneda === 'RMB' ? (Number(valoresNativos.value[indice]) || null) : null,
       modalidad_abono: proveedor.modalidad_abono,
       modalidad_pago: proveedor.moneda === 'USD' ? proveedor.modalidad_abono : proveedor.modalidad_pago,
       porcentaje_1: Number(proveedor.porcentaje_1 || 50),
@@ -1115,12 +1138,9 @@ function alElegirCodigo(proveedor: PagoProveedorProveedor, elegido?: unknown) {
   proveedor.code_supplier = codigo
   const opcion = opcionesCodigo(codigo).find(item => item.value === codigo)
   const catalogo = (cotizacion.value?.codigos_disponibles || []).find(item => item.code_supplier === codigo)
-  const producto = (opcion?.producto || catalogo?.producto || '').trim()
-  const nombre = (opcion?.nombre || catalogo?.nombre || '').trim()
-  proveedor.producto = producto
-  if (!proveedor.nombre_proveedor && nombre) {
-    proveedor.nombre_proveedor = nombre
-  }
+  // Solo el producto se autocompleta. El nombre del proveedor lo digita Ventas: el que trae
+  // Carga Consolidada (campo «supplier» del código) no siempre es el del proveedor a pagar.
+  proveedor.producto = (opcion?.producto || catalogo?.producto || '').trim()
 }
 
 function alElegirMoneda(proveedor: PagoProveedorProveedor, valor: unknown) {
@@ -1161,7 +1181,8 @@ function asegurarReparto(proveedor: PagoProveedorProveedor) {
 
 function alCambiarAbono(proveedor: PagoProveedorProveedor) {
   if (proveedor.moneda === 'USD') proveedor.modalidad_pago = proveedor.modalidad_abono
-  else if (proveedor.modalidad_abono === 'fraccionado') proveedor.modalidad_pago = 'fraccionado'
+  // Al cambiar el abono, el pago al proveedor lo sigue en ambos sentidos (Total ↔ Fraccionado).
+  else proveedor.modalidad_pago = proveedor.modalidad_abono === 'fraccionado' ? 'fraccionado' : 'total'
   asegurarReparto(proveedor)
 }
 
@@ -1277,7 +1298,10 @@ async function guardar() {
       consolidado: soloConsolidado(c?.consolidado),
       proveedores: proveedores.value.map(p => p.code_supplier).filter(Boolean).join(' · ') || '—',
       vigencia: c?.vigencia_hasta || '—',
-      total: Number(c?.total || 0)
+      total: Number(c?.total || 0),
+      totalAhora: Number(c?.total_ahora || 0),
+      cuotas: Number(c?.total || 0) > Number(c?.total_ahora || 0) + 0.004,
+      varios: proveedores.value.length > 1
     }
   } catch (error: any) {
     showError('No se pudo guardar', error.message || 'Revisa los datos.')
