@@ -2,25 +2,25 @@
   <SupplierPaymentWindow
     :open="open"
     :title="request ? `Editar solicitud · ${request.code}` : 'Nueva solicitud de pago'"
-    :subtitle="request ? 'Al guardar, los proveedores observados vuelven a Pendiente.' : 'Sin aviso a Ventas ni al cliente.'"
+    :subtitle="ventas ? 'Solicitud de Ventas: aquí se corrigen el nombre del proveedor, el WeChat ID y el vendedor. Cliente, montos y PI los corrige Ventas.' : request ? 'Al guardar, los proveedores observados vuelven a Pendiente.' : 'Sin aviso a Ventas ni al cliente.'"
     width-class="max-w-[820px] sm:max-w-[820px]"
     @close="emit('close')"
   >
     <div class="grid items-end gap-3.5 sm:grid-cols-4">
       <UFormField label="Socio">
         <template #hint>
-          <UButton v-if="!newOrganization.open" size="xs" color="primary" variant="link" :padded="false" @click="openNewOrganization">Nuevo socio</UButton>
+          <UButton v-if="!newOrganization.open && !ventas" size="xs" color="primary" variant="link" :padded="false" @click="openNewOrganization">Nuevo socio</UButton>
         </template>
-        <USelect v-model="form.organizationId" :items="organizationItems" placeholder="Seleccionar…" class="w-full" @update:model-value="form.partner = ''" />
+        <USelect v-model="form.organizationId" :items="organizationItems" placeholder="Seleccionar…" class="w-full" :disabled="ventas" @update:model-value="form.partner = ''" />
       </UFormField>
       <UFormField label="Cliente">
-        <UInput v-model="form.partner" list="yuan-partners" placeholder="Selecciona o escribe" class="w-full" />
+        <UInput v-model="form.partner" list="yuan-partners" placeholder="Selecciona o escribe" class="w-full" :disabled="ventas" />
       </UFormField>
       <UFormField label="Fecha">
-        <UInput v-model="form.date" type="date" class="w-full" />
+        <UInput v-model="form.date" type="date" class="w-full" :disabled="ventas" />
       </UFormField>
       <UFormField label="Tipo de cambio (RMB por USD)">
-        <UInput v-model="form.rate" type="number" min="0" step="0.0001" class="w-full font-semibold" @update:model-value="onRate" />
+        <UInput v-model="form.rate" type="number" min="0" step="0.0001" class="w-full font-semibold" :disabled="ventas" @update:model-value="onRate" />
       </UFormField>
     </div>
 
@@ -49,11 +49,11 @@
     >
       <div class="flex items-center justify-between gap-2.5">
         <span class="text-sm font-semibold text-highlighted">Proveedor {{ index + 1 }}</span>
-        <UButton v-if="form.providers.length > 1 && provider.status !== YUAN_STATUS.PAID" size="xs" color="error" variant="link" :padded="false" @click="form.providers.splice(index, 1)">Quitar</UButton>
+        <UButton v-if="!ventas && form.providers.length > 1 && provider.status !== YUAN_STATUS.PAID" size="xs" color="error" variant="link" :padded="false" @click="form.providers.splice(index, 1)">Quitar</UButton>
       </div>
       <p v-if="provider.observation" class="rounded-lg bg-error/10 px-3 py-2.5 text-sm text-error">Observación de China: {{ provider.observation }}</p>
       <UFormField label="Cliente del socio">
-        <UInput v-model="provider.client_name" list="yuan-clients" placeholder="Busca o escribe el nombre del cliente" class="w-full" />
+        <UInput v-model="provider.client_name" list="yuan-clients" placeholder="Busca o escribe el nombre del cliente" class="w-full" :disabled="ventas" />
       </UFormField>
       <div class="grid gap-3 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <UFormField label="Nombre del proveedor">
@@ -63,7 +63,7 @@
           <UInput v-model="provider.wechat" placeholder="ej. hongda_yiwu" class="w-full" />
         </UFormField>
         <UFormField label="T. producto">
-          <UInput v-model="provider.product" placeholder="ej. Muebles de oficina" class="w-full" />
+          <UInput v-model="provider.product" placeholder="ej. Muebles de oficina" class="w-full" :disabled="ventas" />
         </UFormField>
         <UFormField label="Nombre del vendedor">
           <UInput v-model="provider.seller_name" placeholder="ej. Lily Chen" class="w-full" />
@@ -71,13 +71,14 @@
       </div>
       <div class="grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.3fr)]">
         <UFormField label="Monto USD">
-          <UInput v-model="provider.usd" type="number" min="0" step="0.01" placeholder="0.00" class="w-full" :disabled="provider.status === YUAN_STATUS.PAID" @update:model-value="onUsd(provider)" />
+          <UInput v-model="provider.usd" type="number" min="0" step="0.01" placeholder="0.00" class="w-full" :disabled="ventas || provider.status === YUAN_STATUS.PAID" @update:model-value="onUsd(provider)" />
         </UFormField>
         <UFormField label="Monto RMB a pagar">
-          <UInput v-model="provider.yuan" type="number" min="0" step="0.01" placeholder="0.00" class="w-full font-semibold" :disabled="provider.status === YUAN_STATUS.PAID" @update:model-value="onYuan(provider)" />
+          <UInput v-model="provider.yuan" type="number" min="0" step="0.01" placeholder="0.00" class="w-full font-semibold" :disabled="ventas || provider.status === YUAN_STATUS.PAID" @update:model-value="onYuan(provider)" />
         </UFormField>
         <UFormField label="Proforma / PI">
-          <YuanFilePick label="Adjuntar PI" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" :current-name="provider.proformaName" @pick="(file) => provider.proforma = file" />
+          <p v-if="ventas" class="truncate rounded-lg bg-muted px-3.5 py-2 text-sm text-muted">{{ provider.proformaName || 'Sin PI' }}</p>
+          <YuanFilePick v-else label="Adjuntar PI" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" :current-name="provider.proformaName" @pick="(file) => provider.proforma = file" />
         </UFormField>
       </div>
     </div>
@@ -87,7 +88,7 @@
     <datalist id="yuan-clients">
       <option v-for="client in suggestions.clients[form.organizationId as number] || []" :key="client" :value="client" />
     </datalist>
-    <UButton class="self-start" color="primary" variant="link" icon="i-heroicons-plus" :padded="false" @click="form.providers.push(blankProvider())">Agregar proveedor</UButton>
+    <UButton v-if="!ventas" class="self-start" color="primary" variant="link" icon="i-heroicons-plus" :padded="false" @click="form.providers.push(blankProvider())">Agregar proveedor</UButton>
 
     <template #footer>
       <div class="mr-auto flex gap-7">
@@ -202,7 +203,9 @@ const countryItems = computed(() => countries.value.map((item) => ({ label: item
 const rateValue = computed(() => Number(form.rate) || 0)
 const totalYuan = computed(() => roundTwo(form.providers.reduce((sum, provider) => sum + (Number(provider.yuan) || 0), 0)))
 const totalUsd = computed(() => roundTwo(totalYuan.value / (rateValue.value || 1)))
-const valid = computed(() => rateValue.value > 0 && !!form.organizationId && !!form.partner.trim() && !!form.date && form.providers.length > 0
+/** Solicitud que llegó de Ventas: China solo corrige los datos del proveedor. */
+const ventas = computed(() => !!props.request && !props.request.manual)
+const valid = computed(() => ventas.value || rateValue.value > 0 && !!form.organizationId && !!form.partner.trim() && !!form.date && form.providers.length > 0
   && form.providers.every((provider) => provider.client_name.trim() && provider.supplier_name.trim() && provider.wechat.trim() && Number(provider.yuan) > 0))
 
 async function openNewOrganization() {
@@ -257,6 +260,30 @@ function onYuan(provider: ProviderDraft) {
 
 async function save() {
   const body = new FormData()
+  if (ventas.value) {
+    form.providers.forEach((provider, index) => {
+      body.append(`providers[${index}][id]`, String(provider.id))
+      body.append(`providers[${index}][supplier_name]`, provider.supplier_name)
+      body.append(`providers[${index}][wechat]`, provider.wechat)
+      body.append(`providers[${index}][seller_name]`, provider.seller_name)
+    })
+  } else {
+    appendManual(body)
+  }
+  const requestId = props.request?.request_id
+  saving.value = true
+  try {
+    await withSpinner(() => requestId ? PagoProveedorService.updateManualYuan(requestId, body) : PagoProveedorService.createManualYuan(body), 'Guardando solicitud…')
+    showSuccess('Solicitud', requestId ? 'Quedó actualizada.' : 'Quedó en Pendiente. No se avisa a Ventas ni al cliente.')
+    emit('saved')
+  } catch (error: any) {
+    showError('Solicitud', error?.data?.message || 'No se pudo guardar la solicitud.')
+  } finally {
+    saving.value = false
+  }
+}
+
+function appendManual(body: FormData) {
   body.append('organizacion_id', String(form.organizationId))
   body.append('partner', form.partner)
   body.append('request_date', form.date)
@@ -272,16 +299,5 @@ async function save() {
     body.append(field('yuan_amount'), String(provider.yuan))
     if (provider.proforma) body.append(field('proforma'), provider.proforma)
   })
-  const requestId = props.request?.request_id
-  saving.value = true
-  try {
-    await withSpinner(() => requestId ? PagoProveedorService.updateManualYuan(requestId, body) : PagoProveedorService.createManualYuan(body), 'Guardando solicitud…')
-    showSuccess('Solicitud', requestId ? 'Quedó actualizada.' : 'Quedó en Pendiente. No se avisa a Ventas ni al cliente.')
-    emit('saved')
-  } catch (error: any) {
-    showError('Solicitud', error?.data?.message || 'No se pudo guardar la solicitud.')
-  } finally {
-    saving.value = false
-  }
 }
 </script>
