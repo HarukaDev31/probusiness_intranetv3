@@ -13,9 +13,9 @@
     @update:open="onOpen"
   >
     <template v-if="code || $slots.pill" #actions>
-      <UBadge v-if="code" color="neutral" variant="subtle" class="font-mono text-sm font-bold">{{ code }}</UBadge>
-      <!-- Como la maqueta: el plazo / la diferencia va en la esquina derecha, junto a la X (que es absoluta). -->
-      <div v-if="$slots.pill" class="ms-auto me-8 flex items-center gap-2">
+      <!-- Como la maqueta: el código y el plazo / la diferencia van en la esquina derecha, junto a la X (que es absoluta). -->
+      <div class="ms-auto me-8 flex items-center gap-2">
+        <UBadge v-if="code" color="neutral" variant="subtle" class="font-mono text-sm font-bold">{{ code }}</UBadge>
         <slot name="pill" />
       </div>
     </template>

@@ -41,12 +41,13 @@
       </p>
 
       <UCard>
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <h2 class="text-lg font-semibold">Datos del cliente</h2>
-          <UBadge v-if="cotizacion.cod_cotizacion_cc" color="success" variant="subtle">
+        <!-- La cotización de C. Consolidada va arriba y luego los datos del cliente. -->
+        <div v-if="cotizacion.cod_cotizacion_cc" class="mb-3 flex justify-end">
+          <UBadge color="success" variant="subtle">
             Cotización de C. Consolidada: {{ cotizacion.cod_cotizacion_cc }}
           </UBadge>
         </div>
+        <h2 class="text-lg font-semibold">Datos del cliente</h2>
         <p class="mt-1 text-sm text-muted">Datos tomados de la cotización de C. Consolidada. Para cambiar de cliente, vuelve y crea otra cotización.</p>
         <div class="mt-4 grid gap-4 md:grid-cols-2">
           <UFormField label="N.° de consolidado" required>
@@ -56,11 +57,11 @@
             <UInput :model-value="cotizacion.cliente_nombre || '—'" disabled class="w-full" />
           </UFormField>
           <UFormField label="WhatsApp">
-            <template #hint><UBadge color="neutral" variant="soft" size="sm">Autocompletado</UBadge></template>
+            <template #hint><UBadge color="info" variant="soft" size="sm">Autocompletado</UBadge></template>
             <UInput :model-value="cotizacion.cliente_whatsapp || '—'" disabled class="w-full" />
           </UFormField>
           <UFormField label="Correo electrónico">
-            <template #hint><UBadge color="neutral" variant="soft" size="sm">Autocompletado</UBadge></template>
+            <template #hint><UBadge color="info" variant="soft" size="sm">Autocompletado</UBadge></template>
             <UInput :model-value="cotizacion.cliente_correo || '—'" disabled class="w-full" />
           </UFormField>
         </div>
@@ -81,7 +82,7 @@
 
           <div class="grid gap-4 md:grid-cols-3">
             <UFormField label="Código de proveedor" required help="Ventas elige el código que el intranet tiene para este cliente." :ui="{ help: 'text-[11px] text-muted' }">
-              <template #hint><UBadge color="neutral" variant="soft" size="sm">Ventas</UBadge></template>
+              <template #hint><UBadge color="primary" variant="soft" size="sm">Ventas</UBadge></template>
               <USelect
                 v-model="proveedor.code_supplier"
                 :items="opcionesCodigo(proveedor.code_supplier)"
@@ -98,19 +99,19 @@
               <UInput v-model="proveedor.nombre_proveedor" :disabled="!editable" placeholder="Ej: Foshan Light Industry Co." class="w-full" />
             </UFormField>
             <UFormField label="Nombre del producto" help="Información registrada por Ventas en Por embarcar." :ui="{ help: 'text-[11px] text-muted' }">
-              <template #hint><UBadge color="neutral" variant="soft" size="sm">Autocompletado</UBadge></template>
+              <template #hint><UBadge color="info" variant="soft" size="sm">Autocompletado</UBadge></template>
               <UInput :model-value="proveedor.producto || '—'" disabled class="w-full" />
             </UFormField>
             <UFormField label="Moneda" required>
-              <template #hint><UBadge color="neutral" variant="soft" size="sm">Ventas</UBadge></template>
-              <USelect v-model="proveedor.moneda" :items="monedas" :disabled="!editable" class="w-full" @update:model-value="alCambiarMoneda(proveedor)" />
+              <template #hint><UBadge color="primary" variant="soft" size="sm">Ventas</UBadge></template>
+              <USelect :model-value="proveedor.moneda || SIN_MONEDA" :items="monedas" :disabled="!editable" class="w-full" @update:model-value="(valor) => alElegirMoneda(proveedor, valor)" />
             </UFormField>
             <UFormField label="Tipo de pago">
-              <template #hint><UBadge color="neutral" variant="soft" size="sm">Auto / según moneda</UBadge></template>
+              <template #hint><UBadge color="info" variant="soft" size="sm">Auto / según moneda</UBadge></template>
               <USelect v-model="proveedor.tipo_pago" :items="opcionesTipoPago(proveedor)" :disabled="proveedor.moneda !== 'USD' || !editable" class="w-full" />
             </UFormField>
             <UFormField :label="proveedor.moneda === 'RMB' ? 'Valor de carga (¥)' : 'Valor de carga (USD)'" required>
-              <template #hint><UBadge color="neutral" variant="soft" size="sm">Ventas</UBadge></template>
+              <template #hint><UBadge color="primary" variant="soft" size="sm">Ventas</UBadge></template>
               <UInput
                 :model-value="valorNativo(indice)"
                 :disabled="!editable"
@@ -133,7 +134,7 @@
           <div class="mt-4 grid gap-3 md:grid-cols-2">
             <UCard variant="subtle" class="bg-green-50 ring-green-200 dark:bg-green-950/30 dark:ring-green-900">
               <div class="mb-2.5 flex items-center gap-2.5">
-                <UAvatar icon="i-lucide-user" size="sm" color="success" variant="soft" />
+                <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300"><UIcon name="i-lucide-user" class="size-4" /></span>
                 <div>
                   <p class="text-sm font-bold">
                     Modalidad de abono del cliente
@@ -156,7 +157,7 @@
             </UCard>
             <UCard variant="subtle" class="bg-blue-50 ring-blue-200 dark:bg-blue-950/30 dark:ring-blue-900">
               <div class="mb-2.5 flex items-center gap-2.5">
-                <UAvatar icon="i-lucide-credit-card" size="sm" color="info" variant="soft" />
+                <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"><UIcon name="i-lucide-credit-card" class="size-4" /></span>
                 <div>
                   <p class="text-sm font-bold">
                     Modalidad de pago al proveedor
@@ -180,52 +181,92 @@
           </div>
 
           <UCard v-if="fraccionado(proveedor)" class="mt-4" variant="subtle">
-            <p class="font-semibold">
-              Forma de fraccionamiento
-              <span
-                class="ml-1 cursor-help text-xs font-normal text-muted"
-                title="Una sola distribución para el abono del cliente y el pago al proveedor. Operaciones China ejecuta ambos pagos al proveedor. Administración valida el/los ingreso(s) del cliente correspondientes."
-              >ⓘ</span>
-            </p>
-            <p class="text-sm text-muted">Define cómo se dividirán los importes en ambas modalidades.</p>
-            <div class="mt-3 flex flex-wrap gap-2">
-              <UButton v-for="preset in presets" :key="preset.a" type="button" size="sm" :color="esPreset(proveedor, preset.a) ? 'primary' : 'neutral'" :variant="esPreset(proveedor, preset.a) ? 'solid' : 'outline'" :disabled="!editable" @click="elegirPreset(proveedor, indice, preset.a, preset.b)">{{ preset.label }}</UButton>
-              <UButton type="button" size="sm" :color="esOtro(proveedor, indice) ? 'primary' : 'neutral'" :variant="esOtro(proveedor, indice) ? 'solid' : 'outline'" :disabled="!editable" @click="activarOtro(indice)">{{ etiquetaOtro(proveedor, indice) }}</UButton>
+            <div class="flex items-center gap-2.5">
+              <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/50 dark:text-primary-300"><UIcon name="i-lucide-split" class="size-4" /></span>
+              <div>
+                <p class="font-semibold">
+                  Forma de fraccionamiento
+                  <span
+                    class="ml-1 cursor-help text-xs font-normal text-muted"
+                    title="Una sola distribución para el abono del cliente y el pago al proveedor. Operaciones China ejecuta ambos pagos al proveedor. Administración valida el/los ingreso(s) del cliente correspondientes."
+                  >ⓘ</span>
+                </p>
+                <p class="text-sm text-muted">Define cómo se dividirán los importes en ambas modalidades.</p>
+              </div>
             </div>
-            <UFormField v-if="esOtro(proveedor, indice)" label="Monto de la 1.ª parte" class="mt-3 max-w-xs">
-              <UInput :model-value="montoPrimera(proveedor)" :disabled="!editable" type="number" min="0" step="0.01" placeholder="0.00" class="w-full" @update:model-value="alMontoOtro(proveedor, $event)" />
+            <div class="mt-3 flex flex-wrap gap-2">
+              <UButton v-for="preset in presets" :key="preset.a" type="button" size="sm" color="primary" class="rounded-full" :variant="esPreset(proveedor, preset.a) ? 'solid' : 'outline'" :disabled="!editable" @click="elegirPreset(proveedor, indice, preset.a, preset.b)">{{ preset.label }}</UButton>
+              <UButton type="button" size="sm" color="primary" class="rounded-full" :variant="esOtro(proveedor, indice) ? 'solid' : 'outline'" :disabled="!editable" @click="activarOtro(indice)">{{ etiquetaOtro(proveedor, indice) }}</UButton>
+            </div>
+            <UFormField v-if="esOtro(proveedor, indice)" class="mt-3">
+              <template #label>Monto de la 1.ª parte <span class="text-xs font-normal text-muted">({{ proveedor.moneda === 'RMB' ? 'yuanes' : 'dólares' }})</span></template>
+              <UInput
+                :model-value="montoOtroBorrador[indice] ?? montoPrimera(proveedor)"
+                :disabled="!editable"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                class="w-full"
+                @update:model-value="alMontoOtro(proveedor, $event)"
+                @blur="soltarMontoOtro(indice)"
+              />
             </UFormField>
             <div class="mt-3 grid gap-3 sm:grid-cols-2">
-              <UCard>
-                <p class="text-xs font-bold uppercase text-muted">1.ª parte</p>
-                <p class="mt-1 text-lg font-bold">{{ partes(proveedor).texto1 }}</p>
-                <p class="text-sm text-muted">{{ textoCombo(proveedor)?.cap1 }}</p>
-                <p v-if="proveedor.modalidad_abono === 'fraccionado'" class="mt-2 text-xs text-muted">Fecha del abono: al registrar el abono</p>
+              <UCard :ui="{ body: 'flex h-full flex-col' }">
+                <p class="text-xs font-bold text-muted">1.ª parte</p>
+                <p class="mt-1 flex items-baseline gap-3">
+                  <span class="text-2xl font-bold text-highlighted">{{ partes(proveedor).porcentaje1 }}</span>
+                  <span class="text-base font-semibold">{{ partes(proveedor).monto1 }}</span>
+                </p>
+                <p class="text-xs text-muted">{{ textoCombo(proveedor)?.cap1 }}</p>
+                <div v-if="proveedor.modalidad_abono === 'fraccionado'" class="mt-3 border-t border-dashed border-default pt-3">
+                  <p class="text-xs font-semibold text-highlighted">Fecha del abono</p>
+                  <p class="mt-3 rounded-md bg-elevated px-3 py-2 text-sm text-toned ring ring-default">Al registrar el abono</p>
+                </div>
               </UCard>
-              <UCard>
-                <p class="text-xs font-bold uppercase text-muted">2.ª parte</p>
-                <p class="mt-1 text-lg font-bold">{{ partes(proveedor).texto2 }}</p>
-                <p class="text-sm text-muted">{{ textoCombo(proveedor)?.cap2 }}</p>
-                <div v-if="proveedor.modalidad_abono === 'fraccionado'" class="mt-2">
+              <UCard :ui="{ body: 'flex h-full flex-col' }">
+                <p class="text-xs font-bold text-muted">2.ª parte</p>
+                <p class="mt-1 flex items-baseline gap-3">
+                  <span class="text-2xl font-bold text-highlighted">{{ partes(proveedor).porcentaje2 }}</span>
+                  <span class="text-base font-semibold">{{ partes(proveedor).monto2 }}</span>
+                </p>
+                <p class="text-xs text-muted">{{ textoCombo(proveedor)?.cap2 }}</p>
+                <div v-if="proveedor.modalidad_abono === 'fraccionado'" class="mt-3 border-t border-dashed border-default pt-3">
                   <p class="text-xs font-semibold text-highlighted">
                     {{ textoCombo(proveedor)?.fecha }}
-                    <span class="text-muted">(opcional en la cotización)</span>
+                    <span class="font-normal text-muted">(opcional en la cotización)</span>
                     <span
                       class="ml-1 cursor-help font-normal text-muted"
                       title="Es una fecha aproximada: en el PDF se muestra como «fecha aprox.». Aparece en Mis pendientes, con aviso 2 días antes."
                     >ⓘ</span>
                   </p>
-                  <UInput v-model="proveedor.fecha_cuota_2" :disabled="!editable" type="date" :min="hoy" class="mt-1 w-full" />
-                  <p class="mt-1 text-xs" :class="proveedor.fecha_cuota_2 ? 'text-highlighted' : 'text-muted'">{{ textoFecha(proveedor.fecha_cuota_2) }}</p>
-                  <div class="mt-2 flex flex-wrap items-center gap-2">
+                  <UInput v-model="proveedor.fecha_cuota_2" :disabled="!editable" type="date" :min="hoy" class="mt-3 w-full" />
+                  <p class="mt-2 text-xs" :class="proveedor.fecha_cuota_2 ? 'text-highlighted' : 'text-muted'">{{ textoFecha(proveedor.fecha_cuota_2) }}</p>
+                  <div class="mt-2.5 flex flex-wrap items-center gap-2">
                     <span class="text-xs text-muted">Atajo:</span>
-                    <UButton v-for="dias in [15, 20, 30]" :key="dias" type="button" size="xs" color="neutral" variant="outline" :disabled="!editable" @click="() => { proveedor.fecha_cuota_2 = sumarDias(dias) }">En {{ dias }} días</UButton>
+                    <UButton
+                      v-for="dias in [15, 20, 30]"
+                      :key="dias"
+                      type="button"
+                      size="xs"
+                      color="primary"
+                      class="rounded-full"
+                      :variant="proveedor.fecha_cuota_2 === sumarDias(dias) ? 'solid' : 'outline'"
+                      :disabled="!editable"
+                      @click="() => { proveedor.fecha_cuota_2 = sumarDias(dias) }"
+                    >
+                      En {{ dias }} días
+                    </UButton>
                   </div>
                 </div>
               </UCard>
             </div>
             <p class="mt-3 text-sm" :class="partes(proveedor).ok ? 'font-semibold text-success' : 'text-muted'">{{ partes(proveedor).total }}</p>
-            <p v-if="textoCombo(proveedor)" class="mt-1 text-sm text-muted">{{ textoCombo(proveedor)?.res }} <UBadge color="neutral" variant="soft" size="sm">{{ textoCombo(proveedor)?.com }}</UBadge></p>
+            <div v-if="textoCombo(proveedor)" class="mt-2 flex flex-wrap items-center gap-2 rounded-lg border-l-4 border-l-primary-500 bg-default px-4 py-3 text-sm ring ring-default">
+              <span>{{ textoCombo(proveedor)?.res }}</span>
+              <UBadge color="warning" variant="soft" size="sm">{{ textoCombo(proveedor)?.com }}</UBadge>
+            </div>
           </UCard>
 
           <div class="mt-4">
@@ -237,7 +278,7 @@
           </div>
 
           <div class="mt-4 border-t border-default pt-4">
-            <p class="text-sm font-medium">Proforma de la carga <UBadge color="neutral" variant="soft" size="sm">Ventas</UBadge></p>
+            <p class="text-sm font-medium">Proforma de la carga <UBadge color="primary" variant="soft" size="sm">Ventas</UBadge></p>
             <div class="mt-2 flex flex-wrap items-center gap-3">
               <label class="inline-flex" :class="editable ? 'cursor-pointer' : 'pointer-events-none opacity-60'">
                 <UButton as="span" color="neutral" variant="outline" size="sm">Seleccionar archivo</UButton>
@@ -503,7 +544,13 @@ const esNueva = computed(() => !props.quoteId)
 watch([proveedores, tipoCambio], () => { vistaPrevia.value = null }, { deep: true })
 
 const fraccionOtro = ref<Record<number, boolean>>({})
+/** Lo que Ventas va digitando en "Otro": no se reescribe con el monto calculado mientras escribe. */
+const montoOtroBorrador = ref<Record<number, string>>({})
+/** Reka no acepta '' como valor de un ítem: "Selecciona" usa este marcador y deja la moneda vacía. */
+const SIN_MONEDA = 'SIN_MONEDA'
+const ultimaMoneda: Record<number, string> = {}
 const monedas = [
+  { label: 'Selecciona', value: SIN_MONEDA },
   { label: 'RMB — Yuan chino', value: 'RMB' },
   { label: 'USD — Dólar americano', value: 'USD' }
 ]
@@ -540,7 +587,7 @@ const subtitulo = computed(() => {
   if (!cotizacion.value) return 'Pago a proveedor'
   const cliente = cotizacion.value.cliente_nombre || 'sin identificar'
   const codigo = cotizacion.value.codigo ? ` · ${cotizacion.value.codigo}` : ''
-  return `Cliente: ${cliente}${codigo} · ${cotizacion.value.cod_cotizacion_cc}. El N.° de orden y el código se generan al crear la solicitud y registrar el comprobante.`
+  return `Cliente: ${cliente}${codigo}. El N.° de orden y el código se generan al crear la solicitud y registrar el comprobante.`
 })
 const hoy = computed(() => new Date().toISOString().slice(0, 10))
 const mostrarResumen = computed(() => proveedores.value.some((proveedor, indice) => {
@@ -871,9 +918,9 @@ function partes(proveedor: PagoProveedorProveedor) {
   const monto2 = +(valor - monto1).toFixed(2)
   const monto = (numero: number) => `${simbolo}${dinero(numero)}`
   if (!ok) {
-    return { ok: false, texto1: '—', texto2: '—', total: proveedor.moneda && valor > 0 ? 'Elige cómo se reparte el pago.' : 'Ingresa la moneda y el valor de carga para ver los montos.' }
+    return { ok: false, porcentaje1: '—', monto1: '', porcentaje2: '—', monto2: '', total: proveedor.moneda && valor > 0 ? 'Elige cómo se reparte el pago.' : 'Ingresa la moneda y el valor de carga para ver los montos.' }
   }
-  return { ok: true, texto1: `${primero}% · ${monto(monto1)}`, texto2: `${segundo}% · ${monto(monto2)}`, total: `Total ${monto(valor)} — Correcto` }
+  return { ok: true, porcentaje1: `${primero}%`, monto1: monto(monto1), porcentaje2: `${segundo}%`, monto2: monto(monto2), total: `Total ${monto(valor)} — Correcto` }
 }
 
 function esPreset(proveedor: PagoProveedorProveedor, porcentaje: number) {
@@ -896,6 +943,7 @@ function etiquetaOtro(proveedor: PagoProveedorProveedor, indice: number) {
 
 function elegirPreset(proveedor: PagoProveedorProveedor, indice: number, primero: number, segundo: number) {
   fraccionOtro.value[indice] = false
+  delete montoOtroBorrador.value[indice]
   proveedor.porcentaje_1 = primero
   proveedor.porcentaje_2 = segundo
 }
@@ -914,6 +962,7 @@ function montoPrimera(proveedor: PagoProveedorProveedor) {
 
 function alMontoOtro(proveedor: PagoProveedorProveedor, raw: string | number) {
   const indice = proveedores.value.indexOf(proveedor)
+  montoOtroBorrador.value[indice] = String(raw ?? '')
   const valor = Number(valoresNativos.value[indice] ?? (proveedor.moneda === 'RMB' ? 0 : proveedor.valor_carga_usd)) || 0
   const monto = Number(raw) || 0
   if (valor > 0 && monto > 0 && monto < valor) {
@@ -921,6 +970,10 @@ function alMontoOtro(proveedor: PagoProveedorProveedor, raw: string | number) {
     proveedor.porcentaje_1 = primero
     proveedor.porcentaje_2 = Math.round((100 - primero) * 100) / 100
   }
+}
+
+function soltarMontoOtro(indice: number) {
+  delete montoOtroBorrador.value[indice]
 }
 
 function sumarDias(dias: number) {
@@ -1063,6 +1116,18 @@ function alElegirCodigo(proveedor: PagoProveedorProveedor, elegido?: unknown) {
   if (!proveedor.nombre_proveedor && nombre) {
     proveedor.nombre_proveedor = nombre
   }
+}
+
+function alElegirMoneda(proveedor: PagoProveedorProveedor, valor: unknown) {
+  const indice = proveedores.value.indexOf(proveedor)
+  // Sin moneda queda vacía, igual que un proveedor nuevo.
+  const nueva = (valor === SIN_MONEDA ? '' : String(valor ?? '')) as PagoProveedorProveedor['moneda']
+  const anterior = proveedor.moneda || ultimaMoneda[indice] || ''
+  if (proveedor.moneda) ultimaMoneda[indice] = proveedor.moneda
+  proveedor.moneda = nueva
+  // Volver a "Selecciona" (o a la misma moneda) no convierte el valor de carga.
+  if (!nueva || nueva === anterior) return
+  alCambiarMoneda(proveedor)
 }
 
 function alCambiarMoneda(proveedor: PagoProveedorProveedor) {
