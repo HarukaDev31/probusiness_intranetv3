@@ -190,8 +190,8 @@ const emptyMessage = computed(() => {
 })
 
 const columns = computed<TableColumn<SupplierPaymentExecution>[]>(() => [
-  // Numeración correlativa de la bandeja (como la maqueta): el número de la solicitud ya va en el código.
-  { accessorKey: 'order_number', header: 'N.° de orden', cell: ({ row }) => (pagination.value.current_page - 1) * pagination.value.per_page + row.index + 1 },
+  // Numeración correlativa de la bandeja, de mayor a menor (3, 2, 1): el número de la solicitud ya va en el código.
+  { accessorKey: 'order_number', header: 'N.° de orden', cell: ({ row }) => (pagination.value.total || 0) - ((pagination.value.current_page - 1) * pagination.value.per_page + row.index) },
   { accessorKey: 'client_name', header: 'Cliente', cell: ({ row }) => h('span', { class: 'block min-w-36 max-w-72 whitespace-normal' }, row.original.client_name || '—') },
   { accessorKey: 'consolidation', header: 'Consolidado', cell: ({ row }) => soloConsolidado(row.original.consolidation) },
   {
