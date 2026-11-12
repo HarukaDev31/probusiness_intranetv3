@@ -644,6 +644,7 @@
 
       <SupplierPaymentWindow
         :open="!!vistaPrevia"
+        :width-class="vistaPrevia?.tipo === 'cuentas' ? 'max-w-md sm:max-w-md' : ''"
         :title="vistaPrevia?.tipo === 'resumen' && solicitud.cotizacion_codigo ? `WhatsApp · ${solicitud.cotizacion_codigo}` : 'Vista previa de WhatsApp'"
         :subtitle="solicitud.cliente_whatsapp ? `Destino: ${solicitud.cliente_whatsapp}` : ''"
         @close="cerrarVistaPrevia"
