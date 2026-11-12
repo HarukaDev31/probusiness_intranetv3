@@ -31,21 +31,39 @@
       :total-pages="pagination.last_page"
       :total-records="pagination.total"
       :items-per-page="pagination.per_page"
-      :primary-search-value="search"
-      :show-primary-search="true"
-      :show-primary-search-label="false"
-      primary-search-placeholder="Buscar por N° de solicitud, proveedor o WeChat ID"
-      :show-filters="true"
-      :filter-config="filterConfig"
-      :filters-value="filters"
       :show-export="false"
       empty-state-message="No hay solicitudes que coincidan."
-      @update:primary-search="onSearch"
-      @filter-change="onFilter"
-      @clear-filters="onClearFilters"
       @page-change="onPage"
       @items-per-page-change="onPageSize"
-    />
+    >
+      <!-- Maqueta (Pago a proveedores): barra abierta con búsqueda, país, rango de fechas y conteo. -->
+      <template #filters>
+        <div class="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-default bg-default p-3">
+          <UInput
+            :model-value="searchText"
+            placeholder="Buscar por N° de solicitud, proveedor o WeChat ID"
+            icon="i-heroicons-magnifying-glass"
+            class="min-w-60 flex-1"
+            @update:model-value="onSearchInput"
+          />
+          <USelect
+            :model-value="filters.country"
+            :items="countryOptions"
+            value-key="value"
+            label-key="label"
+            aria-label="País"
+            class="w-full sm:w-44"
+            @update:model-value="(value) => onFilter('country', value)"
+          />
+          <div class="flex items-center gap-2">
+            <UInput type="date" :model-value="filters.date_from" aria-label="Desde" @update:model-value="(value) => onFilter('date_from', value)" />
+            <span class="text-xs text-muted">a</span>
+            <UInput type="date" :model-value="filters.date_to" aria-label="Hasta" @update:model-value="(value) => onFilter('date_to', value)" />
+          </div>
+          <span class="whitespace-nowrap text-xs text-muted">{{ rows.length }} de {{ pagination.total }}</span>
+        </div>
+      </template>
+    </DataTable>
 
     <YuanRequestDrawer
       :request="selected"
@@ -66,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, ref } from 'vue'
+import { computed, h, onBeforeUnmount, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import YuanRequestDrawer from '~/components/pago-proveedor/YuanRequestDrawer.vue'
 import YuanRequestForm from '~/components/pago-proveedor/YuanRequestForm.vue'
@@ -84,20 +102,19 @@ const formOpen = ref(false)
 const editing = ref<SupplierPaymentYuanRequest | null>(null)
 const filters = ref<Record<string, string>>({ country: 'todos', date_from: '', date_to: '' })
 
-const filterConfig = computed(() => [
-  {
-    key: 'country',
-    label: 'País',
-    type: 'select',
-    placeholder: 'País',
-    options: [
-      { value: 'todos', label: 'Todos los países' },
-      ...countries.value.map((item) => ({ value: item, label: item }))
-    ]
-  },
-  { key: 'date_from', label: 'Desde', type: 'date', placeholder: 'Desde' },
-  { key: 'date_to', label: 'Hasta', type: 'date', placeholder: 'Hasta' }
+const countryOptions = computed(() => [
+  { value: 'todos', label: 'Todos los países' },
+  ...countries.value.map((item) => ({ value: item, label: item }))
 ])
+
+const searchText = ref('')
+let searchTimer: ReturnType<typeof setTimeout> | null = null
+function onSearchInput(value: string | number) {
+  searchText.value = String(value ?? '')
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => onSearch(searchText.value), 350)
+}
+onBeforeUnmount(() => { if (searchTimer) clearTimeout(searchTimer) })
 
 function statusColor(status: string): 'primary' | 'error' | 'success' {
   if (status === YUAN_STATUS.PAID) return 'success'
@@ -142,7 +159,7 @@ const columns: TableColumn<SupplierPaymentYuanRequest>[] = [
   }, [
     h('div', { class: 'flex min-w-0 flex-col' }, [
       h('span', { class: 'font-bold' }, provider.supplier_code || 'Sin código'),
-      h('span', { class: 'truncate text-xs text-muted' }, provider.client || '—')
+      h('span', { class: 'truncate text-xs text-muted' }, provider.supplier_name || '—')
     ]),
     h('div', { class: 'flex flex-col items-end gap-0.5' }, [
       h(UBadge, { color: statusColor(provider.status), variant: 'soft', label: provider.status_label }),
@@ -200,14 +217,6 @@ function onFilter(key: string, value: unknown) {
   if (key === 'country') country.value = next === 'todos' ? '' : next
   if (key === 'date_from') dateFrom.value = next
   if (key === 'date_to') dateTo.value = next
-  reload()
-}
-
-function onClearFilters() {
-  filters.value = { country: 'todos', date_from: '', date_to: '' }
-  country.value = ''
-  dateFrom.value = ''
-  dateTo.value = ''
   reload()
 }
 
