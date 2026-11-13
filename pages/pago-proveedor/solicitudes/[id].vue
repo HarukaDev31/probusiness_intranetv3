@@ -66,7 +66,7 @@
             <UCard v-if="(solicitud.excedente || 0) > 0.004" variant="subtle" class="bg-info/10 ring-info/30" :ui="{ body: 'p-4 sm:p-4' }">
               <dt class="text-sm text-info">Excedente</dt>
               <dd class="mt-1 text-3xl font-bold text-info">${{ dinero(solicitud.excedente || 0) }}</dd>
-              <em class="mt-1 block text-sm not-italic text-muted">Administración decidirá si se devuelve o se aplica al servicio de Carga Consolidada.</em>
+              <em class="mt-1 block text-sm not-italic text-muted">El cliente decidirá si se realiza el reembolso o su aplicación {{ destinoExcedente }}.</em>
             </UCard>
           </dl>
         </UCard>
@@ -317,7 +317,7 @@
           />
 
           <!-- Debajo de las tarjetas del paso, como la franja «Por realizar». -->
-          <UAlert v-if="(vistaEtapa[proveedor.id] ?? proveedor.etapa) === proveedor.etapa && enManos(proveedor)" class="mt-3 w-fit max-w-full" color="info" variant="subtle" :description="enManos(proveedor)" />
+          <UAlert v-if="(vistaEtapa[proveedor.id] ?? proveedor.etapa) === proveedor.etapa && enManos(proveedor)" class="mt-3" color="info" variant="subtle" :description="enManos(proveedor)" />
 
           <UAlert
             v-if="!soloLectura && (vistaEtapa[proveedor.id] ?? proveedor.etapa) === proveedor.etapa && porRealizar(proveedor)"
@@ -614,7 +614,7 @@
               <span>Aplicado <strong class="text-highlighted">${{ dinero(aplicado) }}</strong></span>
               <span :class="Math.abs(sinAsignar) > 0.005 ? 'text-warning' : ''">Sin asignar <strong>${{ dinero(sinAsignar) }}</strong></span>
             </p>
-            <p v-if="sinAsignar > 0.005" class="text-xs font-medium text-warning">Excedente de ${{ dinero(sinAsignar) }}: Administración decidirá si se devuelve o se aplica al servicio de Carga Consolidada.</p>
+            <p v-if="sinAsignar > 0.005" class="text-xs font-medium text-warning">Excedente de ${{ dinero(sinAsignar) }}: El cliente decidirá si se realiza el reembolso o su aplicación {{ destinoExcedente }}.</p>
             <p v-else-if="sinAsignar < -0.005" class="text-xs font-semibold text-error">Estás aplicando ${{ dinero(Math.abs(sinAsignar)) }} más de lo recibido.</p>
           </UCard>
         </form>
@@ -982,9 +982,13 @@ function textoExcedente(abonoItem: PagoProveedorAbono) {
     aplicado_cuota: 'se aplica a la cuota 2',
     no_devuelve: 'no se devuelve (dentro de la tolerancia)',
     por_consultar: 'por consultar al cliente',
-    reembolso_solicitado: 'se reembolsará al cliente'
+    reembolso_solicitado: 'reembolso solicitado'
   }[abonoItem.excedente_decision || ''] || abonoItem.excedente_decision
 }
+
+/** Con cuotas el excedente puede ir a la siguiente cuota; sin cuotas, al servicio de Carga Consolidada (como el back: algún proveedor en 2 cuotas). */
+const excedenteConCuotas = computed(() => (solicitud.value?.proveedores || []).some(proveedor => proveedor.modalidad_abono === 'fraccionado'))
+const destinoExcedente = computed(() => excedenteConCuotas.value ? 'a la siguiente cuota' : 'al servicio de Carga Consolidada')
 
 /** Nota del excedente en la ventana del voucher, según lo decidido para ese abono. */
 function notaExcedente(abonoItem: PagoProveedorAbono) {
@@ -993,9 +997,10 @@ function notaExcedente(abonoItem: PagoProveedorAbono) {
     .find(item => item.deposit_id === abonoItem.id)
   if (fila?.refund_status === 'solicitado') return 'reembolso solicitado: lo aprueba Administración.'
   if (fila?.refund_status === 'aprobado') return 'reembolso aprobado por Administración.'
+  const consulta = `se consultará al cliente si prefiere el reembolso o aplicarlo ${(fila ? fila.can_apply_installment : excedenteConCuotas.value) ? 'a la siguiente cuota' : 'al servicio de Carga Consolidada'}.`
   return {
-    por_consultar: 'se consultará al cliente si prefiere el reembolso o aplicarlo a la siguiente cuota.',
-    reembolso_solicitado: 'se reembolsará al cliente.',
+    por_consultar: consulta,
+    reembolso_solicitado: consulta,
     aplicado_cuota: 'se aplica a la cuota 2.',
     no_devuelve: 'no se devuelve (dentro de la tolerancia).'
   }[abonoItem.excedente_decision || ''] || ''
@@ -1287,7 +1292,7 @@ function porRealizar(proveedor: PagoProveedorSolicitudProveedor) {
       if (fila.refund_status === 'por_consultar' || fila.decision === 'por_consultar' || (fila.decision === 'reembolso_solicitado' && !fila.refund_status)) {
         tareas.push(fila.can_apply_installment
           ? `consultar al cliente qué prefiere para el excedente de $${dinero(fila.amount)}: reembolso (pedirle sus cuentas bancarias) o aplicarlo a su siguiente cuota`
-          : `informar al cliente que se le reembolsará el excedente de $${dinero(fila.amount)} y pedirle sus cuentas bancarias`)
+          : `consultar al cliente qué prefiere para el excedente de $${dinero(fila.amount)}: reembolso (pedirle sus cuentas bancarias) o aplicarlo al servicio de Carga Consolidada`)
       }
     }
   }
