@@ -73,19 +73,19 @@
           </template>
           <SupplierPaymentFact v-if="deposit.purpose === 'exchange_difference'" label="Tipo de abono" :value="deposit.purpose_label || 'Diferencia de cambio'" />
 
-          <div v-if="deposit.can_validate && !editing" class="mt-2 flex items-start gap-3">
+          <div v-if="deposit.can_validate && !editing" class="mt-3 flex items-center gap-4 rounded-lg bg-slate-100 px-4 py-3 dark:bg-slate-800">
             <UButton
               size="sm"
               color="neutral"
               variant="outline"
               icon="i-heroicons-pencil"
-              class="shrink-0"
+              class="shrink-0 bg-white font-semibold ring-slate-400 dark:bg-slate-900"
               title="Corregir banco, fecha o número de operación"
               @click="startEdit"
             >
               Editar
             </UButton>
-            <p class="text-[11px] leading-snug text-muted">Si Ventas se equivocó al digitar el banco, la fecha o el N.° de operación, edítalo: queda registrado y se avisa a Ventas.</p>
+            <p class="border-l border-slate-300 pl-4 text-xs leading-snug text-muted dark:border-slate-600">Si Ventas se equivocó al digitar el banco, la fecha o el N.° de operación, edítalo: queda registrado y se avisa a Ventas.</p>
           </div>
           <div v-else-if="deposit.can_validate" class="mt-2 flex flex-col gap-2">
             <p class="text-xs text-muted">Editando: corrige lo que Ventas digitó mal y guarda los cambios.</p>
@@ -99,7 +99,8 @@
           <p v-if="deposit.corrected_by_admin" class="mt-2 text-xs text-muted">
             Corregido por Administración: queda registrado y se avisa a Ventas.
           </p>
-          <p v-if="deposit.shared" class="mt-1 text-xs text-muted">
+          <p v-if="deposit.shared" class="mt-3 flex items-center gap-2 text-xs text-muted">
+            <UIcon name="i-heroicons-information-circle" class="size-4 shrink-0 text-highlighted" />
             Voucher compartido con {{ deposit.providers.length }} proveedores. Se verifica una sola vez.
           </p>
         </SupplierPaymentCard>
