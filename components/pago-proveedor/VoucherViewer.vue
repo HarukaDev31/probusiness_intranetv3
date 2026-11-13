@@ -105,7 +105,9 @@
       </div>
     </div>
 
-    <p class="text-xs text-muted">
+    <!-- Como el diseño enviado: ícono de información + texto legible. -->
+    <p class="flex items-center gap-2 text-sm text-default">
+      <UIcon name="i-heroicons-information-circle" class="size-5 shrink-0 text-highlighted" />
       {{ isImage
         ? 'Activa la lupa y pasa el cursor sobre la imagen para leer el importe y el N.° de operación.'
         : 'Usa «Pantalla completa» para revisar el comprobante con más detalle.' }}
