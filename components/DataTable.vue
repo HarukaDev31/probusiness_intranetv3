@@ -69,7 +69,7 @@
   <template v-else-if="!$slots.filters">
     <div class="flex flex-col md:flex-row flex-wrap gap-4 p-0 md:p-4 " data-manual-capture="data-table-toolbar">
       <div class="w-full lg:w-full flex flex-col md:flex-row items-start md:items-center md:justify-between gap-1 md:gap-3 items-center">
-        <PageHeader :title="displayedTitle" :subtitle="subtitle" :icon="icon" :hide-back-button="hideBackButton" @back="goBack">
+        <PageHeader :title="displayedTitle" :subtitle="subtitle" :icon="icon" :align-subtitle="alignSubtitle" :hide-back-button="hideBackButton" @back="goBack">
           <template v-if="$slots['back-extra']" #back-extra>
             <slot name="back-extra" />
           </template>

@@ -5,6 +5,7 @@
       subtitle="Pago a proveedor"
       :show-title="true"
       icon="i-heroicons-banknotes"
+      align-subtitle
       :data="filas"
       :columns="columns"
       :loading="cargando"
