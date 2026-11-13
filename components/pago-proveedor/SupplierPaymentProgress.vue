@@ -97,6 +97,11 @@
               <UButton v-if="row.can_apply_installment && !row.refund_status" size="sm" color="primary" variant="outline" :loading="saving" @click="emit('decide-surplus', row.deposit_id, SURPLUS_DECISION.APPLY)">Aplicar a siguiente cuota</UButton>
             </div>
           </template>
+          <!-- Reembolso directo (sin cuotas): se informa desde que se registra el abono; se solicita cuando Administración apruebe el pago. -->
+          <template v-else-if="row.decision === SURPLUS_DECISION.REFUND && !row.refund_status">
+            <p class="text-muted">Excedente de <strong class="text-highlighted">${{ money(row.amount) }}</strong>: se reembolsa al cliente.</p>
+            <UButton v-if="!readonly" class="mt-2" size="sm" color="primary" disabled title="Se habilita cuando Administración valide el depósito y apruebe el pago.">Solicitar reembolso</UButton>
+          </template>
           <p v-else-if="row.decision === SURPLUS_DECISION.APPLY" class="text-muted">Excedente de ${{ money(row.amount) }}: se aplica a la cuota 2.</p>
         </div>
       </UCard>
