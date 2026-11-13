@@ -4,6 +4,7 @@
     :title="windowTitle"
     :subtitle="subtitle"
     :code="requestCodes"
+    code-right
     :hint="hintText"
     wide
     @close="emit('close')"
@@ -67,7 +68,7 @@
               {{ bankLabel }}
               <UBadge v-if="deposit.interbank" size="sm" color="neutral" variant="subtle" label="Interbancaria / cajero" />
             </SupplierPaymentFact>
-            <SupplierPaymentFact label="Fecha del depósito" :value="deposit.paid_on || '—'" />
+            <SupplierPaymentFact label="Fecha del depósito" :value="fechaDmy(deposit.paid_on)" />
             <SupplierPaymentFact label="N.° de operación" :value="deposit.operation_number || '—'" />
           </template>
           <SupplierPaymentFact v-if="deposit.purpose === 'exchange_difference'" label="Tipo de abono" :value="deposit.purpose_label || 'Diferencia de cambio'" />
@@ -84,7 +85,7 @@
             >
               Editar
             </UButton>
-            <p class="text-xs text-muted">Si Ventas se equivocó al digitar el banco, la fecha o el N.° de operación, edítalo: queda registrado y se avisa a Ventas.</p>
+            <p class="text-[11px] leading-snug text-muted">Si Ventas se equivocó al digitar el banco, la fecha o el N.° de operación, edítalo: queda registrado y se avisa a Ventas.</p>
           </div>
           <div v-else-if="deposit.can_validate" class="mt-2 flex flex-col gap-2">
             <p class="text-xs text-muted">Editando: corrige lo que Ventas digitó mal y guarda los cambios.</p>
@@ -255,6 +256,13 @@ watch(() => props.deposit, (deposit) => {
   }
 }, { immediate: true })
 
+/** Fecha del depósito como DD-MM-AAAA (la API la manda AAAA-MM-DD). */
+function fechaDmy(value?: string | null) {
+  if (!value) return '—'
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(value)
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : value
+}
+
 const requestCodes = computed(() => {
   const codes = (props.deposit?.providers || []).map((provider) => provider.request_code).filter(Boolean)
   return codes.length ? codes.join(', ') : 'Pendiente'
@@ -282,7 +290,7 @@ const subtitle = computed(() => {
 
 /** Pista del pie: solo al validar (igual que la maqueta); en estados cerrados el pie queda limpio. */
 const hintText = computed(() => (props.deposit?.can_validate
-  ? 'Si el banco recibió otro importe, escríbelo: manda el banco y se ajusta el registro de Ventas. Guardar cambios no valida el depósito.'
+  ? 'Si el banco recibió otro importe, escríbelo: manda el banco y se ajusta el registro de Ventas.'
   : ''))
 
 /** Píldora del encabezado: plazo real del backend o estado de la verificación. */
