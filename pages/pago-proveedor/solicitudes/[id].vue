@@ -994,7 +994,8 @@ function textoExcedente(abonoItem: PagoProveedorAbono) {
   const fila = (solicitud.value?.proveedores || [])
     .flatMap(proveedor => proveedor.progreso?.verification.surpluses || [])
     .find(item => item.deposit_id === abonoItem.id)
-  const reembolso = { por_consultar: 'por consultar al cliente', solicitado: 'reembolso solicitado', aprobado: 'reembolso aprobado' }[fila?.refund_status || '']
+  if (fila && reembolsoPedido(fila)) return 'reembolso solicitado'
+  const reembolso = { por_consultar: 'por consultar al cliente', aprobado: 'reembolso aprobado' }[fila?.refund_status || '']
   if (reembolso) return reembolso
   return {
     aplicado_cuota: 'se aplica a la cuota 2',
@@ -1006,12 +1007,16 @@ function textoExcedente(abonoItem: PagoProveedorAbono) {
 
 /** Con cuotas el excedente puede ir a la siguiente cuota; sin cuotas, al servicio de Carga Consolidada (como el back: algún proveedor en 2 cuotas). */
 const excedenteConCuotas = computed(() => (solicitud.value?.proveedores || []).some(proveedor => proveedor.modalidad_abono === 'fraccionado'))
+/** Reembolso ya pedido y a la espera de Administración: registro «solicitado» o reembolso directo sin cuotas (#1678). */
+function reembolsoPedido(fila: { refund_status?: string | null, decision?: string | null }) {
+  return fila.refund_status === 'solicitado' || (fila.decision === 'reembolso_solicitado' && !fila.refund_status)
+}
 /** Excedente cuyo reembolso ya se solicitó y espera a Administración (un abono puede repetirse en varios proveedores). */
 const reembolsoSolicitado = computed(() => {
   const porAbono = new Map<number, number>()
   for (const proveedor of solicitud.value?.proveedores || []) {
     for (const fila of proveedor.progreso?.verification.surpluses || []) {
-      if (fila.refund_status === 'solicitado') porAbono.set(fila.deposit_id, Number(fila.amount) || 0)
+      if (reembolsoPedido(fila)) porAbono.set(fila.deposit_id, Number(fila.amount) || 0)
     }
   }
   return [...porAbono.values()].reduce((suma, monto) => suma + monto, 0)
@@ -1023,12 +1028,11 @@ function notaExcedente(abonoItem: PagoProveedorAbono) {
   const fila = (solicitud.value?.proveedores || [])
     .flatMap(proveedor => proveedor.progreso?.verification.surpluses || [])
     .find(item => item.deposit_id === abonoItem.id)
-  if (fila?.refund_status === 'solicitado') return 'reembolso solicitado: lo aprueba Administración.'
+  if ((fila && reembolsoPedido(fila)) || (!fila && abonoItem.excedente_decision === 'reembolso_solicitado')) return 'reembolso solicitado: lo aprueba Administración.'
   if (fila?.refund_status === 'aprobado') return 'reembolso aprobado por Administración.'
   const consulta = `se consultará al cliente si prefiere el reembolso o aplicarlo ${(fila ? fila.can_apply_installment : excedenteConCuotas.value) ? 'a la siguiente cuota' : 'al servicio de Carga Consolidada'}.`
   return {
     por_consultar: consulta,
-    reembolso_solicitado: consulta,
     aplicado_cuota: 'se aplica a la cuota 2.',
     no_devuelve: 'no se devuelve (dentro de la tolerancia).'
   }[abonoItem.excedente_decision || ''] || ''
@@ -1317,8 +1321,8 @@ function porRealizar(proveedor: PagoProveedorSolicitudProveedor) {
   if (aprobacion?.state === 'waiting_shared') tareas.push('consultar al cliente qué proveedores continúan con este dinero; los demás quedan pendientes con lo que sobre')
   if (proveedor.etapa >= 2 && proveedor.etapa < 4) {
     for (const fila of proveedor.progreso?.verification.surpluses || []) {
-      if (fila.refund_status === 'solicitado') tareas.push(`esperar la aprobación del reembolso de $${dinero(fila.amount)} por Administración`)
-      else if (fila.refund_status === 'por_consultar' || fila.decision === 'por_consultar' || (fila.decision === 'reembolso_solicitado' && !fila.refund_status)) {
+      if (reembolsoPedido(fila)) tareas.push(`esperar la aprobación del reembolso de $${dinero(fila.amount)} por Administración`)
+      else if (fila.refund_status === 'por_consultar' || fila.decision === 'por_consultar') {
         tareas.push(fila.can_apply_installment
           ? `consultar al cliente qué prefiere para el excedente de $${dinero(fila.amount)}: reembolso (pedirle sus cuentas bancarias) o aplicarlo a su siguiente cuota`
           : `consultar al cliente qué prefiere para el excedente de $${dinero(fila.amount)}: reembolso (pedirle sus cuentas bancarias) o aplicarlo al servicio de Carga Consolidada`)
