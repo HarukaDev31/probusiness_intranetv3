@@ -81,24 +81,30 @@ export default defineNuxtPlugin(() => {
     try {
       const token = getAuthToken()
       const isFormData = options.body instanceof FormData
+      // FormData: no fijar Content-Type (boundary del navegador). Siempre pedir JSON
+      // para que un 401 del API no llegue como página HTML "Unauthorized".
       const finalHeaders: Record<string, string> = {
+        Accept: 'application/json',
         ...(isFormData ? {} : API_CONFIG.headers),
-        ...options.headers,
-        ...(token && { 'Authorization': `Bearer ${token}` })
+        ...(options.headers || {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
       }
-      // Con FormData el navegador debe asignar Content-Type con boundary; no fijarlo aquí
-      if (isFormData) delete finalHeaders['Content-Type']
-      
+      if (isFormData) {
+        delete finalHeaders['Content-Type']
+        // Respaldo si algún proxy pierde Authorization en multipart.
+        if (token && options.body instanceof FormData && !options.body.has('token')) {
+          options.body.append('token', token)
+        }
+      }
+
       const fetchConfig = {
         baseURL: API_CONFIG.baseURL,
         timeout: API_CONFIG.timeout,
-        headers: finalHeaders,
         cache: 'no-store' as RequestCache,
         ...options,
+        headers: finalHeaders,
         signal: requestController.signal
       }
-      
-      fetchConfig.headers = finalHeaders
 
       return await $fetch<T>(endpoint, fetchConfig)
     } catch (error: any) {
