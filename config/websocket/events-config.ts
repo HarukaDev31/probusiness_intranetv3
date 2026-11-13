@@ -49,7 +49,6 @@ export const WS_EVENTS = {
   //eventos de administracion
   REINTEGRO_REQUEST:'ViaticoCreado',
   VERIFICACION_CONTADORES: 'VerificacionContadoresActualizados',
-
   // Eventos de Calendario (documentación, coordinación, jefe importaciones)
   CALENDAR_ACTIVITY_CREATED: 'CalendarActivityCreated',
   CALENDAR_ACTIVITY_UPDATED: 'CalendarActivityUpdated',

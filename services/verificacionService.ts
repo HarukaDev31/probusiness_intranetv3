@@ -1,4 +1,4 @@
-import { BaseService } from './base/BaseService'
+﻿import { BaseService } from './base/BaseService'
 import type { VerificationCounts } from '~/composables/verificacion/useVerificationCounts'
 
 export class VerificacionService extends BaseService {
