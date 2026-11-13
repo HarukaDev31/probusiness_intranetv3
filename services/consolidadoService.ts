@@ -40,6 +40,8 @@ export class ConsolidadoService extends BaseService {
         if (filters.idCotizacion) {
           queryParams.append('idCotizacion', String(filters.idCotizacion))
         }
+        if ((filters as any).sort_by) queryParams.append('sort_by', String((filters as any).sort_by))
+        if ((filters as any).sort_dir) queryParams.append('sort_dir', String((filters as any).sort_dir))
       }
 
       const url = queryParams.toString() 

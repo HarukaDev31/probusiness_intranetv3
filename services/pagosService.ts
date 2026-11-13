@@ -47,6 +47,8 @@ export class PagosService extends BaseService {
       
       // Agregar idPedido si está presente
       if (filters?.idPedido) queryParams.append('idPedido', filters.idPedido.toString())
+      if ((filters as any)?.sort_by) queryParams.append('sort_by', String((filters as any).sort_by))
+      if ((filters as any)?.sort_dir) queryParams.append('sort_dir', String((filters as any).sort_dir))
 
       const url = `${this.baseUrl}?${queryParams.toString()}`
 
