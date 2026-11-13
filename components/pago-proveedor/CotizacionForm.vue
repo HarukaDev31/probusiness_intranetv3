@@ -15,6 +15,7 @@
       :title="titulo"
       :subtitle="subtitulo"
       icon="i-heroicons-banknotes"
+      align-subtitle
       :hide-back-button="!!urlSolicitudOrigen"
       @back="navigateTo('/pago-proveedor/cotizaciones')"
     >

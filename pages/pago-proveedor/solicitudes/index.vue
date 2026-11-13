@@ -1,7 +1,7 @@
 <template>
-  <div class="md:p-6">
+  <div class="supplier-payment-requests md:p-6">
     <header class="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <PageHeader title="Solicitudes" subtitle="Pago a proveedor" icon="i-heroicons-clipboard-document-list" :hide-back-button="true" />
+      <PageHeader title="Solicitudes" subtitle="Pago a proveedor" icon="i-heroicons-clipboard-document-list" :hide-back-button="true" align-subtitle />
       <UButton v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" label="Nueva cotización" icon="i-heroicons-plus" color="primary" class="h-11 font-normal" @click="nuevaCotizacion = true" />
     </header>
     <NuevaCotizacionModal v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" :open="nuevaCotizacion" @close="nuevaCotizacion = false" @accepted="(codigo) => navigateTo({ path: '/pago-proveedor/cotizaciones/nueva', query: { cc: codigo } })" />
@@ -517,3 +517,12 @@ watch(profile, (value) => {
   if (value === SUPPLIER_PAYMENT_PROFILE.WAREHOUSE) navigateTo('/pago-proveedor/pagos-yuanes', { replace: true })
 }, { immediate: true })
 </script>
+
+<style>
+/* Como en Verificación: sin desborde, DataTable centra la tabla a su ancho natural (`utable-narrow`)
+   y deja espacio en blanco a los lados; aquí se estira a todo el ancho del contenedor. */
+.supplier-payment-requests .table-scroll-container .utable-narrow table {
+  width: 100% !important;
+  min-width: 100% !important;
+}
+</style>

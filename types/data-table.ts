@@ -133,6 +133,8 @@ export interface DataTableProps {
   //Previous Page URL
   previousPageUrl?: string|null
   hideBackButton?: boolean
+  /** El subtítulo de la cabecera arranca donde empieza el texto del título (no debajo del icono). */
+  alignSubtitle?: boolean
   // Optional generic prefetch callback: receives the page number to prefetch and itemsPerPage
   // Should return a Promise that resolves when prefetch completes (or rejects on error)
   prefetchNextPage?: (page: number, itemsPerPage: number) => Promise<void>

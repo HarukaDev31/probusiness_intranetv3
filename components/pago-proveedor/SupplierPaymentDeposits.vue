@@ -55,7 +55,7 @@ import { PagoProveedorService } from '~/services/pagoProveedorService'
 import type { PagoProveedorPaginacion, SupplierPaymentDeposit, SupplierPaymentObservationReason } from '~/types/pago-proveedor'
 import { useModal } from '~/composables/commons/useModal'
 import { slaOverdue, slaText, useSlaCountdown } from '~/composables/pago-proveedor/useSlaCountdown'
-import { UButton } from '#components'
+import { UBadge, UButton } from '#components'
 
 const emit = defineEmits<{ 'pending-count': [value: number] }>()
 const { showError } = useModal()
@@ -158,7 +158,13 @@ const columns: TableColumn<SupplierPaymentDeposit>[] = [
       title: 'Ir a Aprobación de pagos'
     }, code)))
   } },
-  { accessorKey: 'bank_label', header: 'Banco', cell: ({ row }) => row.original.interbank ? `${row.original.bank_label} · Interbancaria` : row.original.bank_label },
+  // Como la maqueta: banco y, si fue interbancaria o por cajero, una etiqueta gris al lado (igual que en el modal).
+  { accessorKey: 'bank_label', header: 'Banco', cell: ({ row }) => row.original.interbank
+    ? h('div', { class: 'flex items-center gap-1.5 whitespace-nowrap' }, [
+      h('span', row.original.bank_label),
+      h(UBadge, { size: 'sm', color: 'neutral', variant: 'subtle', class: 'rounded-full', label: 'Interbancaria / cajero' })
+    ])
+    : row.original.bank_label },
   { accessorKey: 'paid_on', header: 'Fecha', cell: ({ row }) => row.original.paid_on?.slice(0, 10).split('-').reverse().join('/') || '—' },
   { accessorKey: 'operation_number', header: 'N.° de operación' },
   { accessorKey: 'amount', header: 'Importe', cell: ({ row }) => h('div', { class: 'flex flex-col' }, [
