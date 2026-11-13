@@ -136,6 +136,8 @@ const pageTitle = computed(() => {
   // Módulos
   if (route.path === '/modules') return 'Módulos'
 
+  if (route.path.includes('/pago-proveedor/pagos-yuanes')) return 'Pago a proveedores'
+
   // Base de datos
   if (route.path.includes('/basedatos')) {
     // Clientes
@@ -250,6 +252,10 @@ const {
 } = useVerificationCounts()
 
 const contadorSubmenu = (ruta: string) => {
+  if (ruta.includes('pago-proveedor/aprobacion-pagos') || ruta.includes('pago-proveedor/solicitudes')) {
+    return contadoresVerificacion.value.supplier_approvals
+  }
+  if (ruta.includes('pago-proveedor/pagos-dolares')) return contadoresVerificacion.value.supplier_executions
   if (ruta.includes('viaticos/pendientes') || (ruta.includes('/viaticos') && !ruta.includes('completados'))) {
     return contadoresVerificacion.value.viaticos
   }
@@ -270,7 +276,7 @@ const contadorMenu = (ruta: string, nombre: string) => {
 
 const necesitaContadoresAdmin = computed(() => {
   const raw = JSON.stringify(menu.value ?? []).toLowerCase()
-  return raw.includes('verificacion') || raw.includes('viaticos')
+  return raw.includes('verificacion') || raw.includes('pago-proveedor') || raw.includes('viaticos')
 })
 
 if (import.meta.client) {
@@ -279,6 +285,7 @@ if (import.meta.client) {
     if (visible) void refrescarContadoresVerificacion()
   }, { immediate: true })
 
+  // Solo resincronizar tras un corte real (no en el primer connect)
   let echoHabiaEstadoConectado = false
   let echoEstuvoDesconectado = false
   const onEchoConnected = () => {
@@ -398,6 +405,16 @@ const sidebarCategories = computed(() => {
   if (miProgresoIndex !== -1 && miProgresoIndex !== desiredPosition) {
     const [item] = modules.splice(miProgresoIndex, 1)
     modules.splice(desiredPosition, 0, item)
+  }
+
+  // PRY-26-0003: «Verificación» va primero y luego «Pago a Proveedor» (el orden de BD los deja al revés).
+  const verificacionIndex = modules.findIndex((m: any) => m.route === '/verificacion')
+  const pagoProveedorIndex = modules.findIndex((m: any) =>
+    (m.children ?? []).some((c: any) => String(c.route || '').startsWith('/pago-proveedor'))
+  )
+  if (verificacionIndex !== -1 && pagoProveedorIndex !== -1 && pagoProveedorIndex < verificacionIndex) {
+    const [item] = modules.splice(pagoProveedorIndex, 1)
+    modules.splice(verificacionIndex, 0, item)
   }
 
   // Una sola categoría que contiene todos los módulos padre (para que SidebarMenu los muestre como botones)

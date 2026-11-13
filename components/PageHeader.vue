@@ -26,7 +26,7 @@
               <UIcon v-if="icon" :name="icon" class="text-secondary mr-3 text-2xl" />
               {{ title }}
             </h1>
-            <p v-if="subtitle" class="mt-1 text-sm text-gray-600 dark:text-gray-300">{{ subtitle }}</p>
+            <p v-if="subtitle" class="mt-1 text-sm text-gray-600 dark:text-gray-300" :class="{ 'pl-9': icon && alignSubtitle }">{{ subtitle }}</p>
           </div>
         
         </div>
@@ -50,7 +50,9 @@ interface Props {
   loading?: boolean
   hideBackButton?: boolean
   classAdd?: string
-  
+  /** El subtítulo arranca donde empieza el texto del título (no debajo del icono). */
+  alignSubtitle?: boolean
+
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -60,6 +62,7 @@ const props = withDefaults(defineProps<Props>(), {
   loading: false,
   hideBackButton: true,
   classAdd: 'justify-between',
+  alignSubtitle: false,
 })
 defineEmits<{
   back: []

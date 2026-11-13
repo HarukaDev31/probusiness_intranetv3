@@ -1,13 +1,75 @@
 <template>
-  <div ref="componentRootRef" class="w-full min-w-0 max-w-full" data-manual-capture="data-table">
+  <div ref="componentRootRef" class="w-full min-w-0 max-w-full" :class="filtersLayout === 'inline' ? 'overflow-hidden rounded-2xl bg-default shadow-[0_6px_20px_rgba(30,42,59,.06)]' : ''" data-manual-capture="data-table">
 
     <!-- Sticky Top Section -->
-    <div v-if="!showTopSection" class="sticky top-0 z-40 bg-[#f0f4f9] dark:bg-gray-900">
+    <div v-if="!showTopSection" class="sticky top-0 z-40" :class="filtersLayout === 'inline' ? 'bg-default' : 'bg-[#f0f4f9] dark:bg-gray-900'">
   <slot name="filters" />
-  <template v-if="!$slots.filters">
+  <!-- Modo "inline": buscador, filtros y contador en una sola barra (en vez del panel «Filtros») -->
+  <template v-if="!$slots.filters && filtersLayout === 'inline'">
+    <div
+      v-if="showPrimarySearch || showFilters || $slots.actions || inlineCountText"
+      class="flex flex-wrap items-center gap-3 border-b border-default p-4"
+      data-manual-capture="data-table-inline-filters"
+    >
+      <UInput
+        v-if="showPrimarySearch"
+        :model-value="primarySearchInternal"
+        :placeholder="primarySearchPlaceholder || translations.primarySearchPlaceholder"
+        class="min-w-60 flex-1"
+        icon="i-heroicons-magnifying-glass"
+        @update:model-value="onPrimarySearchChange"
+      />
+      <template v-if="showFilters">
+        <template v-for="filter in displayedFilterConfig" :key="filter.key">
+          <UInput
+            v-if="filter.type === 'date'"
+            type="date"
+            :model-value="filtersValue?.[filter.key] ?? ''"
+            :aria-label="filter.label"
+            :title="filter.label"
+            class="w-36"
+            @update:model-value="(value) => handleFilterChange(filter.key, value)"
+          />
+          <UInput
+            v-else-if="filter.type === 'number' || filter.type === 'text'"
+            :type="filter.type === 'number' ? 'number' : 'text'"
+            :model-value="filtersValue?.[filter.key] ?? ''"
+            :placeholder="filter.placeholder"
+            :aria-label="filter.label"
+            class="w-40"
+            @update:model-value="(value) => handleFilterChange(filter.key, value)"
+          />
+          <USelect
+            v-else
+            :model-value="(filtersValue && filtersValue[filter.key]) ?? (filter.options?.[0]?.value) ?? ''"
+            :items="filter.options"
+            value-key="value"
+            label-key="label"
+            :aria-label="filter.label"
+            :placeholder="filter.placeholder"
+            class="w-52"
+            :ui="filterSelectUi"
+            @update:model-value="(value) => handleFilterChange(filter.key, value)"
+          />
+          <span v-if="filter.type === 'date' && filter.separatorAfter" class="-mx-1 text-sm text-muted">{{ filter.separatorAfter }}</span>
+        </template>
+        <UButton
+          v-if="hasActiveInlineFilters"
+          color="primary"
+          variant="link"
+          label="Limpiar"
+          @click="handleClearFilters"
+        />
+      </template>
+      <slot name="actions" />
+      <span v-if="showPrimarySearch || showFilters || inlineCountText" class="ml-auto whitespace-nowrap text-sm text-muted">{{ inlineCountText || `${totalRecords} ${totalRecords === 1 && translations.resultados === 'resultados' ? 'resultado' : translations.resultados}` }}</span>
+    </div>
+    <slot name="inline-extra" />
+  </template>
+  <template v-else-if="!$slots.filters">
     <div class="flex flex-col md:flex-row flex-wrap gap-4 p-0 md:p-4 " data-manual-capture="data-table-toolbar">
       <div class="w-full lg:w-full flex flex-col md:flex-row items-start md:items-center md:justify-between gap-1 md:gap-3 items-center">
-        <PageHeader :title="displayedTitle" :subtitle="subtitle" :icon="icon" :hide-back-button="hideBackButton" @back="goBack">
+        <PageHeader :title="displayedTitle" :subtitle="subtitle" :icon="icon" :align-subtitle="alignSubtitle" :hide-back-button="hideBackButton" @back="goBack">
           <template v-if="$slots['back-extra']" #back-extra>
             <slot name="back-extra" />
           </template>
@@ -35,7 +97,7 @@
           <div v-if="showPrimarySearch" class="flex items-center gap-2 h-10 w-full lg:w-auto">
             <label v-if="showPrimarySearchLabel"
               class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ translations.primarySearchLabel }}:</label>
-            <UInput :model-value="primarySearchInternal" :placeholder="translations.primarySearchPlaceholder"
+            <UInput :model-value="primarySearchInternal" :placeholder="primarySearchPlaceholder || translations.primarySearchPlaceholder"
               class="flex-1 h-5 min-w-0 md:h-10 lg:h-10" :ui="{ base: 'h-7 md:h-10 lg:h-10' }"
               @update:model-value="onPrimarySearchChange">
               <template #leading>
@@ -104,6 +166,15 @@
                       @click.stop
                       @focus="handleSelectOpen"
                       @blur="handleSelectClose"
+                    />
+                    <UInput
+                      v-else-if="filter.type === 'number' || filter.type === 'text'"
+                      :model-value="filtersValue?.[filter.key] ?? ''"
+                      :type="filter.type === 'number' ? 'number' : 'text'"
+                      :placeholder="filter.placeholder"
+                      class="w-full"
+                      @update:model-value="(value) => handleFilterChange(filter.key, value)"
+                      @click.stop
                     />
                     <!-- Filtro de tipo select: model-value no vacío (fallback primera opción) para cumplir SelectItem -->
                     <USelect
@@ -192,6 +263,15 @@
                         @click.stop
                         @focus="handleSelectOpen"
                         @blur="handleSelectClose"
+                      />
+                      <UInput
+                        v-else-if="filter.type === 'number' || filter.type === 'text'"
+                        :model-value="filtersValue?.[filter.key] ?? ''"
+                        :type="filter.type === 'number' ? 'number' : 'text'"
+                        :placeholder="filter.placeholder"
+                        class="w-full"
+                        @update:model-value="(value) => handleFilterChange(filter.key, value)"
+                        @click.stop
                       />
                       <USelect
                         v-else
@@ -423,7 +503,7 @@
         data-manual-capture="data-table-grid"
         ref="tableContainerRef"
         class="table-scroll-container"
-        :class="{ 'is-h-scroll': !isTableNarrow }"
+        :class="{ 'is-h-scroll': !isTableNarrow, 'sticky-last-column': stickyLastColumn, 'flat-table': filtersLayout === 'inline' }"
         :style="tableScrollStyle"
         @mousemove="onTableMouseMove"
         @mouseleave="onTableMouseLeave"
@@ -431,7 +511,7 @@
       >
         <UTable ref="utableRef" :data="filteredData" sticky :columns="displayedColumns" :loading="isTableLoading"
           :class="['', isTableNarrow ? 'utable-narrow' : 'min-w-full']"   :meta="tableMeta"
-          :ui="Object.keys(tableMeta).length>0?{
+          :ui="filtersLayout === 'inline' ? flatTableUi : Object.keys(tableMeta).length>0?{
             // Importante: quitar overflow del root interno de UTable.
             // Si el root tiene overflow-* pero el scroll real ocurre en .table-scroll-container, sticky no se activa.
             root: 'relative overflow-visible',
@@ -476,7 +556,7 @@
             <UIcon name="i-heroicons-inbox" class="mx-auto h-12 w-12 text-gray-400" />
             <h3 class="mt-2 text-sm font-semibold text-gray-800 dark:text-gray-100">{{ translations.emptyTitle }}</h3>
             <p class="mt-1 text-sm text-gray-500">
-              {{ translations.emptyMessage || emptyStateMessage }}
+              {{ emptyStateMessage || translations.emptyMessage }}
             </p>
           </div>
         </template>
@@ -491,7 +571,8 @@
     <!-- Sticky Bottom Section - Pagination -->
     <div
       v-if="showBottomSection && (!showKanban || listViewMode === 'table')"
-      class="md:sticky bottom-0 z-39 bg-[#f0f4f9] dark:bg-gray-900"
+      class="md:sticky bottom-0 z-39"
+      :class="filtersLayout === 'inline' ? 'border-t border-default bg-default' : 'bg-[#f0f4f9] dark:bg-gray-900'"
     >
       <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between p-4 gap-4">
         <div class="text-xs lg:text-sm text-gray-700 dark:text-gray-300 text-center lg:text-left w-full lg:w-auto">
@@ -549,9 +630,20 @@ const props = withDefaults(defineProps<DataTableProps>(), {
   kanbanDraggable: false
 })
 
-const useEnglishHeaders = computed(() => usesEnglishTableHeaders(currentRole.value))
-const displayedTitle = computed(() => translateTableText(props.title || '', currentRole.value) || props.title)
-const displayedColumns = computed(() => applyEnglishTableHeaders(props.columns || [], currentRole.value))
+const useEnglishHeaders = computed(() => !props.keepSpanishHeaders && usesEnglishTableHeaders(currentRole.value))
+const displayedTitle = computed(() => (props.keepSpanishHeaders ? props.title : translateTableText(props.title || '', currentRole.value) || props.title))
+const displayedColumns = computed(() => (props.keepSpanishHeaders ? props.columns || [] : applyEnglishTableHeaders(props.columns || [], currentRole.value)))
+
+/** Modo "inline": tabla plana dentro de una sola tarjeta (filas separadas por líneas finas, sin tarjetas por fila). */
+const flatTableUi = {
+  root: 'relative overflow-visible',
+  base: 'min-w-full',
+  thead: 'z-20 bg-default',
+  th: 'bg-default px-3 py-3.5 text-xs font-medium uppercase tracking-wider text-muted',
+  tbody: '[&>tr]:border-t [&>tr]:border-default [&>tr]:transition-colors [&>tr:hover]:bg-elevated/40',
+  tr: 'border-default',
+  td: 'bg-transparent px-3 py-3.5 text-sm text-default'
+}
 
 /** Evita ambigüedad con otros `loading` en plantilla; fuerza booleano para UTable */
 const isTableLoading = computed(() => Boolean(props.loading))
@@ -569,6 +661,14 @@ const tableScrollStyle = computed(() => {
 
 // Emits
 const emit = defineEmits(['update:primarySearch', 'filter-change', 'update:filters', 'clear-filters', 'items-per-page-change', 'page-change', 'row-click', 'kanban-move'] )
+
+/** Hay algún filtro del modo inline con un valor distinto del «todos» por defecto. */
+const hasActiveInlineFilters = computed(() =>
+  Object.values(props.filtersValue || {}).some((value) => {
+    if (Array.isArray(value)) return value.length > 0
+    return value !== undefined && value !== null && value !== '' && value !== 'todos' && value !== 'all'
+  })
+)
 
 const filterSelectUi = {
   base: 'w-full text-left',
@@ -814,8 +914,14 @@ const applyTableMetaClasses = () => {
         if (!rowData) return
         row.querySelectorAll('td').forEach((td) => {
           const classes = tdClassFn?.({ original: rowData, index: rowIdx })
+          // Quita lo que se aplicó antes: Vue reutiliza las celdas y la clase de otra fila se quedaba pegada.
+          const previous = td.dataset.metaClass
+          if (previous) previous.split(' ').filter(Boolean).forEach((cls) => td.classList.remove(cls))
           if (classes && typeof classes === 'string') {
-            td.className = classes + ' ' + td.className
+            classes.split(' ').filter(Boolean).forEach((cls) => td.classList.add(cls))
+            td.dataset.metaClass = classes
+          } else {
+            delete td.dataset.metaClass
           }
         })
       })
@@ -1618,7 +1724,8 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
 .utable-narrow {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  /* safe: si la tabla es más ancha que el contenedor, no se corta por la izquierda. */
+  align-items: safe center;
 }
 .utable-narrow table {
   width: auto !important;
@@ -1863,6 +1970,38 @@ html.dark .min-w-full :deep(tbody tr + tr td) {
 }
 .dark .table-scroll-container tbody td.china-group-td {
   background-color: rgb(127 29 29 / 0.18);
+}
+
+/* Modo "inline": tabla plana dentro de una tarjeta (filas separadas por líneas finas, encabezado blanco). */
+.table-scroll-container.flat-table table thead,
+.table-scroll-container.flat-table table thead th {
+  background: var(--ui-bg) !important;
+  box-shadow: none;
+}
+.table-scroll-container.flat-table table tbody tr + tr td,
+.table-scroll-container.flat-table table tbody tr td {
+  border-top: 1px solid #eef1f6 !important;
+  background: transparent;
+}
+.table-scroll-container.flat-table table tbody tr:first-child td {
+  border-top: 1px solid #eef1f6 !important;
+}
+.table-scroll-container.flat-table table tbody tr:hover td {
+  background: #fafbfd;
+}
+.table-scroll-container.flat-table .sticky-last-column td:last-child,
+.table-scroll-container.flat-table.sticky-last-column td:last-child {
+  background: var(--ui-bg);
+}
+
+/* Última columna fija para no perder las acciones al hacer scroll horizontal */
+.sticky-last-column th:last-child,
+.sticky-last-column td:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 30;
+  background: var(--ui-bg);
+  box-shadow: -6px 0 6px -6px rgb(0 0 0 / 0.15);
 }
 
 /* Sombras laterales para indicar scroll horizontal */

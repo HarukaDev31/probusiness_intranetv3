@@ -1,4 +1,4 @@
-﻿import {
+import {
   registerEventHandler,
   subscribeEventsToRole,
   WS_EVENTS
@@ -7,7 +7,7 @@ import { ROLES } from '~/constants/roles'
 import { useVerificationCounts } from '~/composables/verificacion/useVerificationCounts'
 
 /**
- * Contadores de Verificación / Viáticos vía canal Administración.
+ * Contadores de Verificación / Pago a Proveedor / Viáticos vía canal Administración.
  * El payload trae counts; no se hace GET al recibir el evento.
  */
 export const registerVerificacionEvents = () => {

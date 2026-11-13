@@ -34,6 +34,26 @@ const canAccessNumericDetailUnderAllowedParent = (
   )
 }
 
+/** Administración y China abren el detalle de una solicitud desde sus propios submenús. */
+const canAccessPagoProveedorDetail = (currentPath: string, allowedRoutes: string[]): boolean => {
+  if (!/^\/pago-proveedor\/solicitudes\/\d+$/.test(currentPath)) return false
+  return allowedRoutes.some((route) => route.startsWith('/pago-proveedor/'))
+}
+
+/**
+ * Las bandejas de Administración (Aprobación de pagos y Pagos en dólares) no siempre
+ * vienen como ítem de menú, pero se abren desde Verificación y desde Solicitudes.
+ */
+const PAGO_PROVEEDOR_ADMIN_ROUTES = [
+  '/pago-proveedor/aprobacion-pagos',
+  '/pago-proveedor/pagos-dolares',
+]
+
+const canAccessPagoProveedorAdmin = (currentPath: string, allowedRoutes: string[]): boolean => {
+  if (!PAGO_PROVEEDOR_ADMIN_ROUTES.includes(currentPath)) return false
+  return allowedRoutes.some((route) => route === '/pago-proveedor' || route.startsWith('/pago-proveedor/'))
+}
+
 const canAccessEntregaFirmaCarga = (
   currentPath: string,
   allowedRoutes: string[],
@@ -54,6 +74,7 @@ export default defineNuxtRouteMiddleware((to) => {
   if (to.path === '/preferencias-notificaciones') return
   if (to.path === '/perfil') return
   if (to.path === '/copiloto') return
+  if (to.path.startsWith('/pago-proveedor/formulario-tt')) return
 
   const token = localStorage.getItem('auth_token')
   const user = localStorage.getItem('auth_user')
@@ -78,6 +99,8 @@ export default defineNuxtRouteMiddleware((to) => {
 
   if (canAccessRoute(currentPath, allowedRoutes)) return
   if (canAccessNumericDetailUnderAllowedParent(currentPath, allowedRoutes)) return
+  if (canAccessPagoProveedorDetail(currentPath, allowedRoutes)) return
+  if (canAccessPagoProveedorAdmin(currentPath, allowedRoutes)) return
   if (canAccessEntregaFirmaCarga(currentPath, allowedRoutes)) return
   if (currentPath === '/admin/whatsapp' && canAccessWhatsappConfig(user)) return
 

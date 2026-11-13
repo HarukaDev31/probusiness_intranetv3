@@ -25,9 +25,11 @@ export interface FilterConfig {
   label: string
   type?: string
   placeholder: string
-  options: FilterOption[]
+  options?: FilterOption[]
   /** Si true, permite seleccionar varias opciones (USelect multiple). */
   multiple?: boolean
+  /** Texto que se muestra tras el filtro en el modo inline (por ejemplo «a» entre «Desde» y «Hasta»). */
+  separatorAfter?: string
 }
 export interface HeaderCountryRow {
   country: string
@@ -57,6 +59,10 @@ export interface DataTableKanbanColumn {
 }
 
 export interface DataTableProps {
+  /** 'panel' (por defecto): botón «Filtros» con panel. 'inline': buscador y filtros en una barra, como en las maquetas de China. */
+  filtersLayout?: 'panel' | 'inline'
+  /** Texto del contador de la barra inline (por ejemplo «4 de 12»). Por defecto «N resultados». */
+  inlineCountText?: string
   // Basic props
   title?: string|null
   subtitle?: string|null
@@ -100,6 +106,10 @@ export interface DataTableProps {
 
   // Messages
   emptyStateMessage?: string
+  /** Keeps the last column (actions) visible while the table scrolls sideways. */
+  stickyLastColumn?: boolean
+  /** La tabla se ve en español aunque el rol use encabezados en inglés. */
+  keepSpanishHeaders?: boolean
 
   // Skeleton loading UI
   showSkeleton?: boolean
@@ -123,6 +133,8 @@ export interface DataTableProps {
   //Previous Page URL
   previousPageUrl?: string|null
   hideBackButton?: boolean
+  /** El subtítulo de la cabecera arranca donde empieza el texto del título (no debajo del icono). */
+  alignSubtitle?: boolean
   // Optional generic prefetch callback: receives the page number to prefetch and itemsPerPage
   // Should return a Promise that resolves when prefetch completes (or rejects on error)
   prefetchNextPage?: (page: number, itemsPerPage: number) => Promise<void>

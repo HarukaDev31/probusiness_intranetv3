@@ -9,7 +9,7 @@
       leave-to-class="opacity-0 scale-95"
     >
       <div
-        v-if="visible"
+        v-if="visible && modal"
         class="fixed inset-0 flex items-center justify-center p-4 z-[8000] pointer-events-auto"
         @click.self.stop="handleBackdropClick"
       >
@@ -105,7 +105,7 @@
 import type { ModalData } from '../composables/commons/useModal'
 
 interface Props {
-  modal: ModalData
+  modal: ModalData | null
   visible: boolean
 }
 
@@ -118,7 +118,7 @@ const emit = defineEmits<{
 
 const confirming = ref(false)
 
-watch(() => props.modal.id, () => {
+watch(() => props.modal?.id, () => {
   confirming.value = false
 })
 
@@ -136,7 +136,7 @@ const iconComponents = {
   confirmation: 'i-heroicons-question-mark-circle'
 }
 
-const iconComponent = computed(() => iconComponents[props.modal.type])
+const iconComponent = computed(() => iconComponents[props.modal?.type ?? 'info'])
 
 const iconContainerClasses = computed(() => {
   const classes = {
@@ -146,7 +146,7 @@ const iconContainerClasses = computed(() => {
     info: 'bg-orange-100 dark:bg-orange-900/30',
     confirmation: 'bg-gray-100 dark:bg-gray-700'
   }
-  return classes[props.modal.type]
+  return classes[props.modal?.type ?? 'info']
 })
 
 const iconClasses = computed(() => {
@@ -157,7 +157,7 @@ const iconClasses = computed(() => {
     info: 'text-orange-600 dark:text-orange-400',
     confirmation: 'text-gray-600 dark:text-gray-400'
   }
-  return classes[props.modal.type]
+  return classes[props.modal?.type ?? 'info']
 })
 
 const buttonClasses = computed(() => {
@@ -168,7 +168,7 @@ const buttonClasses = computed(() => {
     info: 'bg-orange-600 hover:bg-orange-700 focus:ring-orange-500 dark:bg-orange-600 dark:hover:bg-orange-700 dark:focus:ring-orange-400',
     confirmation: 'bg-gray-600 hover:bg-gray-700 focus:ring-gray-500 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-400'
   }
-  return classes[props.modal.type]
+  return classes[props.modal?.type ?? 'info']
 })
 
 const modalClasses = computed(() => {
@@ -179,11 +179,11 @@ const modalClasses = computed(() => {
     info: 'ring-orange-200 dark:ring-orange-800',
     confirmation: 'ring-gray-200 dark:ring-gray-700'
   }
-  return classes[props.modal.type]
+  return classes[props.modal?.type ?? 'info']
 })
 
 const handleBackdropClick = () => {
-  if (!props.modal.persistent) {
+  if (props.modal && !props.modal.persistent) {
     emit('close')
   }
 }
@@ -191,7 +191,7 @@ const handleBackdropClick = () => {
 // Close modal on Escape key
 onMounted(() => {
   const handleEscape = (e: KeyboardEvent) => {
-    if (e.key === 'Escape' && !props.modal.persistent) {
+    if (e.key === 'Escape' && props.modal && !props.modal.persistent) {
       emit('close')
     }
   }

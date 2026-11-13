@@ -15,13 +15,13 @@ import { registerContenedorAlmacenEvents } from './contenedor-almacen'
 import { registerCoordinacionEvents } from './coordinacion'
 import { registerUserEvents } from './user'
 import { registerReintegroEvents } from './reintegros'
+import { registerVerificacionEvents } from './verificacion'
 import { registerCalendarEvents } from './calendar'
 import { registerContabilidadEvents } from './contabilidad'
 import { registerAdministracionEvents } from './administracion'
 import { registerJefeImportacionEvents } from './jefe-importacion'
 import { registerWaCopilotoEvents } from './wa-copiloto'
 import { registerRRHHEvents } from './rrhh'
-import { registerVerificacionEvents } from './verificacion'
 /**
  * Registra todos los eventos de todos los roles
  * Esta función se ejecuta antes de la suscripción a los canales
@@ -36,11 +36,11 @@ export const registerAllRoleEvents = () => {
   registerCoordinacionEvents()
   registerUserEvents()
   registerReintegroEvents()
+  registerVerificacionEvents()
   registerCalendarEvents()
   registerContabilidadEvents()
   registerAdministracionEvents()
   registerJefeImportacionEvents()
   registerRRHHEvents()
-  registerVerificacionEvents()
 }
 
