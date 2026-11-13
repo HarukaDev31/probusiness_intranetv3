@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="supplier-payment-deposits">
     <!-- Aviso como la maqueta: franja roja a todo el ancho con los depósitos fuera de plazo. -->
     <div v-if="overdueCount" class="mb-3 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">
       <UIcon name="i-lucide-alarm-clock" class="size-4 shrink-0" />
@@ -273,3 +273,12 @@ function onPageSize(size: number) {
 
 onMounted(load)
 </script>
+
+<style>
+/* Con zoom bajo (p. ej. 80 %) la tabla ya no desborda y DataTable la centra a su ancho natural (`utable-narrow`),
+   dejando aire a los lados; aquí se estira a todo el ancho del contenedor. */
+.supplier-payment-deposits .table-scroll-container .utable-narrow table {
+  width: 100% !important;
+  min-width: 100% !important;
+}
+</style>
