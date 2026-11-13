@@ -73,10 +73,8 @@ export const EXECUTION_BUCKET = {
 } as const
 
 export const YUAN_BUCKET = {
-  ALL: 'all',
-  PENDING: 'pending',
-  OBSERVED: 'observed',
-  PAID: 'paid',
+  OPEN: 'open',
+  COMPLETED: 'completed',
 } as const
 
 export const EXCHANGE_RESULT = {

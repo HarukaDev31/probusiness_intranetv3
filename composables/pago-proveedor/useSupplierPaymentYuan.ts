@@ -15,14 +15,14 @@ const emptyIndicators = (): SupplierPaymentYuanIndicators => ({
 
 export function useSupplierPaymentYuan() {
   const { showError } = useModal()
-  const bucket = ref<string>(YUAN_BUCKET.ALL)
+  const bucket = ref<string>(YUAN_BUCKET.OPEN)
   const search = ref('')
   const country = ref('')
   const dateFrom = ref('')
   const dateTo = ref('')
   const rows = ref<SupplierPaymentYuanRequest[]>([])
   const indicators = ref<SupplierPaymentYuanIndicators>(emptyIndicators())
-  const counts = ref({ all: 0, pending: 0, observed: 0, paid: 0 })
+  const counts = ref({ open: 0, completed: 0 })
   const countries = ref<string[]>([])
   const organizations = ref<SupplierPaymentYuanOrganization[]>([])
   const suggestions = ref<SupplierPaymentYuanSuggestions>({ partners: {}, clients: {} })
@@ -48,11 +48,9 @@ export function useSupplierPaymentYuan() {
     ]
   })
 
-  const states = computed(() => [
-    { key: YUAN_BUCKET.ALL, label: 'Todos', count: counts.value.all, dot: 'bg-inverted' },
-    { key: YUAN_BUCKET.PENDING, label: 'Pendiente', count: counts.value.pending, dot: 'bg-primary' },
-    { key: YUAN_BUCKET.OBSERVED, label: 'Observado', count: counts.value.observed, dot: 'bg-error' },
-    { key: YUAN_BUCKET.PAID, label: 'Pagado', count: counts.value.paid, dot: 'bg-success' }
+  const tabs = computed(() => [
+    { label: 'Abiertos', value: YUAN_BUCKET.OPEN, count: counts.value.open },
+    { label: 'Completados', value: YUAN_BUCKET.COMPLETED, count: counts.value.completed }
   ])
 
   let lastRequest = 0
@@ -74,7 +72,11 @@ export function useSupplierPaymentYuan() {
       if (current !== lastRequest) return
       rows.value = response.data || []
       indicators.value = { ...emptyIndicators(), ...response.indicators }
-      counts.value = response.counts || counts.value
+      const nextCounts = response.counts || {}
+      counts.value = {
+        open: Number(nextCounts.open ?? nextCounts.pending ?? 0),
+        completed: Number(nextCounts.completed ?? nextCounts.paid ?? 0)
+      }
       countries.value = response.countries || []
       organizations.value = response.organizations || []
       suggestions.value = response.suggestions || { partners: {}, clients: {} }
@@ -113,7 +115,7 @@ export function useSupplierPaymentYuan() {
     selectedId,
     selected,
     cards,
-    states,
+    tabs,
     load,
     reload,
     changeBucket

@@ -493,7 +493,7 @@ export class PagoProveedorService extends BaseService {
     return this.apiCall<Lista<SupplierPaymentYuanRequest> & {
       pending_count: number
       indicators: SupplierPaymentYuanIndicators
-      counts: { all: number; pending: number; observed: number; paid: number }
+      counts: { open?: number; completed?: number; all?: number; pending?: number; observed?: number; paid?: number }
       countries: string[]
       organizations: SupplierPaymentYuanOrganization[]
       suggestions: SupplierPaymentYuanSuggestions

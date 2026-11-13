@@ -8,19 +8,12 @@
         <p v-if="card.sub" class="text-xs text-muted">{{ card.sub }}</p>
       </UCard>
     </div>
-    <div class="mb-4 grid grid-cols-2 overflow-hidden rounded-lg bg-default ring ring-default lg:grid-cols-4">
-      <button
-        v-for="state in states"
-        :key="state.key"
-        type="button"
-        class="flex flex-col gap-1 border-b-[3px] border-r border-r-default px-5 py-4 text-left transition-colors hover:bg-primary/5"
-        :class="bucket === state.key ? 'border-b-primary bg-primary/10' : 'border-b-transparent'"
-        @click="changeBucket(state.key)"
-      >
-        <span class="flex items-center gap-2 text-sm text-toned"><span class="size-2.5 rounded-full" :class="state.dot" />{{ state.label }}</span>
-        <span class="text-2xl font-bold text-highlighted">{{ state.count }}</span>
-      </button>
-    </div>
+    <SupplierPaymentTabs
+      class="mb-4"
+      :model-value="bucket"
+      :items="tabs"
+      @update:model-value="changeBucket"
+    />
     <DataTable
       sticky-last-column
       keep-spanish-headers
@@ -86,6 +79,7 @@
 <script setup lang="ts">
 import { computed, h, onBeforeUnmount, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
+import SupplierPaymentTabs from '~/components/pago-proveedor/SupplierPaymentTabs.vue'
 import YuanRequestDrawer from '~/components/pago-proveedor/YuanRequestDrawer.vue'
 import YuanRequestForm from '~/components/pago-proveedor/YuanRequestForm.vue'
 import { useSupplierPaymentYuan } from '~/composables/pago-proveedor/useSupplierPaymentYuan'
@@ -95,7 +89,7 @@ import { UBadge, UButton } from '#components'
 
 const {
   bucket, search, country, dateFrom, dateTo, rows, countries, organizations, suggestions, pagination, loading,
-  selectedId, selected, cards, states, load, reload, changeBucket
+  selectedId, selected, cards, tabs, load, reload, changeBucket
 } = useSupplierPaymentYuan()
 
 const formOpen = ref(false)

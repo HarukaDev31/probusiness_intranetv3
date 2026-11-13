@@ -9,7 +9,11 @@
       @click="emit('update:modelValue', item.value)"
     >
       {{ item.label }}
-      <span v-if="item.count" class="rounded-full bg-orange-500 px-1.5 text-[11px] font-bold text-white">{{ item.count }}</span>
+      <span
+        v-if="typeof item.count === 'number'"
+        class="min-w-5 rounded-full px-1.5 text-center text-[11px] font-bold leading-5"
+        :class="item.value === modelValue ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'"
+      >{{ item.count }}</span>
     </button>
   </div>
 </template>
