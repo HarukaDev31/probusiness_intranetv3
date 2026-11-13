@@ -154,7 +154,7 @@ const columns: TableColumn<SupplierPaymentDeposit>[] = [
     return h('div', { class: 'flex flex-col' }, codes.map((code) => h('a', {
       key: code,
       href: `/pago-proveedor/aprobacion-pagos?codigo=${encodeURIComponent(code)}`,
-      class: 'font-mono text-xs font-semibold text-primary hover:underline',
+      class: 'font-mono text-sm font-semibold text-primary hover:underline',
       title: 'Ir a Aprobación de pagos'
     }, code)))
   } },
