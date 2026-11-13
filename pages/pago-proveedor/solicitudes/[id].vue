@@ -66,7 +66,8 @@
             <UCard v-if="(solicitud.excedente || 0) > 0.004" variant="subtle" class="bg-info/10 ring-info/30" :ui="{ body: 'p-4 sm:p-4' }">
               <dt class="text-sm text-info">Excedente</dt>
               <dd class="mt-1 text-3xl font-bold text-info">${{ dinero(solicitud.excedente || 0) }}</dd>
-              <em class="mt-1 block text-sm not-italic text-muted">El cliente decidirá si se realiza el reembolso o su aplicación {{ destinoExcedente }}.</em>
+              <em v-if="reembolsoSolicitado > 0.004" class="mt-1 block text-sm not-italic text-muted">Reembolso solicitado de ${{ dinero(reembolsoSolicitado) }}: pendiente de aprobación de Administración.</em>
+              <em v-else class="mt-1 block text-sm not-italic text-muted">El cliente decidirá si se realiza el reembolso o su aplicación {{ destinoExcedente }}.</em>
             </UCard>
           </dl>
         </UCard>
@@ -367,7 +368,7 @@
                   <td class="whitespace-nowrap py-2 pr-3">{{ fechaCorta(abono.fecha_pago) }}</td>
                   <td class="py-2 pr-3">{{ abono.banco.toUpperCase() }}</td>
                   <td class="py-2 pr-3">${{ dinero(abono.importe) }}</td>
-                  <td class="py-2 pr-3">{{ abono.aplicaciones.map(item => nombreProveedor(item.solicitud_proveedor_id)).join(', ') }}</td>
+                  <td class="py-2 pr-3">{{ abono.aplicaciones.map(item => `${nombreProveedor(item.solicitud_proveedor_id)} $${dinero(item.monto)}`).join(', ') }}</td>
                   <td class="py-2 pr-3">
                     <template v-if="abono.excedente > 0">
                       ${{ dinero(abono.excedente) }} <span class="text-xs text-muted">{{ textoExcedente(abono) }}</span>
@@ -941,6 +942,23 @@ function textoHistorial(evento: { accion: string; detalle?: string | null }) {
   if (evento.accion === 'Creada' && solicitud.value?.cotizacion_codigo) {
     return { accion: `Solicitud creada desde la cotización ${solicitud.value.cotizacion_codigo}`, detalle: '' }
   }
+  if (evento.accion === 'Datos del proveedor' && evento.detalle) {
+    return { accion: `Datos del proveedor ${evento.detalle} registrados`, detalle: '' }
+  }
+  if ((evento.accion === 'Abono registrado' || evento.accion === 'Abono editado') && evento.detalle) {
+    // El back guarda «N.° op · $importe…: código $monto…»; en eventos antiguos solo el N.° de operación.
+    const [operacion = '', ...resto] = evento.detalle.split(' · ')
+    const abonoItem = (solicitud.value?.abonos || []).find(item => item.numero_operacion === operacion)
+    const verbo = evento.accion === 'Abono editado' ? 'editado' : 'registrado'
+    const accion = `Abono${abonoItem ? ` #${numeroAbono(abonoItem)}` : ''} ${verbo} · N.° op. ${operacion}`
+    if (resto.length || !abonoItem) return { accion, detalle: resto.join(' · ') }
+    const aplicado = abonoItem.aplicaciones.map(item => `${nombreProveedor(item.solicitud_proveedor_id)} $${dinero(item.monto)}`).join(', ')
+    const detalle = `$${dinero(abonoItem.importe)}${abonoItem.interbancaria ? ' (interbancaria)' : ''}${aplicado ? `: ${aplicado}` : ''}${abonoItem.excedente > 0.004 ? ` · excedente $${dinero(abonoItem.excedente)}` : ''}`
+    return { accion, detalle }
+  }
+  if (evento.accion === 'Pedido de datos' && evento.detalle) {
+    return { accion: `Pedido de datos de ${evento.detalle}`, detalle: '' }
+  }
   return { accion: evento.accion, detalle: evento.detalle || '' }
 }
 
@@ -988,6 +1006,16 @@ function textoExcedente(abonoItem: PagoProveedorAbono) {
 
 /** Con cuotas el excedente puede ir a la siguiente cuota; sin cuotas, al servicio de Carga Consolidada (como el back: algún proveedor en 2 cuotas). */
 const excedenteConCuotas = computed(() => (solicitud.value?.proveedores || []).some(proveedor => proveedor.modalidad_abono === 'fraccionado'))
+/** Excedente cuyo reembolso ya se solicitó y espera a Administración (un abono puede repetirse en varios proveedores). */
+const reembolsoSolicitado = computed(() => {
+  const porAbono = new Map<number, number>()
+  for (const proveedor of solicitud.value?.proveedores || []) {
+    for (const fila of proveedor.progreso?.verification.surpluses || []) {
+      if (fila.refund_status === 'solicitado') porAbono.set(fila.deposit_id, Number(fila.amount) || 0)
+    }
+  }
+  return [...porAbono.values()].reduce((suma, monto) => suma + monto, 0)
+})
 const destinoExcedente = computed(() => excedenteConCuotas.value ? 'a la siguiente cuota' : 'al servicio de Carga Consolidada')
 
 /** Nota del excedente en la ventana del voucher, según lo decidido para ese abono. */
@@ -1289,7 +1317,8 @@ function porRealizar(proveedor: PagoProveedorSolicitudProveedor) {
   if (aprobacion?.state === 'waiting_shared') tareas.push('consultar al cliente qué proveedores continúan con este dinero; los demás quedan pendientes con lo que sobre')
   if (proveedor.etapa >= 2 && proveedor.etapa < 4) {
     for (const fila of proveedor.progreso?.verification.surpluses || []) {
-      if (fila.refund_status === 'por_consultar' || fila.decision === 'por_consultar' || (fila.decision === 'reembolso_solicitado' && !fila.refund_status)) {
+      if (fila.refund_status === 'solicitado') tareas.push(`esperar la aprobación del reembolso de $${dinero(fila.amount)} por Administración`)
+      else if (fila.refund_status === 'por_consultar' || fila.decision === 'por_consultar' || (fila.decision === 'reembolso_solicitado' && !fila.refund_status)) {
         tareas.push(fila.can_apply_installment
           ? `consultar al cliente qué prefiere para el excedente de $${dinero(fila.amount)}: reembolso (pedirle sus cuentas bancarias) o aplicarlo a su siguiente cuota`
           : `consultar al cliente qué prefiere para el excedente de $${dinero(fila.amount)}: reembolso (pedirle sus cuentas bancarias) o aplicarlo al servicio de Carga Consolidada`)
