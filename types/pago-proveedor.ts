@@ -197,6 +197,9 @@ export interface SupplierPaymentProviderRow {
   observe_until?: string | null
   observe_text?: string | null
   observe_label?: string | null
+  /** Fecha límite (ISO) de la tarea pendiente de Ventas; null si no tiene plazo. */
+  deadline_at?: string | null
+  deadline_kind?: 'collect' | 'observation' | 'decision' | 'commitment' | null
 }
 
 export interface PagoProveedorSolicitudProveedor {

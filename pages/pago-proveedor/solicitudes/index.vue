@@ -26,17 +26,39 @@
     </div>
 
     <div v-if="tab === INBOX_TAB.PENDING" class="space-y-3">
-      <div class="flex flex-wrap gap-2">
-        <button
-          v-for="chip in taskChips"
-          :key="chip.key"
-          type="button"
-          class="rounded-full border px-3 py-1 text-xs"
-          :class="taskFilter === chip.key ? 'border-primary bg-primary/10 font-semibold text-highlighted' : 'border-default bg-default text-muted'"
-          @click="taskFilter = chip.key"
-        >
-          {{ chip.label }} <b class="ml-1 text-primary">{{ chip.count }}</b>
-        </button>
+      <!-- #1732: chips de filtro + vista Tablero | Lista; ambas ordenan por fecha límite. -->
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="chip in taskChips"
+            :key="chip.key"
+            type="button"
+            class="rounded-full border px-3 py-1 text-xs"
+            :class="taskFilter === chip.key ? 'border-primary bg-primary/10 font-semibold text-highlighted' : 'border-default bg-default text-muted'"
+            @click="taskFilter = chip.key"
+          >
+            {{ chip.label }} <b class="ml-1 text-primary">{{ chip.count }}</b>
+          </button>
+        </div>
+        <div class="ml-auto flex flex-wrap items-center gap-2">
+          <label v-if="pendingView === 'list'" class="flex items-center gap-1.5 text-xs text-muted">
+            Orden:
+            <USelect v-model="listOrder" :items="listOrderOptions" size="sm" class="w-36" aria-label="Orden de la lista" />
+          </label>
+          <div class="inline-flex rounded-lg bg-elevated p-0.5" role="group" aria-label="Vista de mis pendientes">
+            <button
+              v-for="view in pendingViews"
+              :key="view.value"
+              type="button"
+              class="flex items-center gap-1.5 rounded-md px-3 py-1 text-xs"
+              :class="pendingView === view.value ? 'bg-default font-semibold text-highlighted shadow-sm' : 'text-muted'"
+              :aria-pressed="pendingView === view.value"
+              @click="setPendingView(view.value)"
+            >
+              <UIcon :name="view.icon" class="size-4" />{{ view.label }}
+            </button>
+          </div>
+        </div>
       </div>
       <div v-if="loading" class="space-y-2">
         <UCard v-for="row in 4" :key="row" variant="subtle">
@@ -53,31 +75,91 @@
         No tienes pendientes{{ taskFilter !== SALES_TASK.ALL ? ' en este grupo' : '' }}.
         <span class="mt-1 block text-muted">Cuando un pago necesite datos, un comprobante o una confirmación, aparece aquí.</span>
       </UCard>
-      <div
-        v-for="row in visiblePending"
-        :key="`${row.requestId}-${row.provider.id}`"
-        class="mb-2 rounded-xl border border-default border-l-4 bg-default px-4 py-3.5 transition hover:border-primary hover:shadow-sm"
-        :class="row.provider.sales_task === SALES_TASK.OBSERVED ? 'border-l-error' : 'border-l-primary'"
-      >
-        <div class="flex flex-wrap items-start justify-between gap-3">
-          <div class="min-w-0 flex-1">
-            <p class="text-sm font-bold text-highlighted">{{ row.clientName || 'Cliente' }}</p>
-            <p class="mt-1 text-sm text-muted">{{ taskText(row.provider) }}</p>
-            <p class="mt-1 text-xs text-muted">
-              {{ consolidadoNumero(row.consolidation) || 'Sin consolidado' }} · {{ supplierLabel(row.provider) }} · {{ paymentLabel(row.provider) }}
-              <template v-if="row.provider.payment_shape === PAYMENT_SHAPE.CLIENT_INSTALLMENTS"> · Cuota {{ installmentTag(row.provider) }}</template>
-            </p>
-            <p v-if="compromisoCuota(row.provider)" class="mt-1 text-xs font-medium text-warning">{{ compromisoCuota(row.provider) }}</p>
-            <p v-if="row.provider.decision_due_text || row.provider.observe_text" class="mt-1 text-xs font-medium text-warning">
-              {{ row.provider.decision_due_text || row.provider.observe_text }}
-            </p>
-          </div>
-          <div class="flex shrink-0 flex-col items-end gap-2">
-            <UBadge color="neutral" variant="subtle" size="sm">{{ stageLabel(row.provider.stage) }}</UBadge>
-            <UButton size="xs" color="primary" :to="`/pago-proveedor/solicitudes/${row.requestId}`">Abrir</UButton>
-          </div>
+
+      <!-- Vista Tablero: 4 columnas por fecha límite (scroll horizontal en pantallas angostas). -->
+      <div v-else-if="pendingView === 'board'" class="-mx-1 overflow-x-auto px-1 pb-2">
+        <div class="grid min-w-[1000px] grid-cols-4 gap-3">
+          <section v-for="column in boardColumns" :key="column.key" class="flex flex-col gap-3 rounded-xl bg-elevated p-3">
+            <header class="flex items-center justify-between text-xs font-bold uppercase tracking-wide" :class="bucketStyle[column.key].title">
+              <span class="flex items-center gap-1">
+                <UIcon v-if="column.key === 'overdue'" name="i-heroicons-exclamation-triangle" class="size-4" />{{ column.label }}
+              </span>
+              <span class="rounded-full bg-default px-2 py-0.5 text-highlighted">{{ column.rows.length }}</span>
+            </header>
+            <p v-if="!column.rows.length" class="py-6 text-center text-xs text-muted">Sin pendientes</p>
+            <article
+              v-for="row in column.rows"
+              :key="`${row.requestId}-${row.provider.id}`"
+              class="flex flex-col gap-1.5 rounded-lg border-t-4 bg-default p-3 shadow-sm"
+              :class="bucketStyle[column.key].border"
+            >
+              <div class="flex items-center justify-between gap-2">
+                <span class="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-white dark:bg-slate-200 dark:text-slate-900">{{ row.provider.request_code || `N.° ${row.orderNumber}` }}</span>
+                <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" :class="bucketStyle[column.key].chip">{{ boardTime(row) }}</span>
+              </div>
+              <p class="truncate text-sm font-bold text-highlighted" :title="row.clientName || ''">{{ row.clientName || 'Cliente' }}</p>
+              <p class="truncate text-xs text-muted">C{{ consolidadoNumero(row.consolidation) || '—' }} · {{ supplierLabel(row.provider) }} · {{ row.provider.currency }}</p>
+              <p class="text-sm" :class="row.provider.sales_task === SALES_TASK.OBSERVED ? 'text-error' : 'text-default'">
+                <b v-if="row.provider.sales_task === SALES_TASK.OBSERVED">Observado: </b>{{ actionText(row.provider) }}
+                <UBadge v-if="row.provider.payment_shape === PAYMENT_SHAPE.CLIENT_INSTALLMENTS" color="warning" variant="subtle" size="sm" class="ml-1 align-middle">Cuota {{ installmentTag(row.provider) }}</UBadge>
+              </p>
+              <div class="mt-1 flex items-center justify-between gap-2">
+                <UBadge color="info" variant="subtle" size="sm">{{ row.provider.stage }}. {{ stageShort(row.provider.stage) }}</UBadge>
+                <UButton size="sm" color="primary" :to="`/pago-proveedor/solicitudes/${row.requestId}`">Abrir</UButton>
+              </div>
+            </article>
+          </section>
         </div>
-        <SupplierPaymentSteps class="mt-3" :current="row.provider.stage" />
+      </div>
+
+      <!-- Vista Lista: secciones por fecha límite; cada fila con plazo, identidad + acción, etapa y Abrir. -->
+      <div v-else class="space-y-3">
+        <template v-for="section in listSections" :key="section.key">
+          <div class="flex items-center gap-2 pt-1 text-xs font-bold uppercase tracking-wide" :class="bucketStyle[section.key].title">
+            <UIcon v-if="section.key === 'overdue'" name="i-heroicons-exclamation-triangle" class="size-4" />
+            {{ section.label }}
+            <span class="text-highlighted">{{ section.rows.length }}</span>
+            <span class="h-px flex-1 bg-default" />
+          </div>
+          <div
+            v-for="row in section.rows"
+            :key="`${row.requestId}-${row.provider.id}`"
+            class="flex flex-col overflow-hidden rounded-xl border border-default bg-default transition hover:shadow-sm md:flex-row md:items-stretch"
+          >
+            <div class="flex shrink-0 flex-col justify-center border-l-4 px-5 py-3 md:w-52" :class="bucketStyle[section.key].block">
+              <p class="text-base font-bold leading-tight">{{ listDeadline(row).title }}</p>
+              <p class="mt-0.5 text-xs opacity-80">{{ listDeadline(row).detail }}</p>
+            </div>
+            <div class="min-w-0 flex-1 px-5 py-3">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-white dark:bg-slate-200 dark:text-slate-900">{{ row.provider.request_code || `N.° ${row.orderNumber}` }}</span>
+                <span class="text-sm font-bold text-highlighted">{{ row.clientName || 'Cliente' }}</span>
+                <UBadge v-if="row.provider.payment_shape === PAYMENT_SHAPE.CLIENT_INSTALLMENTS" color="warning" variant="subtle" size="sm">Cuota {{ installmentTag(row.provider) }}</UBadge>
+                <UBadge v-if="row.provider.sales_task === SALES_TASK.OBSERVED" color="error" variant="subtle" size="sm">Observado</UBadge>
+              </div>
+              <p class="mt-1 text-sm font-semibold" :class="row.provider.sales_task === SALES_TASK.OBSERVED ? 'text-error' : 'text-highlighted'">
+                {{ actionText(row.provider, true) }}
+              </p>
+              <p class="mt-0.5 text-xs text-muted">
+                Consolidado {{ consolidadoNumero(row.consolidation) || '—' }} · {{ supplierLabel(row.provider) }} · {{ paymentLabel(row.provider) }}
+              </p>
+            </div>
+            <div class="flex items-center gap-4 px-5 pb-3 md:py-3">
+              <div class="w-full md:w-56">
+                <div class="flex gap-1" :aria-label="`Etapa ${row.provider.stage} de 4`">
+                  <span
+                    v-for="n in 4"
+                    :key="n"
+                    class="h-1.5 flex-1 rounded-full"
+                    :class="n < row.provider.stage ? 'bg-success/70' : n === row.provider.stage ? 'bg-primary' : 'bg-accented'"
+                  />
+                </div>
+                <p class="mt-1.5 text-xs font-semibold text-highlighted">{{ row.provider.stage }}. {{ stageShort(row.provider.stage) }}</p>
+              </div>
+              <UButton size="md" color="primary" class="shrink-0" :to="`/pago-proveedor/solicitudes/${row.requestId}`">Abrir</UButton>
+            </div>
+          </div>
+        </template>
       </div>
       <details v-if="otherAreaRows.length" class="pt-2" open>
         <summary class="mb-2 cursor-pointer text-xs font-semibold uppercase tracking-wide text-muted">
@@ -139,7 +221,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, ref, watch } from 'vue'
+import { computed, h, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import type { FilterConfig } from '~/types/data-table'
 import type { PagoProveedorPaginacion, PagoProveedorSolicitud, SupplierPaymentProviderRow } from '~/types/pago-proveedor'
@@ -157,7 +239,6 @@ import {
 } from '~/constants/supplierPayment'
 import { useModal } from '~/composables/commons/useModal'
 import { useSupplierPaymentProfile } from '~/composables/pago-proveedor/useSupplierPaymentProfile'
-import SupplierPaymentSteps from '~/components/pago-proveedor/SupplierPaymentSteps.vue'
 import NuevaCotizacionModal from '~/components/pago-proveedor/NuevaCotizacionModal.vue'
 import { UBadge, UButton } from '#components'
 
@@ -227,10 +308,179 @@ const taskChips = computed(() => [
   { key: SALES_TASK.ALL, label: 'Todos', count: pendingRows.value.length },
   { key: SALES_TASK.PROVIDER_DATA, label: 'Datos del proveedor', count: pendingRows.value.filter((line) => line.provider.sales_task === SALES_TASK.PROVIDER_DATA).length },
   { key: SALES_TASK.RECEIPT, label: 'Registro de comprobante', count: pendingRows.value.filter((line) => line.provider.sales_task === SALES_TASK.RECEIPT).length },
-  { key: SALES_TASK.OBSERVED, label: 'Observado', count: pendingRows.value.filter((line) => line.provider.sales_task === SALES_TASK.OBSERVED).length },
+  { key: SALES_TASK.INSTALLMENT_2, label: 'Cuota 2', count: pendingRows.value.filter((line) => isCuota2Task(line.provider)).length },
   { key: SALES_TASK.CONFIRMATION, label: 'Confirmación final', count: pendingRows.value.filter((line) => line.provider.sales_task === SALES_TASK.CONFIRMATION && !isCuota2Task(line.provider)).length },
-  { key: SALES_TASK.INSTALLMENT_2, label: 'Cuota 2', count: pendingRows.value.filter((line) => isCuota2Task(line.provider)).length }
+  { key: SALES_TASK.OBSERVED, label: 'Observado', count: pendingRows.value.filter((line) => line.provider.sales_task === SALES_TASK.OBSERVED).length }
 ])
+
+/* ---------- #1732: Mis pendientes en Tablero / Lista, por fecha límite ---------- */
+type PendingView = 'board' | 'list'
+type Bucket = 'overdue' | 'today' | 'tomorrow' | 'later'
+const PENDING_VIEW_KEY = 'pago-proveedor:mis-pendientes:vista'
+const LIMA = 'America/Lima'
+const pendingViews: Array<{ value: PendingView; label: string; icon: string }> = [
+  { value: 'board', label: 'Tablero', icon: 'i-heroicons-view-columns' },
+  { value: 'list', label: 'Lista', icon: 'i-heroicons-bars-3' }
+]
+const pendingView = ref<PendingView>('board')
+const listOrder = ref<'asc' | 'desc'>('asc')
+const listOrderOptions = [
+  { label: 'Fecha límite ↑', value: 'asc' },
+  { label: 'Fecha límite ↓', value: 'desc' }
+]
+const now = ref(Date.now())
+let nowTimer: ReturnType<typeof setInterval> | undefined
+
+onMounted(() => {
+  try {
+    const saved = localStorage.getItem(PENDING_VIEW_KEY)
+    if (saved === 'board' || saved === 'list') pendingView.value = saved
+  } catch { /* sin almacenamiento: queda Tablero */ }
+  nowTimer = setInterval(() => { now.value = Date.now() }, 60000)
+})
+onBeforeUnmount(() => { if (nowTimer) clearInterval(nowTimer) })
+
+function setPendingView(view: PendingView) {
+  pendingView.value = view
+  try { localStorage.setItem(PENDING_VIEW_KEY, view) } catch { /* sin almacenamiento */ }
+}
+
+const bucketStyle: Record<Bucket, { title: string; border: string; chip: string; block: string }> = {
+  overdue: { title: 'text-error', border: 'border-t-error', chip: 'bg-error/10 text-error', block: 'border-l-error bg-error/5 text-error' },
+  today: { title: 'text-orange-600 dark:text-orange-400', border: 'border-t-orange-500', chip: 'bg-orange-500/10 text-orange-600 dark:text-orange-400', block: 'border-l-orange-500 bg-orange-500/5 text-orange-600 dark:text-orange-400' },
+  tomorrow: { title: 'text-amber-600 dark:text-amber-400', border: 'border-t-amber-400', chip: 'bg-amber-400/15 text-amber-700 dark:text-amber-300', block: 'border-l-amber-400 bg-amber-400/10 text-amber-700 dark:text-amber-300' },
+  later: { title: 'text-slate-600 dark:text-slate-300', border: 'border-t-slate-400', chip: 'bg-slate-500/10 text-slate-600 dark:text-slate-300', block: 'border-l-slate-400 bg-slate-500/5 text-slate-600 dark:text-slate-300' }
+}
+
+/** Fecha límite de la tarea: la manda el back (deadline_at); si falta, se arma con los plazos que ya llegan. */
+function deadlineOf(provider: SupplierPaymentProviderRow): Date | null {
+  let iso = provider.deadline_at
+  if (iso === undefined) {
+    iso = (provider.sales_task === SALES_TASK.OBSERVED && provider.observe_until) || provider.decision_due_at
+      || (provider.payment_shape === PAYMENT_SHAPE.CLIENT_INSTALLMENTS && (provider.current_installment || 1) === 1 && provider.second_installment_on
+        ? `${provider.second_installment_on.slice(0, 10)}T23:59:59-05:00`
+        : null)
+  }
+  if (!iso) return null
+  const date = new Date(iso)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function limaDay(date: Date | number) {
+  return new Date(date).toLocaleDateString('en-CA', { timeZone: LIMA })
+}
+function daysFromToday(date: Date) {
+  return Math.round((Date.parse(limaDay(date)) - Date.parse(limaDay(now.value))) / 86400000)
+}
+function bucketOf(provider: SupplierPaymentProviderRow): Bucket {
+  const date = deadlineOf(provider)
+  if (!date) return 'later'
+  if (date.getTime() < now.value) return 'overdue'
+  const days = daysFromToday(date)
+  return days <= 0 ? 'today' : days === 1 ? 'tomorrow' : 'later'
+}
+function ddmm(date: Date, year = false) {
+  return date.toLocaleDateString('es-PE', { timeZone: LIMA, day: '2-digit', month: '2-digit', ...(year ? { year: 'numeric' } : {}) })
+}
+function hoursLeft(date: Date) {
+  return Math.max(0, Math.round((date.getTime() - now.value) / 3600000))
+}
+function ago(date: Date) {
+  const hours = Math.floor((now.value - date.getTime()) / 3600000)
+  if (hours < 24) return `${Math.max(hours, 1)} h`
+  const days = Math.floor(hours / 24)
+  return `${days} día${days > 1 ? 's' : ''}`
+}
+function remaining(date: Date) {
+  const hours = hoursLeft(date)
+  return hours > 72 ? `${Math.round(hours / 24)} días` : `${hours} h`
+}
+
+const sortedPending = computed(() => [...visiblePending.value].sort((a, b) => {
+  const da = deadlineOf(a.provider)?.getTime() ?? Number.POSITIVE_INFINITY
+  const db = deadlineOf(b.provider)?.getTime() ?? Number.POSITIVE_INFINITY
+  return da === db ? a.orderNumber - b.orderNumber : da - db
+}))
+function bucketRows(bucket: Bucket) {
+  return sortedPending.value.filter((row) => bucketOf(row.provider) === bucket)
+}
+const boardColumns = computed(() => {
+  const today = new Date(now.value)
+  const tomorrow = new Date(now.value + 86400000)
+  return [
+    { key: 'overdue' as Bucket, label: 'Vencidas', rows: bucketRows('overdue') },
+    { key: 'today' as Bucket, label: `Hoy · ${ddmm(today)}`, rows: bucketRows('today') },
+    { key: 'tomorrow' as Bucket, label: `Mañana · ${ddmm(tomorrow)}`, rows: bucketRows('tomorrow') },
+    { key: 'later' as Bucket, label: 'Esta semana', rows: bucketRows('later') }
+  ]
+})
+const listSections = computed(() => {
+  const sections = [
+    { key: 'overdue' as Bucket, label: 'Vencidas', rows: bucketRows('overdue') },
+    { key: 'today' as Bucket, label: 'Hoy', rows: bucketRows('today') },
+    { key: 'tomorrow' as Bucket, label: 'Mañana', rows: bucketRows('tomorrow') },
+    { key: 'later' as Bucket, label: 'Próximos días', rows: bucketRows('later') }
+  ].filter((section) => section.rows.length)
+  return listOrder.value === 'asc' ? sections : sections.reverse().map((section) => ({ ...section, rows: [...section.rows].reverse() }))
+})
+
+/** Tiempo en la esquina de la tarjeta del tablero. */
+function boardTime(row: RequestLine) {
+  const date = deadlineOf(row.provider)
+  if (!date) return 'Sin fecha'
+  const bucket = bucketOf(row.provider)
+  if (bucket === 'overdue') return `Hace ${ago(date)}`
+  if (bucket === 'today') return 'Hoy'
+  if (bucket === 'tomorrow') return `${hoursLeft(date)} h`
+  return `${ddmm(date)} · ${remaining(date)}`
+}
+
+function deadlineKindLabel(provider: SupplierPaymentProviderRow) {
+  const kind = provider.deadline_kind
+    ?? (provider.sales_task === SALES_TASK.OBSERVED && provider.observe_until ? 'observation' : provider.decision_due_at ? 'decision' : 'commitment')
+  return {
+    collect: 'Plazo para cobrar',
+    observation: 'Plazo para subsanar',
+    decision: 'Plazo para decidir',
+    commitment: 'Compromiso'
+  }[kind]
+}
+
+/** Bloque izquierdo de la lista: fecha límite y tiempo restante. */
+function listDeadline(row: RequestLine) {
+  const date = deadlineOf(row.provider)
+  if (!date) return { title: 'Sin fecha límite', detail: 'Pendiente de Ventas' }
+  const bucket = bucketOf(row.provider)
+  if (bucket === 'overdue') return { title: `Venció hace ${ago(date)}`, detail: `${deadlineKindLabel(row.provider)} ${ddmm(date, true)}` }
+  if (bucket === 'today') return { title: 'Hoy', detail: ddmm(date, true) }
+  if (bucket === 'tomorrow') return { title: `Mañana · quedan ${hoursLeft(date)} h`, detail: ddmm(date, true) }
+  const weekday = date.toLocaleDateString('es-PE', { timeZone: LIMA, weekday: 'short' }).replace('.', '')
+  return {
+    title: `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)} ${ddmm(date)} · ${remaining(date)}`,
+    detail: deadlineKindLabel(row.provider)
+  }
+}
+
+function stageShort(stage: number) {
+  return {
+    [REQUEST_STAGE.DATA]: 'Solicitud y datos',
+    [REQUEST_STAGE.VALIDATION]: 'Validación de pago',
+    [REQUEST_STAGE.EXECUTION]: 'Ejecución de pago',
+    [REQUEST_STAGE.CONFIRMATION]: 'Confirmación'
+  }[stage] || 'Solicitud y datos'
+}
+
+/** Acción corta (sin el plazo, que ya va en su propio bloque). */
+function actionText(provider: SupplierPaymentProviderRow, withArea = false) {
+  if (provider.approval_status === APPROVAL_STATUS.TO_COLLECT) {
+    const amount = Number(provider.collect_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })
+    return `Cobrar diferencia de $${amount} y registrar voucher`
+  }
+  if (provider.sales_task === SALES_TASK.OBSERVED && provider.observe_label) {
+    return withArea ? `${provider.observe_label} (Operaciones China)` : provider.observe_label
+  }
+  return taskText(provider, false).replace(/^Resolver para cerrar la Confirmación: /, '').replace(/\.$/, '')
+}
 
 const filtrosConfig = computed<FilterConfig[]>(() => [
   {
@@ -381,20 +631,8 @@ function statusLabel(status: string) {
   }[status] || status
 }
 
-/** RN-18: la fecha comprometida se avisa desde 2 días antes; en la cuota 2 ya en curso se muestra siempre. */
-function compromisoCuota(provider: SupplierPaymentProviderRow) {
-  if (!provider.second_installment_on || provider.payment_shape !== PAYMENT_SHAPE.CLIENT_INSTALLMENTS) return ''
-  const hoy = new Date(new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' }) + 'T00:00:00')
-  const [anio, mes, dia] = provider.second_installment_on.split('-').map(Number)
-  const dias = Math.round((new Date(anio, mes - 1, dia).getTime() - hoy.getTime()) / 86400000)
-  const enCuota2 = (provider.current_installment || 1) === 2 && provider.stage === REQUEST_STAGE.DATA
-  if (!enCuota2 && ((provider.current_installment || 1) !== 1 || dias > 2)) return ''
-  const texto = dias < 0 ? `venció hace ${-dias} día${dias < -1 ? 's' : ''}` : dias === 0 ? 'vence hoy' : dias <= 2 ? `vence en ${dias} día${dias > 1 ? 's' : ''}` : `faltan ${dias} días`
-  return `Compromiso del cliente: ${dia}/${mes}/${anio} · ${texto}`
-}
-
-function taskText(provider: SupplierPaymentProviderRow) {
-  const deadline = provider.decision_due_text || provider.observe_text
+function taskText(provider: SupplierPaymentProviderRow, withDeadlineText = true) {
+  const deadline = withDeadlineText ? (provider.decision_due_text || provider.observe_text) : null
   const withDeadline = (text: string) => (deadline ? `${text} · ${deadline}` : text)
 
   if (provider.approval_status === APPROVAL_STATUS.TO_COLLECT) {

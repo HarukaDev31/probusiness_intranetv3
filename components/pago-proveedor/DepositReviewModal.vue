@@ -123,11 +123,13 @@
           <div class="grid gap-2 sm:grid-cols-2">
             <UCard variant="subtle" :ui="{ body: 'px-3 py-2 sm:px-3 sm:py-2' }">
               <p class="text-[11px] font-bold uppercase tracking-wide text-muted">Importe registrado (Ventas)</p>
-              <p class="mt-1 text-lg font-bold text-highlighted">${{ money(deposit.recorded_amount ?? deposit.amount) }}</p>
+              <!-- #1728: ya validado, el abono quedó con el importe del banco; Ventas no tiene que corregir nada. -->
+              <p class="mt-1 text-lg font-bold text-highlighted">${{ money(adjustedToBank ? deposit.amount : (deposit.recorded_amount ?? deposit.amount)) }}</p>
             </UCard>
             <UCard color="primary" variant="subtle" :ui="{ body: 'px-3 py-2 sm:px-3 sm:py-2' }">
               <p class="text-[11px] font-bold uppercase tracking-wide text-primary">Importe ingresado (Banco)</p>
-              <div class="mt-1 flex items-center gap-0.5 text-lg font-bold text-primary">
+              <p v-if="!deposit.can_validate" class="mt-1 text-lg font-bold text-primary">${{ money(deposit.bank_amount ?? deposit.amount) }}</p>
+              <div v-else class="mt-1 flex items-center gap-0.5 text-lg font-bold text-primary">
                 <span>$</span>
                 <UInput
                   v-model.number="bankAmount"
@@ -135,7 +137,6 @@
                   min="0"
                   step="0.01"
                   variant="none"
-                  :disabled="!deposit.can_validate"
                   class="w-full text-lg font-bold"
                   aria-label="Importe ingresado (Banco) en USD"
                 />
@@ -146,8 +147,8 @@
           <div class="mt-2 rounded-md px-3 py-2 text-xs" :class="differenceBox.class">
             {{ differenceBox.text }}
           </div>
-          <p v-if="deposit.recorded_amount != null" class="mt-1.5 text-xs text-warning">
-            Ventas registró ${{ money(deposit.recorded_amount) }} · se ajustó al importe del banco.
+          <p v-if="adjustedToBank" class="mt-1.5 text-xs text-muted">
+            Ventas registró ${{ money(deposit.recorded_amount!) }} · se ajustó al importe del banco.
           </p>
         </SupplierPaymentCard>
       </div>
@@ -363,6 +364,13 @@ function slaSource(sla?: SupplierPaymentSla | null) {
   return `${registered} · vence el ${format(sla.deadline_at)} (plazo de ${sla.hours} h definido por Administración)`
 }
 
+/** Ya validado con otro importe del banco: el abono de Ventas quedó ajustado a ese importe (#1728). */
+const adjustedToBank = computed(() => {
+  const deposit = props.deposit
+  return !!deposit && !deposit.can_validate && deposit.status === DEPOSIT_STATUS.VALIDATED
+    && deposit.recorded_amount != null && Math.abs(Number(deposit.recorded_amount) - Number(deposit.amount)) >= 0.005
+})
+
 /** Comparación en vivo: la tolerancia y el límite excepcional vienen del backend. */
 const differenceBox = computed(() => {
   const deposit = props.deposit
@@ -382,6 +390,22 @@ const differenceBox = computed(() => {
   const amount = money(difference)
   const withinTolerance = Math.abs(difference) <= tolerance
   const withinException = Math.abs(difference) <= exceptionLimit
+  if (adjustedToBank.value) {
+    // Ya validado: el registro tomó el importe del banco; la diferencia frente a lo que digitó Ventas se resuelve al aprobar el pago.
+    const base = `Validado con el importe del banco (${money(value)}).`
+    if (difference < 0) {
+      return {
+        class: withinTolerance ? 'bg-success/10 text-success' : withinException ? 'bg-warning/10 text-warning' : 'bg-error/10 text-error',
+        text: withinTolerance
+          ? `${base} Faltan ${amount} frente a lo que registró Ventas, dentro de la tolerancia de ${money(tolerance)}: lo asume Probusiness al aprobar el pago.`
+          : `${base} Faltan ${amount} frente a lo que registró Ventas (tolerancia ${money(tolerance)}): al aprobar el pago se asume o queda Por cobrar al cliente.`
+      }
+    }
+    return {
+      class: withinTolerance ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning',
+      text: `${base} Sobran ${amount} frente a lo que registró Ventas${withinTolerance ? `, dentro de la tolerancia de ${money(tolerance)}.` : ': Ventas consultará al cliente si prefiere reembolso o aplicarlo a la siguiente cuota.'}`
+    }
+  }
   if (difference < 0) {
     if (withinTolerance) {
       return {
