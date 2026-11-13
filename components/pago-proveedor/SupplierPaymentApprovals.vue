@@ -164,6 +164,8 @@ import { useSupplierPaymentRefunds } from '~/composables/pago-proveedor/useSuppl
 import { UButton } from '#components'
 
 const FILTRO_REEMBOLSO = 'reembolso'
+/** Dato principal de cada celda en negro; los secundarios (proveedor, cuota, fecha, observación) quedan en gris. */
+const TEXTO_PRINCIPAL = 'text-highlighted'
 
 type UnifiedRow = {
   kind: 'pago' | 'reemb'
@@ -178,6 +180,8 @@ type UnifiedRow = {
   installment_label: string | null
   amount: number
   deposit_text: string
+  /** Fecha del depósito (en gris, bajo el banco). */
+  deposit_date: string | null
   deadline_text: string
   status_label: string
   status_tone: 'ok' | 'warn' | 'muted'
@@ -256,6 +260,7 @@ const paymentUnified = computed<UnifiedRow[]>(() => rows.value.map((row) => ({
   installment_label: row.installment_label,
   amount: row.charged_amount,
   deposit_text: depositCell(row),
+  deposit_date: depositDate(row),
   deadline_text: bucket.value === APPROVAL_BUCKET.APPROVED
     ? formatDate(row.approved_at)
     : (row.deadline_text || '—'),
@@ -289,6 +294,7 @@ const refundUnified = computed<UnifiedRow[]>(() => refundRows.value
     installment_label: null,
     amount: row.amount,
     deposit_text: '—',
+    deposit_date: null,
     deadline_text: row.requested_at ? formatDate(row.requested_at) : '—',
     status_label: bucket.value === APPROVAL_BUCKET.APPROVED ? 'Reembolso aprobado' : 'Reembolso solicitado',
     status_tone: bucket.value === APPROVAL_BUCKET.APPROVED ? 'ok' : 'warn',
@@ -365,29 +371,34 @@ const filterConfig = computed(() => [
 ])
 
 const columns = computed<TableColumn<UnifiedRow>[]>(() => [
-  { accessorKey: 'order_number', header: 'N.° de orden', cell: ({ row }) => row.original.order_number ?? '—' },
-  { accessorKey: 'client_name', header: 'Cliente', cell: ({ row }) => h('span', { class: 'block min-w-36 max-w-72 whitespace-normal' }, row.original.client_name || '—') },
-  { accessorKey: 'consolidation', header: 'Consolidado', cell: ({ row }) => soloConsolidado(row.original.consolidation) },
+  { accessorKey: 'order_number', header: 'N.° de orden', cell: ({ row }) => h('span', { class: TEXTO_PRINCIPAL }, row.original.order_number ?? '—') },
+  { accessorKey: 'client_name', header: 'Cliente', cell: ({ row }) => h('span', { class: `block min-w-36 max-w-72 whitespace-normal ${TEXTO_PRINCIPAL}` }, row.original.client_name || '—') },
+  { accessorKey: 'consolidation', header: 'Consolidado', cell: ({ row }) => h('span', { class: TEXTO_PRINCIPAL }, soloConsolidado(row.original.consolidation)) },
   { accessorKey: 'supplier_code', header: 'Proveedor', cell: ({ row }) => h('div', [
-    h('div', { class: 'font-semibold' }, row.original.supplier_code || '—'),
+    h('div', { class: `font-semibold ${TEXTO_PRINCIPAL}` }, row.original.supplier_code || '—'),
     h('div', { class: 'min-w-40 max-w-64 whitespace-normal text-xs text-muted' }, row.original.supplier_name || '')
   ]) },
-  { accessorKey: 'request_code', header: 'Código de solicitud', cell: ({ row }) => row.original.request_code || '—' },
+  { accessorKey: 'request_code', header: 'Código de solicitud', cell: ({ row }) => h('span', { class: TEXTO_PRINCIPAL }, row.original.request_code || '—') },
   {
     accessorKey: 'payment_type',
     header: 'Tipo de pago',
     cell: ({ row }) => h('div', { class: 'w-20 whitespace-normal' }, [
-      h('div', row.original.payment_type),
+      h('div', { class: TEXTO_PRINCIPAL }, row.original.payment_type),
       row.original.installment_label
         ? h('div', { class: 'text-[11px] text-muted' }, row.original.installment_label)
         : null
     ])
   },
-  { accessorKey: 'amount', header: 'Importe', cell: ({ row }) => `$${Number(row.original.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}` },
+  { accessorKey: 'amount', header: 'Importe', cell: ({ row }) => h('span', { class: TEXTO_PRINCIPAL }, `$${Number(row.original.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}`) },
   ...(bucket.value === APPROVAL_BUCKET.PENDING
     ? [
-        { accessorKey: 'deposit_text', header: 'Depósito', cell: ({ row }) => h('span', { class: 'block w-20 whitespace-normal' }, row.original.deposit_text) },
-        { accessorKey: 'deadline_text', header: 'Antigüedad / plazo', cell: ({ row }) => h('span', { class: 'block w-20 whitespace-normal' }, row.original.deadline_text) }
+        { accessorKey: 'deposit_text', header: 'Depósito', cell: ({ row }) => h('div', { class: 'w-20 whitespace-normal' }, [
+          h('div', { class: TEXTO_PRINCIPAL }, row.original.deposit_text),
+          row.original.deposit_date
+            ? h('div', { class: 'text-xs text-muted' }, row.original.deposit_date)
+            : null
+        ]) },
+        { accessorKey: 'deadline_text', header: 'Antigüedad / plazo', cell: ({ row }) => h('span', { class: `block w-20 whitespace-normal ${TEXTO_PRINCIPAL}` }, row.original.deadline_text) }
       ]
     : []) as TableColumn<UnifiedRow>[],
   {
@@ -405,7 +416,7 @@ const columns = computed<TableColumn<UnifiedRow>[]>(() => [
     accessorKey: 'observation',
     header: 'Observaciones',
     cell: ({ row }) => h('span', {
-      class: ['block w-36 whitespace-normal text-sm', row.original.observation_alert ? 'font-semibold text-error' : '']
+      class: ['block w-36 whitespace-normal text-sm', row.original.observation_alert ? 'font-semibold text-error' : 'text-muted']
     }, row.original.observation)
   },
   {
@@ -464,11 +475,14 @@ function openUnified(row: UnifiedRow) {
 
 function depositCell(row: SupplierPaymentApproval) {
   if (!row.deposits.length) return '—'
-  if (row.deposits.length === 1) {
-    const paidOn = row.deposits[0].paid_on?.slice(0, 10).split('-').reverse().join('/') || ''
-    return `${row.deposits[0].bank_label} · ${paidOn}`
-  }
+  if (row.deposits.length === 1) return row.deposits[0].bank_label
   return `${row.deposits.length} depósitos`
+}
+
+/** Fecha del único depósito (dd/mm/aaaa); con varios depósitos no se muestra. */
+function depositDate(row: SupplierPaymentApproval) {
+  if (row.deposits.length !== 1) return null
+  return row.deposits[0].paid_on?.slice(0, 10).split('-').reverse().join('/') || null
 }
 
 /** Solo el número de consolidado, sin el año: «21 - 2026» → «21». */
