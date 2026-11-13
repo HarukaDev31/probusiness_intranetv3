@@ -1,6 +1,7 @@
 <template>
   <div class="md:p-6" :class="{ 'supplier-payment-wide-tables': wideTables }">
-    <!-- Cabecera única: icono + nombre de la sección (título) y debajo «Pago a proveedor» en letra pequeña.
+    <!-- Cabecera única: icono + nombre de la sección (título) y debajo «Pago a proveedor» en letra pequeña,
+         alineado con el inicio del texto del título (pl-8 = icono size-6 + gap-2).
          Las vistas de Pago a Proveedor arrancan a la misma altura, así cambiar de pestaña no mueve el diseño. -->
     <header class="mb-4 flex flex-wrap items-end justify-between gap-3">
       <div class="min-w-0">
@@ -8,7 +9,7 @@
           <UIcon :name="icon" class="size-6 shrink-0 text-primary" />
           <span class="truncate">{{ title }}</span>
         </h1>
-        <p class="mt-0.5 text-xs text-muted">{{ subtitle }}</p>
+        <p class="mt-0.5 pl-8 text-xs text-muted">{{ subtitle }}</p>
       </div>
       <div v-if="$slots.actions" class="flex flex-wrap items-center gap-2">
         <slot name="actions" />

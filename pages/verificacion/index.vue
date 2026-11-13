@@ -6,7 +6,7 @@
           <UIcon name="i-heroicons-clipboard-document-check" class="size-6 text-primary" />
           Verificación
         </h1>
-        <p class="mt-1 text-sm text-muted">Gestión de verificación de pagos</p>
+        <p class="mt-1 pl-8 text-sm text-muted">Gestión de verificación de pagos</p>
       </div>
     </header>
 
