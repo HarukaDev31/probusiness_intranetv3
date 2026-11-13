@@ -11,7 +11,7 @@
     </UCard>
 
     <!-- Paso 2 · Validación de pago: refleja lo que hizo Administración (VW-12) -->
-    <div v-if="muestraValidacion" class="grid items-start gap-3 lg:grid-cols-3">
+    <div v-if="muestraValidacion" class="grid gap-3 lg:grid-cols-3">
       <UCard :ui="bloque" :class="abonosPendientes ? 'bg-warning/10 ring-warning/30' : ''">
         <div class="mb-3 flex items-center gap-3">
           <UAvatar icon="i-lucide-file-text" size="md" color="primary" variant="soft" />
@@ -90,17 +90,17 @@
             <UButton v-if="row.voucher_url" class="mt-1 block px-0" size="xs" color="primary" variant="link" :to="row.voucher_url" target="_blank">Ver comprobante</UButton>
           </template>
           <template v-else-if="row.refund_status === REFUND_STATUS.CONSULT || row.decision === SURPLUS_DECISION.CONSULT">
-            <p class="text-muted">Excedente de <strong class="text-highlighted">${{ money(row.amount) }}</strong>: {{ row.can_apply_installment ? 'el cliente decide qué hacer con él.' : 'se reembolsa al cliente.' }}</p>
+            <p class="text-muted">Excedente de <strong class="text-highlighted">${{ money(row.amount) }}</strong>: {{ row.can_apply_installment ? 'se consultará al cliente si prefiere el reembolso o aplicarlo a la siguiente cuota.' : 'se consultará al cliente si prefiere el reembolso o aplicarlo al servicio de Carga Consolidada.' }}</p>
             <p v-if="row.rejection" class="mt-1 text-muted"><em>Reembolso rechazado por Administración: {{ row.rejection }}</em></p>
             <div v-if="!readonly" class="mt-2 flex flex-wrap gap-2">
               <UButton size="sm" color="primary" :loading="saving" @click="row.refund_status ? requestRefund() : emit('decide-surplus', row.deposit_id, SURPLUS_DECISION.REFUND)">Solicitar reembolso</UButton>
               <UButton v-if="row.can_apply_installment && !row.refund_status" size="sm" color="primary" variant="outline" :loading="saving" @click="emit('decide-surplus', row.deposit_id, SURPLUS_DECISION.APPLY)">Aplicar a siguiente cuota</UButton>
             </div>
           </template>
-          <!-- Reembolso directo (sin cuotas): se informa desde que se registra el abono; se solicita cuando Administración apruebe el pago. -->
+          <!-- Reembolso directo (sin cuotas): queda solicitado desde que se registra el abono (#1664). -->
           <template v-else-if="row.decision === SURPLUS_DECISION.REFUND && !row.refund_status">
-            <p class="text-muted">Excedente de <strong class="text-highlighted">${{ money(row.amount) }}</strong>: se reembolsa al cliente.</p>
-            <UButton v-if="!readonly" class="mt-2" size="sm" color="primary" disabled title="Se habilita cuando Administración valide el depósito y apruebe el pago.">Solicitar reembolso</UButton>
+            <UBadge color="info" variant="soft" :label="`Reembolso solicitado $${money(row.amount)}`" />
+            <p class="mt-1 text-muted">Pendiente de aprobación de Administración. El cierre en Confirmación espera el reembolso.</p>
           </template>
           <p v-else-if="row.decision === SURPLUS_DECISION.APPLY" class="text-muted">Excedente de ${{ money(row.amount) }}: se aplica a la cuota 2.</p>
         </div>
@@ -108,7 +108,7 @@
     </div>
 
     <!-- Paso 3 · Ejecución de pago (VW-13) -->
-    <div v-if="muestraEjecucion" class="grid items-start gap-3 lg:grid-cols-3">
+    <div v-if="muestraEjecucion" class="grid gap-3 lg:grid-cols-3">
       <UCard :ui="bloque" :class="needsProviderData || proveedor.observacion_china ? 'bg-warning/10 ring-warning/30' : ''">
         <div class="mb-3 flex items-center gap-3">
           <UAvatar icon="i-lucide-user" size="md" color="primary" variant="soft" />
@@ -176,7 +176,7 @@
 
     <!-- Paso 4 · Confirmación (VW-14) -->
     <template v-if="muestraConfirmacion">
-      <div class="grid items-start gap-3 lg:grid-cols-3">
+      <div class="grid gap-3 lg:grid-cols-3">
         <UCard :ui="bloque">
           <div class="mb-3 flex items-center gap-3">
             <UAvatar icon="i-lucide-chart-no-axes-column" size="md" color="primary" variant="soft" />
