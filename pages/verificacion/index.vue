@@ -384,6 +384,68 @@ const {
   totalesDelivery
 } = useEntrega()
 
+/** Orden server-side de la columna Adelantos (conteo de pagos PENDIENTE). */
+const SORT_ADELANTOS = 'adelantos_pendientes'
+const sortBy = ref<Record<'consolidado' | 'cursos' | 'delivery', string | undefined>>({
+  consolidado: undefined,
+  cursos: undefined,
+  delivery: undefined
+})
+const sortDir = ref<Record<'consolidado' | 'cursos' | 'delivery', 'asc' | 'desc'>>({
+  consolidado: 'desc',
+  cursos: 'desc',
+  delivery: 'desc'
+})
+
+function withSort(
+  tab: 'consolidado' | 'cursos' | 'delivery',
+  filters: Record<string, any>
+) {
+  const key = sortBy.value[tab]
+  if (!key) return { ...filters }
+  return { ...filters, sort_by: key, sort_dir: sortDir.value[tab] }
+}
+
+function adelantosHeader(tab: 'consolidado' | 'cursos' | 'delivery') {
+  return () => {
+    const sorted = sortBy.value[tab] === SORT_ADELANTOS ? sortDir.value[tab] : false
+    const icon =
+      sorted === 'asc'
+        ? 'i-heroicons-bars-arrow-up'
+        : sorted === 'desc'
+          ? 'i-heroicons-bars-arrow-down'
+          : 'i-heroicons-arrows-up-down'
+    return h(UButton as any, {
+      color: 'neutral',
+      variant: 'ghost',
+      size: 'xs',
+      class: '-mx-2.5 font-medium',
+      label: 'Adelantos',
+      icon,
+      onClick: (e: MouseEvent) => {
+        e.stopPropagation()
+        void onAdelantosSort(tab)
+      }
+    })
+  }
+}
+
+async function onAdelantosSort(tab: 'consolidado' | 'cursos' | 'delivery') {
+  if (sortBy.value[tab] === SORT_ADELANTOS) {
+    sortDir.value[tab] = sortDir.value[tab] === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortBy.value[tab] = SORT_ADELANTOS
+    sortDir.value[tab] = 'desc'
+  }
+  if (tab === 'consolidado') {
+    await fetchConsolidadoData(withSort('consolidado', filtersConsolidado.value), 1, itemsPerPage.value)
+  } else if (tab === 'cursos') {
+    await fetchCursosData(withSort('cursos', filtersCursos.value), 1, itemsPerPageCursos.value)
+  } else {
+    await fetchDeliveryData(withSort('delivery', filtersDelivery.value), 1, itemsPerPageDelivery.value)
+  }
+}
+
 // Permisos (solo para ADMINISTRACION)
 const {
   tramites: tramitesPermisos,
@@ -804,7 +866,7 @@ const consolidadoColumns: TableColumn<any>[] = [
   },
   {
     accessorKey: 'pagos_detalle',
-    header: 'Adelantos',
+    header: adelantosHeader('consolidado'),
     cell: ({ row }: { row: any }) => {
       const pagos = row.getValue('pagos_detalle') ?? []
       return h(PagoGrid,
@@ -925,7 +987,7 @@ const cursosColumns: TableColumn<any>[] = [
   },
   {
     accessorKey: 'pagos_detalle',
-    header: 'Adelantos',
+    header: adelantosHeader('cursos'),
     cell: ({ row }: { row: any }) => {
       const adelantos = row.getValue('pagos_detalle') ?? []
       return h(PagoGrid,
@@ -1055,7 +1117,7 @@ const deliveryColumns: TableColumn<any>[] = [
   },
   {
     accessorKey: 'pagos_detalle',
-    header: 'Adelantos',
+    header: adelantosHeader('delivery'),
     cell: ({ row }: { row: any }) => {
       const pagos = row.original.pagos_details ?? []
       return h(PagoGrid,
@@ -1201,13 +1263,13 @@ const handleSearch = async (query: string) => {
 
   if (activeTab.value === 'consolidado') {
     updateFiltersConsolidado({ search: query })
-    fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value, idCotizacion)
+    fetchConsolidadoData(withSort('consolidado', filtersConsolidado.value), 1, itemsPerPage.value, idCotizacion)
   } else if (activeTab.value === 'cursos') {
     updateFiltersCursos({ search: query })
-    fetchCursosData(filtersCursos.value, 1, itemsPerPage.value, idPedido)
+    fetchCursosData(withSort('cursos', filtersCursos.value), 1, itemsPerPage.value, idPedido)
   } else if (activeTab.value === 'delivery') {
     searchDelivery.value = query
-    await fetchDeliveryData(filtersDelivery.value, 1, itemsPerPageDelivery.value)
+    await fetchDeliveryData(withSort('delivery', filtersDelivery.value), 1, itemsPerPageDelivery.value)
   } else if (activeTab.value === 'permisos') {
     searchPermisos.value = query
     await loadPermisosVerificacion({ page: 1 })
@@ -1226,12 +1288,12 @@ const handlePageChange = async (page: number) => {
   const idPedido = getIdPedidoFromRoute()
 
   if (activeTab.value === 'consolidado') {
-    fetchConsolidadoData(filtersConsolidado.value, page, itemsPerPage.value, idCotizacion)
+    fetchConsolidadoData(withSort('consolidado', filtersConsolidado.value), page, itemsPerPage.value, idCotizacion)
   } else if (activeTab.value === 'cursos') {
-    fetchCursosData(filtersCursos.value, page, itemsPerPage.value, idPedido)
+    fetchCursosData(withSort('cursos', filtersCursos.value), page, itemsPerPage.value, idPedido)
   } else if (activeTab.value === 'delivery') {
     paginationDelivery.value.current_page = page
-    await fetchDeliveryData(filtersDelivery.value, page, itemsPerPageDelivery.value)
+    await fetchDeliveryData(withSort('delivery', filtersDelivery.value), page, itemsPerPageDelivery.value)
   } else if (activeTab.value === 'permisos') {
     await loadPermisosVerificacion({ page })
   }
@@ -1242,12 +1304,12 @@ const handleItemsPerPageChange = async (items: number) => {
   const idPedido = getIdPedidoFromRoute()
 
   if (activeTab.value === 'consolidado') {
-    fetchConsolidadoData(filtersConsolidado.value, 1, items, idCotizacion)
+    fetchConsolidadoData(withSort('consolidado', filtersConsolidado.value), 1, items, idCotizacion)
   } else if (activeTab.value === 'cursos') {
-    fetchCursosData(filtersCursos.value, 1, items, idPedido)
+    fetchCursosData(withSort('cursos', filtersCursos.value), 1, items, idPedido)
   } else if (activeTab.value === 'delivery') {
     paginationDelivery.value.per_page = items
-    await fetchDeliveryData(filtersDelivery.value, 1, items)
+    await fetchDeliveryData(withSort('delivery', filtersDelivery.value), 1, items)
   } else if (activeTab.value === 'permisos') {
     await loadPermisosVerificacion({ page: 1, limit: items })
   }
@@ -1259,13 +1321,13 @@ const handleFilterChange = async (filterType: string, value: string) => {
 
   if (activeTab.value === 'consolidado') {
     updateFiltersConsolidado({ [filterType]: value })
-    fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value, idCotizacion)
+    fetchConsolidadoData(withSort('consolidado', filtersConsolidado.value), 1, itemsPerPage.value, idCotizacion)
   } else if (activeTab.value === 'cursos') {
     updateFiltersCursos({ [filterType]: value })
-    fetchCursosData(filtersCursos.value, 1, itemsPerPage.value, idPedido)
+    fetchCursosData(withSort('cursos', filtersCursos.value), 1, itemsPerPage.value, idPedido)
   } else if (activeTab.value === 'delivery') {
     updateFiltersDelivery({ [filterType]: value })
-    await fetchDeliveryData(filtersDelivery.value, 1, itemsPerPageDelivery.value)
+    await fetchDeliveryData(withSort('delivery', filtersDelivery.value), 1, itemsPerPageDelivery.value)
   }
 }
 
@@ -1308,7 +1370,7 @@ const handleRegistrarPagoDelivery = async (row: any, data: any) => {
     const response = await registrarPagoDelivery(row, data)
     if (response?.success) {
       // Recargar todos los datos de delivery después de registrar pago
-      await fetchDeliveryData(filtersDelivery.value, currentPageDelivery.value, itemsPerPageDelivery.value)
+      await fetchDeliveryData(withSort('delivery', filtersDelivery.value), currentPageDelivery.value, itemsPerPageDelivery.value)
     }
   } catch (error) {
     console.error('Error al registrar pago:', error)
@@ -1320,7 +1382,7 @@ const handleDeletePagoDelivery = async (row: any, pagoId: number) => {
     const response = await deletePagoDelivery(row, pagoId)
     if (response?.success) {
       // Recargar todos los datos de delivery después de eliminar pago
-      await fetchDeliveryData(filtersDelivery.value, currentPageDelivery.value, itemsPerPageDelivery.value)
+      await fetchDeliveryData(withSort('delivery', filtersDelivery.value), currentPageDelivery.value, itemsPerPageDelivery.value)
     }
   } catch (error) {
     console.error('Error al eliminar pago:', error)
@@ -1336,7 +1398,7 @@ const handleUpdateImporteDelivery = async (row: any) => {
     const response = await updateImporteDelivery(data)
     if (response?.success) {
       // Recargar todos los datos de delivery después de actualizar importe
-      await fetchDeliveryData(filtersDelivery.value, currentPageDelivery.value, itemsPerPageDelivery.value)
+      await fetchDeliveryData(withSort('delivery', filtersDelivery.value), currentPageDelivery.value, itemsPerPageDelivery.value)
     }
   } catch (error) {
     console.error('Error al actualizar importe:', error)
@@ -1364,11 +1426,11 @@ onMounted(async () => {
 
   // Cargar datos iniciales según el tab activo
   if (activeTab.value === 'consolidado') {
-    fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value, idCotizacion)
+    fetchConsolidadoData(withSort('consolidado', filtersConsolidado.value), 1, itemsPerPage.value, idCotizacion)
   } else if (activeTab.value === 'cursos') {
-    fetchCursosData(filtersCursos.value, 1, itemsPerPage.value, idPedido)
+    fetchCursosData(withSort('cursos', filtersCursos.value), 1, itemsPerPage.value, idPedido)
   } else if (activeTab.value === 'delivery') {
-    await fetchDeliveryData(filtersDelivery.value, 1, itemsPerPageDelivery.value)
+    await fetchDeliveryData(withSort('delivery', filtersDelivery.value), 1, itemsPerPageDelivery.value)
   } else if (activeTab.value === 'permisos' && isAdministracion.value) {
     await loadPermisosVerificacion({ page: 1 })
   } else if (activeTab.value === 'boletin-quimico') {
@@ -1389,15 +1451,15 @@ watch(activeTab, async (newTab, oldTab) => {
     navigateTo(`/verificacion?tab=consolidado`)
     // reset search to avoid sending stale query param to backend
     try { search.value = '' } catch (e) { /* ignore */ }
-    fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value, idCotizacion)
+    fetchConsolidadoData(withSort('consolidado', filtersConsolidado.value), 1, itemsPerPage.value, idCotizacion)
   } else if (newTab === 'cursos') {
     navigateTo(`/verificacion?tab=cursos`)
     try { searchCursos.value = '' } catch (e) { /* ignore */ }
-    fetchCursosData(filtersCursos.value, 1, itemsPerPage.value, idPedido)
+    fetchCursosData(withSort('cursos', filtersCursos.value), 1, itemsPerPage.value, idPedido)
   } else if (newTab === 'delivery') {
     navigateTo(`/verificacion?tab=delivery`)
     try { searchDelivery.value = '' } catch (e) { /* ignore */ }
-    await fetchDeliveryData(filtersDelivery.value, 1, itemsPerPageDelivery.value)
+    await fetchDeliveryData(withSort('delivery', filtersDelivery.value), 1, itemsPerPageDelivery.value)
   } else if (newTab === 'permisos') {
     navigateTo(`/verificacion?tab=permisos`)
     try { searchPermisos.value = '' } catch (e) { /* ignore */ }
