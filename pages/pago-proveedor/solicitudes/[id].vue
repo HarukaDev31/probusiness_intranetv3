@@ -248,6 +248,7 @@
               <div v-for="item in abonosProveedor(proveedor.id)" :key="item.id" class="mb-2 flex items-start justify-between gap-2 text-sm">
                 <div>
                   <strong class="text-highlighted">Abono {{ numeroAbono(item) }} · ${{ dinero(montoAplicado(item, proveedor.id)) }}</strong>
+                  <span v-if="item.aplicaciones.length > 1 || item.excedente > 0.004" class="text-xs text-muted"> (de un abono de ${{ dinero(item.importe) }}<template v-if="item.excedente > 0.004"> · excedente ${{ dinero(item.excedente) }}</template>)</span>
                   <p class="text-muted">{{ fechaCorta(item.fecha_pago) }} · {{ item.banco.toUpperCase() }}</p>
                   <p class="text-muted">N.° de operación {{ item.numero_operacion || '—' }}<template v-if="item.aplicaciones.length > 1"> · voucher compartido</template></p>
                   <UBadge
@@ -611,7 +612,7 @@
               <span>Aplicado <strong class="text-highlighted">${{ dinero(aplicado) }}</strong></span>
               <span :class="Math.abs(sinAsignar) > 0.005 ? 'text-warning' : ''">Sin asignar <strong>${{ dinero(sinAsignar) }}</strong></span>
             </p>
-            <p v-if="sinAsignar > 0.005" class="text-xs font-medium text-warning">Excedente de ${{ dinero(sinAsignar) }}: Administración decidirá si se devuelve o se aplica a la cuota.</p>
+            <p v-if="sinAsignar > 0.005" class="text-xs font-medium text-warning">Excedente de ${{ dinero(sinAsignar) }}: Administración decidirá si se devuelve o se aplica al servicio de Carga Consolidada.</p>
             <p v-else-if="sinAsignar < -0.005" class="text-xs font-semibold text-error">Estás aplicando ${{ dinero(Math.abs(sinAsignar)) }} más de lo recibido.</p>
           </UCard>
         </form>
@@ -632,6 +633,10 @@
           <dl class="divide-y divide-default text-sm">
             <div class="flex justify-between gap-3 py-2"><dt class="text-muted">Importe recibido</dt><dd class="font-semibold text-highlighted">${{ dinero(voucherAbierto.importe) }}</dd></div>
             <div class="flex justify-between gap-3 py-2"><dt class="text-muted">Aplicado a</dt><dd class="text-right text-highlighted">{{ voucherAbierto.aplicaciones.map(item => `${nombreProveedor(item.solicitud_proveedor_id)} $${dinero(item.monto)}`).join(', ') || '—' }}</dd></div>
+            <div v-if="voucherAbierto.excedente > 0.004" class="py-2">
+              <div class="flex justify-between gap-3"><dt class="text-muted">Excedente</dt><dd class="text-highlighted">${{ dinero(voucherAbierto.excedente) }}</dd></div>
+              <p v-if="notaExcedente(voucherAbierto)" class="text-xs text-muted">{{ notaExcedente(voucherAbierto) }}</p>
+            </div>
             <div class="flex justify-between gap-3 py-2"><dt class="text-muted">Fecha | Banco</dt><dd class="text-highlighted">{{ fechaCorta(voucherAbierto.fecha_pago) }} | {{ voucherAbierto.banco.toUpperCase() }}</dd></div>
           </dl>
           <VoucherViewer :url="voucherAbierto.voucher_url" :name="voucherAbierto.voucher_nombre" />
@@ -966,8 +971,23 @@ function textoExcedente(abonoItem: PagoProveedorAbono) {
     aplicado_cuota: 'se aplica a la cuota 2',
     no_devuelve: 'no se devuelve (dentro de la tolerancia)',
     por_consultar: 'por consultar al cliente',
-    reembolso_solicitado: 'reembolso solicitado'
+    reembolso_solicitado: 'se reembolsará al cliente'
   }[abonoItem.excedente_decision || ''] || abonoItem.excedente_decision
+}
+
+/** Nota del excedente en la ventana del voucher, según lo decidido para ese abono. */
+function notaExcedente(abonoItem: PagoProveedorAbono) {
+  const fila = (solicitud.value?.proveedores || [])
+    .flatMap(proveedor => proveedor.progreso?.verification.surpluses || [])
+    .find(item => item.deposit_id === abonoItem.id)
+  if (fila?.refund_status === 'solicitado') return 'reembolso solicitado: lo aprueba Administración.'
+  if (fila?.refund_status === 'aprobado') return 'reembolso aprobado por Administración.'
+  return {
+    por_consultar: 'se consultará al cliente si prefiere el reembolso o aplicarlo a la siguiente cuota.',
+    reembolso_solicitado: 'se reembolsará al cliente.',
+    aplicado_cuota: 'se aplica a la cuota 2.',
+    no_devuelve: 'no se devuelve (dentro de la tolerancia).'
+  }[abonoItem.excedente_decision || ''] || ''
 }
 
 async function cargar() {
@@ -1241,7 +1261,10 @@ function porRealizar(proveedor: PagoProveedorSolicitudProveedor) {
   const tareas: string[] = []
   if (proveedor.observacion_china) tareas.push('corregir el dato del proveedor y levantar la observación')
   if (proveedor.etapa === 1 && proveedor.estado !== 'observado') {
-    if (datosPendientes(proveedor)) tareas.push(proveedor.moneda === 'RMB' ? 'completar los datos del proveedor' : 'completar los datos bancarios del proveedor')
+    if (datosPendientes(proveedor)) {
+      const datos = proveedor.moneda === 'RMB' ? 'completar los datos del proveedor' : 'completar los datos bancarios del proveedor'
+      tareas.push(proveedor.saldo <= 0.004 && proveedor.importe_abonado > 0 ? `${datos} (con el importe completo, pasará solo a Validación de pago)` : datos)
+    }
     if (proveedor.saldo > 0.004) tareas.push(proveedor.importe_abonado > 0 ? `registrar el abono faltante (${dinero(proveedor.saldo)})` : 'registrar el abono del cliente')
   }
   if (aprobacion?.state === 'to_collect') tareas.push(`avisar al cliente que debe abonar ${aprobacion.collect_amount ? `$${dinero(aprobacion.collect_amount)}` : 'la diferencia'} y registrar el voucher de la diferencia`)
@@ -1250,7 +1273,7 @@ function porRealizar(proveedor: PagoProveedorSolicitudProveedor) {
   if (aprobacion?.state === 'waiting_shared') tareas.push('consultar al cliente qué proveedores continúan con este dinero; los demás quedan pendientes con lo que sobre')
   if (proveedor.etapa >= 2 && proveedor.etapa < 4) {
     for (const fila of proveedor.progreso?.verification.surpluses || []) {
-      if (fila.refund_status === 'por_consultar' || fila.decision === 'por_consultar') {
+      if (fila.refund_status === 'por_consultar' || fila.decision === 'por_consultar' || (fila.decision === 'reembolso_solicitado' && !fila.refund_status)) {
         tareas.push(fila.can_apply_installment
           ? `consultar al cliente qué prefiere para el excedente de $${dinero(fila.amount)}: reembolso (pedirle sus cuentas bancarias) o aplicarlo a su siguiente cuota`
           : `informar al cliente que se le reembolsará el excedente de $${dinero(fila.amount)} y pedirle sus cuentas bancarias`)
