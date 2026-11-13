@@ -20,18 +20,23 @@
 
     <div v-if="deposit" class="grid gap-4 lg:grid-cols-[1.25fr_1fr]">
       <div class="flex flex-col gap-3">
-        <SupplierPaymentCard title="Comprobante">
+        <!-- Sin marco (pedido 13-nov): el comprobante va directo, sin la tarjeta alrededor. -->
+        <section class="flex flex-col gap-2">
+          <h4 class="mb-1 text-[15px] font-bold">Comprobante</h4>
           <VoucherViewer :url="deposit.voucher_url" :name="deposit.voucher_name" />
-        </SupplierPaymentCard>
+        </section>
 
-        <UAlert
+        <!-- Aviso corto, como el diseño enviado: título + una línea. -->
+        <div
           v-if="deposit.interbank"
-          color="warning"
-          variant="subtle"
-          icon="i-heroicons-exclamation-triangle"
-          title="Interbancaria o cajero"
-          description="Revisa si el banco aplicó comisiones o cargos: el voucher puede no mostrar lo que realmente ingresó."
-        />
+          class="flex items-start gap-3 rounded-lg border border-orange-300 bg-orange-50 px-4 py-3 text-orange-600 dark:border-orange-500/40 dark:bg-orange-500/10 dark:text-orange-400"
+        >
+          <UIcon name="i-heroicons-exclamation-triangle" class="mt-0.5 size-5 shrink-0" />
+          <div class="text-sm leading-snug">
+            <p class="font-bold">Interbancaria o cajero</p>
+            <p>Revisa si el banco aplicó comisiones o cargos.</p>
+          </div>
+        </div>
       </div>
 
       <div class="flex flex-col gap-3.5">
@@ -148,18 +153,51 @@
       </div>
     </div>
 
-    <UCard v-if="observing" class="space-y-3" color="error" variant="subtle">
-      <h4 class="text-sm font-bold text-error">Observar depósito</h4>
-      <UFormField label="Motivo">
-        <USelect v-model="reason" :items="motivos" class="w-full" />
-      </UFormField>
-      <UFormField v-if="reason === 'other'" label="Nuevo motivo">
-        <UInput v-model="newLabel" placeholder="Se guarda para la próxima vez" class="w-full" />
-      </UFormField>
-      <UFormField label="Detalle">
-        <UTextarea v-model="detail" :rows="2" class="w-full" />
-      </UFormField>
-    </UCard>
+    <!-- Ventana «Observar depósito» (diseño enviado): motivos en tarjetas; el detalle solo es obligatorio con «Otro motivo». -->
+    <UModal
+      v-model:open="observing"
+      title="Observar depósito"
+      :dismissible="!saving"
+      :ui="{
+        content: 'w-full max-w-lg sm:max-w-lg',
+        header: 'bg-error text-white min-h-0 py-3 sm:py-3',
+        title: 'text-sm font-bold text-white',
+        close: 'text-white hover:bg-white/15'
+      }"
+    >
+      <template #body>
+        <div class="flex flex-col gap-3">
+          <p class="text-xs text-muted">
+            Elige por qué el dinero no ingresó o no corresponde. Ventas verá qué hacer y queda registrado quién, cuándo y por qué.
+          </p>
+          <UFormField label="Motivo de la observación" :ui="{ label: 'font-bold' }">
+            <URadioGroup
+              v-model="reason"
+              :items="motivos"
+              variant="card"
+              color="primary"
+              :ui="{ fieldset: 'grid grid-cols-1 gap-2 sm:grid-cols-2', item: 'py-2.5 has-data-[state=checked]:bg-primary/10' }"
+            />
+          </UFormField>
+          <UTextarea
+            v-model="detail"
+            :rows="3"
+            :placeholder="detailRequired ? 'Detalle (obligatorio)' : 'Detalle (opcional)'"
+            :color="detailRequired && !detail.trim() ? 'error' : 'neutral'"
+            :highlight="detailRequired && !detail.trim()"
+            class="w-full"
+            aria-label="Detalle de la observación"
+          />
+          <p v-if="detailRequired && !detail.trim()" class="-mt-1 text-xs text-error">Con «Otro motivo» escribe el detalle.</p>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex w-full justify-end gap-2">
+          <UButton color="neutral" variant="ghost" :disabled="saving" @click="() => { observing = false }">Cancelar</UButton>
+          <UButton color="error" :loading="saving" :disabled="!canObserve" @click="observe">Confirmar observación</UButton>
+        </div>
+      </template>
+    </UModal>
     <UCard v-if="extending" class="space-y-3" color="warning" variant="subtle">
       <h4 class="text-sm font-bold text-warning">Extender el plazo de la observación</h4>
       <UFormField label="Días adicionales">
@@ -187,9 +225,8 @@
       <UButton v-if="deposit?.can_undo && !extending && !cancelling" color="neutral" variant="soft" :loading="saving" @click="undo">
         Deshacer{{ deposit.undo_notifies_sales ? ' y avisar a Ventas' : '' }}
       </UButton>
-      <UButton v-if="deposit?.can_validate && !observing" color="error" variant="soft" icon="i-heroicons-exclamation-circle" @click="observing = true">Observar</UButton>
-      <UButton v-if="deposit?.can_validate && observing" color="error" :loading="saving" @click="observe">Confirmar observación</UButton>
-      <UButton v-if="deposit?.can_validate && !observing" color="primary" :loading="saving" @click="validate">Validar depósito</UButton>
+      <UButton v-if="deposit?.can_validate" color="error" variant="soft" icon="i-heroicons-exclamation-circle" @click="startObserve">Observar</UButton>
+      <UButton v-if="deposit?.can_validate" color="primary" :loading="saving" @click="validate">Validar depósito</UButton>
     </template>
   </SupplierPaymentWindow>
 </template>
@@ -222,7 +259,6 @@ const cancelling = ref(false)
 const saving = ref(false)
 const bankAmount = ref(0)
 const reason = ref('')
-const newLabel = ref('')
 const detail = ref('')
 const extendReason = ref('')
 const extendDays = ref(7)
@@ -232,17 +268,20 @@ const bancos = [
   { label: 'BCP', value: DEPOSIT_BANK.BCP },
   { label: 'Interbank', value: DEPOSIT_BANK.INTERBANK }
 ]
+/** Código que el back reconoce como «Otro motivo» (PagoProveedorAbono::REASON_OTHER). */
+const REASON_OTHER = 'other'
 const motivos = computed(() => [
-  ...props.reasons.map((item) => ({ label: item.label, value: item.code })),
-  { label: 'Otro motivo', value: 'other' }
+  ...props.reasons.filter((item) => item.code !== REASON_OTHER).map((item) => ({ label: item.label, value: item.code })),
+  { label: 'Otro motivo', value: REASON_OTHER }
 ])
+const detailRequired = computed(() => reason.value === REASON_OTHER)
+const canObserve = computed(() => !!reason.value && (!detailRequired.value || !!detail.value.trim()))
 
 watch(() => props.deposit, (deposit) => {
   editing.value = false
   observing.value = false
   extending.value = false
   cancelling.value = false
-  newLabel.value = ''
   detail.value = ''
   extendReason.value = ''
   extendDays.value = 7
@@ -283,7 +322,8 @@ const windowTitle = computed(() => {
   if (deposit.status === DEPOSIT_STATUS.VALIDATED) return 'Depósito validado'
   return deposit.status_label || 'Depósito'
 })
-const reasonLabel = computed(() => props.reasons.find((item) => item.code === props.deposit?.observation_reason)?.label || props.deposit?.observation_reason)
+const reasonLabel = computed(() => props.reasons.find((item) => item.code === props.deposit?.observation_reason)?.label
+  || (props.deposit?.observation_reason === REASON_OTHER ? 'Otro motivo' : props.deposit?.observation_reason))
 const subtitle = computed(() => {
   if (!props.deposit) return ''
   return `${props.deposit.client_name || 'Cliente'} · Consolidado ${props.deposit.consolidation || 'sin identificar'}`
@@ -416,13 +456,22 @@ function validate() {
   )
 }
 
+function startObserve() {
+  reason.value = props.reasons[0]?.code || REASON_OTHER
+  detail.value = ''
+  observing.value = true
+}
+
 function observe() {
   if (!props.deposit) return
+  if (!canObserve.value) {
+    showError('Observar depósito', 'Con «Otro motivo» escribe el detalle.')
+    return
+  }
   return run(
     () => PagoProveedorService.observeDeposit(props.deposit!.id, {
       reason: reason.value || undefined,
-      detail: detail.value || undefined,
-      new_label: reason.value === 'other' ? newLabel.value : undefined
+      detail: detail.value.trim() || undefined
     }).then(() => undefined),
     'Depósito observado. Ventas puede corregir el voucher.'
   )
