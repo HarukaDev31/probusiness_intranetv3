@@ -209,6 +209,8 @@ export interface PagoProveedorSolicitudProveedor {
   moneda: string
   tipo_pago: string
   valor_carga_usd: number
+  /** Valor en yuanes digitado en la cotización; null en solicitudes antiguas. */
+  valor_carga_rmb?: number | null
   bancaria_monto: number
   administrativa_monto: number
   total_monto: number

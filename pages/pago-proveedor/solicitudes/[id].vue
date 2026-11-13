@@ -66,7 +66,7 @@
             <UCard v-if="(solicitud.excedente || 0) > 0.004" variant="subtle" class="bg-info/10 ring-info/30" :ui="{ body: 'p-4 sm:p-4' }">
               <dt class="text-sm text-info">Excedente</dt>
               <dd class="mt-1 text-3xl font-bold text-info">${{ dinero(solicitud.excedente || 0) }}</dd>
-              <em class="mt-1 block text-sm not-italic text-muted">Revisa los abonos para consultar, devolver o aplicar a la cuota.</em>
+              <em class="mt-1 block text-sm not-italic text-muted">Administración decidirá si se devuelve o se aplica al servicio de Carga Consolidada.</em>
             </UCard>
           </dl>
         </UCard>
@@ -295,7 +295,6 @@
           <p v-if="(vistaEtapa[proveedor.id] ?? proveedor.etapa) !== proveedor.etapa" class="mt-3 text-sm text-muted">
             Estás revisando este paso en solo lectura. El paso actual del proveedor es {{ proveedor.etapa }}.
           </p>
-          <UAlert v-else-if="enManos(proveedor)" class="mt-3 w-fit max-w-full" color="info" variant="subtle" :description="enManos(proveedor)" />
 
           <SupplierPaymentProgress
             v-if="solicitud.id && proveedor.estado !== 'anulado'"
@@ -316,6 +315,9 @@
             @choose-providers="abrirContinuacion(proveedor)"
             @decide-surplus="(id, decision) => decidir(id, decision)"
           />
+
+          <!-- Debajo de las tarjetas del paso, como la franja «Por realizar». -->
+          <UAlert v-if="(vistaEtapa[proveedor.id] ?? proveedor.etapa) === proveedor.etapa && enManos(proveedor)" class="mt-3 w-fit max-w-full" color="info" variant="subtle" :description="enManos(proveedor)" />
 
           <UAlert
             v-if="!soloLectura && (vistaEtapa[proveedor.id] ?? proveedor.etapa) === proveedor.etapa && porRealizar(proveedor)"
@@ -452,9 +454,9 @@
         </template>
       </SupplierPaymentWindow>
 
-      <SupplierPaymentWindow :open="!!desglose" title="Desglose del cobro" :subtitle="desglose?.code_supplier || ''" @close="cerrarDesglose">
+      <SupplierPaymentWindow :open="!!desglose" title="Desglose del cobro" :subtitle="desglose ? [desglose.code_supplier, desglose.producto].filter(Boolean).join(' · ') : ''" @close="cerrarDesglose">
         <dl v-if="desglose" class="space-y-1 text-sm">
-          <div class="flex items-center gap-3 px-3 py-2"><UIcon name="i-lucide-package" class="size-5 shrink-0 text-muted" /><dt class="flex-1 text-highlighted">Valor de carga</dt><dd>${{ dinero(desglose.valor_carga_usd) }}</dd></div>
+          <div class="flex items-center gap-3 px-3 py-2"><UIcon name="i-lucide-package" class="size-5 shrink-0 text-muted" /><dt class="flex-1 text-highlighted">Valor de carga</dt><dd>{{ detalleValorCarga(desglose) }}</dd></div>
           <div class="flex items-center gap-3 px-3 py-2"><UIcon name="i-lucide-landmark" class="size-5 shrink-0 text-muted" /><dt class="flex-1 text-highlighted">Comisión bancaria / plataforma</dt><dd>{{ desglose.etiqueta_bancaria || `$${dinero(desglose.bancaria_monto)}` }}</dd></div>
           <div class="flex items-center gap-3 px-3 py-2"><UIcon name="i-lucide-shield-check" class="size-5 shrink-0 text-muted" /><dt class="flex-1 text-highlighted">Comisión administrativa</dt><dd>${{ dinero(desglose.administrativa_monto) }}</dd></div>
           <div class="flex items-center gap-3 rounded-lg bg-primary/10 px-3 py-3 text-base font-bold text-highlighted"><UIcon name="i-lucide-calculator" class="size-5 shrink-0 text-primary" /><dt class="flex-1">Total a abonar</dt><dd>${{ dinero(desglose.importe_requerido) }}</dd></div>
@@ -817,6 +819,15 @@ function verPasoActual(proveedor: PagoProveedorSolicitudProveedor) {
 
 function irAPaso(proveedor: PagoProveedorSolicitudProveedor, paso: number) {
   vistaEtapa[proveedor.id] = paso
+}
+
+/** Pago en yuanes: «¥20,000.00 ÷ 7 = $2,857.14» con el valor en yuanes guardado (o USD × TC en solicitudes antiguas). */
+function detalleValorCarga(proveedor: PagoProveedorSolicitudProveedor) {
+  const usd = `$${dinero(proveedor.valor_carga_usd)}`
+  const tc = Number(solicitud.value?.tipo_cambio || 0)
+  if (proveedor.moneda !== 'RMB' || tc <= 0) return usd
+  const yuanes = proveedor.valor_carga_rmb ?? Number(proveedor.valor_carga_usd || 0) * tc
+  return `¥${dinero(yuanes)} ÷ ${tc.toLocaleString('en-US', { maximumFractionDigits: 4 })} = ${usd}`
 }
 
 function abrirDesglose(proveedor: PagoProveedorSolicitudProveedor) {
