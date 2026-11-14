@@ -199,7 +199,9 @@ export interface SupplierPaymentProviderRow {
   observe_label?: string | null
   /** Fecha límite (ISO) de la tarea pendiente de Ventas; null si no tiene plazo. */
   deadline_at?: string | null
-  deadline_kind?: 'collect' | 'observation' | 'decision' | 'commitment' | null
+  deadline_kind?: 'collect' | 'observation' | 'decision' | 'commitment' | 'task' | null
+  /** #1745: si no le toca a Ventas, quién lo tiene y qué le falta para cerrar. */
+  waiting_on?: { area: string; task: string } | null
 }
 
 export interface PagoProveedorSolicitudProveedor {
@@ -730,6 +732,8 @@ export interface SupplierPaymentYuanRequest {
   client: string | null
   organization_id: number | null
   organization: string | null
+  /** #1747: nombre del socio (organización; las de Ventas son de Pro Business). */
+  partner_name?: string | null
   manual: boolean
   consolidation: string | null
   exchange_rate: number

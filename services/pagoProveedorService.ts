@@ -180,6 +180,17 @@ export class PagoProveedorService extends BaseService {
     )
   }
 
+  /** #1743: plazo por defecto (horas) de las tareas de Ventas sin plazo propio. */
+  static async guardarPlazoTareas(horas: number) {
+    return this.apiCall<Uno<{ plazo_tarea_ventas_horas: number }>>(
+      `${this.baseUrl}/configuracion/plazo-tareas`,
+      {
+        method: 'PUT',
+        body: { horas }
+      }
+    )
+  }
+
   static async candidatosPedirDatos(solicitudId: number) {
     return this.apiCall<Uno<Array<{ id: number; titulo: string; moneda: string; incompleto: boolean }>>>(
       `${this.baseUrl}/solicitudes/${solicitudId}/pedir-datos`
