@@ -510,6 +510,11 @@ function stageShort(stage: number) {
 
 /** Acción corta (sin el plazo, que ya va en su propio bloque). */
 function actionText(provider: SupplierPaymentProviderRow, withArea = false) {
+  // Reembolso por consultar: tarea de Ventas que dice qué hacer (#1745).
+  if (provider.sales_task && provider.waiting_on?.area === 'Ventas') {
+    const task = provider.waiting_on.task
+    return task.charAt(0).toUpperCase() + task.slice(1)
+  }
   if (provider.approval_status === APPROVAL_STATUS.TO_COLLECT) {
     const amount = Number(provider.collect_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })
     return `Cobrar diferencia de $${amount} y registrar voucher`
