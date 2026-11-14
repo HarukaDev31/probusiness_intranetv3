@@ -1,6 +1,7 @@
 <template>
   <div class="md:p-6">
     <DataTable
+      class="pp-tabla"
       title="Cotizaciones"
       subtitle="Pago a proveedor"
       :show-title="true"

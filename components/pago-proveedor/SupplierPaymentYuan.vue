@@ -15,6 +15,7 @@
       @update:model-value="changeBucket"
     />
     <DataTable
+      class="pp-tabla"
       sticky-last-column
       keep-spanish-headers
       :data="rows"
