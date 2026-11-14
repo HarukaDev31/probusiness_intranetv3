@@ -28,6 +28,7 @@
     />
 
     <DataTable
+      class="pp-tabla"
       sticky-last-column
       :data="unifiedRows"
       :columns="columns"

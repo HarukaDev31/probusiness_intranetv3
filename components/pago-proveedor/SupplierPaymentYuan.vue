@@ -15,6 +15,7 @@
       @update:model-value="changeBucket"
     />
     <DataTable
+      class="pp-tabla"
       sticky-last-column
       keep-spanish-headers
       :data="rows"
@@ -115,6 +116,11 @@ function statusColor(status: string): 'primary' | 'error' | 'success' {
   return status === YUAN_STATUS.OBSERVED ? 'error' : 'primary'
 }
 
+/** Socio que envía los dólares: lo manda el back; si falta, la organización o Pro Business. */
+function partnerName(row: SupplierPaymentYuanRequest): string {
+  return row.partner_name || row.organization || (row.manual ? row.partner : 'Pro Business')
+}
+
 function differenceText(row: SupplierPaymentYuanRequest): string {
   if (!row.incomes.length) return ''
   if (row.difference_status === 'collect') return 'Por cobrar al socio'
@@ -142,7 +148,11 @@ const columns: TableColumn<SupplierPaymentYuanRequest>[] = [
     h('span', row.original.country || '—'),
     row.original.organization ? h('span', { class: 'text-xs text-muted' }, row.original.organization) : null
   ]) },
-  { accessorKey: 'partner', header: 'Cliente', cell: ({ row }) => h('span', { class: 'block w-32 whitespace-normal font-semibold' }, row.original.client || row.original.partner) },
+  // #1747: nombre del socio de China (ej. Pro Business) y, debajo, el cliente.
+  { accessorKey: 'partner', header: 'Socio', cell: ({ row }) => h('div', { class: 'flex w-32 flex-col whitespace-normal' }, [
+    h('span', { class: 'font-semibold' }, partnerName(row.original)),
+    row.original.client ? h('span', { class: 'text-xs text-muted' }, row.original.client) : null
+  ]) },
   { accessorKey: 'code', header: 'N. orden', cell: ({ row }) => h('div', { class: 'flex flex-col' }, [
     h('span', { class: 'text-sm font-bold' }, row.original.code),
     h('span', { class: 'text-xs text-muted whitespace-nowrap' }, `${row.original.provider_count} ${row.original.provider_count === 1 ? 'proveedor' : 'proveedores'}`)

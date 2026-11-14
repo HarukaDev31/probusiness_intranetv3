@@ -2,7 +2,7 @@
   <USlideover
     :open="!!request"
     :dismissible="false"
-    :title="request ? `Socio ${request.organization || request.country}` : ''"
+    :title="request ? `Socio ${request.partner_name || request.organization || request.country}` : ''"
     :description="request ? `${rmb(request.yuan_total)} · ${usd(request.usd_total)} · TC ${request.exchange_rate}` : ''"
     :ui="{ content: 'w-full max-w-[580px]', body: 'flex flex-col gap-4 bg-muted' }"
     @update:open="(value) => { if (!value) emit('close') }"
@@ -11,7 +11,7 @@
       <div v-if="request" class="flex w-full items-start justify-between gap-3">
         <div class="flex flex-col gap-0.5">
           <span class="text-sm text-muted">{{ request.code }} · {{ dayLabel(request.date) }}</span>
-          <span class="text-xl font-semibold text-highlighted">Socio {{ request.organization || request.country }}</span>
+          <span class="text-xl font-semibold text-highlighted">Socio {{ request.partner_name || request.organization || request.country }}</span>
           <span class="text-sm text-toned">{{ rmb(request.yuan_total) }} · {{ usd(request.usd_total) }} · TC {{ request.exchange_rate }}</span>
         </div>
         <UButton color="neutral" variant="ghost" icon="i-heroicons-x-mark" aria-label="Cerrar" @click="emit('close')" />

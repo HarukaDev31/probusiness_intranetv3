@@ -1,0 +1,125 @@
+/* PRY-26-0003 (#1739): diseño de tablas de Pago a Proveedor según la maqueta.
+   Encabezado gris muy claro con títulos en mayúsculas pequeñas (11px, semibold, slate-500),
+   filas blancas separadas por líneas de 1px muy claras y la tabla dentro de una tarjeta blanca.
+   Solo aplica donde se pone la clase:
+   - `pp-tabla` en <DataTable> (raíz del componente).
+   - `pp-tabla-simple` en el contenedor de una <table> propia (detalle de solicitud, reembolsos). */
+
+/* ---------- DataTable ---------- */
+.pp-tabla .table-scroll-container {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #fff;
+}
+.pp-tabla .table-scroll-container table thead,
+.pp-tabla .table-scroll-container table thead tr th {
+  background: #f8fafc !important;
+}
+.pp-tabla .table-scroll-container table thead {
+  height: auto;
+  border-bottom: 1px solid #e2e8f0;
+}
+.pp-tabla .table-scroll-container table thead th {
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+  font-size: 11px !important;
+  line-height: 1.35;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b !important;
+  box-shadow: none;
+}
+.pp-tabla .table-scroll-container table thead th * {
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+}
+/* Líneas delgadas entre filas (reemplaza la franja de 8px de DataTable). */
+.pp-tabla .table-scroll-container table tbody tr + tr td,
+.pp-tabla .table-scroll-container table tbody tr td {
+  border-top: 1px solid #f1f5f9 !important;
+  background-color: #fff;
+}
+.pp-tabla .table-scroll-container table tbody tr:first-child td {
+  border-top: 0 !important;
+}
+.pp-tabla .table-scroll-container table tbody td {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+.pp-tabla .table-scroll-container table tbody tr:hover td {
+  background-color: #fafbfd;
+}
+.pp-tabla .table-scroll-container.sticky-last-column th:last-child {
+  background: #f8fafc !important;
+}
+.pp-tabla .table-scroll-container.flat-table {
+  border: 0;
+  border-radius: 0;
+}
+
+/* ---------- Tablas propias ---------- */
+.pp-tabla-simple {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #fff;
+  overflow-x: auto;
+}
+.pp-tabla-simple > table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.pp-tabla-simple > table > thead > tr {
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+.pp-tabla-simple > table > thead th {
+  padding: 0.75rem !important;
+  font-size: 11px !important;
+  line-height: 1.35;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b !important;
+  text-align: left;
+  white-space: nowrap;
+}
+.pp-tabla-simple > table > tbody > tr + tr,
+.pp-tabla-simple > table > tbody > tr {
+  border-top: 1px solid #f1f5f9 !important;
+}
+.pp-tabla-simple > table > tbody > tr:first-child {
+  border-top: 0 !important;
+}
+.pp-tabla-simple > table > tbody > tr > td {
+  padding: 0.75rem !important;
+}
+
+/* ---------- Modo oscuro ---------- */
+.dark .pp-tabla .table-scroll-container,
+.dark .pp-tabla-simple {
+  border-color: #1f2937;
+  background: #111827;
+}
+.dark .pp-tabla .table-scroll-container table thead,
+.dark .pp-tabla .table-scroll-container table thead tr th,
+.dark .pp-tabla .table-scroll-container.sticky-last-column th:last-child,
+.dark .pp-tabla-simple > table > thead > tr {
+  background: #0f172a !important;
+  border-color: #1f2937;
+}
+.dark .pp-tabla .table-scroll-container table thead th,
+.dark .pp-tabla-simple > table > thead th {
+  color: #94a3b8 !important;
+}
+.dark .pp-tabla .table-scroll-container table tbody tr td,
+.dark .pp-tabla-simple > table > tbody > tr {
+  border-top-color: #1f2937 !important;
+}
+.dark .pp-tabla .table-scroll-container table tbody tr td {
+  background-color: #111827;
+}
+.dark .pp-tabla .table-scroll-container table tbody tr:hover td {
+  background-color: #1e293b;
+}

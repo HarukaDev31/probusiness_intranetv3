@@ -70,7 +70,8 @@ export default defineNuxtConfig({
   
   // Configuración de CSS
   css: [
-    '../assets/css/tailwind.css'
+    '../assets/css/tailwind.css',
+    '../assets/css/pago-proveedor-tablas.css'
   ],
   app: {
     head: {
