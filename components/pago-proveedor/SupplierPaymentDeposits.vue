@@ -13,6 +13,7 @@
       <strong>{{ observedCount }} depósito{{ observedCount === 1 ? '' : 's' }} observado{{ observedCount === 1 ? '' : 's' }}</strong>
     </div>
     <DataTable
+      class="pp-tabla"
       sticky-last-column
       title=""
       subtitle=""

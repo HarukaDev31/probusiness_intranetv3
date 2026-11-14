@@ -347,7 +347,7 @@
 
       <UCard v-if="(solicitud.abonos || []).length">
         <h2 class="font-bold text-highlighted">Abonos registrados</h2>
-        <div class="mt-3 overflow-x-auto">
+        <div class="pp-tabla-simple mt-3">
           <table class="w-full text-sm">
             <thead>
               <tr class="text-left text-xs uppercase tracking-wide text-muted">
@@ -395,7 +395,7 @@
         <UCollapsible v-model:open="historialAbierto" :unmount-on-hide="false">
           <UButton color="neutral" variant="ghost" icon="i-lucide-history" trailing-icon="i-lucide-chevron-down" class="px-0" block>Historial de la solicitud</UButton>
           <template #content>
-            <div class="mt-3 overflow-x-auto">
+            <div class="pp-tabla-simple mt-3">
               <table class="w-full text-sm">
                 <thead>
                   <tr class="text-left text-xs uppercase tracking-wide text-muted">

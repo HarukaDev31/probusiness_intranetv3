@@ -1,5 +1,5 @@
-﻿/**
- * Contadores de Verificación / Viáticos.
+/**
+ * Contadores de Verificación / Pago a Proveedor / Viáticos.
  * - 1 GET al cargar o al reconectar el WebSocket
  * - Caché en useState + sessionStorage (por usuario)
  * - Actualización por evento VerificacionContadoresActualizados (sin polling)
@@ -106,6 +106,7 @@ export function useVerificationCounts() {
   const counts = useState<VerificationCounts>('verification-counts', () => ({ ...EMPTY }))
   const loaded = useState('verification-counts-loaded', () => false)
   const loading = useState('verification-counts-loading', () => false)
+  /** true solo tras un GET exitoso o un patch WS en esta vida de página */
   const synced = useState('verification-counts-synced', () => false)
 
   function hydrateFromSession() {
@@ -132,6 +133,7 @@ export function useVerificationCounts() {
   async function refresh(force = false) {
     if (!import.meta.client) return counts.value
     hydrateFromSession()
+    // Sin force: un solo GET por vida de página; navegación SPA no vuelve a pedir
     if (!force && synced.value && !fetchInFlight) return counts.value
     if (fetchInFlight) return fetchInFlight
 

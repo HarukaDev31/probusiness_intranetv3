@@ -11,7 +11,7 @@
       <p class="mt-1 text-sm text-muted">Lo que Administración debe revisar o mover ahora.</p>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-6">
       <button
         v-for="card in adminActionCards"
         :key="card.id"
@@ -32,7 +32,7 @@
 
     <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
       <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Desglose de verificación</h2>
-      <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2">
+      <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2">
         <button
           v-for="row in adminVerificationRows"
           :key="row.id"
@@ -128,6 +128,22 @@ const adminActionCards = computed(() => [
     to: '/verificacion'
   },
   {
+    id: 'approvals',
+    label: 'Por aprobar / reembolsos',
+    count: verificationCounts.value.supplier_approvals,
+    hint: 'Pago a proveedor listo para decisión',
+    icon: 'i-heroicons-hand-thumb-up',
+    to: '/pago-proveedor/aprobacion-pagos'
+  },
+  {
+    id: 'executions',
+    label: 'Pagos en dólares',
+    count: verificationCounts.value.supplier_executions,
+    hint: 'Ejecuciones pendientes de registrar',
+    icon: 'i-heroicons-banknotes',
+    to: '/pago-proveedor/pagos-dolares'
+  },
+  {
     id: 'viaticos',
     label: 'Viáticos y reintegros',
     count: verificationCounts.value.viaticos,
@@ -142,7 +158,8 @@ const adminVerificationRows = computed(() => [
   { id: 'cursos', label: 'Cursos', count: verificationCounts.value.cursos, to: '/verificacion?tab=cursos' },
   { id: 'delivery', label: 'Delivery', count: verificationCounts.value.delivery, to: '/verificacion?tab=delivery' },
   { id: 'permisos', label: 'Permisos', count: verificationCounts.value.permisos, to: '/verificacion?tab=permisos' },
-  { id: 'boletin', label: 'Boletín químico', count: verificationCounts.value.boletin_quimico, to: '/verificacion?tab=boletin-quimico' }
+  { id: 'boletin', label: 'Boletín químico', count: verificationCounts.value.boletin_quimico, to: '/verificacion?tab=boletin-quimico' },
+  { id: 'supplier', label: 'Pago a proveedor', count: verificationCounts.value.supplier_payment, to: '/verificacion?tab=supplier-payment' }
 ])
 
 interface StatDef { id: string; value: number; label: string; suffix?: string; icon: string; color: string; delay?: number; current?: number; visible?: boolean }
