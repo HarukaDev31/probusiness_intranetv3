@@ -200,6 +200,7 @@
       </form>
 
       <DataTable
+        class="pp-tabla"
         filters-layout="inline"
         :data="allRows"
         :columns="columns"
