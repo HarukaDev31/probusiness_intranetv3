@@ -38,6 +38,7 @@
     </div>
 
     <DataTable
+      class="pp-tabla"
       sticky-last-column
       :data="rows"
       :columns="columns"
