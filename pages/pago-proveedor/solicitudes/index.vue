@@ -2,8 +2,35 @@
   <div class="supplier-payment-requests md:p-6">
     <header class="mb-4 flex flex-wrap items-center justify-between gap-3">
       <PageHeader title="Solicitudes" subtitle="Pago a proveedor" icon="i-heroicons-clipboard-document-list" :hide-back-button="true" align-subtitle />
-      <UButton v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" label="Nueva cotización" icon="i-heroicons-plus" color="primary" class="h-11 font-normal" @click="nuevaCotizacion = true" />
+      <div v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" class="flex flex-wrap items-center gap-2">
+        <!-- #1743: el plazo por defecto de los pendientes se ve y se cambia desde aquí. -->
+        <UButton
+          color="neutral"
+          variant="soft"
+          icon="i-heroicons-cog-6-tooth"
+          class="h-11 font-normal"
+          :label="`Plazo de pendientes · ${plazoTareasHoras} h`"
+          title="Configurar el plazo por defecto de los pendientes"
+          @click="abrirPlazoTareas"
+        />
+        <UButton label="Nueva cotización" icon="i-heroicons-plus" color="primary" class="h-11 font-normal" @click="nuevaCotizacion = true" />
+      </div>
     </header>
+    <SupplierPaymentWindow
+      v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES"
+      :open="plazoTareasAbierto"
+      title="Plazo de pendientes"
+      subtitle="Fecha límite por defecto de las tareas de Ventas que no tienen un plazo propio (registrar datos, comprobante, diferencia de cambio…). Se cuenta desde que se crea la solicitud o desde el último cambio."
+      @close="plazoTareasAbierto = false"
+    >
+      <label class="block text-sm text-muted">Plazo (horas)
+        <UInput v-model.number="plazoTareasBorrador" type="number" min="1" max="240" class="mt-1 w-full" />
+      </label>
+      <template #footer>
+        <UButton color="neutral" variant="outline" @click="() => { plazoTareasAbierto = false }">Cancelar</UButton>
+        <UButton color="primary" :loading="guardandoPlazoTareas" @click="guardarPlazoTareas">Guardar</UButton>
+      </template>
+    </SupplierPaymentWindow>
     <NuevaCotizacionModal v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" :open="nuevaCotizacion" @close="nuevaCotizacion = false" @accepted="(codigo) => navigateTo({ path: '/pago-proveedor/cotizaciones/nueva', query: { cc: codigo } })" />
     <template v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES">
     <div class="mb-4 flex gap-1.5 border-b border-default">
@@ -174,7 +201,7 @@
           >
             <span>
               <strong class="text-highlighted">{{ row.clientName }}</strong>
-              <span class="text-muted"> · {{ supplierLabel(row.provider) }} · En manos de {{ ownerLabel(row.provider) }}</span>
+              <span class="text-muted"> · {{ supplierLabel(row.provider) }} · {{ waitingText(row.provider) }}</span>
             </span>
             <span class="flex items-center gap-2">
               <UBadge color="neutral" variant="subtle" size="sm">{{ statusLabel(row.provider.status) }}</UBadge>
@@ -241,6 +268,7 @@ import {
 import { useModal } from '~/composables/commons/useModal'
 import { useSupplierPaymentProfile } from '~/composables/pago-proveedor/useSupplierPaymentProfile'
 import NuevaCotizacionModal from '~/components/pago-proveedor/NuevaCotizacionModal.vue'
+import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
 import { UBadge, UButton } from '#components'
 
 interface RequestLine {
@@ -254,7 +282,7 @@ interface RequestLine {
   provider: SupplierPaymentProviderRow
 }
 
-const { showError } = useModal()
+const { showError, showSuccess } = useModal()
 const { profile } = useSupplierPaymentProfile()
 const requests = ref<PagoProveedorSolicitud[]>([])
 const loading = ref(false)
@@ -262,6 +290,11 @@ const search = ref('')
 const tab = ref<typeof INBOX_TAB[keyof typeof INBOX_TAB]>(INBOX_TAB.PENDING)
 const taskFilter = ref<typeof SALES_TASK[keyof typeof SALES_TASK]>(SALES_TASK.ALL)
 const nuevaCotizacion = ref(false)
+// #1742/#1743: plazo por defecto (48 h) de las tareas de Ventas sin plazo propio.
+const plazoTareasHoras = ref(48)
+const plazoTareasBorrador = ref(48)
+const plazoTareasAbierto = ref(false)
+const guardandoPlazoTareas = ref(false)
 const pagination = ref<PagoProveedorPaginacion>({ current_page: 1, last_page: 1, per_page: 15, total: 0 })
 const filtros = ref<Record<string, string>>({
   consolidado: 'todos',
@@ -291,7 +324,10 @@ function isCuota2Task(provider: SupplierPaymentProviderRow) {
 }
 
 const pendingRows = computed(() => lines.value.filter((line) => line.provider.sales_task))
-const otherAreaRows = computed(() => lines.value.filter((line) => !line.provider.sales_task && line.provider.status !== PROVIDER_STATUS.CANCELLED))
+// #1745: los completados ya no están «en curso» (salvo que quede un reembolso abierto: lo dice waiting_on).
+const otherAreaRows = computed(() => lines.value.filter((line) => !line.provider.sales_task
+  && line.provider.status !== PROVIDER_STATUS.CANCELLED
+  && (line.provider.status !== PROVIDER_STATUS.COMPLETED || !!line.provider.waiting_on)))
 const visiblePending = computed(() => pendingRows.value.filter((line) => {
   if (taskFilter.value === SALES_TASK.ALL) return true
   if (taskFilter.value === SALES_TASK.INSTALLMENT_2) return isCuota2Task(line.provider)
@@ -443,7 +479,8 @@ function deadlineKindLabel(provider: SupplierPaymentProviderRow) {
     collect: 'Plazo para cobrar',
     observation: 'Plazo para subsanar',
     decision: 'Plazo para decidir',
-    commitment: 'Compromiso'
+    commitment: 'Compromiso',
+    task: 'Plazo de la tarea'
   }[kind]
 }
 
@@ -571,6 +608,13 @@ function ownerLabel(provider: SupplierPaymentProviderRow) {
   if (provider.stage === REQUEST_STAGE.EXECUTION && provider.currency === SUPPLIER_CURRENCY.RMB) return 'Operaciones China'
   if (provider.stage === REQUEST_STAGE.EXECUTION) return 'Administración'
   return 'otra área'
+}
+
+/** #1745: «En manos de Administración: aprobar el pago» — qué área y qué le falta para cerrar. */
+function waitingText(provider: SupplierPaymentProviderRow) {
+  const waiting = provider.waiting_on
+  if (waiting) return `En manos de ${waiting.area}: ${waiting.task}`
+  return `En manos de ${ownerLabel(provider)}`
 }
 
 function installmentTag(provider: SupplierPaymentProviderRow) {
@@ -750,8 +794,44 @@ function onClearFilters() {
   loadRequests()
 }
 
+async function loadPlazoTareas() {
+  try {
+    const config = await PagoProveedorService.obtenerConfiguracion()
+    const horas = Number(config.data?.plazo_tarea_ventas_horas)
+    if (horas > 0) plazoTareasHoras.value = horas
+  } catch { /* sin configuración: queda 48 h */ }
+}
+
+function abrirPlazoTareas() {
+  plazoTareasBorrador.value = plazoTareasHoras.value
+  plazoTareasAbierto.value = true
+}
+
+async function guardarPlazoTareas() {
+  const horas = Math.round(Number(plazoTareasBorrador.value))
+  if (!horas || horas < 1 || horas > 240) {
+    showError('Plazo de pendientes', 'Ingresa un plazo entre 1 y 240 horas.')
+    return
+  }
+  guardandoPlazoTareas.value = true
+  try {
+    await PagoProveedorService.guardarPlazoTareas(horas)
+    plazoTareasHoras.value = horas
+    plazoTareasAbierto.value = false
+    showSuccess('Plazo de pendientes', `Las tareas sin plazo propio vencen a las ${horas} h.`)
+    await loadRequests()
+  } catch (error: any) {
+    showError('Plazo de pendientes', error?.data?.message || error.message || 'No se pudo guardar.')
+  } finally {
+    guardandoPlazoTareas.value = false
+  }
+}
+
 watch(profile, (value) => {
-  if (value === SUPPLIER_PAYMENT_PROFILE.SALES) loadRequests()
+  if (value === SUPPLIER_PAYMENT_PROFILE.SALES) {
+    loadRequests()
+    loadPlazoTareas()
+  }
   if (value === SUPPLIER_PAYMENT_PROFILE.ADMINISTRATION) navigateTo('/pago-proveedor/aprobacion-pagos', { replace: true })
   if (value === SUPPLIER_PAYMENT_PROFILE.WAREHOUSE) navigateTo('/pago-proveedor/pagos-yuanes', { replace: true })
 }, { immediate: true })
