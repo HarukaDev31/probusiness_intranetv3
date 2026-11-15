@@ -149,7 +149,7 @@ const columns: TableColumn<SupplierPaymentYuanRequest>[] = [
     row.original.organization ? h('span', { class: 'text-xs text-muted' }, row.original.organization) : null
   ]) },
   // #1747: nombre del socio de China (ej. Pro Business) y, debajo, el cliente.
-  { accessorKey: 'partner', header: 'Socio', cell: ({ row }) => h('div', { class: 'flex w-32 flex-col whitespace-normal' }, [
+  { accessorKey: 'partner', header: 'Cliente', cell: ({ row }) => h('div', { class: 'flex w-32 flex-col whitespace-normal' }, [
     h('span', { class: 'font-semibold' }, partnerName(row.original)),
     row.original.client ? h('span', { class: 'text-xs text-muted' }, row.original.client) : null
   ]) },
