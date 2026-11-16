@@ -4,6 +4,7 @@
     :title="payment?.can_approve ? 'Aprobación del pago' : 'Detalle del pago'"
     :subtitle="subtitle"
     :code="payment?.request_code"
+    code-right
     :hint="payment?.can_approve && !depositsOpen ? 'Aprobar asumiendo la diferencia es siempre una acción manual.' : undefined"
     wide
     @close="emit('close')"
@@ -75,13 +76,14 @@
 
         <SupplierPaymentCard title="Comparación de importes" icon="i-lucide-chart-no-axes-column">
           <div class="grid grid-cols-2 gap-2">
-            <div class="rounded-lg border border-orange-200 bg-orange-50 p-3 dark:border-orange-900 dark:bg-orange-950/30">
+            <!-- flex + justify-between: los dos importes quedan a la misma altura aunque una etiqueta ocupe dos líneas (#1801). -->
+            <div class="flex flex-col justify-between gap-1 rounded-lg border border-orange-200 bg-orange-50 p-3 dark:border-orange-900 dark:bg-orange-950/30">
               <p class="text-[11px] font-semibold uppercase text-muted">Importe cobrado</p>
-              <p class="mt-1 text-lg font-bold text-orange-600">${{ money(payment.charged_amount) }}</p>
+              <p class="text-lg font-bold text-orange-600">${{ money(payment.charged_amount) }}</p>
             </div>
-            <div class="rounded-lg border border-default p-3">
+            <div class="flex flex-col justify-between gap-1 rounded-lg border border-default p-3">
               <p class="text-[11px] font-semibold uppercase text-muted">Importe ingresado (Banco)</p>
-              <p class="mt-1 text-lg font-bold">{{ depositsOpen ? '—' : `$${money(payment.received_amount)}` }}</p>
+              <p class="text-lg font-bold">{{ depositsOpen ? '—' : `$${money(payment.received_amount)}` }}</p>
             </div>
           </div>
           <p class="rounded-lg p-3 text-sm" :class="comparison.clase">
