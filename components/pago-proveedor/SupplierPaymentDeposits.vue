@@ -40,7 +40,7 @@
         />
       </template>
     </DataTable>
-    <DepositReviewModal :deposit="selected" :reasons="reasons" @close="selected = null" @saved="load" />
+    <DepositReviewModal :deposit="selected" :reasons="reasons" @close="selected = null" @saved="load" @updated="(deposit) => { selected = deposit }" />
     <VoucherPreviewModal :deposit="preview" @close="preview = null" />
   </div>
 </template>
