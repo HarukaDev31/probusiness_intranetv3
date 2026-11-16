@@ -106,7 +106,7 @@
                 <span class="text-sm font-semibold text-highlighted">Aviso al cliente</span>
                 <!-- eslint-disable-next-line vue/no-v-html -->
                 <pre class="whitespace-pre-wrap font-sans text-sm" v-html="whatsappHtml(notice) || 'Cargando aviso…'" />
-                <span class="text-xs text-muted">Sin importe y sin código de solicitud. Si cambias los yuanes pagados, vuelve a enviarlo.</span>
+                <span class="text-xs text-muted">Sin importe y sin código de solicitud.</span>
                 <UButton class="self-start" color="neutral" variant="outline" :loading="saving" :disabled="!(yuanPaid > 0) || noticeReady" @click="sendNotice(provider.provider_id)">
                   {{ noticeReady ? 'Aviso enviado' : 'Enviar aviso al cliente' }}
                 </UButton>
@@ -146,8 +146,18 @@
               </span>
             </span>
             <span class="font-semibold text-highlighted">{{ rmb(income.yuan_amount) }}</span>
-            <UButton v-if="income.can_remove" size="xs" color="neutral" variant="ghost" icon="i-heroicons-x-mark" aria-label="Quitar ingreso" :loading="saving" @click="removeIncome(income.id)" />
-            <span v-else />
+            <!-- Maqueta: X para eliminar el registro; bloqueada si ese ingreso ya se usó para calcular un pago. -->
+            <UButton
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              icon="i-heroicons-x-mark"
+              aria-label="Eliminar ingreso"
+              :title="income.can_remove ? 'Eliminar ingreso' : 'Ya hay pagos calculados con este ingreso: deshaz primero el pago.'"
+              :disabled="!income.can_remove"
+              :loading="saving"
+              @click="confirmRemoveIncome(income.id)"
+            />
           </div>
           <span v-if="!request.incomes.length && !incomeOpen" class="text-sm text-muted">Aún no se registró el dinero del socio.</span>
           <div v-if="incomeOpen" class="flex flex-col gap-3 rounded-lg bg-muted p-3.5">
@@ -360,7 +370,7 @@ async function saveIncome() {
   incomeOpen.value = false
 }
 
-function removeIncome(incomeId: number) {
-  return run('Ingreso', 'Quitando ingreso…', () => PagoProveedorService.removeYuanIncome(incomeId))
+function confirmRemoveIncome(incomeId: number) {
+  showConfirmation('Eliminar ingreso', '¿Eliminar este registro del dinero recibido del socio?', () => run('Ingreso', 'Eliminando ingreso…', () => PagoProveedorService.removeYuanIncome(incomeId)))
 }
 </script>

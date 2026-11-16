@@ -134,27 +134,28 @@ function differenceColor(row: SupplierPaymentYuanRequest): string {
 }
 
 const stacked = (top: string, bottom: string, topClass = '') => h('div', { class: 'flex flex-col items-end text-right' }, [
-  h('span', { class: topClass }, top),
+  // #1820: el dato principal va en negro; la línea de abajo, gris.
+  h('span', { class: `text-highlighted ${topClass}` }, top),
   bottom ? h('span', { class: 'text-xs text-muted' }, bottom) : null
 ])
 
 const columns: TableColumn<SupplierPaymentYuanRequest>[] = [
   { accessorKey: 'number', header: 'N.', cell: ({ row }) => h('span', { class: 'text-muted' }, String(row.original.number ?? '')) },
   { accessorKey: 'date', header: 'Fecha', cell: ({ row }) => h('div', { class: 'flex flex-col' }, [
-    h('span', dayLabel(row.original.date)),
+    h('span', { class: 'text-highlighted' }, dayLabel(row.original.date)),
     h('span', { class: 'text-xs text-muted' }, monthLabel(row.original.date))
   ]) },
   { accessorKey: 'country', header: 'País', cell: ({ row }) => h('div', { class: 'flex flex-col' }, [
-    h('span', row.original.country || '—'),
+    h('span', { class: 'text-highlighted' }, row.original.country || '—'),
     row.original.organization ? h('span', { class: 'text-xs text-muted' }, row.original.organization) : null
   ]) },
   // #1747: nombre del socio de China (ej. Pro Business) y, debajo, el cliente.
   { accessorKey: 'partner', header: 'Cliente', cell: ({ row }) => h('div', { class: 'flex w-32 flex-col whitespace-normal' }, [
-    h('span', { class: 'font-semibold' }, partnerName(row.original)),
+    h('span', { class: 'font-semibold text-highlighted' }, partnerName(row.original)),
     row.original.client ? h('span', { class: 'text-xs text-muted' }, row.original.client) : null
   ]) },
   { accessorKey: 'code', header: 'N. orden', cell: ({ row }) => h('div', { class: 'flex flex-col' }, [
-    h('span', { class: 'text-sm font-bold' }, row.original.code),
+    h('span', { class: 'text-sm font-bold text-highlighted' }, row.original.code),
     h('span', { class: 'text-xs text-muted whitespace-nowrap' }, `${row.original.provider_count} ${row.original.provider_count === 1 ? 'proveedor' : 'proveedores'}`)
   ]) },
   { id: 'providers', header: 'Proveedores', cell: ({ row }) => h('div', { class: 'flex min-w-60 flex-col' }, row.original.providers.map((provider) => h('div', {
@@ -162,7 +163,7 @@ const columns: TableColumn<SupplierPaymentYuanRequest>[] = [
     class: 'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2.5 border-t border-dashed border-default py-1.5'
   }, [
     h('div', { class: 'flex min-w-0 flex-col' }, [
-      h('span', { class: 'font-bold' }, provider.supplier_code || 'Sin código'),
+      h('span', { class: 'font-bold text-highlighted' }, provider.supplier_code || 'Sin código'),
       h('span', { class: 'truncate text-xs text-muted' }, provider.supplier_name || '—')
     ]),
     h('div', { class: 'flex flex-col items-end gap-0.5' }, [
