@@ -442,6 +442,15 @@
         <template #footer>
           <UButton color="neutral" variant="outline" @click="cerrarDatos">{{ ttSoloLectura ? 'Cerrar' : 'Cancelar' }}</UButton>
           <UButton v-if="datosProveedor && !ttSoloLectura" color="primary" @click="guardarDatos(datosProveedor)">{{ datosProveedor.moneda === 'RMB' ? 'Guardar datos' : 'Guardar como por autorizar' }}</UButton>
+          <UButton
+            v-if="datosProveedor && !ttSoloLectura && datosProveedor.moneda === 'RMB' && (datosProveedor.datos?.wechat || datosProveedor.datos?.vendedor_nombre)"
+            color="error"
+            variant="outline"
+            icon="i-lucide-trash-2"
+            title="Eliminar datos del proveedor"
+            aria-label="Eliminar datos del proveedor"
+            @click="eliminarDatosRmb(datosProveedor)"
+          />
         </template>
       </SupplierPaymentWindow>
 
@@ -1168,6 +1177,26 @@ async function guardarRmb(proveedor: PagoProveedorSolicitudProveedor) {
   } catch (error: any) {
     showError('Datos del proveedor', error.message || 'No se pudo guardar.')
   }
+}
+
+function eliminarDatosRmb(proveedor: PagoProveedorSolicitudProveedor) {
+  showConfirmation(
+    'Eliminar datos del proveedor',
+    `¿Eliminar los datos de ${proveedor.code_supplier}? Se borran el vendedor y el WeChat registrados.`,
+    async () => {
+      try {
+        const respuesta = await withSpinner(() => api.deleteRmb(solicitud.value!.id, proveedor.id), 'Eliminando…')
+        aplicar(respuesta.data)
+        rmb[proveedor.id] = { vendedor: '', wechat: '' }
+        datosAbiertoId.value = null
+        showSuccess('Datos eliminados', proveedor.code_supplier)
+      } catch (error: any) {
+        showError('Datos del proveedor', error.message || 'No se pudieron eliminar.')
+      }
+    },
+    undefined,
+    { confirmLabel: 'Eliminar', cancelLabel: 'Cancelar' }
+  )
 }
 
 async function enviarFormulario(proveedor: PagoProveedorSolicitudProveedor) {

@@ -228,8 +228,8 @@ const filtrosConfig = computed<FilterConfig[]>(() => [
     placeholder: 'Estado',
     options: [
       { label: 'Todos', value: 'todos' },
+      // Solo hay Pendiente y Confirmada: una vencida sigue Pendiente (el vencimiento se ve en Vigencia).
       { label: 'Pendiente', value: 'pendiente' },
-      { label: 'Vencida', value: 'vencida' },
       { label: 'Confirmada', value: 'confirmada' }
     ]
   },
@@ -323,10 +323,10 @@ const columns: TableColumn<PagoProveedorCotizacion>[] = [
     header: 'Estado',
     cell: ({ row }) => h('div', { class: 'flex flex-col items-start gap-1' }, [
       h(UBadge, {
-        // Pendiente en gris (neutral), como pidió Ventas.
-        color: row.original.estado === 'confirmada' ? 'success' : row.original.vencida ? 'error' : 'neutral',
+        // Pendiente en gris (neutral), como pidió Ventas. Una vencida sigue Pendiente: la alerta va en Vigencia.
+        color: row.original.estado === 'confirmada' ? 'success' : 'neutral',
         variant: 'soft',
-        label: row.original.estado === 'confirmada' ? 'Confirmada' : row.original.vencida ? 'Vencida' : 'Pendiente'
+        label: row.original.estado === 'confirmada' ? 'Confirmada' : 'Pendiente'
       }),
       row.original.estado === 'confirmada' && row.original.solicitud_id
         ? h('a', {

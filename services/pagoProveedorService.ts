@@ -232,6 +232,12 @@ export class PagoProveedorService extends BaseService {
     })
   }
 
+  static async eliminarDatosRmb(solicitudId: number, proveedorId: number) {
+    return this.apiCall<Uno<PagoProveedorSolicitud>>(`${this.baseUrl}/solicitudes/${solicitudId}/proveedores/${proveedorId}/datos-rmb`, {
+      method: 'DELETE'
+    })
+  }
+
   static async enviarFormulario(solicitudId: number, proveedorId: number) {
     return this.apiCall<Uno<{ enlace: string; texto: string; nota: string; solicitud: PagoProveedorSolicitud }>>(
       `${this.baseUrl}/solicitudes/${solicitudId}/proveedores/${proveedorId}/enviar-formulario`,
