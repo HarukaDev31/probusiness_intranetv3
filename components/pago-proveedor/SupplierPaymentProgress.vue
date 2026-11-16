@@ -186,7 +186,7 @@
 
     <!-- Paso 4 · Confirmación (VW-14) -->
     <template v-if="muestraConfirmacion">
-      <div class="grid gap-3 lg:grid-cols-3">
+      <div class="grid gap-3 lg:grid-cols-[1.25fr_1fr_1fr]">
         <UCard :ui="bloque">
           <div class="mb-3 flex items-center gap-3">
             <UAvatar icon="i-lucide-chart-no-axes-column" size="md" class="bg-primary/10" :ui="{ icon: 'text-primary' }" />
@@ -221,8 +221,9 @@
               variant="outline"
               icon="i-lucide-eye"
               trailing-icon="i-lucide-chevron-right"
-              :class="[botonDocumento, 'col-span-2']"
-              :ui="{ trailingIcon: 'ms-auto' }"
+              :class="[botonDocumento, 'col-span-2 whitespace-nowrap text-xs']"
+              :ui="{ trailingIcon: 'ms-auto', label: 'truncate' }"
+              :title="`Ver depósito validado por Administración${depositosValidados.length > 1 ? ` (#${deposit.number ?? deposit.id})` : ''}`"
               @click="emit('view-deposit', deposit.id)"
             >
               Ver depósito validado por Administración{{ depositosValidados.length > 1 ? ` (#${deposit.number ?? deposit.id})` : '' }}
