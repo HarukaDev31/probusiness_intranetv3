@@ -294,7 +294,7 @@
               <div class="min-w-0 flex-1"><strong>Diferencia de cambio</strong><p class="text-xs text-muted">{{ diferenciaVista.text }}</p></div>
               <UBadge :color="diferenciaVista.color" variant="soft" :label="diferenciaVista.label" />
             </div>
-            <UButton v-if="!readonly && progress.confirmation.can_register_exchange" class="mt-2" size="sm" color="primary" @click="differenceOpen = true">Registrar voucher de la diferencia</UButton>
+            <UButton v-if="!readonly && progress.confirmation.can_register_exchange && !progress.confirmation.exchange_validating" class="mt-2" size="sm" color="primary" @click="differenceOpen = true">Registrar voucher de la diferencia</UButton>
           </div>
 
           <!-- Reembolso -->
