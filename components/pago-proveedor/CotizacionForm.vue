@@ -1176,7 +1176,13 @@ function alElegirCodigo(proveedor: PagoProveedorProveedor, elegido?: unknown) {
   const catalogo = (cotizacion.value?.codigos_disponibles || []).find(item => item.code_supplier === codigo)
   // Solo el producto se autocompleta. El nombre del proveedor lo digita Ventas: el que trae
   // Carga Consolidada (campo «supplier» del código) no siempre es el del proveedor a pagar.
-  proveedor.producto = (opcion?.producto || catalogo?.producto || '').trim()
+  proveedor.producto = formatoProducto(opcion?.producto || catalogo?.producto || '')
+}
+
+/** Nombre del producto con solo la primera letra en mayúscula («TELAS» → «Telas»); el back lo guarda igual. */
+function formatoProducto(valor: string) {
+  const texto = valor.trim().replace(/\s+/g, ' ').toLocaleLowerCase('es-PE')
+  return texto ? texto.charAt(0).toLocaleUpperCase('es-PE') + texto.slice(1) : ''
 }
 
 function alElegirMoneda(proveedor: PagoProveedorProveedor, valor: unknown) {

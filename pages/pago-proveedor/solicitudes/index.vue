@@ -197,15 +197,21 @@
             v-for="row in otherAreaRows"
             :key="`other-${row.provider.id}`"
             :to="`/pago-proveedor/solicitudes/${row.requestId}`"
-            class="flex items-center justify-between rounded-xl border border-default bg-default px-4 py-3 text-sm hover:border-primary"
+            class="flex flex-col gap-2 rounded-xl border border-default bg-default px-4 py-3 text-sm hover:border-primary md:flex-row md:items-center md:justify-between"
           >
-            <span>
-              <strong class="text-highlighted">{{ row.clientName }}</strong>
-              <span class="text-muted"> · {{ supplierLabel(row.provider) }} · {{ waitingText(row.provider) }}</span>
+            <!-- Según maqueta: cliente y proveedor en la 1.ª línea; quién lo tiene en la 2.ª; etapa, estado y «Ver» a la derecha. -->
+            <span class="min-w-0">
+              <span class="block">
+                <strong class="text-highlighted">{{ row.clientName }}</strong>
+                <span class="text-xs text-muted"> · {{ supplierLabel(row.provider) }} · {{ paymentLabel(row.provider) }}</span>
+              </span>
+              <span class="mt-0.5 block text-xs text-muted">{{ waitingText(row.provider) }}</span>
             </span>
-            <span class="flex items-center gap-2">
-              <UBadge color="neutral" variant="subtle" size="sm">{{ statusLabel(row.provider.status) }}</UBadge>
-              <span class="text-xs text-muted">{{ stageLabel(row.provider.stage) }}</span>
+            <span class="flex shrink-0 items-center gap-2">
+              <UBadge color="info" variant="subtle" size="sm">{{ row.provider.stage }}. {{ stageShort(row.provider.stage) }}</UBadge>
+              <UBadge color="info" variant="subtle" size="sm">{{ statusLabel(row.provider.status) }}</UBadge>
+              <!-- Toda la fila ya es enlace: «Ver» es solo visual (un botón dentro de <a> no es HTML válido). -->
+              <span class="rounded-md border border-default px-2.5 py-1 text-xs font-semibold text-highlighted">Ver</span>
             </span>
           </NuxtLink>
         </div>
