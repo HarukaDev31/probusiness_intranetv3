@@ -219,12 +219,13 @@ export const useViaticos = () => {
   }
 
   /**
-   * Exportar viáticos como CSV
+   * Exporta el tablero completo (todas las páginas) con los filtros activos.
+   * `overrideFilters` permite usar la búsqueda y filtros de la pantalla.
    */
-  const exportViaticos = async (status?: string,) => {
+  const exportViaticos = async (status?: string, overrideFilters?: ViaticoFilters) => {
     try {
-      console.log(filters.value)
-      const blob = await ViaticoService.exportViaticos(status, filters.value)
+      const activeFilters = overrideFilters ?? filters.value
+      const blob = await ViaticoService.exportViaticos(status, activeFilters)
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
