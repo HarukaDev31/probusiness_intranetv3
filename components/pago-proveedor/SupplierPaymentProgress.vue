@@ -59,9 +59,10 @@
           <div v-for="deposit in progress.verification.deposits" :key="`check-${deposit.id}`" class="mt-2 text-sm text-muted">
             <strong v-if="progress.verification.deposits.length > 1" class="block text-highlighted">Abono {{ deposit.number ?? deposit.id }}</strong>
             Importe ingresado (Banco): <strong class="text-highlighted">${{ money(deposit.amount) }}</strong>
-            <em v-if="deposit.recorded_amount != null" class="block">Importe: ${{ money(deposit.recorded_amount) }} → ${{ money(deposit.amount) }}</em>
-            <em v-for="change in deposit.corrections" :key="`${deposit.id}-${change.field}-${change.to}`" class="block">{{ change.field }}: {{ change.from }} → {{ change.to }}</em>
-            <span v-if="deposit.verified_at" class="block text-xs">{{ fechaHora(deposit.verified_at) }}<template v-if="deposit.verified_by"> · {{ deposit.verified_by }}</template></span>
+            <!-- Maqueta (#1803): lo modificado va en azul; quién validó, con su área (#1806): solo Administración verifica depósitos. -->
+            <span v-if="deposit.recorded_amount != null" class="block text-blue-600 dark:text-blue-400">Importe: ${{ money(deposit.recorded_amount) }} → ${{ money(deposit.amount) }}</span>
+            <span v-for="change in deposit.corrections" :key="`${deposit.id}-${change.field}-${change.to}`" class="block text-blue-600 dark:text-blue-400">{{ change.field }}: {{ change.from }} → {{ change.to }}</span>
+            <span v-if="deposit.verified_at" class="block text-xs">{{ fechaHora(deposit.verified_at) }}<template v-if="deposit.verified_by"> · {{ deposit.verified_by }} · Administración</template></span>
           </div>
         </template>
         <p v-else class="text-sm text-muted">Sin depósitos.</p>
