@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto max-w-5xl space-y-4 p-6">
+  <div class="mx-auto max-w-6xl space-y-4 p-6">
     <PageHeader :hide-back-button="false" @back="volverAlListado" />
 
     <div v-if="cargando" class="space-y-4">
@@ -304,9 +304,13 @@
             :tipo-cambio="solicitud.tipo_cambio"
             :readonly="soloLectura"
             :viewing="vistaEtapa[proveedor.id] ?? proveedor.etapa"
+            :can-cancel-deposit="(id) => !!(solicitud?.abonos || []).find(item => item.id === id)?.puede_anular"
             @saved="cargar"
             @complete-data="irACompletarDatos(proveedor)"
             @view-data="abrirDatos(proveedor, true)"
+            @view-form="formularioAbierto = proveedor"
+            @view-deposit="(id) => abrirDeposito(proveedor, id)"
+            @cancel-deposit="(id) => anularAbonoPorId(id)"
             @go-step="(paso) => irAPaso(proveedor, paso)"
             @lift="abrirMotivo(proveedor, 'levantar')"
             @lift-china="levantarChina(proveedor)"
@@ -318,7 +322,11 @@
           />
 
           <!-- Debajo de las tarjetas del paso, como la franja «Por realizar». -->
-          <UAlert v-if="(vistaEtapa[proveedor.id] ?? proveedor.etapa) === proveedor.etapa && enManos(proveedor)" class="mt-3" color="info" variant="subtle" :description="enManos(proveedor)" />
+          <UAlert v-if="(vistaEtapa[proveedor.id] ?? proveedor.etapa) === proveedor.etapa && enManos(proveedor)" class="mt-3" color="info" variant="subtle" :ui="{ description: 'text-highlighted' }">
+            <template #description>
+              En manos de <strong>{{ enManos(proveedor)!.quien }}</strong>{{ enManos(proveedor)!.resto }}
+            </template>
+          </UAlert>
 
           <UAlert
             v-if="!soloLectura && (vistaEtapa[proveedor.id] ?? proveedor.etapa) === proveedor.etapa && porRealizar(proveedor)"
@@ -636,6 +644,104 @@
         </template>
       </SupplierPaymentWindow>
 
+      <!-- «Ver formulario» de Confirmación: vista de lectura del formulario de la Etapa 1 (maqueta). -->
+      <SupplierPaymentWindow
+        :open="!!formularioAbierto"
+        title="Formulario de la solicitud"
+        subtitle="Vista de lectura: así se llenó el formulario en la Etapa 1."
+        width-class="max-w-lg sm:max-w-lg"
+        @close="formularioAbierto = null"
+      >
+        <template v-if="formularioAbierto">
+          <dl class="divide-y divide-default text-sm">
+            <div v-for="fila in filasFormulario(formularioAbierto)" :key="fila.label" class="flex items-center justify-between gap-4 px-2 py-2.5">
+              <dt class="max-w-48 font-medium text-highlighted">{{ fila.label }}</dt>
+              <dd class="text-right text-highlighted">{{ fila.value }}</dd>
+            </div>
+          </dl>
+          <div v-if="formularioAbierto.moneda !== 'RMB' && formularioAbierto.datos?.beneficiario_nombre" class="flex items-center justify-between gap-2 px-2 text-sm">
+            <span class="font-medium text-highlighted">Datos bancarios (T-T)</span>
+            <UButton size="xs" color="neutral" variant="outline" icon="i-lucide-eye" @click="abrirDatos(formularioAbierto, true)">Ver datos</UButton>
+          </div>
+          <div v-if="formularioAbierto.proforma_url" class="px-2 text-sm">
+            <p class="flex items-center gap-2 text-highlighted"><UIcon name="i-lucide-file-text" class="size-4 shrink-0 text-muted" />Proforma de la carga — {{ formularioAbierto.proforma_nombre || 'proforma' }}</p>
+            <div class="mt-2 flex gap-2">
+              <UButton size="sm" color="primary" variant="outline" icon="i-lucide-eye" title="Ver proforma" :to="formularioAbierto.proforma_url" target="_blank" />
+              <UButton size="sm" color="primary" variant="outline" icon="i-lucide-download" title="Descargar proforma" :to="formularioAbierto.proforma_url" target="_blank" download />
+            </div>
+          </div>
+          <UCollapsible v-model:open="desgloseFormularioAbierto" class="px-2">
+            <UButton color="info" variant="link" size="sm" class="px-0" :icon="desgloseFormularioAbierto ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'">Desglose del cobro</UButton>
+            <template #content>
+              <UCard variant="outline" :ui="{ body: 'p-3 sm:p-3' }" class="mt-1">
+                <p class="mb-2 text-xs font-bold uppercase tracking-wide text-muted">Cobro al cliente</p>
+                <dl class="space-y-1.5 text-sm">
+                  <div class="flex justify-between gap-3"><dt class="text-highlighted">Valor de carga</dt><dd class="text-highlighted">{{ detalleValorCarga(formularioAbierto) }}</dd></div>
+                  <div class="flex justify-between gap-3"><dt class="text-highlighted">Com. bancaria / plataforma</dt><dd class="text-highlighted">{{ formularioAbierto.etiqueta_bancaria || `$${dinero(formularioAbierto.bancaria_monto)}` }}</dd></div>
+                  <div v-if="Number(formularioAbierto.administrativa_monto) > 0" class="flex justify-between gap-3"><dt class="text-highlighted">Com. administrativa</dt><dd class="text-highlighted">${{ dinero(formularioAbierto.administrativa_monto) }}</dd></div>
+                  <div class="flex justify-between gap-3 rounded-md bg-primary/10 px-2.5 py-2 font-bold text-primary"><dt>Total a cobrar</dt><dd>${{ dinero(formularioAbierto.importe_requerido) }}</dd></div>
+                </dl>
+              </UCard>
+            </template>
+          </UCollapsible>
+        </template>
+        <template #footer>
+          <UButton color="neutral" variant="outline" @click="formularioAbierto = null">Cerrar</UButton>
+        </template>
+      </SupplierPaymentWindow>
+
+      <!-- «Ver depósito validado por Administración»: comprobante + datos de Ventas + importes (maqueta). -->
+      <SupplierPaymentWindow
+        :open="!!depositoAbierto"
+        title="Depósito validado"
+        :subtitle="[solicitud.cliente_nombre, solicitud.consolidado ? `Consolidado ${solicitud.consolidado}` : ''].filter(Boolean).join(' · ')"
+        :code="depositoAbierto?.proveedor.codigo_solicitud || null"
+        wide
+        @close="depositoAbierto = null"
+      >
+        <template #pill>
+          <UBadge color="success" variant="soft" label="✓ Validado" />
+        </template>
+        <div v-if="depositoAbierto" class="grid gap-4 lg:grid-cols-[1.25fr_1fr]">
+          <VoucherViewer :url="depositoAbierto.abono.voucher_url" :name="depositoAbierto.abono.voucher_nombre" />
+          <div class="flex flex-col gap-3.5">
+            <SupplierPaymentCard title="Datos registrados por Ventas" class="h-auto shrink-0">
+              <SupplierPaymentFact label="Cliente" :value="solicitud.cliente_nombre || '—'" />
+              <SupplierPaymentFact label="N.° de consolidado" :value="solicitud.consolidado || '—'" />
+              <SupplierPaymentFact label="Código de solicitud" :value="depositoAbierto.proveedor.codigo_solicitud || '—'" />
+              <SupplierPaymentFact label="Banco" :value="depositoAbierto.abono.banco.toUpperCase()" />
+              <SupplierPaymentFact label="Fecha del depósito" :value="fechaCorta(depositoAbierto.abono.fecha_pago)" />
+              <SupplierPaymentFact label="N.° de operación" :value="depositoAbierto.abono.numero_operacion || '—'" />
+            </SupplierPaymentCard>
+            <UAlert
+              v-if="depositoAbierto.registrado != null"
+              color="info"
+              variant="subtle"
+            >
+              <template #description>
+                <strong>Ajustado al importe del banco:</strong> Ventas registró ${{ dinero(depositoAbierto.registrado) }} y el abono quedó validado por ${{ dinero(depositoAbierto.abono.importe) }}. Se avisó a Ventas.
+              </template>
+            </UAlert>
+            <SupplierPaymentCard title="Importes (USD)" class="h-auto shrink-0">
+              <div class="grid gap-2 sm:grid-cols-2">
+                <UCard variant="subtle" :ui="{ body: 'px-3 py-2 sm:px-3 sm:py-2' }">
+                  <p class="text-[11px] font-bold uppercase tracking-wide text-muted">Importe registrado (Ventas)</p>
+                  <p class="mt-1 text-lg font-bold text-highlighted">${{ dinero(depositoAbierto.abono.importe) }}</p>
+                </UCard>
+                <UCard color="primary" variant="subtle" :ui="{ body: 'px-3 py-2 sm:px-3 sm:py-2' }">
+                  <p class="text-[11px] font-bold uppercase tracking-wide text-primary">Importe ingresado (Banco)</p>
+                  <p class="mt-1 text-lg font-bold text-primary">${{ dinero(depositoAbierto.abono.importe) }}</p>
+                </UCard>
+              </div>
+              <UAlert class="mt-2" color="success" variant="subtle" description="✓ Coincide con el importe registrado." />
+            </SupplierPaymentCard>
+          </div>
+        </div>
+        <template #footer>
+          <UButton color="neutral" variant="outline" @click="depositoAbierto = null">Cerrar</UButton>
+        </template>
+      </SupplierPaymentWindow>
+
       <SupplierPaymentWindow
         :open="!!voucherAbierto"
         :title="voucherAbierto ? `Voucher · Abono ${numeroAbono(voucherAbierto)}` : ''"
@@ -708,6 +814,8 @@ import FormularioBancario from '~/components/pago-proveedor/FormularioBancario.v
 import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
 import SupplierPaymentProgress from '~/components/pago-proveedor/SupplierPaymentProgress.vue'
 import VoucherViewer from '~/components/pago-proveedor/VoucherViewer.vue'
+import SupplierPaymentCard from '~/components/pago-proveedor/SupplierPaymentCard.vue'
+import SupplierPaymentFact from '~/components/pago-proveedor/SupplierPaymentFact.vue'
 import { useSlaCountdown } from '~/composables/pago-proveedor/useSlaCountdown'
 
 type TipoMotivo = 'observar' | 'anular' | 'levantar'
@@ -758,6 +866,9 @@ let pedidoDatosTurno = 0
 const enviandoResumen = ref(false)
 const voucher = ref<File | null>(null)
 const voucherAbierto = ref<PagoProveedorAbono | null>(null)
+const formularioAbierto = ref<PagoProveedorSolicitudProveedor | null>(null)
+const desgloseFormularioAbierto = ref(true)
+const depositoAbierto = ref<{ proveedor: PagoProveedorSolicitudProveedor; abono: PagoProveedorAbono; registrado: number | null } | null>(null)
 const { slaText, slaOverdue } = useSlaCountdown()
 const vistaPrevia = ref<VistaPrevia | null>(null)
 const continuacion = reactive<Record<number, number[]>>({})
@@ -968,7 +1079,35 @@ function textoHistorial(evento: { accion: string; detalle?: string | null }) {
   if (evento.accion === 'Pedido de datos' && evento.detalle) {
     return { accion: `Pedido de datos de ${evento.detalle}`, detalle: '' }
   }
+  if (evento.accion === 'Depósito validado' && evento.detalle) {
+    return { accion: textoDepositoValidado(evento.detalle), detalle: '' }
+  }
+  // «Por cobrar MATO19-1: faltan $5.00; Ventas debe cobrarlos al cliente» (maqueta).
+  if (evento.accion === 'Por cobrar' && evento.detalle) {
+    return { accion: `Por cobrar ${evento.detalle}`, detalle: '' }
+  }
+  if (evento.accion === 'Pago por cobrar' && evento.detalle) {
+    const monto = /Faltan\s+([\d.]+)/i.exec(evento.detalle)?.[1]
+    const activos = (solicitud.value?.proveedores || []).filter(item => item.estado !== 'anulado')
+    const codigo = activos.length === 1 ? ` ${activos[0].code_supplier}` : ''
+    if (monto) return { accion: `Por cobrar${codigo}: faltan $${dinero(Number(monto))}; Ventas debe cobrarlos al cliente`, detalle: '' }
+  }
   return { accion: evento.accion, detalle: evento.detalle || '' }
+}
+
+/**
+ * «Abono #1 validado en el banco: $1,045.00 (Ventas registró $1,050.00: se ajustó al importe del banco)».
+ * El back ya lo guarda así; los registros antiguos («Ventas registró 1050 · se ajustó al importe del banco 1045…»
+ * o «Importe del banco 5») se reescriben aquí.
+ */
+function textoDepositoValidado(detalle: string) {
+  if (detalle.startsWith('Abono #')) return detalle
+  const ajustado = /Ventas registró\s+([\d.]+).*importe del banco\s+([\d.]+)/i.exec(detalle)
+  const banco = ajustado ? Number(ajustado[2]) : Number(/Importe del banco\s+([\d.]+)/i.exec(detalle)?.[1])
+  if (!Number.isFinite(banco) || banco <= 0) return `Depósito validado · ${detalle}`
+  const candidatos = (solicitud.value?.abonos || []).filter(item => Math.abs(Number(item.importe) - banco) < 0.005)
+  const numero = candidatos.length === 1 ? ` #${numeroAbono(candidatos[0])}` : ''
+  return `Abono${numero} validado en el banco: $${dinero(banco)}${ajustado ? ` (Ventas registró $${dinero(Number(ajustado[1]))}: se ajustó al importe del banco)` : ''}`
 }
 
 function cuentaOculta(cuenta?: string | null) {
@@ -1364,10 +1503,12 @@ function porRealizar(proveedor: PagoProveedorSolicitudProveedor) {
 }
 
 /** Franja «En manos de»: solo cuando Ventas no tiene nada que hacer. */
-function enManos(proveedor: PagoProveedorSolicitudProveedor) {
-  if (proveedor.estado !== 'en_proceso' || porRealizar(proveedor)) return ''
-  if (proveedor.etapa === 2) return 'En manos de Administración: verifica el depósito y aprueba el pago. Te avisamos cuando lo aprueben.'
-  if (proveedor.etapa !== 3) return ''
+function enManos(proveedor: PagoProveedorSolicitudProveedor): { quien: string; resto: string } | null {
+  // Con el voucher de la diferencia ya registrado el proveedor sigue «Observado», pero ya no le toca a Ventas.
+  const esperaValidacion = proveedor.estado === 'observado' && !proveedor.observacion_ventas && !proveedor.observacion_china && proveedor.progreso?.verification.approval.state === 'waiting_verification'
+  if ((proveedor.estado !== 'en_proceso' && !esperaValidacion) || porRealizar(proveedor)) return null
+  if (proveedor.etapa === 2) return { quien: 'Administración', resto: ': verifica el depósito y aprueba el pago. Te avisamos cuando lo aprueben.' }
+  if (proveedor.etapa !== 3) return null
   const quien = proveedor.moneda === 'RMB' ? 'Operaciones China' : 'Administración'
   const aprobado = proveedor.progreso?.verification.approval.decided_at
   let desde = ''
@@ -1375,12 +1516,47 @@ function enManos(proveedor: PagoProveedorSolicitudProveedor) {
     const dias = Math.floor((Date.now() - new Date(aprobado).getTime()) / 86400000)
     desde = ` desde el ${new Date(aprobado).toLocaleDateString('es-PE', { timeZone: 'America/Lima' })}${dias >= 1 ? ` (hace ${dias} día${dias > 1 ? 's' : ''})` : ''}`
   }
-  return `En manos de ${quien}${desde}. Te avisamos cuando suban la constancia.`
+  return { quien, resto: `${desde}. Te avisamos cuando suban la constancia.` }
 }
 
 function editarAbonoPorId(id: number) {
   const item = (solicitud.value?.abonos || []).find(abonoItem => abonoItem.id === id)
   if (item) editarAbono(item)
+}
+
+function abrirDeposito(proveedor: PagoProveedorSolicitudProveedor, id: number) {
+  const abonoItem = (solicitud.value?.abonos || []).find(item => item.id === id)
+  if (!abonoItem) return
+  const registrado = proveedor.progreso?.verification.deposits.find(item => item.id === id)?.recorded_amount ?? null
+  depositoAbierto.value = { proveedor, abono: abonoItem, registrado }
+}
+
+function anularAbonoPorId(id: number) {
+  const item = (solicitud.value?.abonos || []).find(abonoItem => abonoItem.id === id)
+  if (item) anularAbono(item)
+}
+
+/** Filas de «Formulario de la solicitud» (vista de lectura, como la maqueta). */
+function filasFormulario(proveedor: PagoProveedorSolicitudProveedor) {
+  const rmbProveedor = proveedor.moneda === 'RMB'
+  const tc = Number(solicitud.value?.tipo_cambio || 0)
+  const valorCarga = rmbProveedor && tc > 0
+    ? `¥${dinero(proveedor.valor_carga_rmb ?? Number(proveedor.valor_carga_usd || 0) * tc)}`
+    : `$${dinero(proveedor.valor_carga_usd)}`
+  const filas = [
+    { label: 'Cliente', value: solicitud.value?.cliente_nombre || '—' },
+    { label: 'N.° de consolidado', value: solicitud.value?.consolidado ? soloConsolidado(solicitud.value.consolidado) : '—' },
+    { label: 'Código de proveedor', value: proveedor.code_supplier || '—' },
+    { label: 'Proveedor', value: proveedor.nombre_proveedor || '—' },
+    { label: 'Producto', value: proveedor.producto || '—' },
+    { label: 'Código de solicitud', value: proveedor.codigo_solicitud || '—' },
+    { label: 'Moneda / tipo de pago', value: rmbProveedor ? 'RMB / Transferencia' : 'USD / T-T' },
+    { label: 'Modalidad de abono del cliente', value: proveedor.modalidad_abono === 'fraccionado' ? '2 cuotas' : 'Total' },
+    { label: 'Modalidad de pago al proveedor', value: proveedor.modalidad_pago === 'fraccionado' ? '2 pagos' : 'Total' },
+    { label: 'Valor de la carga', value: valorCarga }
+  ]
+  if (rmbProveedor) filas.push({ label: 'Vendedor / N.° de WeChat', value: [proveedor.datos?.vendedor_nombre, proveedor.datos?.wechat].filter(Boolean).join(' / ') || '—' })
+  return filas
 }
 
 function verVoucherPorId(id: number) {

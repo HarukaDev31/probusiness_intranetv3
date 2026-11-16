@@ -20,7 +20,7 @@
       v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES"
       :open="plazoTareasAbierto"
       title="Plazo de pendientes"
-      subtitle="Fecha límite por defecto de las tareas de Ventas que no tienen un plazo propio (registrar datos, comprobante, diferencia de cambio…). Se cuenta desde que se crea la solicitud o desde el último cambio."
+      subtitle="Fecha límite por defecto de las tareas de Ventas que no tienen un plazo propio (registrar datos, comprobante, diferencia de cambio…). Se cuenta desde que se crea la solicitud o desde el último cambio. También es el plazo máximo para cobrar al cliente una diferencia: corre desde que Administración la deja por cobrar."
       @close="plazoTareasAbierto = false"
     >
       <label class="block text-sm text-muted">Plazo (horas)

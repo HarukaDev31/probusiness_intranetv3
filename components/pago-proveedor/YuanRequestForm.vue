@@ -7,11 +7,15 @@
     @close="emit('close')"
   >
     <div class="grid items-end gap-3.5 sm:grid-cols-4">
-      <UFormField label="Socio">
+      <!-- Solicitud de Ventas: no tiene socio elegido; se muestra su país (#1823). -->
+      <UFormField v-if="ventas" label="País">
+        <UInput :model-value="request?.country || '—'" class="w-full" disabled />
+      </UFormField>
+      <UFormField v-else label="Socio">
         <template #hint>
-          <UButton v-if="!newOrganization.open && !ventas" size="xs" color="primary" variant="link" :padded="false" @click="openNewOrganization">Nuevo socio</UButton>
+          <UButton v-if="!newOrganization.open" size="xs" color="primary" variant="link" :padded="false" @click="openNewOrganization">Nuevo socio</UButton>
         </template>
-        <USelect v-model="form.organizationId" :items="organizationItems" placeholder="Seleccionar…" class="w-full" :disabled="ventas" @update:model-value="form.partner = ''" />
+        <USelect v-model="form.organizationId" :items="organizationItems" placeholder="Seleccionar…" class="w-full" @update:model-value="form.partner = ''" />
       </UFormField>
       <UFormField label="Cliente">
         <UInput v-model="form.partner" list="yuan-partners" placeholder="Selecciona o escribe" class="w-full" :disabled="ventas" />

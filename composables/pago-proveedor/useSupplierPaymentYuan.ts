@@ -1,4 +1,4 @@
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { YUAN_BUCKET } from '~/constants/supplierPayment'
 import { useModal } from '~/composables/commons/useModal'
 import { PagoProveedorService } from '~/services/pagoProveedorService'
@@ -30,7 +30,14 @@ export function useSupplierPaymentYuan() {
   const loading = ref(false)
 
   const selectedId = ref<number | null>(null)
-  const selected = computed(() => rows.value.find((row) => row.request_id === selectedId.value) || null)
+  /**
+   * Última versión de la solicitud abierta: al registrar un pago puede pasar a otra pestaña
+   * (Abiertos → Completados) y la ventana lateral debe seguir abierta (#1825).
+   */
+  const selectedSnapshot = ref<SupplierPaymentYuanRequest | null>(null)
+  const selected = computed(() => rows.value.find((row) => row.request_id === selectedId.value)
+    || (selectedSnapshot.value?.request_id === selectedId.value ? selectedSnapshot.value : null))
+  watch(selected, (row) => { selectedSnapshot.value = row })
 
   const cards = computed(() => {
     const data = indicators.value
@@ -81,10 +88,28 @@ export function useSupplierPaymentYuan() {
       organizations.value = response.organizations || []
       suggestions.value = response.suggestions || { partners: {}, clients: {} }
       if (response.pagination) pagination.value = response.pagination
+      await refreshSelectedElsewhere()
     } catch (error: any) {
       showError('Pago a proveedores', error?.data?.message || 'No se pudo cargar la lista.')
     } finally {
       if (current === lastRequest) loading.value = false
+    }
+  }
+
+  /** Si la solicitud abierta ya no está en esta pestaña, la busca en la otra para refrescar la ventana lateral. */
+  async function refreshSelectedElsewhere() {
+    const snapshot = selectedSnapshot.value
+    if (!snapshot || snapshot.request_id !== selectedId.value || rows.value.some((row) => row.request_id === snapshot.request_id)) return
+    try {
+      const response = await PagoProveedorService.listYuan({
+        bucket: bucket.value === YUAN_BUCKET.OPEN ? YUAN_BUCKET.COMPLETED : YUAN_BUCKET.OPEN,
+        search: (snapshot.code || '').split(' / ')[0],
+        per_page: 50
+      })
+      const fresh = (response.data || []).find((row) => row.request_id === snapshot.request_id)
+      if (fresh && selectedId.value === fresh.request_id) selectedSnapshot.value = fresh
+    } catch {
+      // La ventana sigue abierta con los últimos datos conocidos.
     }
   }
 
