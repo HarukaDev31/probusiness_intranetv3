@@ -19,7 +19,7 @@
       :show-filters="true" 
       :filter-config="filterConfig" 
       :filters-value="filters" 
-      :show-export="false"
+      :show-export="true"
       :show-skeleton="true"
       :skeleton-rows="6"
       :skeleton-cols="8"
@@ -32,6 +32,9 @@
       @page-change="handlePageChange" 
       @items-per-page-change="handleItemsPerPageChange" 
       @filter-change="handleFilterChange"
+      @update:filters="handleUpdateFilters"
+      @clear-filters="handleClearFilters"
+      @export="handleExport"
     >
       <template #error-state>
         <ErrorState :message="error || 'Error desconocido'" />
@@ -60,7 +63,7 @@ import ModalPreview from '~/components/commons/ModalPreview.vue'
 import type { CreateViaticoRequest, ViaticoPago, ViaticoRetribucion } from '~/types/viatico'
 import type { FileItem } from '~/types/commons/file'
 
-const { viaticos, loading, error, pagination, loadViaticos, createViatico, updateViatico, getStatusColor, getStatusLabel, deleteViatico } = useViaticos()
+const { viaticos, loading, error, pagination, loadViaticos, createViatico, updateViatico, getStatusColor, getStatusLabel, deleteViatico, exportViaticos } = useViaticos()
 const { hasRole } = useUserRole()
 const { isDesktop } = useIsDesktop()
 const { showSuccess, showError, showConfirmation } = useModal()
@@ -69,6 +72,19 @@ const { withSpinner } = useSpinner()
 
 const search = ref('')
 const filters = ref<Record<string, any>>({})
+
+/** Parámetros del tablero visible. "Todos" no se envía: el listado y el Excel traen todos los estados. */
+const boardQuery = (page: number, perPage?: number) => {
+  const { status, ...rest } = filters.value || {}
+  const query: Record<string, any> = {
+    page,
+    per_page: perPage ?? pagination.value.per_page,
+    search: search.value,
+    ...rest
+  }
+  if (status && status !== 'todos') query.status = status
+  return query
+}
 
 const overlay = useOverlay()
 const createViaticoModal = overlay.create(CreateViaticoModal)
@@ -94,12 +110,7 @@ const handleNewButtonClick = () => {
           await createViatico(data)
           showSuccess('Viático creado', 'El viático ha sido creado exitosamente')
           createViaticoModal.close()
-          await loadViaticos({
-            page: pagination.value.current_page,
-            per_page: pagination.value.per_page,
-            search: search.value,
-            ...filters.value
-          })
+          await loadViaticos(boardQuery(pagination.value.current_page))
         })
       } catch (err: any) {
         showError('Error al crear viático', err.message || 'Error desconocido')
@@ -281,12 +292,7 @@ const columns: TableColumn<any>[] = [
                     await createViatico(data)
                     showSuccess('Viático actualizado', 'El viático ha sido actualizado exitosamente')
                     createViaticoModal.close()
-                    await loadViaticos({
-                      page: pagination.value.current_page,
-                      per_page: pagination.value.per_page,
-                      search: search.value,
-                      ...filters.value
-                    })
+                    await loadViaticos(boardQuery(pagination.value.current_page))
                   })
                 } catch (err: any) {
                   showError('Error al actualizar viático', err.message || 'Error desconocido')
@@ -312,12 +318,7 @@ const columns: TableColumn<any>[] = [
                   await withSpinner(async () => {
                     await deleteViatico(row.original.id)
                     showSuccess('Viático eliminado', 'El viático ha sido eliminado exitosamente')
-                    await loadViaticos({
-                      page: pagination.value.current_page,
-                      per_page: pagination.value.per_page,
-                      search: search.value,
-                      ...filters.value
-                    })
+                    await loadViaticos(boardQuery(pagination.value.current_page))
                   })
                 } catch (err: any) {
                   showError('Error al eliminar viático', err.message || 'Error desconocido')
@@ -336,25 +337,48 @@ const handleSearch = (val: string) => {
 }
 
 const handlePageChange = (page: number) => {
-  loadViaticos({
-    page,
-    per_page: pagination.value.per_page,
-    search: search.value,
-    ...filters.value
-  })
+  loadViaticos(boardQuery(page))
 }
 
 const handleItemsPerPageChange = (itemsPerPage: number) => {
-  loadViaticos({
-    page: 1,
-    per_page: itemsPerPage,
-    search: search.value,
-    ...filters.value
-  })
+  loadViaticos(boardQuery(1, itemsPerPage))
 }
 
-const handleFilterChange = (newFilters: Record<string, any>) => {
-  filters.value = newFilters
+const handleFilterChange = (arg1: string | Record<string, any>, arg2?: any) => {
+  if (typeof arg1 === 'string') {
+    filters.value = { ...filters.value, [arg1]: arg2 }
+    return
+  }
+  if (arg1 && typeof arg1 === 'object') {
+    filters.value = { ...arg1 }
+  }
+}
+
+const handleUpdateFilters = (next: Record<string, any>) => {
+  filters.value = { ...(next || {}) }
+}
+
+const handleClearFilters = () => {
+  filters.value = {}
+}
+
+const handleExport = async () => {
+  const rawStatus = filters.value?.status
+  const status = rawStatus && rawStatus !== 'todos' ? String(rawStatus) : undefined
+  const exportFilters = {
+    fecha_inicio: typeof filters.value?.fecha_inicio === 'string' ? filters.value.fecha_inicio : '',
+    fecha_fin: typeof filters.value?.fecha_fin === 'string' ? filters.value.fecha_fin : '',
+    requesting_area: typeof filters.value?.requesting_area === 'string' ? filters.value.requesting_area : '',
+    search: search.value || ''
+  }
+  try {
+    await withSpinner(async () => {
+      await exportViaticos(status, exportFilters)
+    }, 'Exportando…')
+    showSuccess('Excel listo', 'Se descargó el tablero de viáticos y reintegros.')
+  } catch (err: any) {
+    showError('No se pudo exportar', err?.message || 'Inténtalo de nuevo.')
+  }
 }
 
 // Configuración de filtros
@@ -389,12 +413,7 @@ const filterConfig = computed<FilterConfig[]>(() => [
 
 // Watchers
 watch([search, filters], () => {
-  loadViaticos({
-    page: 1,
-    per_page: pagination.value.per_page,
-    search: search.value,
-    ...filters.value
-  })
+  loadViaticos(boardQuery(1))
 }, { deep: true })
 
 onMounted(() => {
