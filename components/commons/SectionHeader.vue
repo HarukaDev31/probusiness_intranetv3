@@ -94,9 +94,12 @@
                         <div
                             v-if="countryRows(header).length || header.sublines?.length"
                             class="customers-kpi__breakdown"
-                            :class="{ 'customers-kpi__breakdown--wide': countryRows(header).length > 3 }"
+                            :class="{
+                                'customers-kpi__breakdown--wide': countryRows(header).length > 3,
+                                'customers-kpi__breakdown--lines': !countryRows(header).length,
+                            }"
                         >
-                            <p class="customers-kpi__breakdown-title">{{ header.label }}</p>
+                            <p v-if="countryRows(header).length" class="customers-kpi__breakdown-title">{{ header.label }}</p>
                             <div
                                 v-for="line in header.sublines || []"
                                 :key="line.label"
@@ -391,6 +394,25 @@ onUnmounted(() => {
     right: auto;
     width: max(100%, 340px);
     max-width: min(420px, 92vw);
+}
+
+/* Solo sublíneas (p. ej. fechas 60/65/67 CBM): compacto para que entren todas sin scroll. */
+.customers-kpi__breakdown--lines {
+    right: auto;
+    width: max(100%, 230px);
+    max-width: 92vw;
+    padding: 6px 10px;
+    gap: 1px;
+    justify-content: center;
+}
+
+.customers-kpi__breakdown--lines .customers-kpi__breakdown-row {
+    font-size: 11px;
+    line-height: 1.2;
+}
+
+.customers-kpi__breakdown--lines .customers-kpi__breakdown-row span {
+    flex-shrink: 0;
 }
 
 .customers-kpi__countries {
