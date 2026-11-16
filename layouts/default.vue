@@ -85,6 +85,8 @@ import { ref, computed, onMounted, onBeforeUnmount, watch, defineAsyncComponent 
 import { useVerificationCounts } from '~/composables/verificacion/useVerificationCounts'
 import { isContentNarrow, setContentNarrow } from '~/composables/usePageLayout'
 import { useAuth } from '../composables/auth/useAuth'
+import { useUserRole } from '../composables/auth/useUserRole'
+import { ROLES } from '../constants/roles'
 import { useMenuPrefetch } from '../composables/navigation/useMenuPrefetch'
 import { useWebSocketNotifications } from '../composables/useWebSocketNotifications'
 // Lazy load componentes pesados para mejorar tiempo de carga inicial
@@ -240,6 +242,7 @@ const pageTitle = computed(() => {
 })
 
 const { user, logout, initializeAuth, menu } = useAuth()
+const { currentRole } = useUserRole()
 const { schedulePrefetchFromStorage } = useMenuPrefetch()
 
 // Notificaciones modales vía evento window (ligero; no abre sockets extra)
@@ -415,6 +418,43 @@ const sidebarCategories = computed(() => {
   if (verificacionIndex !== -1 && pagoProveedorIndex !== -1 && pagoProveedorIndex < verificacionIndex) {
     const [item] = modules.splice(pagoProveedorIndex, 1)
     modules.splice(verificacionIndex, 0, item)
+  }
+
+  // PRY-26-0003: menú de Almacén China en el orden de la maqueta.
+  if (currentRole.value === ROLES.CONTENEDOR_ALMACEN) {
+    const ordenChina = (mod: { route?: string; name?: string; order?: number }) => {
+      const route = String(mod.route || '')
+      const name = String(mod.name || '').toLowerCase()
+      const reglas = [
+        (r: string, n: string) => r === '/' || n === 'inicio',
+        (r: string, n: string) => r.startsWith('/cargaconsolidada') || n.includes('carga consolidada'),
+        (r: string, n: string) => r.startsWith('/flujo-caja') || n.includes('flujo de caja'),
+        (r: string, n: string) => r.startsWith('/operaciones-china') || n === 'operaciones',
+        (r: string, n: string) => r.includes('pago-proveedor') || n.includes('pago a proveedor'),
+        (r: string, n: string) => r.startsWith('/clientes-china') || n === 'clientes'
+      ]
+      const index = reglas.findIndex((regla) => regla(route, name))
+      return index === -1 ? 50 : index
+    }
+    if (!modules.some((mod: { route?: string }) => String(mod.route || '').startsWith('/flujo-caja'))) {
+      const operaciones = modules.findIndex((mod: { route?: string }) => String(mod.route || '').startsWith('/operaciones-china'))
+      modules.splice(operaciones === -1 ? modules.length : operaciones, 0, {
+        id: 'flujo-caja',
+        name: 'Flujo de caja',
+        nameEn: 'Cash flow',
+        icon: 'i-heroicons-banknotes',
+        route: '/flujo-caja',
+        category: 'Menú',
+        categoryId: 'main',
+        order: 0,
+        isVisible: true,
+        hasNotifications: false,
+        notificationCount: 0,
+        permissions: ['view'],
+        children: []
+      })
+    }
+    modules.sort((a: { route?: string; name?: string }, b: { route?: string; name?: string }) => ordenChina(a) - ordenChina(b))
   }
 
   // Una sola categoría que contiene todos los módulos padre (para que SidebarMenu los muestre como botones)

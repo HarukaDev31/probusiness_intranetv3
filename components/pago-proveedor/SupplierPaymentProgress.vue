@@ -373,7 +373,7 @@
       <UCard :ui="bloque">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="min-w-56 flex-1">
-            <UProgress :model-value="avanceConfirmacion" color="success" size="sm" class="max-w-sm" />
+            <UProgress :model-value="avanceConfirmacion" color="success" size="sm" class="w-full" />
             <p class="mt-1.5 text-sm font-semibold text-highlighted">
               {{ progress.confirmation.done_count }} de {{ progress.confirmation.total }} ·
               <template v-if="progress.confirmation.completed">✓ Completado: no queda nada pendiente.</template>

@@ -180,7 +180,7 @@
           <UButton v-if="(vistaEtapa[proveedor.id] ?? proveedor.etapa) !== proveedor.etapa" class="mt-2" size="xs" color="neutral" variant="outline" @click="verPasoActual(proveedor)">Volver al paso actual</UButton>
 
           <UAlert v-if="proveedor.estado === 'anulado'" class="mt-4" color="neutral" variant="subtle" :description="proveedor.motivo_anulacion ? `Anulado — ${proveedor.motivo_anulacion}.` : 'Anulado.'" />
-          <UAlert v-else-if="proveedor.estado === 'completado'" class="mt-4" color="success" variant="subtle" description="✓ Completado. El pago se ejecutó y no quedó nada pendiente." />
+          <UAlert v-else-if="proveedor.estado === 'completado'" class="mt-4" color="success" variant="subtle" description="✓ Completado. El pago se ejecutó y no quedó nada pendiente. Aquí siguen disponibles sus constancias y su balance." />
           <UAlert v-if="proveedor.observacion_ventas" class="mt-4" color="error" variant="subtle" :title="`Observado — ${proveedor.observacion_ventas.motivo}`">
             <template #actions>
               <UButton v-if="!soloLectura" size="xs" color="error" variant="soft" @click="abrirMotivo(proveedor, 'levantar')">Levantar observación</UButton>

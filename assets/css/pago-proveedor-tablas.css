@@ -47,6 +47,8 @@
 .pp-tabla .table-scroll-container table tbody td {
   padding-top: 0.75rem;
   padding-bottom: 0.75rem;
+  /* Cliente, consolidado, banco, fecha, operación e importe van en negro. El código de solicitud sigue en naranja. */
+  color: #0f172a;
 }
 .pp-tabla .table-scroll-container table tbody tr:hover td {
   background-color: #fafbfd;
@@ -128,6 +130,7 @@
 }
 .dark .pp-tabla .table-scroll-container table tbody tr td {
   background-color: #111827;
+  color: #e2e8f0;
 }
 .dark .pp-tabla .table-scroll-container table tbody tr:hover td {
   background-color: #1e293b;
