@@ -308,3 +308,26 @@ const formatDateForBackend = (dateString: string): string => {
   }
   return dateString
 }
+
+/** Conectores que van en minúscula dentro de un nombre («Juan de la Cruz»). */
+const CONECTORES_NOMBRE = new Set(['de', 'del', 'y'])
+/** Artículos en minúscula solo tras «de» («de la Cruz»); solos son apellido («La Rosa»). */
+const ARTICULOS_NOMBRE = new Set(['la', 'las', 'los'])
+
+/**
+ * Nombre de persona en mayúsculas y minúsculas: «LUIS QUISPE MAMANI» → «Luis Quispe Mamani».
+ * Respeta tildes y ñ; los conectores (de, del, de la…) quedan en minúscula salvo al inicio.
+ */
+export const formatNombrePropio = (value: string | null | undefined): string => {
+  const text = String(value ?? '').trim().replace(/\s+/g, ' ')
+  if (!text) return ''
+  return text
+    .toLocaleLowerCase('es-PE')
+    .split(' ')
+    .map((word, index, words) => {
+      if (index > 0 && CONECTORES_NOMBRE.has(word)) return word
+      if (index > 1 && ARTICULOS_NOMBRE.has(word) && words[index - 1] === 'de') return word
+      return word.replace(/(^|[-'])(\p{L})/gu, (_, sep: string, letter: string) => sep + letter.toLocaleUpperCase('es-PE'))
+    })
+    .join(' ')
+}
