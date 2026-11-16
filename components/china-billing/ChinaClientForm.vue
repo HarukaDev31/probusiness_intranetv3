@@ -50,10 +50,10 @@
           <p class="mb-3 text-xs text-muted">Se cargan solos al crear una operación para este socio y se pueden modificar en cada una.</p>
           <div class="grid gap-3 sm:grid-cols-2">
             <UFormField label="Consolidado · tarifa 1 (USD/CBM)" required>
-              <UInputNumber v-model="form.prices.consol" :min="0" :step="1" placeholder="Ingresa la tarifa" class="w-full" />
+              <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.prices.consol" :min="0" :step="1" placeholder="Ingresa la tarifa" class="w-full" />
             </UFormField>
             <UFormField label="Consolidado · tarifa 2 (USD/CBM)" required>
-              <UInputNumber v-model="form.prices.consol_2" :min="0" :step="1" placeholder="Ingresa la tarifa" class="w-full" />
+              <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.prices.consol_2" :min="0" :step="1" placeholder="Ingresa la tarifa" class="w-full" />
             </UFormField>
           </div>
         </div>

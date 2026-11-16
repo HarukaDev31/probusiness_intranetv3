@@ -78,7 +78,7 @@
               </div>
             </div>
             <UFormField label="Monto real recibido en el banco (USD)">
-              <UInputNumber v-model="received" :min="0" :step="1" class="w-full" />
+              <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="received" :min="0" :step="1" class="w-full" />
             </UFormField>
             <div v-if="needsShortfall" class="mt-3 rounded-lg border border-error/30 bg-error/5 p-3">
               <p class="mb-2 text-sm text-error">Llegaron <strong>{{ usd(shortfallAmount) }}</strong> menos. ¿A qué operación cargas la diferencia?</p>
@@ -125,7 +125,7 @@
           <template v-else-if="payment.status === CHINA_STATUS.CONFIRMED">
             <div class="grid grid-cols-2 items-end gap-3">
               <div class="rounded-lg bg-elevated/60 px-3 py-2"><p class="text-xs text-muted">Monto confirmado (USD)</p><p class="text-lg font-bold text-highlighted">{{ usd(payment.amount_received || 0) }}</p></div>
-              <UFormField label="Tipo de cambio del banco"><UInputNumber v-model="exchangeRate" :min="0" :step="0.0001" class="w-full" /></UFormField>
+              <UFormField label="Tipo de cambio del banco"><UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="exchangeRate" :min="0" :step="0.0001" class="w-full" /></UFormField>
             </div>
             <div class="mt-3 flex items-center justify-between rounded-lg bg-primary/10 px-3 py-3 text-sm">
               <span class="text-highlighted">Ingresa a caja</span>
