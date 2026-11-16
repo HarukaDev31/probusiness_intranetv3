@@ -160,6 +160,8 @@ export interface ChinaPaymentFormPayload {
   amount_sent: number
   allocations: { operation_id: number; amount: number }[]
   receipt: File | null
+  /** Quita el comprobante del paso 1 (maqueta: Eliminar). */
+  remove_receipt?: boolean
 }
 
 export interface ChinaBankAccount {

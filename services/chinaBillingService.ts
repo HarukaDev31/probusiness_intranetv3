@@ -75,6 +75,7 @@ function paymentForm(payload: ChinaPaymentFormPayload): FormData {
     form.append(`allocations[${index}][amount]`, String(allocation.amount))
   })
   if (payload.receipt) form.append('receipt', payload.receipt)
+  if (payload.remove_receipt) form.append('remove_receipt', '1')
   return form
 }
 
