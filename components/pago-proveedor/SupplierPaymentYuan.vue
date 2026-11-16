@@ -148,11 +148,8 @@ const columns: TableColumn<SupplierPaymentYuanRequest>[] = [
     h('span', row.original.country || '—'),
     row.original.organization ? h('span', { class: 'text-xs text-muted' }, row.original.organization) : null
   ]) },
-  // #1747: nombre del socio de China (ej. Pro Business) y, debajo, el cliente.
-  { accessorKey: 'partner', header: 'Cliente', cell: ({ row }) => h('div', { class: 'flex w-32 flex-col whitespace-normal' }, [
-    h('span', { class: 'font-semibold' }, partnerName(row.original)),
-    row.original.client ? h('span', { class: 'text-xs text-muted' }, row.original.client) : null
-  ]) },
+  // #1753/#1754: para China el cliente es el socio (ej. Pro Business); no se muestran los nombres de las personas.
+  { accessorKey: 'partner', header: 'Cliente', cell: ({ row }) => h('span', { class: 'font-semibold whitespace-nowrap' }, partnerName(row.original)) },
   { accessorKey: 'code', header: 'N. orden', cell: ({ row }) => h('div', { class: 'flex flex-col' }, [
     h('span', { class: 'text-sm font-bold' }, row.original.code),
     h('span', { class: 'text-xs text-muted whitespace-nowrap' }, `${row.original.provider_count} ${row.original.provider_count === 1 ? 'proveedor' : 'proveedores'}`)
