@@ -36,6 +36,8 @@ export interface ChinaOperation {
   billing_type: string
   variant_name?: string | null
   container_id: number | null
+  /** «Consolidado #46» cuando la operación viene de un consolidado. */
+  consolidado_label?: string | null
   cbm: number | null
   rate?: number | null
   amount?: number

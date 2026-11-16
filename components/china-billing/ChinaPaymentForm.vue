@@ -54,8 +54,9 @@
               @update:model-value="(on: boolean) => toggleOperation(operation, on)"
             />
             <div class="min-w-0">
-              <p class="truncate text-sm font-semibold text-highlighted">{{ operation.code }} · {{ operation.description }}</p>
-              <p class="text-xs text-muted">Saldo pendiente {{ usd(operation.pending) }}</p>
+              <!-- #1909: como la maqueta, «OP-0004 · Consolidado» y debajo «02 oct · Consolidado #46 · producto». -->
+              <p class="truncate text-sm font-semibold text-highlighted">{{ operation.code }} · {{ operation.service_name }}</p>
+              <p class="truncate text-xs text-muted">{{ [dayLabel(operation.issued_on), operation.consolidado_label, operation.description].filter(Boolean).join(' · ') }}</p>
             </div>
             <span class="text-right text-xs font-semibold uppercase tracking-wide text-muted">
               Pendiente<br>
