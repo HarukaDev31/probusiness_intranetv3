@@ -33,6 +33,7 @@ export const    useCotizacionProveedor = () => {
                 { label: 'NC', value: 'NC' },
                 { label: 'NP', value: 'NP' },
                 { label: 'WN', value: 'WN' },
+                { label: 'NR', value: 'NR' },
                 { label: 'C', value: 'C' },
                 { label: 'R', value: 'R' },
                 { label: 'INSPECTION', value: 'INSPECTION' },
