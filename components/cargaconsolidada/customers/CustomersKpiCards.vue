@@ -31,18 +31,22 @@ const emit = defineEmits<{
   'filter-nc': []
 }>()
 
-const DATE_KEYS = new Set(['fecha_cbm_60', 'fecha_cbm_65'])
+const DATE_KEYS = new Set(['fecha_cbm_60', 'fecha_cbm_65', 'fecha_cbm_67'])
 
 const kpiHeaders = computed<Header[]>(() => {
   const source = props.headers || {}
   const fecha60 = source.fecha_cbm_60
   const fecha65 = source.fecha_cbm_65
+  const fecha67 = source.fecha_cbm_67
   const warehouseSublines: HeaderSubline[] = []
   if (fecha60) {
     warehouseSublines.push({ label: '60 CBM', value: String(fecha60.value ?? '—') })
   }
   if (fecha65) {
     warehouseSublines.push({ label: '65 CBM', value: String(fecha65.value ?? '—') })
+  }
+  if (fecha67) {
+    warehouseSublines.push({ label: '67 CBM', value: String(fecha67.value ?? '—') })
   }
 
   const cards: Header[] = []
