@@ -8,56 +8,54 @@
     @update:open="(value: boolean) => !value && emit('close')"
   >
     <template #body>
-      <div class="grid gap-4 sm:grid-cols-2">
-        <UFormField label="Cliente" required class="sm:col-span-2">
-          <USelectMenu
-            v-model="form.organization_id"
-            :items="organizationItems"
-            value-key="value"
-            placeholder="Selecciona un cliente"
-            :disabled="isDraft || isEdit"
-            class="w-full"
-          />
-        </UFormField>
+      <!-- #1957: plantilla de la maqueta (País · Cliente · Tipo de servicio, CBM × tarifa, FOB y flete, monto total abajo). -->
+      <div class="flex flex-col gap-5">
+        <div class="grid gap-3 sm:grid-cols-3">
+          <UFormField label="País">
+            <USelect v-model="country" :items="countryItems" placeholder="País" :disabled="isDraft || isEdit" class="w-full" />
+          </UFormField>
+          <UFormField label="Cliente" required>
+            <USelectMenu
+              v-model="form.organization_id"
+              :items="organizationItems"
+              value-key="value"
+              placeholder="Selecciona un cliente"
+              :disabled="isDraft || isEdit"
+              class="w-full"
+            />
+          </UFormField>
+          <UFormField label="Tipo de servicio" required>
+            <USelect v-model="serviceKind" :items="serviceItems" :disabled="isDraft" class="w-full" />
+          </UFormField>
+          <UFormField v-if="serviceKind === OTHER" label="Nombre del servicio" required class="sm:col-span-3">
+            <UInput v-model="form.service_name" placeholder="Ej. Etiquetado, Almacenaje" class="w-full" />
+          </UFormField>
+        </div>
 
-        <UFormField label="Tipo de cobro" required class="sm:col-span-2">
-          <div class="flex gap-2">
-            <UButton
-              v-for="option in billingOptions"
-              :key="option.value"
-              size="sm"
-              :color="form.billing_type === option.value ? 'primary' : 'neutral'"
-              :variant="form.billing_type === option.value ? 'solid' : 'outline'"
-              :disabled="isDraft"
-              @click="form.billing_type = option.value"
-            >
-              {{ option.label }}
-            </UButton>
+        <USeparator />
+
+        <div class="grid gap-3 sm:grid-cols-[2fr_1fr]">
+          <UFormField label="Descripción" required>
+            <UInput v-model="form.description" placeholder="Escribe o elige un consolidado del cliente" class="w-full" />
+          </UFormField>
+          <UFormField label="Fecha">
+            <UInput v-model="form.issued_on" type="date" class="w-full" />
+          </UFormField>
+        </div>
+
+        <div v-if="form.billing_type === CHINA_BILLING_TYPE.CBM" class="flex flex-col gap-2">
+          <div class="grid gap-3 sm:grid-cols-3">
+            <UFormField label="CBM" required :hint="isDraft ? 'CBM China del consolidado' : undefined">
+              <UInputNumber v-model="form.cbm" :min="0" :step="0.01" placeholder="0.00" class="w-full" />
+            </UFormField>
+            <UFormField label="Tarifa (USD / CBM)" required>
+              <UInputNumber v-model="form.rate" :min="0" :step="1" class="w-full" />
+            </UFormField>
+            <UFormField label="Monto servicio">
+              <div class="flex h-9 items-center rounded-md bg-primary/10 px-3 font-semibold text-highlighted">{{ usd(serviceAmount) }}</div>
+            </UFormField>
           </div>
-        </UFormField>
-
-        <UFormField label="Servicio" required>
-          <UInput v-model="form.service_name" placeholder="Ej. Consolidado, Inspección" class="w-full" />
-        </UFormField>
-        <UFormField label="Variante / modalidad">
-          <UInput v-model="form.variant_name" placeholder="Ej. Física, Virtual" class="w-full" />
-        </UFormField>
-
-        <UFormField label="Fecha" required>
-          <UInput v-model="form.issued_on" type="date" class="w-full" />
-        </UFormField>
-        <UFormField label="Descripción" required>
-          <UInput v-model="form.description" placeholder="Consolidado, contenedor o detalle" class="w-full" />
-        </UFormField>
-
-        <template v-if="form.billing_type === CHINA_BILLING_TYPE.CBM">
-          <UFormField label="CBM" required :hint="isDraft ? 'CBM China del consolidado cerrado' : undefined">
-            <UInputNumber v-model="form.cbm" :min="0" :step="0.01" class="w-full" />
-          </UFormField>
-          <UFormField label="Tarifa por CBM (USD)" required>
-            <UInputNumber v-model="form.rate" :min="0" :step="1" class="w-full" />
-          </UFormField>
-          <div v-if="clientRates.length" class="flex flex-wrap items-center gap-2 text-sm sm:col-span-2">
+          <div v-if="clientRates.length" class="flex flex-wrap items-center gap-2 text-sm">
             <span class="text-muted">Tarifas del cliente:</span>
             <UButton
               v-for="rate in clientRates"
@@ -65,51 +63,46 @@
               size="xs"
               :color="form.rate === rate.value ? 'primary' : 'neutral'"
               :variant="form.rate === rate.value ? 'soft' : 'outline'"
+              :class="form.rate === rate.value ? 'ring ring-primary/60' : ''"
               @click="form.rate = rate.value"
             >
               {{ rate.label }} · {{ usd(rate.value) }}
             </UButton>
           </div>
-        </template>
-        <UFormField v-else label="Monto del servicio (USD)" required class="sm:col-span-2">
+          <p v-if="clientRates.length && selectedOrganization" class="flex items-center gap-1 text-xs text-success">
+            <UIcon name="i-heroicons-check" class="size-3.5" />
+            Precio del socio {{ selectedOrganization.name }}: {{ usd(clientRates[0].value) }} por CBM · puedes modificarlo
+          </p>
+        </div>
+        <UFormField v-else label="Monto servicio (USD)" required>
           <UInputNumber v-model="form.amount" :min="0" :step="1" class="w-full" />
         </UFormField>
 
-        <UFormField label="FOB (USD)">
-          <UInputNumber v-model="form.fob" :min="0" :step="1" class="w-full" />
-        </UFormField>
-        <UFormField label="Flete (USD)">
-          <UInputNumber v-model="form.freight" :min="0" :step="1" class="w-full" />
-        </UFormField>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <UFormField label="Costo FOB (USD)" required>
+            <UInputNumber v-model="form.fob" :min="0" :step="1" placeholder="0.00" class="w-full" />
+          </UFormField>
+          <UFormField label="Flete (USD)" required>
+            <UInputNumber v-model="form.freight" :min="0" :step="1" placeholder="0.00" class="w-full" />
+          </UFormField>
+        </div>
 
-        <div class="sm:col-span-2">
-          <div class="mb-2 flex items-center justify-between">
-            <p class="text-sm font-medium text-highlighted">Costos adicionales</p>
-            <UButton size="xs" color="neutral" variant="soft" icon="i-heroicons-plus" @click="addCost">Agregar costo</UButton>
-          </div>
-          <p v-if="!form.costs.length" class="text-sm text-muted">Sin costos adicionales.</p>
+        <div>
           <div v-for="(cost, index) in form.costs" :key="index" class="mb-2 grid grid-cols-[1fr_9rem_auto] gap-2">
             <UInput v-model="cost.name" placeholder="Nombre del costo" />
             <UInputNumber v-model="cost.amount" :min="0" :step="1" />
             <UButton color="error" variant="ghost" icon="i-heroicons-trash" aria-label="Quitar costo" @click="form.costs.splice(index, 1)" />
           </div>
+          <UButton size="sm" color="primary" variant="link" class="px-0" icon="i-heroicons-plus" @click="addCost">Agregar costo</UButton>
         </div>
 
-        <div class="sm:col-span-2">
+        <div>
           <p class="mb-1 text-sm font-medium text-highlighted">Packing list (Excel)</p>
           <YuanFilePick label="Adjuntar packing list" accept=".xls,.xlsx" :current-name="operation?.packing_list_url ? 'Packing list cargado' : ''" @pick="packing = $event" />
         </div>
 
-        <UCard variant="subtle" class="sm:col-span-2">
-          <div class="flex items-center justify-between">
-            <span class="text-sm text-muted">Total de la operación</span>
-            <span class="text-xl font-bold text-highlighted">{{ usd(total) }}</span>
-          </div>
-        </UCard>
-
         <UAlert
           v-if="errorMessage"
-          class="sm:col-span-2"
           color="error"
           variant="subtle"
           icon="i-heroicons-exclamation-triangle"
@@ -118,9 +111,16 @@
       </div>
     </template>
     <template #footer>
-      <div class="flex w-full justify-end gap-2">
-        <UButton color="neutral" variant="outline" :disabled="saving" @click="emit('close')">Cancelar</UButton>
-        <UButton color="primary" :loading="saving" @click="save">{{ saveLabel }}</UButton>
+      <div class="flex w-full flex-wrap items-end justify-between gap-3">
+        <div>
+          <p class="text-xs uppercase tracking-wider text-muted">Monto total</p>
+          <p class="text-2xl font-bold text-highlighted">{{ usd(total) }}</p>
+          <p v-if="missing.length" class="text-xs text-error">Falta: {{ missing.join(', ') }}</p>
+        </div>
+        <div class="flex gap-2">
+          <UButton color="neutral" variant="outline" :disabled="saving" @click="emit('close')">Cancelar</UButton>
+          <UButton color="primary" :loading="saving" :disabled="missing.length > 0" @click="save">{{ saveLabel }}</UButton>
+        </div>
       </div>
     </template>
   </UModal>
@@ -156,8 +156,8 @@ const billingOptions = [
 const blank = () => ({
   organization_id: null as number | null,
   container_id: null as number | null,
-  service_name: '',
-  billing_type: CHINA_BILLING_TYPE.FIXED as string,
+  service_name: 'Consolidado',
+  billing_type: CHINA_BILLING_TYPE.CBM as string,
   variant_name: '',
   issued_on: new Date().toISOString().slice(0, 10),
   description: '',
@@ -170,6 +170,47 @@ const blank = () => ({
 })
 
 const form = reactive(blank())
+
+// #1957: el tipo de servicio define el cobro (Consolidado = por CBM; el resto, monto fijo).
+const OTHER = '__otro__'
+const SERVICE_TYPES = [
+  { value: 'Consolidado', label: 'Consolidado', billing: CHINA_BILLING_TYPE.CBM },
+  { value: 'Inspección', label: 'Inspección', billing: CHINA_BILLING_TYPE.FIXED },
+  { value: OTHER, label: 'Otro servicio', billing: CHINA_BILLING_TYPE.FIXED }
+]
+const serviceItems = SERVICE_TYPES.map(({ value, label }) => ({ value, label }))
+const serviceKind = computed({
+  get: () => SERVICE_TYPES.find((type) => type.value !== OTHER && type.value === form.service_name)?.value ?? (form.service_name || form.billing_type === CHINA_BILLING_TYPE.FIXED ? OTHER : 'Consolidado'),
+  set: (value: string) => {
+    const type = SERVICE_TYPES.find((item) => item.value === value)!
+    form.service_name = value === OTHER ? '' : value
+    form.billing_type = type.billing
+  }
+})
+const country = ref<string | undefined>(undefined)
+const countryItems = computed(() => [...new Set(props.organizations.map((org) => org.country).filter(Boolean))].map((name) => ({ value: name, label: name })))
+const selectedOrganization = computed(() => props.organizations.find((org) => org.id === form.organization_id) || null)
+const serviceAmount = computed(() => Math.round(Number(form.cbm || 0) * Number(form.rate || 0) * 100) / 100)
+const missing = computed(() => {
+  const list: string[] = []
+  if (!form.organization_id) list.push('cliente')
+  if (!form.service_name.trim()) list.push('servicio')
+  if (!form.description.trim()) list.push('descripción')
+  if (form.billing_type === CHINA_BILLING_TYPE.CBM) {
+    if (!(Number(form.cbm) > 0)) list.push('CBM')
+    if (!(Number(form.rate) > 0)) list.push('tarifa')
+  } else if (!(Number(form.amount) > 0)) list.push('monto servicio')
+  if (form.fob === null || form.fob === undefined) list.push('costo FOB')
+  if (form.freight === null || form.freight === undefined) list.push('flete')
+  return list
+})
+watch(country, (value) => {
+  if (isEdit.value || isDraft.value) return
+  if (value && selectedOrganization.value && selectedOrganization.value.country !== value) form.organization_id = null
+})
+watch(() => form.organization_id, () => {
+  if (selectedOrganization.value?.country) country.value = selectedOrganization.value.country
+})
 
 /** Solo para mostrar: el backend recalcula con la misma fórmula al guardar. */
 const total = computed(() => chinaOperationTotal(form))
@@ -199,13 +240,16 @@ watch(() => [form.organization_id, form.billing_type], () => {
 })
 
 const saveLabel = computed(() => (props.draft ? 'Aprobar operación' : props.operation ? 'Guardar cambios' : 'Guardar'))
-const organizationItems = computed(() => props.organizations.map((org) => ({ value: org.id, label: `${org.name}${org.country ? ` · ${org.country}` : ''}` })))
+const organizationItems = computed(() => props.organizations
+  .filter((org) => !country.value || org.country === country.value)
+  .map((org) => ({ value: org.id, label: org.name })))
 
 watch(() => [props.open, props.operation, props.draft], () => {
   if (!props.open) return
   errorMessage.value = ''
   packing.value = null
   Object.assign(form, blank())
+  country.value = undefined
   const source = props.draft || props.operation
   if (!source) return
   Object.assign(form, {
