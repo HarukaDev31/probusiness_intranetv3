@@ -46,10 +46,10 @@
         <div v-if="form.billing_type === CHINA_BILLING_TYPE.CBM" class="flex flex-col gap-2">
           <div class="grid gap-3 sm:grid-cols-3">
             <UFormField label="CBM" required :hint="isDraft ? 'CBM China del consolidado' : undefined">
-              <UInputNumber v-model="form.cbm" :min="0" :step="0.01" placeholder="0.00" class="w-full" />
+              <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.cbm" :min="0" :step="0.01" placeholder="0.00" class="w-full" />
             </UFormField>
             <UFormField label="Tarifa (USD / CBM)" required>
-              <UInputNumber v-model="form.rate" :min="0" :step="1" class="w-full" />
+              <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.rate" :min="0" :step="1" class="w-full" />
             </UFormField>
             <UFormField label="Monto servicio">
               <div class="flex h-9 items-center rounded-md bg-primary/10 px-3 font-semibold text-highlighted">{{ usd(serviceAmount) }}</div>
@@ -75,22 +75,22 @@
           </p>
         </div>
         <UFormField v-else label="Monto servicio (USD)" required>
-          <UInputNumber v-model="form.amount" :min="0" :step="1" class="w-full" />
+          <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.amount" :min="0" :step="1" class="w-full" />
         </UFormField>
 
         <div class="grid gap-3 sm:grid-cols-2">
           <UFormField label="Costo FOB (USD)" required>
-            <UInputNumber v-model="form.fob" :min="0" :step="1" placeholder="0.00" class="w-full" />
+            <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.fob" :min="0" :step="1" placeholder="0.00" class="w-full" />
           </UFormField>
           <UFormField label="Flete (USD)" required>
-            <UInputNumber v-model="form.freight" :min="0" :step="1" placeholder="0.00" class="w-full" />
+            <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.freight" :min="0" :step="1" placeholder="0.00" class="w-full" />
           </UFormField>
         </div>
 
         <div>
           <div v-for="(cost, index) in form.costs" :key="index" class="mb-2 grid grid-cols-[1fr_9rem_auto] gap-2">
             <UInput v-model="cost.name" placeholder="Nombre del costo" />
-            <UInputNumber v-model="cost.amount" :min="0" :step="1" />
+            <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="cost.amount" :min="0" :step="1" />
             <UButton color="error" variant="ghost" icon="i-heroicons-trash" aria-label="Quitar costo" @click="form.costs.splice(index, 1)" />
           </div>
           <UButton size="sm" color="primary" variant="link" class="px-0" icon="i-heroicons-plus" @click="addCost">Agregar costo</UButton>

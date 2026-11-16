@@ -23,7 +23,7 @@
           <UInput v-model="paidOn" type="date" class="w-full" />
         </UFormField>
         <UFormField label="Monto enviado (USD)" required>
-          <UInputNumber v-model="amountSent" :min="0" :step="1" class="w-full" />
+          <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="amountSent" :min="0" :step="1" class="w-full" />
         </UFormField>
 
         <div class="sm:col-span-2">
@@ -62,7 +62,7 @@
               Pendiente<br>
               <span class="text-sm normal-case tracking-normal text-highlighted">{{ usd(operation.pending) }}</span>
             </span>
-            <UInputNumber v-model="amounts[operation.id!]" :min="0" :max="operation.pending" :step="1" />
+            <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="amounts[operation.id!]" :min="0" :max="operation.pending" :step="1" />
           </div>
         </div>
 
