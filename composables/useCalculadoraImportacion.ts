@@ -198,6 +198,19 @@ export const useCalculadoraImportacion = () => {
     return isNaN(value) ? 0 : value
   })
 
+  const totalPesoKg = computed(() => {
+    const value = proveedores.value.reduce((acc, proveedor) => {
+      return acc + (typeof proveedor.peso === 'number' ? proveedor.peso : 0)
+    }, 0)
+    return isNaN(value) ? 0 : value
+  })
+
+  // CBM de la tarifa: el mayor entre el volumen total y el peso total / 1000.
+  const cbmFacturable = computed(() => {
+    const pesoCbm = totalPesoKg.value / 1000
+    return pesoCbm > totalCbm.value ? pesoCbm : totalCbm.value
+  })
+
   // Calcular extras automáticamente según las tarifas
   const calculatedExtraProveedores = computed(() => {
     // Proveedores extra son los que superan MAX_PROVEEDORES
@@ -207,7 +220,7 @@ export const useCalculadoraImportacion = () => {
 
   const calculatedExtraItems = computed(() => {
 
-    const cbmTotal = totalCbm.value
+    const cbmTotal = cbmFacturable.value
     const itemsTotal = totalItems.value
     const tarifa = findTarifaByCbm(cbmTotal)
 
@@ -325,7 +338,7 @@ export const useCalculadoraImportacion = () => {
 
   const selectedTarifa = computed(() => {
     const tipoCliente = clienteInfo.value.tipoCliente
-    const totalCbmValue = totalCbm.value
+    const totalCbmValue = cbmFacturable.value
 
     // Usar la función helper findTarifaByCbmAndTipo para buscar tarifa general
     return findTarifaByCbmAndTipo(totalCbmValue, tipoCliente)
@@ -597,7 +610,7 @@ export const useCalculadoraImportacion = () => {
 
   // Función helper para obtener el límite máximo de ítems basado en CBM total
   const getMaxItemsByTotalCbm = () => {
-    const cbmTotal = totalCbm.value
+    const cbmTotal = cbmFacturable.value
     const tarifa = findTarifaByCbm(cbmTotal)
     if (!tarifa) return Infinity
     return tarifa.item_base + tarifa.item_extra
@@ -621,7 +634,7 @@ export const useCalculadoraImportacion = () => {
       // asegurar que el panel esté abierto al agregar un producto
       ; (proveedor as any).collapsed = false
       const newId = `${proveedorId}-${proveedor.productos.length + 1}`
-      const cbmTotal = totalCbm.value
+      const cbmTotal = cbmFacturable.value
       const tarifaExtra = getExtraItem(cbmTotal)
       // Calcular si este ítem será extra basándose en el total de ítems después de agregarlo
       const itemsTotalDespues = totalItems.value + 1
@@ -1054,6 +1067,7 @@ export const useCalculadoraImportacion = () => {
     tarifasSelect,
     totalItems,
     totalCbm,
+    cbmFacturable,
     selectedTarifa,
     MAX_PROVEEDORES,
     MAX_PROVEEDORES_EXTRA,

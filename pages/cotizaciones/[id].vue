@@ -430,7 +430,7 @@
                 <h3 class="text-lg font-semibold">Cálculos Base</h3>
                 <div v-if="collapsedSections.calculos"
                   class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                  <span><strong>CBM:</strong> {{ totalCbm.toFixed(2) }}</span>
+                  <span><strong>CBM:</strong> {{ cbmFacturable.toFixed(2) }}</span>
                   <span><strong>CIF:</strong> {{ formatCurrency(getTotals(proveedores, selectedTarifa).cif) }}</span>
                   <span><strong>Costos FOB:</strong> {{ formatCurrency(getTotals(proveedores, selectedTarifa).costosFob)
                     }}</span>
@@ -1265,6 +1265,7 @@ const {
   tarifasSelect,
   totalItems,
   totalCbm,
+  cbmFacturable,
   selectedTarifa,
   MAX_PROVEEDORES,
   MAX_PROVEEDORES_EXTRA,
@@ -1718,7 +1719,7 @@ const findTarifaByCbm = (cbm: number) => {
 
 const getDisabledByRangeItem = (proveedor: Proveedor) => {
   // Usar CBM total y total de ítems para validar el límite
-  const cbmTotal = totalCbm.value
+  const cbmTotal = cbmFacturable.value
   const itemsTotal = totalItems.value
   const tarifa = findTarifaByCbm(cbmTotal)
   if (!tarifa) return false
@@ -1745,7 +1746,7 @@ const getGlobalProductIndex = (pIndex: number, prodIndex: number) => {
 
 // Determinar si un producto es "extra" basándose en su índice global y el CBM total
 const isProductoExtra = (indexGlobal: number) => {
-  const cbmTotal = totalCbm.value
+  const cbmTotal = cbmFacturable.value
   const tarifa = findTarifaByCbm(cbmTotal)
   if (!tarifa) return false
   // Un producto es "extra" si su índice global excede el item_base
@@ -1754,7 +1755,7 @@ const isProductoExtra = (indexGlobal: number) => {
 
 // Obtener la tarifa del ítem extra basándose en el CBM total
 const getTarifaExtraItem = () => {
-  const cbmTotal = totalCbm.value
+  const cbmTotal = cbmFacturable.value
   const tarifa = findTarifaByCbm(cbmTotal)
   return tarifa?.tarifa || 0
 }
@@ -1775,11 +1776,8 @@ const handleCbmChange = (proveedorId: string, nuevoCbm: number) => {
     return true
   }
 
-  // Calcular el nuevo CBM total si se aplica este cambio
-  // Usar el nuevoCbm directamente porque v-model ya actualizó proveedor.cbm
-  const nuevoCbmTotal = proveedores.value.reduce((sum, p) => {
-    return sum + (p.cbm || 0)
-  }, 0)
+  // v-model ya actualizó el volumen; el límite usa el CBM facturable de toda la cotización.
+  const nuevoCbmTotal = cbmFacturable.value
 
   // Obtener el límite máximo de ítems para el nuevo CBM total
   const tarifa = findTarifaByCbm(nuevoCbmTotal)
@@ -1813,7 +1811,7 @@ const handleAddProducto = (proveedorId: string) => {
   if (!canAddMoreItems()) {
     const maxItems = getMaxItemsByTotalCbm()
     showError(
-      `No se puede agregar más ítems. Has alcanzado el límite máximo de ${maxItems} ítems permitidos para el rango de CBM total (${totalCbm.value.toFixed(2)} CBM).`,
+      `No se puede agregar más ítems. Has alcanzado el límite máximo de ${maxItems} ítems permitidos para el rango de CBM total (${cbmFacturable.value.toFixed(2)} CBM).`,
       'error'
     )
     return
@@ -1823,7 +1821,7 @@ const handleAddProducto = (proveedorId: string) => {
   if (!success) {
     const maxItems = getMaxItemsByTotalCbm()
     showError(
-      `No se puede agregar más ítems. Has alcanzado el límite máximo de ${maxItems} ítems permitidos para el rango de CBM total (${totalCbm.value.toFixed(2)} CBM).`,
+      `No se puede agregar más ítems. Has alcanzado el límite máximo de ${maxItems} ítems permitidos para el rango de CBM total (${cbmFacturable.value.toFixed(2)} CBM).`,
       'error'
     )
   }
@@ -1841,7 +1839,7 @@ const handleAddProveedor = () => {
   if (!canAddMoreItems()) {
     const maxItems = getMaxItemsByTotalCbm()
     showError(
-      `No se puede agregar un nuevo proveedor. Has alcanzado el límite máximo de ${maxItems} ítems permitidos para el rango de CBM total (${totalCbm.value.toFixed(2)} CBM).`,
+      `No se puede agregar un nuevo proveedor. Has alcanzado el límite máximo de ${maxItems} ítems permitidos para el rango de CBM total (${cbmFacturable.value.toFixed(2)} CBM).`,
       'error'
     )
     return
@@ -1851,7 +1849,7 @@ const handleAddProveedor = () => {
   if (!success) {
     const maxItems = getMaxItemsByTotalCbm()
     showError(
-      `No se puede agregar un nuevo proveedor. Has alcanzado el límite máximo de ${maxItems} ítems permitidos para el rango de CBM total (${totalCbm.value.toFixed(2)} CBM).`,
+      `No se puede agregar un nuevo proveedor. Has alcanzado el límite máximo de ${maxItems} ítems permitidos para el rango de CBM total (${cbmFacturable.value.toFixed(2)} CBM).`,
       'error'
     )
   }
@@ -1874,7 +1872,9 @@ const calcularDistribucionBase = (proveedores: Proveedor[], tarifa: Tarifa) => {
   const FLETE_PORCENTAJE = 0.3601;
   const COSTO_DESTINO_PORCENTAJE = 0.4;
 
-  const cbm = proveedores.reduce((sum, proveedor) => sum + proveedor.cbm, 0);
+  const volumen = proveedores.reduce((sum, proveedor) => sum + (Number(proveedor.cbm) || 0), 0);
+  const pesoCbm = proveedores.reduce((sum, proveedor) => sum + (Number(proveedor.peso) || 0), 0) / 1000;
+  const cbm = pesoCbm > volumen ? pesoCbm : volumen;
 
   // Validación defensiva
   if (!tarifa || typeof tarifa !== 'object') {
