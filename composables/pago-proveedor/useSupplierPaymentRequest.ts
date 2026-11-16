@@ -32,6 +32,9 @@ export function useSupplierPaymentRequest() {
   const saveRmb = (solicitudId: number, proveedorId: number, vendedor: string, wechat: string) =>
     PagoProveedorService.guardarDatosRmb(solicitudId, proveedorId, vendedor, wechat)
 
+  const deleteRmb = (solicitudId: number, proveedorId: number) =>
+    PagoProveedorService.eliminarDatosRmb(solicitudId, proveedorId)
+
   const sendForm = (solicitudId: number, proveedorId: number) =>
     PagoProveedorService.enviarFormulario(solicitudId, proveedorId)
 
@@ -74,6 +77,7 @@ export function useSupplierPaymentRequest() {
     getBankAccounts,
     liftChina,
     saveRmb,
+    deleteRmb,
     sendForm,
     fillForm,
     requestValidation,

@@ -160,6 +160,7 @@ import type {
   SupplierPaymentRefund
 } from '~/types/pago-proveedor'
 import { useModal } from '~/composables/commons/useModal'
+import { formatNombrePropio } from '~/utils/formatters'
 import SupplierPaymentTabs from '~/components/pago-proveedor/SupplierPaymentTabs.vue'
 import { useSupplierPaymentRefunds } from '~/composables/pago-proveedor/useSupplierPaymentRefunds'
 import { UButton } from '#components'
@@ -373,7 +374,7 @@ const filterConfig = computed(() => [
 
 const columns = computed<TableColumn<UnifiedRow>[]>(() => [
   { accessorKey: 'order_number', header: 'N.° de orden', cell: ({ row }) => h('span', { class: TEXTO_PRINCIPAL }, row.original.order_number ?? '—') },
-  { accessorKey: 'client_name', header: 'Cliente', cell: ({ row }) => h('span', { class: `block min-w-36 max-w-72 whitespace-normal ${TEXTO_PRINCIPAL}` }, row.original.client_name || '—') },
+  { accessorKey: 'client_name', header: 'Cliente', cell: ({ row }) => h('span', { class: `block min-w-36 max-w-56 whitespace-normal ${TEXTO_PRINCIPAL}` }, formatNombrePropio(row.original.client_name) || '—') },
   { accessorKey: 'consolidation', header: 'Consolidado', cell: ({ row }) => h('span', { class: TEXTO_PRINCIPAL }, soloConsolidado(row.original.consolidation)) },
   { accessorKey: 'supplier_code', header: 'Proveedor', cell: ({ row }) => h('div', [
     h('div', { class: `font-semibold ${TEXTO_PRINCIPAL}` }, row.original.supplier_code || '—'),
@@ -383,14 +384,15 @@ const columns = computed<TableColumn<UnifiedRow>[]>(() => [
   {
     accessorKey: 'payment_type',
     header: 'Tipo de pago',
-    cell: ({ row }) => h('div', { class: 'w-20 whitespace-normal' }, [
+    cell: ({ row }) => h('div', { class: 'w-28 whitespace-normal' }, [
       h('div', { class: TEXTO_PRINCIPAL }, row.original.payment_type),
       row.original.installment_label
         ? h('div', { class: 'text-[11px] text-muted' }, row.original.installment_label)
         : null
     ])
   },
-  { accessorKey: 'amount', header: 'Importe', cell: ({ row }) => h('span', { class: TEXTO_PRINCIPAL }, `$${Number(row.original.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}`) },
+  // #1758: aire a ambos lados del importe para que no quede pegado a Tipo de pago ni a Estado.
+  { accessorKey: 'amount', header: 'Importe', cell: ({ row }) => h('span', { class: `block whitespace-nowrap pr-6 ${TEXTO_PRINCIPAL}` }, `$${Number(row.original.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}`) },
   ...(bucket.value === APPROVAL_BUCKET.PENDING
     ? [
         { accessorKey: 'deposit_text', header: 'Depósito', cell: ({ row }) => h('div', { class: 'w-20 whitespace-normal' }, [
@@ -411,7 +413,7 @@ const columns = computed<TableColumn<UnifiedRow>[]>(() => [
     )
   },
   ...(bucket.value === APPROVAL_BUCKET.APPROVED
-    ? [{ accessorKey: 'deadline_text', header: 'Aprobado el' }]
+    ? [{ accessorKey: 'deadline_text', header: 'Aprobado el', cell: ({ row }) => h('span', { class: `whitespace-nowrap ${TEXTO_PRINCIPAL}` }, row.original.deadline_text) }]
     : []) as TableColumn<UnifiedRow>[],
   {
     accessorKey: 'observation',

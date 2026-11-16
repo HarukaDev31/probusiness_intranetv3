@@ -84,6 +84,7 @@ import { EXECUTION_BUCKET, EXECUTION_STATUS } from '~/constants/supplierPayment'
 import { PagoProveedorService } from '~/services/pagoProveedorService'
 import type { PagoProveedorPaginacion, SupplierPaymentExecution, SupplierPaymentExecutionTotals } from '~/types/pago-proveedor'
 import { useModal } from '~/composables/commons/useModal'
+import { formatNombrePropio } from '~/utils/formatters'
 import { UButton } from '#components'
 
 const { showError } = useModal()
@@ -190,16 +191,19 @@ const emptyMessage = computed(() => {
     : 'Aún no hay pagos ejecutados en ese período.'
 })
 
+/** #1764/#1767: dato principal de cada celda en negro (como en Aprobación de pagos); los secundarios quedan en gris. */
+const TEXTO_PRINCIPAL = 'text-highlighted'
+
 const columns = computed<TableColumn<SupplierPaymentExecution>[]>(() => [
   // Numeración correlativa de la bandeja, de mayor a menor (3, 2, 1): el número de la solicitud ya va en el código.
-  { accessorKey: 'order_number', header: 'N.° de orden', cell: ({ row }) => (pagination.value.total || 0) - ((pagination.value.current_page - 1) * pagination.value.per_page + row.index) },
-  { accessorKey: 'client_name', header: 'Cliente', cell: ({ row }) => h('span', { class: 'block min-w-36 max-w-72 whitespace-normal' }, row.original.client_name || '—') },
-  { accessorKey: 'consolidation', header: 'Consolidado', cell: ({ row }) => soloConsolidado(row.original.consolidation) },
+  { accessorKey: 'order_number', header: 'N.° de orden', cell: ({ row }) => h('span', { class: TEXTO_PRINCIPAL }, String((pagination.value.total || 0) - ((pagination.value.current_page - 1) * pagination.value.per_page + row.index))) },
+  { accessorKey: 'client_name', header: 'Cliente', cell: ({ row }) => h('span', { class: `block min-w-36 max-w-56 whitespace-normal ${TEXTO_PRINCIPAL}` }, formatNombrePropio(row.original.client_name) || '—') },
+  { accessorKey: 'consolidation', header: 'Consolidado', cell: ({ row }) => h('span', { class: TEXTO_PRINCIPAL }, soloConsolidado(row.original.consolidation)) },
   {
     accessorKey: 'supplier_code',
     header: 'Proveedor',
     cell: ({ row }) => h('div', [
-      h('div', { class: 'font-semibold' }, row.original.supplier_code || '—'),
+      h('div', { class: `font-semibold ${TEXTO_PRINCIPAL}` }, row.original.supplier_code || '—'),
       h('div', { class: 'min-w-40 max-w-64 whitespace-normal text-xs text-muted' }, [row.original.supplier_name, row.original.product].filter(Boolean).join(' · '))
     ])
   },
@@ -207,14 +211,14 @@ const columns = computed<TableColumn<SupplierPaymentExecution>[]>(() => [
     accessorKey: 'request_code',
     header: 'Código de solicitud',
     cell: ({ row }) => row.original.request_code
-      ? h('span', { class: 'whitespace-nowrap font-semibold' }, row.original.request_code)
+      ? h('span', { class: `whitespace-nowrap font-semibold ${TEXTO_PRINCIPAL}` }, row.original.request_code)
       : '—'
   },
   {
     accessorKey: 'payment_type',
     header: 'Tipo de pago',
-    cell: ({ row }) => h('div', [
-      h('div', row.original.payment_type_label || (row.original.currency === 'RMB' ? 'RMB / Transferencia' : 'USD / T-T')),
+    cell: ({ row }) => h('div', { class: 'whitespace-nowrap' }, [
+      h('div', { class: TEXTO_PRINCIPAL }, row.original.payment_type_label || (row.original.currency === 'RMB' ? 'RMB / Transferencia' : 'USD / T-T')),
       row.original.installment_label
         ? h('div', { class: 'text-[11px] text-muted' }, row.original.installment_label)
         : null
@@ -223,7 +227,7 @@ const columns = computed<TableColumn<SupplierPaymentExecution>[]>(() => [
   {
     accessorKey: 'cargo_amount',
     header: bucket.value === EXECUTION_BUCKET.PAID ? 'Importe pagado al proveedor' : 'Importe a pagar al proveedor',
-    cell: ({ row }) => h('span', { class: 'font-semibold' }, plainMoney(row.original.cargo_amount))
+    cell: ({ row }) => h('span', { class: `whitespace-nowrap font-semibold ${TEXTO_PRINCIPAL}` }, plainMoney(row.original.cargo_amount))
   },
   {
     accessorKey: 'status_label',
@@ -250,9 +254,9 @@ const columns = computed<TableColumn<SupplierPaymentExecution>[]>(() => [
         {
           accessorKey: 'executed_on',
           header: 'Pagado el',
-          cell: ({ row }: { row: { original: SupplierPaymentExecution } }) => row.original.executed_on
+          cell: ({ row }: { row: { original: SupplierPaymentExecution } }) => h('span', { class: `whitespace-nowrap ${TEXTO_PRINCIPAL}` }, row.original.executed_on
             ? new Date(row.original.executed_on).toLocaleDateString('es-PE')
-            : '—'
+            : '—')
         },
         {
           accessorKey: 'profit',
@@ -260,7 +264,7 @@ const columns = computed<TableColumn<SupplierPaymentExecution>[]>(() => [
           cell: ({ row }: { row: { original: SupplierPaymentExecution } }) => {
             const value = row.original.profit
             if (value === null || value === undefined) return '—'
-            const cls = value > 0.004 ? 'text-success' : (value < -0.004 ? 'text-error' : '')
+            const cls = value > 0.004 ? 'text-success' : (value < -0.004 ? 'text-error' : TEXTO_PRINCIPAL)
             return h('span', { class: `font-semibold ${cls}` }, money(value))
           }
         }
