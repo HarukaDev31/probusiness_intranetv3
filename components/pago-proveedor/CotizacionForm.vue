@@ -1175,7 +1175,8 @@ async function confirmarTc() {
 
 function payload() {
   const tc = Number(tipoCambio.value) || 0
-  const confirmado = !hayYuanes.value
+  // Con la solicitud ya creada, el tipo de cambio quedó confirmado al crearla y no se toca aquí.
+  const confirmado = !hayYuanes.value || editableDesdeSolicitud.value
     || ((esNueva.value || tcCreadaHoy.value) ? tc > 0 : tcConfirmadoSesion.value)
   return {
     tipo_cambio: hayYuanes.value ? (tc > 0 ? tc : null) : tipoCambio.value,
