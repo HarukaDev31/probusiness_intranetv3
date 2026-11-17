@@ -105,12 +105,12 @@ function fullDate(date: string | null): string {
   return year ? `${day}/${month}/${year}` : '—'
 }
 
-const iconButton = (icon: string, label: string, onClick: () => void, tone = 'hover:bg-primary/10 hover:text-primary', disabled = false) => h('button', {
+const iconButton = (icon: string, label: string, onClick: () => void, tone = 'text-toned hover:bg-primary/10 hover:text-primary', disabled = false) => h('button', {
   type: 'button',
   title: label,
   'aria-label': label,
   disabled,
-  class: `grid size-8 place-items-center rounded-lg text-toned transition-colors ${tone} ${disabled ? 'cursor-not-allowed opacity-30' : ''}`,
+  class: `grid size-8 place-items-center rounded-lg transition-colors ${tone} ${disabled ? 'cursor-not-allowed opacity-30' : ''}`,
   onClick
 }, h(UIcon, { name: icon, class: 'size-4' }))
 
@@ -133,16 +133,18 @@ const columns: TableColumn<ChinaClient>[] = [
   { accessorKey: 'receivable', header: 'Por cobrar', meta: { class: right }, cell: ({ row }) => h('span', { class: row.original.receivable > 0.005 ? 'font-semibold text-error' : '' }, usd(row.original.receivable)) },
   { id: 'operations', header: 'Operaciones', cell: ({ row }) => h('div', { class: 'flex flex-col text-xs text-toned' }, [
     h('span', [h('strong', { class: 'text-sm text-highlighted' }, String(row.original.open_count)), ' abiertas']),
-    h('span', [h('strong', { class: 'text-sm text-highlighted' }, String(row.original.closed_count)), ' cerradas'])
+    // #1990: cerradas en gris.
+    h('span', { class: 'text-muted' }, [h('strong', { class: 'text-sm text-muted' }, String(row.original.closed_count)), ' cerradas'])
   ]) },
   { id: 'actions', header: 'Acciones', cell: ({ row }) => h('div', { class: 'flex gap-1' }, [
-    iconButton('i-heroicons-eye', 'Ver cliente', () => openDetail(row.original)),
+    // #1990: el ojo va en naranja.
+    iconButton('i-heroicons-eye', 'Ver cliente', () => openDetail(row.original), 'text-primary hover:bg-primary/10'),
     iconButton('i-heroicons-pencil-square', 'Editar', () => openForm(row.original)),
     iconButton(
       'i-heroicons-trash',
       row.original.can_delete ? 'Eliminar' : (row.original.type === 'partner' ? 'Los socios se administran desde su organización' : 'Tiene operaciones: no se puede eliminar'),
       () => remove(row.original),
-      'hover:bg-error/10 hover:text-error',
+      'text-toned hover:bg-error/10 hover:text-error',
       !row.original.can_delete
     )
   ]) }

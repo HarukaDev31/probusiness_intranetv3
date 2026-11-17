@@ -7,12 +7,37 @@
     @update:open="(value: boolean) => !value && emit('close')"
   >
     <template #body>
+      <!-- #1995/#1996: aviso de éxito, historial con el más reciente resaltado. -->
+      <UAlert
+        v-if="justIssued"
+        class="mb-4"
+        color="success"
+        variant="subtle"
+        icon="i-heroicons-check-circle"
+        title="Documento generado correctamente"
+        description="Se ha agregado un nuevo registro en el historial."
+        :close="{ color: 'neutral', variant: 'link' }"
+        @update:open="justIssued = false"
+      />
+      <div class="mb-2 flex items-center gap-2 border-b border-default pb-2">
+        <UIcon name="i-heroicons-document-text" class="size-5 text-highlighted" />
+        <p class="text-sm font-semibold text-highlighted">Documentos generados (Historial)</p>
+      </div>
       <USkeleton v-if="loading" class="h-20 w-full" />
-      <p v-else-if="!history.length" class="text-sm text-muted">Aún no se emitió ningún documento. Genera el primero.</p>
-      <div v-else class="flex flex-col divide-y divide-default">
-        <div v-for="document in history" :key="document.id" class="flex items-center justify-between gap-3 py-2.5">
-          <div class="min-w-0">
-            <p class="text-sm font-semibold text-highlighted">{{ dayLabel(document.issued_on) }} · {{ monthLabel(document.issued_on) }}</p>
+      <p v-else-if="!history.length" class="py-2 text-sm text-muted">Aún no se emitió ningún documento. Genera el primero.</p>
+      <div v-else class="flex max-h-80 flex-col gap-2 overflow-y-auto">
+        <div
+          v-for="(document, index) in history"
+          :key="document.id"
+          class="flex items-center gap-3 rounded-xl border px-3 py-2.5"
+          :class="index === 0 ? 'border-primary/30 bg-primary/10' : 'border-default'"
+        >
+          <UIcon name="i-heroicons-document-text" class="size-7 shrink-0 text-primary" />
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-semibold text-highlighted">
+              {{ longDate(document.issued_on) }}
+              <span v-if="index === 0" class="ml-2 rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-medium text-primary">Más reciente</span>
+            </p>
             <p class="truncate text-xs text-muted">
               {{ document.generated_by || 'Sistema' }}<span v-if="document.total !== null"> · {{ usd(document.total) }}</span>
             </p>
@@ -43,10 +68,19 @@ const history = ref<ChinaDocument[]>([])
 const loading = ref(false)
 const issuing = ref(false)
 const errorMessage = ref('')
+const justIssued = ref(false)
+
+const MONTHS = ['ene.', 'feb.', 'mar.', 'abr.', 'may.', 'jun.', 'jul.', 'ago.', 'set.', 'oct.', 'nov.', 'dic.']
+/** «17 nov. 2026», como en el modelo. */
+function longDate(date: string | null): string {
+  const [year, month, day] = (date || '').slice(0, 10).split('-')
+  return year ? `${Number(day)} ${MONTHS[Number(month) - 1]} ${year}` : '—'
+}
 
 watch(() => props.target, async (target) => {
   history.value = []
   errorMessage.value = ''
+  justIssued.value = false
   if (!target) return
   loading.value = true
   try {
@@ -65,6 +99,7 @@ async function issue() {
   try {
     const document = (await ChinaBillingService.issueDocument(props.target)).data
     history.value = [document, ...history.value]
+    justIssued.value = true
     window.open(document.url, '_blank', 'noopener')
   } catch (error: any) {
     errorMessage.value = error?.message || 'No se pudo generar el documento.'
