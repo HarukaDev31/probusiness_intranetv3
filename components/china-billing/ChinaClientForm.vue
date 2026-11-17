@@ -28,7 +28,7 @@
         <UFormField label="Nombre o empresa" required>
           <UInput v-model="form.name" icon="i-heroicons-building-office" placeholder="ej. Importaciones Sur SAC" class="w-full" />
         </UFormField>
-        <UFormField label="País de origen" required :help="isPartner ? 'País desde donde opera el socio.' : undefined">
+        <UFormField label="País de origen" required :help="isPartner ? 'País desde donde opera el socio.' : 'País desde donde opera el importador.'">
           <USelectMenu
             v-model="form.origin_country_id"
             :items="countryItems"
