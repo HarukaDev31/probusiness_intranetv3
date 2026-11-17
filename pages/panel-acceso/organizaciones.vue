@@ -223,8 +223,8 @@
               Prefijo telefónico: <span class="font-mono font-medium">+{{ prefijoPreview }}</span>
             </p>
 
-            <template v-if="!esOrgAdminEditada">
-              <UFormField label="Tipo de cliente" hint="Almacén China">
+            <!-- La organización 1 (Pro Business) también es cliente de Almacén China: solo país de origen y tarifas. -->
+            <UFormField v-if="!esOrgAdminEditada" label="Tipo de cliente" hint="Almacén China">
                 <div class="flex gap-2">
                   <UButton
                     v-for="option in tiposCliente"
@@ -237,7 +237,7 @@
                     {{ option.label }}
                   </UButton>
                 </div>
-              </UFormField>
+            </UFormField>
 
               <UFormField label="País de origen">
                 <USelectMenu
@@ -259,6 +259,7 @@
                 </UFormField>
               </div>
 
+            <template v-if="!esOrgAdminEditada">
               <div class="grid gap-3 sm:grid-cols-2">
                 <UFormField label="WhatsApp">
                   <UInput v-model="form.whatsapp" type="tel" placeholder="+51 999 999 999" class="w-full" />
@@ -741,7 +742,11 @@ async function submitForm() {
 
   const esSocio = form.tipo_cliente === 'socio'
   const datosCliente = esOrgAdminEditada.value
-    ? {}
+    ? {
+        pais_origen_id: form.pais_origen_id || null,
+        tarifa_1: form.tarifa_1 ?? null,
+        tarifa_2: form.tarifa_2 ?? null,
+      }
     : {
         tipo_cliente: form.tipo_cliente,
         pais_origen_id: form.pais_origen_id || null,
