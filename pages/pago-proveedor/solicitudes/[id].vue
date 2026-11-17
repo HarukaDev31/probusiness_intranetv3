@@ -214,7 +214,7 @@
                 <UBadge
                   :color="proveedor.datos.estado === 'recibido' ? 'success' : 'neutral'"
                   variant="soft"
-                  :label="`${etiquetaDatos(proveedor.datos.estado)}${proveedor.datos.correccion_solicitada ? ' · corrección pedida' : ''}`"
+                  :label="`${etiquetaDatos(proveedor.datos.estado, proveedor.datos.formulario_enviado_el)}${proveedor.datos.correccion_solicitada ? ' · corrección pedida' : ''}`"
                 />
                 <p v-if="proveedor.datos.beneficiario_nombre" class="mt-2 text-sm text-muted">
                   <strong class="text-highlighted">{{ proveedor.datos.beneficiario_nombre }}</strong> · cuenta {{ cuentaOculta(proveedor.datos.beneficiario_cuenta) }}<br>
@@ -230,10 +230,12 @@
                     <template v-else-if="proveedor.datos.estado === 'por_autorizar'">
                       <UButton size="sm" color="primary" icon="i-mdi-whatsapp" @click="pedirValidacion(proveedor)">Enviar al cliente para autorización</UButton>
                       <UButton size="sm" color="neutral" variant="outline" @click="abrirDatos(proveedor, false)">Editar borrador</UButton>
+                      <UButton size="sm" color="neutral" variant="outline" icon="i-lucide-eye" @click="abrirDatos(proveedor, true)">Ver</UButton>
                     </template>
                     <template v-else>
                       <UButton size="sm" color="primary" icon="i-mdi-whatsapp" @click="enviarFormulario(proveedor)">{{ proveedor.datos.estado === 'enviado' ? 'Reenviar formulario' : 'Enviar formulario' }}</UButton>
                       <UButton size="sm" color="neutral" variant="outline" title="Solo en casos excepcionales: el cliente debe revisar y autorizar los datos" @click="abrirDatos(proveedor, false)">Llenar por el cliente</UButton>
+                      <UButton v-if="proveedor.datos.beneficiario_nombre" size="sm" color="neutral" variant="outline" icon="i-lucide-eye" @click="abrirDatos(proveedor, true)">Ver</UButton>
                     </template>
                   </template>
                   <UButton v-else-if="proveedor.datos.beneficiario_nombre" size="sm" color="neutral" variant="outline" icon="i-lucide-eye" @click="abrirDatos(proveedor, true)">Ver</UButton>
@@ -447,11 +449,26 @@
             <UFormField label="Nombre del vendedor"><UInput v-model="rmb[datosProveedor.id].vendedor" :disabled="ttSoloLectura" placeholder="Ej: Li Wei" class="w-full" /></UFormField>
             <UFormField label="N.° de WeChat"><UInput v-model="rmb[datosProveedor.id].wechat" :disabled="ttSoloLectura" inputmode="numeric" placeholder="Ej: 13812345678" class="w-full" /></UFormField>
           </div>
-          <FormularioBancario v-else v-model="formularioTt" :bloqueado="ttSoloLectura" />
+          <div v-else class="flex flex-col gap-4">
+            <div class="flex items-center justify-between gap-2">
+              <span class="flex items-center gap-2 text-lg font-bold text-highlighted"><span class="size-5 rounded-md bg-gradient-to-br from-orange-500 to-orange-400" />probusiness</span>
+              <UBadge color="warning" variant="soft">Vista del cliente (simulación)</UBadge>
+            </div>
+            <div class="rounded-xl border border-l-4 border-default border-l-primary bg-default px-4 py-3">
+              <p class="text-[11px] font-bold uppercase tracking-wide text-muted">{{ ttSoloLectura ? 'Estás revisando los datos de' : 'Estás llenando los datos de' }}</p>
+              <p class="mb-2 font-bold text-highlighted">{{ [datosProveedor.code_supplier, datosProveedor.nombre_proveedor].filter(Boolean).join(' · ') }}</p>
+              <div class="grid gap-2 text-xs sm:grid-cols-3">
+                <div><span class="block text-muted">Código de proveedor</span><strong class="text-highlighted">{{ datosProveedor.code_supplier || '—' }}</strong></div>
+                <div><span class="block text-muted">Producto</span><strong class="text-highlighted">{{ datosProveedor.producto || '—' }}</strong></div>
+                <div v-if="datosProveedor.proforma_nombre"><span class="block text-muted">Proforma</span><strong class="break-all text-highlighted">{{ datosProveedor.proforma_nombre }}</strong></div>
+              </div>
+            </div>
+            <FormularioBancario v-model="formularioTt" :bloqueado="ttSoloLectura" />
+          </div>
         </template>
         <template #footer>
           <UButton color="neutral" variant="outline" @click="cerrarDatos">{{ ttSoloLectura ? 'Cerrar' : 'Cancelar' }}</UButton>
-          <UButton v-if="datosProveedor && !ttSoloLectura" color="primary" @click="guardarDatos(datosProveedor)">{{ datosProveedor.moneda === 'RMB' ? 'Guardar datos' : 'Guardar como por autorizar' }}</UButton>
+          <UButton v-if="datosProveedor && !ttSoloLectura" color="primary" @click="guardarDatos(datosProveedor)">{{ datosProveedor.moneda === 'RMB' ? 'Guardar datos' : 'Guardar y enviar al cliente para autorización' }}</UButton>
           <UButton
             v-if="datosProveedor && !ttSoloLectura && datosProveedor.moneda === 'RMB' && (datosProveedor.datos?.wechat || datosProveedor.datos?.vendedor_nombre)"
             color="error"
@@ -777,7 +794,7 @@
       <SupplierPaymentWindow
         :open="!!vistaPrevia"
         :width-class="vistaPrevia?.tipo === 'cuentas' ? 'max-w-md sm:max-w-md' : ''"
-        :title="vistaPrevia?.tipo === 'resumen' && solicitud.cotizacion_codigo ? `WhatsApp · ${solicitud.cotizacion_codigo}` : 'Vista previa de WhatsApp'"
+        :title="vistaPrevia?.tipo === 'resumen' && solicitud.cotizacion_codigo ? `WhatsApp · ${solicitud.cotizacion_codigo}` : (vistaPrevia?.enlace ? 'Vista previa — mensaje al cliente' : 'Vista previa de WhatsApp')"
         :subtitle="solicitud.cliente_whatsapp ? `Destino: ${solicitud.cliente_whatsapp}` : ''"
         @close="cerrarVistaPrevia"
       >
@@ -808,6 +825,10 @@
             <UButton color="success" icon="i-heroicons-paper-airplane" :loading="enviandoCuentas" :disabled="!vistaPrevia.puede_enviar" @click="enviarCuentasWhatsapp">
               Enviar por WhatsApp
             </UButton>
+          </template>
+          <template v-else-if="vistaPrevia?.enlace">
+            <UButton color="neutral" variant="outline" @click="cerrarVistaPrevia">Cerrar</UButton>
+            <UButton color="primary" variant="outline" icon="i-lucide-external-link" :to="vistaPrevia.enlace" target="_blank" rel="noopener">Abrir como cliente</UButton>
           </template>
           <UButton v-else color="neutral" variant="soft" @click="cerrarVistaPrevia">Cerrar</UButton>
         </template>
@@ -1156,8 +1177,9 @@ function abonoConDetalle(item: PagoProveedorAbono) {
   return !!item.observacion || item.operacion_repetida || item.excedente_decision === 'reembolso_solicitado' || item.excedente_decision === 'por_consultar' || !!item.puede_elegir_continuacion
 }
 
-function etiquetaDatos(estado: string) {
-  return { pendiente: 'Sin enviar', enviado: 'Formulario enviado · esperando al cliente', por_autorizar: 'Por autorizar', recibido: 'Recibido ✓' }[estado] || estado
+function etiquetaDatos(estado: string, enviadoEl?: string | null) {
+  const fecha = enviadoEl ? ` ${new Date(enviadoEl).toLocaleDateString('es-PE')}` : ''
+  return { pendiente: 'Sin enviar', enviado: `Formulario enviado${fecha} · esperando al cliente`, por_autorizar: 'Por autorizar', recibido: 'Recibido ✓' }[estado] || estado
 }
 
 function textoExcedente(abonoItem: PagoProveedorAbono) {
@@ -1394,7 +1416,8 @@ async function llenarTt(proveedor: PagoProveedorSolicitudProveedor) {
     )
     aplicar(respuesta.data)
     datosAbiertoId.value = null
-    showSuccess('Por autorizar', 'El cliente debe autorizar estos datos antes de ejecutar el pago.')
+    // #2172: al guardar se prepara de una vez el mensaje al cliente para que autorice.
+    await pedirValidacion(proveedor)
   } catch (error: any) {
     showError('Formulario T-T', error.message || 'Revisa los datos bancarios.')
   }
