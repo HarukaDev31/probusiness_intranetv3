@@ -132,6 +132,24 @@
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">RUC</label>
               <UInput v-model="editForm.ruc" placeholder="RUC" />
             </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Domicilio fiscal</label>
+              <UInput v-model="editForm.domicilio_fiscal" placeholder="Dirección del domicilio fiscal" class="w-full" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Distrito</label>
+              <UInputMenu
+                v-model="distritoSeleccionado"
+                v-model:search-term="distritoSearchTerm"
+                :items="distritoItems"
+                ignore-filter
+                :loading="distritoSearchLoading"
+                placeholder="Ej. Miraflores, La Molina…"
+                icon="i-heroicons-map-pin"
+                class="w-full"
+                @update:open="onDistritoMenuOpen"
+              />
+            </div>
           </template>
 
           <template v-if="editForm.tipo_comprobante === 'BOLETA'">
@@ -160,10 +178,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useComprobanteForm } from '~/composables/cargaconsolidada/useComprobanteForm'
 import { ContabilidadService } from '~/services/cargaconsolidada/factura-guia/contabilidadService'
 import { useModal } from '~/composables/commons/useModal'
+import { LocationService } from '~/services/commons/locationService'
 
 const route = useRoute()
 const idCotizacion = Number(route.params.id)
@@ -179,6 +198,43 @@ const editForm = ref({
   ruc: null as string | null,
   nombre_completo: null as string | null,
   dni_carnet: null as string | null,
+  domicilio_fiscal: null as string | null,
+})
+
+type DistritoItem = { label: string; value: number }
+const distritoSeleccionado = ref<DistritoItem | null>(null)
+const distritoSearchTerm = ref('')
+const distritoItems = ref<DistritoItem[]>([])
+const distritoSearchLoading = ref(false)
+
+const loadDistritos = async (term: string) => {
+  distritoSearchLoading.value = true
+  try {
+    const res = await LocationService.searchDistritos(term.trim())
+    const items = (res?.data ?? []).map((d) => ({ label: d.label, value: Number(d.value) }))
+    const sel = distritoSeleccionado.value
+    distritoItems.value = sel && !items.some((i) => i.value === sel.value) ? [sel, ...items] : items
+  } catch (e) {
+    console.error('Error al buscar distritos:', e)
+    distritoItems.value = distritoSeleccionado.value ? [distritoSeleccionado.value] : []
+  } finally {
+    distritoSearchLoading.value = false
+  }
+}
+
+const onDistritoMenuOpen = (open: boolean) => {
+  if (open && distritoItems.value.length <= 1) {
+    void loadDistritos(distritoSearchTerm.value)
+  }
+}
+
+let distritoSearchDebounce: ReturnType<typeof setTimeout> | null = null
+watch(distritoSearchTerm, (term) => {
+  if (distritoSearchDebounce) clearTimeout(distritoSearchDebounce)
+  distritoSearchDebounce = setTimeout(() => {
+    distritoSearchDebounce = null
+    void loadDistritos(String(term ?? ''))
+  }, 300)
 })
 
 const tipoComprobanteOptions = [
@@ -211,7 +267,14 @@ const startEdit = () => {
     ruc: form.value.ruc ?? null,
     nombre_completo: form.value.nombre_completo ?? null,
     dni_carnet: form.value.dni_carnet ?? null,
+    domicilio_fiscal: form.value.domicilio_fiscal ?? null,
   }
+  const distritoId = form.value.distrito_id != null ? Number(form.value.distrito_id) : null
+  distritoSeleccionado.value = distritoId
+    ? { value: distritoId, label: form.value.distrito_nombre || `Distrito #${distritoId}` }
+    : null
+  distritoItems.value = distritoSeleccionado.value ? [distritoSeleccionado.value] : []
+  distritoSearchTerm.value = ''
   editing.value = true
 }
 
@@ -222,7 +285,14 @@ const cancelEdit = () => {
 const handleSave = async () => {
   saving.value = true
   try {
-    const res = await ContabilidadService.updateComprobanteForm(idCotizacion, editForm.value)
+    const payload = editForm.value.tipo_comprobante === 'FACTURA'
+      ? {
+          ...editForm.value,
+          domicilio_fiscal: editForm.value.domicilio_fiscal?.trim() || null,
+          distrito_id: distritoSeleccionado.value?.value ?? null,
+        }
+      : editForm.value
+    const res = await ContabilidadService.updateComprobanteForm(idCotizacion, payload)
     if (res.success) {
       showSuccess('Guardado', 'Formulario actualizado correctamente.')
       editing.value = false

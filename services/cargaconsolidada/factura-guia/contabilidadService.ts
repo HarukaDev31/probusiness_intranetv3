@@ -99,6 +99,8 @@ export class ContabilidadService extends BaseService {
         ruc?: string | null
         nombre_completo?: string | null
         dni_carnet?: string | null
+        domicilio_fiscal?: string | null
+        distrito_id?: number | null
     }): Promise<{ success: boolean; message: string; data?: any }> {
         return this.apiCall(`${BASE_URL}/comprobante-form/${idCotizacion}`, {
             method: 'PUT',
