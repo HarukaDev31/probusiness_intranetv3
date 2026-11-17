@@ -1,5 +1,5 @@
 <template>
-  <SupplierPaymentPage title="Clientes" subtitle="Socios e importadores a los que Almacén China factura sus servicios.">
+  <SupplierPaymentPage wide-tables title="Clientes" subtitle="Socios e importadores a los que Almacén China factura sus servicios.">
     <template #actions>
       <UButton color="primary" icon="i-heroicons-plus" @click="openForm(null)">Nuevo cliente</UButton>
     </template>

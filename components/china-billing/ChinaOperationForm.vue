@@ -29,7 +29,6 @@
               <template #empty>{{ countryLoading ? 'Buscando…' : 'Sin resultados' }}</template>
               <template #content-bottom>
                 <div v-if="countryHasMore" class="border-t border-default p-1">
-                  <div :ref="bindCountrySentinel" class="h-px" />
                   <UButton block size="xs" color="neutral" variant="ghost" :loading="countryLoading" @click.prevent="loadCountries(false)">Ver más</UButton>
                 </div>
               </template>
@@ -225,7 +224,6 @@ const countryItems = computed<CountryItem[]>(() => countryOptions.value.map((ite
 })))
 let countryRequest = 0
 let countryTimer: ReturnType<typeof setTimeout> | null = null
-let countryObserver: IntersectionObserver | null = null
 
 /** Países paginados (5 por página); `reset` vuelve a la página 1 con la búsqueda actual. */
 async function loadCountries(reset: boolean) {
@@ -247,23 +245,14 @@ async function loadCountries(reset: boolean) {
   }
 }
 
-/** Carga la siguiente página al llegar al final de la lista. */
-function bindCountrySentinel(el: unknown) {
-  countryObserver?.disconnect()
-  countryObserver = null
-  if (!(el instanceof Element) || typeof IntersectionObserver === 'undefined') return
-  countryObserver = new IntersectionObserver((entries) => {
-    if (entries.some((entry) => entry.isIntersecting)) loadCountries(false)
-  })
-  countryObserver.observe(el)
-}
-
-watch(countrySearch, () => {
+// #1975: la siguiente página se pide solo con «Ver más» (antes un observer se recreaba en cada render y
+// cargaba las 49 páginas seguidas). Al elegir un país, su nombre en el buscador no dispara otra búsqueda.
+watch(countrySearch, (term) => {
   if (countryTimer) clearTimeout(countryTimer)
+  if (country.value && term === country.value.label) return
   countryTimer = setTimeout(() => loadCountries(true), 300)
 })
 onBeforeUnmount(() => {
-  countryObserver?.disconnect()
   if (countryTimer) clearTimeout(countryTimer)
 })
 
