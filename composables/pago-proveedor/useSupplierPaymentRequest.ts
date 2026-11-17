@@ -26,6 +26,8 @@ export function useSupplierPaymentRequest() {
 
   const getBankAccounts = (solicitudId: number) => PagoProveedorService.cuentas(solicitudId)
 
+  const sendBankAccounts = (solicitudId: number) => PagoProveedorService.enviarCuentas(solicitudId)
+
   const liftChina = (solicitudId: number, proveedorId: number, vendedor: string, wechat: string) =>
     PagoProveedorService.levantarChina(solicitudId, proveedorId, vendedor, wechat)
 
@@ -75,6 +77,7 @@ export function useSupplierPaymentRequest() {
     sendProviderData,
     downloadSummary,
     getBankAccounts,
+    sendBankAccounts,
     liftChina,
     saveRmb,
     deleteRmb,

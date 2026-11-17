@@ -176,7 +176,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, onMounted, ref } from 'vue'
+import { computed, h, onMounted, ref, type VNode } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import type { FilterConfig } from '~/types/data-table'
 import type { PagoProveedorCotizacion, PagoProveedorPaginacion } from '~/types/pago-proveedor'
@@ -287,7 +287,7 @@ const columns: TableColumn<PagoProveedorCotizacion>[] = [
   },
   { accessorKey: 'consolidado', header: 'Consolidado', cell: ({ row }) => h('span', { class: NEGRO }, soloConsolidado(row.original.consolidado)) },
   // Cliente y el detalle de cuotas pueden partirse en 2 líneas para que «Acciones» entre a 1920 px.
-  { accessorKey: 'cliente_nombre', header: 'Cliente', cell: ({ row }) => h('span', { class: `${NEGRO} block max-w-44 whitespace-normal` }, row.original.cliente_nombre || '—') },
+  { accessorKey: 'cliente_nombre', header: 'Cliente', cell: ({ row }) => h('span', { class: `${NEGRO} block min-w-48 whitespace-normal` }, row.original.cliente_nombre || '—') },
   { accessorKey: 'proveedores', header: 'Proveedores', cell: ({ row }) => supplierSummary(row.original) },
   {
     accessorKey: 'total_ahora',
@@ -339,7 +339,7 @@ const columns: TableColumn<PagoProveedorCotizacion>[] = [
   {
     accessorKey: 'acciones',
     header: 'Acciones',
-    cell: ({ row }) => h('div', { class: 'flex flex-wrap gap-1' }, quoteActions(row.original))
+    cell: ({ row }) => quoteActions(row.original)
   }
 ]
 
@@ -363,7 +363,7 @@ function supplierSummary(quote: PagoProveedorCotizacion) {
   }))
 }
 
-function quoteActions(quote: PagoProveedorCotizacion) {
+function quoteActions(quote: PagoProveedorCotizacion): VNode {
   const open = () => { void navigateTo(`/pago-proveedor/cotizaciones/${quote.id}`) }
   const vencida = quote.estado === 'pendiente' && quote.puede_renovar
   const buttons = [
@@ -413,14 +413,19 @@ function quoteActions(quote: PagoProveedorCotizacion) {
       onClick: () => confirmDelete(quote)
     }))
   }
+  // #2063: los íconos (incluido el tachito) van juntos en una fila; el botón principal, debajo.
+  let principal = null
   if (quote.estado === 'confirmada') {
     // La solicitud se abre desde el enlace de la columna Estado; no es una acción.
   } else if (quote.puede_renovar) {
-    buttons.push(h(UButton, { size: 'xs', color: 'primary', label: 'Renovar', onClick: () => { renovarCotizacion.value = quote } }))
+    principal = h(UButton, { size: 'xs', color: 'primary', label: 'Renovar', onClick: () => { renovarCotizacion.value = quote } })
   } else if (quote.estado === 'pendiente' && quote.puede_editar) {
-    buttons.push(h(UButton, { size: 'xs', color: 'primary', label: 'Crear solicitud', onClick: () => createRequest(quote) }))
+    principal = h(UButton, { size: 'xs', color: 'primary', label: 'Crear solicitud', onClick: () => createRequest(quote) })
   }
-  return buttons
+  return h('div', { class: 'flex flex-col items-start gap-1' }, [
+    h('div', { class: 'flex flex-nowrap items-center gap-0.5' }, buttons),
+    principal
+  ])
 }
 
 async function cargar() {

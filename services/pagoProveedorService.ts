@@ -225,6 +225,13 @@ export class PagoProveedorService extends BaseService {
     })
   }
 
+  static async enviarCuentas(solicitudId: number) {
+    return this.apiCall<Uno<{ texto: string; enviado: boolean; nota: string; solicitud: PagoProveedorSolicitud }>>(
+      `${this.baseUrl}/solicitudes/${solicitudId}/cuentas/enviar`,
+      { method: 'POST' }
+    )
+  }
+
   static async guardarDatosRmb(solicitudId: number, proveedorId: number, vendedor: string, wechat: string) {
     return this.apiCall<Uno<PagoProveedorSolicitud>>(`${this.baseUrl}/solicitudes/${solicitudId}/proveedores/${proveedorId}/datos-rmb`, {
       method: 'POST',
