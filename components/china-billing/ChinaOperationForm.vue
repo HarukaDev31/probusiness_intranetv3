@@ -12,7 +12,26 @@
       <div class="flex flex-col gap-5">
         <div class="grid gap-3 sm:grid-cols-3">
           <UFormField label="País">
-            <USelect v-model="country" :items="countryItems" placeholder="País" :disabled="isDraft || isEdit" class="w-full" />
+            <!-- PRY-26-0003: autocompletado contra la tabla de países (5 por página; primero los países con clientes). -->
+            <UInputMenu
+              v-model="country"
+              v-model:search-term="countrySearch"
+              :items="countryItems"
+              ignore-filter
+              :loading="countryLoading"
+              placeholder="Buscar país"
+              :disabled="isDraft || isEdit"
+              class="w-full"
+              @update:open="(value: boolean) => value && !countryOptions.length && loadCountries(true)"
+            >
+              <template #empty>{{ countryLoading ? 'Buscando…' : 'Sin resultados' }}</template>
+              <template #content-bottom>
+                <div v-if="countryHasMore" class="border-t border-default p-1">
+                  <div :ref="bindCountrySentinel" class="h-px" />
+                  <UButton block size="xs" color="neutral" variant="ghost" :loading="countryLoading" @click.prevent="loadCountries(false)">Ver más</UButton>
+                </div>
+              </template>
+            </UInputMenu>
           </UFormField>
           <UFormField label="Cliente" required>
             <USelectMenu
@@ -59,19 +78,20 @@
             <span class="text-muted">Tarifas del cliente:</span>
             <UButton
               v-for="rate in clientRates"
-              :key="rate.label"
+              :key="rate.tier"
               size="xs"
-              :color="form.rate === rate.value ? 'primary' : 'neutral'"
-              :variant="form.rate === rate.value ? 'soft' : 'outline'"
-              :class="form.rate === rate.value ? 'ring ring-primary/60' : ''"
-              @click="form.rate = rate.value"
+              :color="activeTier === rate.tier ? 'primary' : 'neutral'"
+              :variant="activeTier === rate.tier ? 'soft' : 'outline'"
+              :class="activeTier === rate.tier ? 'ring ring-primary/60' : ''"
+              @click="pickRate(rate.tier, rate.value)"
             >
-              {{ rate.label }} · {{ usd(rate.value) }}
+              Tarifa {{ rate.tier }} · {{ usd(rate.value) }}
             </UButton>
           </div>
-          <p v-if="clientRates.length && selectedOrganization" class="flex items-center gap-1 text-xs text-success">
-            <UIcon name="i-heroicons-check" class="size-3.5" />
-            Precio del socio {{ selectedOrganization.name }}: {{ usd(clientRates[0].value) }} por CBM · puedes modificarlo
+          <p v-if="clientRates.length && selectedOrganization" class="flex items-center gap-1 text-xs" :class="activeTier ? 'text-success' : 'text-muted'">
+            <UIcon :name="activeTier ? 'i-heroicons-check' : 'i-heroicons-pencil'" class="size-3.5" />
+            <template v-if="activeTier">Tarifa {{ activeTier }} del socio {{ selectedOrganization.name }} · puedes modificarla</template>
+            <template v-else>Tarifa escrita a mano para esta operación</template>
           </p>
         </div>
         <UFormField v-else label="Monto servicio (USD)" required>
@@ -127,11 +147,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import YuanFilePick from '~/components/pago-proveedor/YuanFilePick.vue'
 import { CHINA_BILLING_TYPE } from '~/constants/chinaBilling'
 import { ChinaBillingService } from '~/services/chinaBillingService'
-import type { ChinaOperation, ChinaOrganizationOption } from '~/types/china-billing'
+import type { ChinaCountryOption, ChinaOperation, ChinaOrganizationOption } from '~/types/china-billing'
 
 const props = defineProps<{
   open: boolean
@@ -163,6 +183,7 @@ const blank = () => ({
   description: '',
   cbm: null as number | null,
   rate: null as number | null,
+  rate_tier: null as number | null,
   amount: null as number | null,
   fob: null as number | null,
   freight: null as number | null,
@@ -187,8 +208,70 @@ const serviceKind = computed({
     form.billing_type = type.billing
   }
 })
-const country = ref<string | undefined>(undefined)
-const countryItems = computed(() => [...new Set(props.organizations.map((org) => org.country).filter(Boolean))].map((name) => ({ value: name, label: name })))
+type CountryItem = { value: number; label: string; icon?: string }
+const country = ref<CountryItem | undefined>(undefined)
+const countrySearch = ref('')
+const countryOptions = ref<ChinaCountryOption[]>([])
+const countryPage = ref(0)
+const countryLastPage = ref(1)
+const countryLoading = ref(false)
+const countryHasMore = computed(() => countryPage.value < countryLastPage.value)
+const countryItems = computed<CountryItem[]>(() => countryOptions.value.map((item) => ({
+  value: item.value,
+  label: item.label,
+  icon: item.has_clients ? 'i-heroicons-user-group' : undefined
+})))
+let countryRequest = 0
+let countryTimer: ReturnType<typeof setTimeout> | null = null
+let countryObserver: IntersectionObserver | null = null
+
+/** Países paginados (5 por página); `reset` vuelve a la página 1 con la búsqueda actual. */
+async function loadCountries(reset: boolean) {
+  if (!reset && (countryLoading.value || !countryHasMore.value)) return
+  const current = ++countryRequest
+  const page = reset ? 1 : countryPage.value + 1
+  countryLoading.value = true
+  try {
+    const response = await ChinaBillingService.countries({ search: countrySearch.value.trim(), page, per_page: 5 })
+    if (current !== countryRequest) return
+    const rows = response.data || []
+    countryOptions.value = reset ? rows : [...countryOptions.value, ...rows.filter((row) => !countryOptions.value.some((item) => item.value === row.value))]
+    countryPage.value = response.pagination?.current_page ?? page
+    countryLastPage.value = response.pagination?.last_page ?? page
+  } catch {
+    if (reset) countryOptions.value = []
+  } finally {
+    if (current === countryRequest) countryLoading.value = false
+  }
+}
+
+/** Carga la siguiente página al llegar al final de la lista. */
+function bindCountrySentinel(el: unknown) {
+  countryObserver?.disconnect()
+  countryObserver = null
+  if (!(el instanceof Element) || typeof IntersectionObserver === 'undefined') return
+  countryObserver = new IntersectionObserver((entries) => {
+    if (entries.some((entry) => entry.isIntersecting)) loadCountries(false)
+  })
+  countryObserver.observe(el)
+}
+
+watch(countrySearch, () => {
+  if (countryTimer) clearTimeout(countryTimer)
+  countryTimer = setTimeout(() => loadCountries(true), 300)
+})
+onBeforeUnmount(() => {
+  countryObserver?.disconnect()
+  if (countryTimer) clearTimeout(countryTimer)
+})
+
+/** El cliente tiene ese país de origen o puede consolidar ahí. */
+function servesCountry(org: ChinaOrganizationOption, countryId: number): boolean {
+  if (org.origin_country_id === countryId) return true
+  if ((org.consolidation_country_ids || []).includes(countryId)) return true
+  return !org.origin_country_id && org.country_id === countryId
+}
+
 const selectedOrganization = computed(() => props.organizations.find((org) => org.id === form.organization_id) || null)
 const serviceAmount = computed(() => Math.round(Number(form.cbm || 0) * Number(form.rate || 0) * 100) / 100)
 const missing = computed(() => {
@@ -206,11 +289,17 @@ const missing = computed(() => {
 })
 watch(country, (value) => {
   if (isEdit.value || isDraft.value) return
-  if (value && selectedOrganization.value && selectedOrganization.value.country !== value) form.organization_id = null
+  if (value && selectedOrganization.value && !servesCountry(selectedOrganization.value, value.value)) form.organization_id = null
 })
-watch(() => form.organization_id, () => {
-  if (selectedOrganization.value?.country) country.value = selectedOrganization.value.country
-})
+/** Sin país elegido, el país pasa a ser el de origen del cliente. */
+function countryFromOrganization() {
+  const org = selectedOrganization.value
+  if (!org || country.value) return
+  const id = org.origin_country_id ?? org.country_id
+  const label = org.origin_country || org.country
+  if (id && label) country.value = { value: id, label }
+}
+watch(() => form.organization_id, countryFromOrganization)
 
 /** Solo para mostrar: el backend recalcula con la misma fórmula al guardar. */
 const total = computed(() => chinaOperationTotal(form))
@@ -224,24 +313,43 @@ const subtitle = computed(() => {
   if (props.draft) return 'Generada al cerrar el consolidado. Completa FOB y flete, revisa CBM y tarifa; al aprobar se crea el N° de orden.'
   return props.operation ? 'Los pagos aplicados a esta orden se mantienen.' : 'El número de orden se genera al guardar.'
 })
-/** Tarifas por CBM que se registraron para el socio en Clientes. */
+/** Tarifa 1 (menos de 1 CBM) y tarifa 2 (1 CBM o más) del socio; el usuario elige cuál usar. */
 const clientRates = computed(() => {
-  const prices = props.organizations.find((org) => org.id === form.organization_id)?.prices
+  const org = selectedOrganization.value
+  if (!org || org.type === 'importer') return []
   return [
-    { label: 'Tarifa 1', value: Number(prices?.consol || 0) },
-    { label: 'Tarifa 2', value: Number(prices?.consol_2 || 0) }
+    { tier: 1, value: Number(org.rate_1 ?? org.prices?.consol ?? 0) },
+    { tier: 2, value: Number(org.rate_2 ?? org.prices?.consol_2 ?? 0) }
   ].filter((rate) => rate.value > 0)
 })
 
+/** Tarifa elegida con los botones; si el usuario escribe otra tarifa, queda como manual (null). */
+const selectedTier = ref<number | null>(null)
+const activeTier = computed(() => {
+  const rate = clientRates.value.find((item) => item.tier === selectedTier.value)
+  return rate && Math.abs(Number(form.rate || 0) - rate.value) < 0.005 ? rate.tier : null
+})
+
+function pickRate(tier: number, value: number) {
+  selectedTier.value = tier
+  form.rate = value
+}
+
 // Al crear una operación por CBM se precarga la tarifa 1 del cliente (se puede cambiar).
 watch(() => [form.organization_id, form.billing_type], () => {
-  if (isEdit.value || isDraft.value || form.billing_type !== CHINA_BILLING_TYPE.CBM || form.rate) return
-  if (clientRates.value.length) form.rate = clientRates.value[0].value
+  if (isEdit.value || isDraft.value || form.billing_type !== CHINA_BILLING_TYPE.CBM) return
+  if (form.rate && !activeTier.value && selectedTier.value === null) return
+  const first = clientRates.value[0]
+  if (first) pickRate(first.tier, first.value)
+  else if (selectedTier.value !== null) {
+    selectedTier.value = null
+    form.rate = null
+  }
 })
 
 const saveLabel = computed(() => (props.draft ? 'Aprobar operación' : props.operation ? 'Guardar cambios' : 'Guardar'))
 const organizationItems = computed(() => props.organizations
-  .filter((org) => !country.value || org.country === country.value)
+  .filter((org) => !country.value || servesCountry(org, country.value.value))
   .map((org) => ({ value: org.id, label: org.name })))
 
 watch(() => [props.open, props.operation, props.draft], () => {
@@ -250,6 +358,9 @@ watch(() => [props.open, props.operation, props.draft], () => {
   packing.value = null
   Object.assign(form, blank())
   country.value = undefined
+  selectedTier.value = null
+  countrySearch.value = ''
+  loadCountries(true)
   const source = props.draft || props.operation
   if (!source) return
   Object.assign(form, {
@@ -262,11 +373,14 @@ watch(() => [props.open, props.operation, props.draft], () => {
     description: source.description,
     cbm: source.cbm,
     rate: source.rate ?? null,
+    rate_tier: source.rate_tier ?? null,
     amount: source.amount || null,
     fob: source.fob || null,
     freight: source.freight || null,
     costs: (source.costs || []).filter((cost) => !cost.source_operation_id).map((cost) => ({ name: cost.name, amount: cost.amount }))
   })
+  selectedTier.value = source.rate_tier ?? null
+  countryFromOrganization()
 }, { immediate: true })
 
 function addCost() {
@@ -281,7 +395,8 @@ async function save() {
   }
   saving.value = true
   try {
-    const payload = { ...form, organization_id: form.organization_id, packing_list: packing.value }
+    const isCbm = form.billing_type === CHINA_BILLING_TYPE.CBM
+    const payload = { ...form, rate_tier: isCbm ? activeTier.value : null, organization_id: form.organization_id, packing_list: packing.value }
     if (props.operation?.id) await ChinaBillingService.updateOperation(props.operation.id, payload)
     else await ChinaBillingService.createOperation(payload)
     emit('saved')

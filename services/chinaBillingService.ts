@@ -57,6 +57,7 @@ function operationForm(payload: ChinaOperationFormPayload): FormData {
   ;(['cbm', 'rate', 'amount', 'fob', 'freight'] as const).forEach((key) => {
     if (payload[key] !== null) form.append(key, String(payload[key]))
   })
+  if (payload.rate_tier) form.append('rate_tier', String(payload.rate_tier))
   payload.costs.forEach((cost, index) => {
     form.append(`costs[${index}][name]`, cost.name)
     form.append(`costs[${index}][amount]`, String(cost.amount))
@@ -219,6 +220,11 @@ export class ChinaBillingService extends BaseService {
 
   static async clientCountries() {
     return this.apiCall<{ success: boolean; data: ChinaCountryOption[] }>(`${this.baseUrl}/clients/countries`)
+  }
+
+  /** Países paginados (5 por página) para el autocompletado; primero los que tienen clientes. */
+  static async countries(filters: { search?: string; page?: number; per_page?: number }) {
+    return this.apiCall<Page<ChinaCountryOption>>(`${this.baseUrl}/countries?${toQuery(filters)}`)
   }
 
   static async getClient(id: number) {

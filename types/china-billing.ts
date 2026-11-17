@@ -40,6 +40,8 @@ export interface ChinaOperation {
   consolidado_label?: string | null
   cbm: number | null
   rate?: number | null
+  /** Tarifa del socio usada (1 o 2); null si se escribió a mano. */
+  rate_tier?: number | null
   amount?: number
   fob?: number
   freight?: number
@@ -126,6 +128,15 @@ export interface ChinaOrganizationOption {
   name: string
   country: string
   country_id: number | null
+  type?: ChinaClientType
+  /** País de origen del cliente. */
+  origin_country_id?: number | null
+  origin_country?: string
+  /** Países donde el socio puede consolidar. */
+  consolidation_country_ids?: number[]
+  /** Tarifa 1 (menos de 1 CBM) y tarifa 2 (1 CBM o más), USD por CBM. Solo socios. */
+  rate_1?: number | null
+  rate_2?: number | null
   /** Tarifas del socio (USD por CBM) para precargar la operación. */
   prices?: { consol?: number | null; consol_2?: number | null } | null
 }
@@ -149,6 +160,8 @@ export interface ChinaOperationFormPayload {
   description: string
   cbm: number | null
   rate: number | null
+  /** 1 o 2 si se usó una tarifa del socio; null si la tarifa se escribió a mano. */
+  rate_tier: number | null
   amount: number | null
   fob: number | null
   freight: number | null
@@ -245,7 +258,11 @@ export interface ChinaClient {
   organization_id: number | null
   name: string
   country: string
+  origin_country_id: number | null
+  consolidation_country_ids: number[]
   registered_on: string | null
+  rate_1: number | null
+  rate_2: number | null
   whatsapp: string
   contact_name: string
   email: string
@@ -263,16 +280,19 @@ export interface ChinaClient {
 }
 
 export interface ChinaClientPayload {
-  type?: ChinaClientType
-  organization_id?: number | null
-  /** País de la organización nueva (solo al crear un socio). */
-  country_id?: number | null
+  type: ChinaClientType
   name: string
-  country: string
+  /** País de origen (tabla pais). */
+  origin_country_id: number | null
+  /** Solo socio: países donde puede consolidar (por defecto, su país de origen). */
+  consolidation_country_ids: number[]
   whatsapp: string
   contact_name: string
+  /** Si viene, se crea el usuario de la plataforma (usuario y contraseña = correo). */
   email: string
-  prices: { consol: number | null; consol_2: number | null } | null
+  /** Solo socio: tarifa 1 (menos de 1 CBM) y tarifa 2 (1 CBM o más), USD por CBM. */
+  rate_1: number | null
+  rate_2: number | null
 }
 
 /** Pestaña por organización: cuántos clientes registró. */
@@ -288,6 +308,8 @@ export interface ChinaClientGroup {
 export interface ChinaCountryOption {
   value: number
   label: string
+  /** Hay clientes con ese país de origen o que consolidan ahí. */
+  has_clients?: boolean
 }
 
 /** Cliente que registró una organización (solo lectura). */

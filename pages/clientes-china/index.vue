@@ -139,7 +139,7 @@ const columns: TableColumn<ChinaClient>[] = [
     iconButton('i-heroicons-pencil-square', 'Editar', () => openForm(row.original)),
     iconButton(
       'i-heroicons-trash',
-      row.original.can_delete ? 'Eliminar' : 'Los socios se administran desde su organización',
+      row.original.can_delete ? 'Eliminar' : (row.original.type === 'partner' ? 'Los socios se administran desde su organización' : 'Tiene operaciones: no se puede eliminar'),
       () => remove(row.original),
       'hover:bg-error/10 hover:text-error',
       !row.original.can_delete
