@@ -27,21 +27,32 @@
       @items-per-page-change="onPageSize"
     />
 
-    <UModal
+    <!-- #2011: la vista del cliente es un panel lateral. -->
+    <USlideover
       :open="!!selected"
+      side="right"
       :title="selected?.name || ''"
-      :description="`Cliente de ${name} · solo lectura`"
-      :ui="{ content: 'w-full max-w-lg sm:max-w-lg', header: 'border-t-[5px] border-t-primary-500', title: 'text-lg font-bold text-highlighted' }"
+      :ui="{ content: 'w-full max-w-md sm:max-w-md', header: 'hidden', body: 'p-0 sm:p-0' }"
       @update:open="(value: boolean) => !value && (selected = null)"
     >
       <template #body>
-        <dl v-if="selected" class="grid grid-cols-[8rem_1fr] gap-y-2 text-sm">
-          <template v-for="field in fields(selected)" :key="field.label">
-            <dt class="text-muted">{{ field.label }}</dt><dd class="font-medium">{{ field.value || '-' }}</dd>
-          </template>
-        </dl>
+        <div v-if="selected">
+          <div class="flex items-start justify-between gap-3 border-b border-default px-6 py-5">
+            <div class="min-w-0">
+              <p class="text-xs text-muted">Cliente de {{ name }} · solo lectura</p>
+              <p class="text-xl font-bold text-highlighted">{{ selected.name }}</p>
+              <span class="mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium" :class="selected.category === 'Prospecto' ? 'bg-[#eef1f6] text-[#4a5a72]' : 'bg-[#e3edfd] text-[#1d4f91]'">{{ selected.category }}</span>
+            </div>
+            <UButton color="neutral" variant="ghost" icon="i-heroicons-x-mark" aria-label="Cerrar" @click="selected = null" />
+          </div>
+          <dl class="grid grid-cols-[8rem_1fr] gap-y-3 px-6 py-5 text-sm">
+            <template v-for="field in fields(selected)" :key="field.label">
+              <dt class="text-muted">{{ field.label }}</dt><dd class="font-medium break-words">{{ field.value || '-' }}</dd>
+            </template>
+          </dl>
+        </div>
       </template>
-    </UModal>
+    </USlideover>
   </div>
 </template>
 
