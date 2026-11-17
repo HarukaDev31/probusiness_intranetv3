@@ -580,6 +580,12 @@
                 </label>
                 <span class="min-w-0 truncate text-xs text-muted">{{ voucher ? voucher.name : 'Sin archivos seleccionados' }}</span>
               </div>
+              <!-- #2093/#2095: al editar se ve el voucher ya registrado. -->
+              <div v-if="!voucher && abonoEditandoId && abonoEnEdicion?.voucher_nombre" class="mt-2 flex items-center gap-2 rounded-md border border-default bg-elevated/60 px-3 py-2 text-xs">
+                <UIcon name="i-heroicons-document-text" class="size-4 shrink-0 text-primary" />
+                <span class="min-w-0 flex-1 truncate font-medium text-highlighted">{{ abonoEnEdicion.voucher_nombre }}</span>
+                <UButton v-if="abonoEnEdicion.voucher_url" size="xs" color="primary" variant="link" :to="abonoEnEdicion.voucher_url" target="_blank" rel="noopener">Ver</UButton>
+              </div>
               <p v-if="!voucher && abonoEditandoId" class="mt-1 text-xs text-muted">Deja el archivo vacío para conservar el voucher actual.</p>
             </UFormField>
           </UCard>

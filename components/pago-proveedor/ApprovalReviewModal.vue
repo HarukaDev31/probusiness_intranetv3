@@ -192,8 +192,8 @@ const comparison = computed(() => {
   const tolerancia = `$${money(payment.tolerance)}`
   if (Math.abs(difference) <= 0.004) return { clase: verde, titulo: '✓ ', texto: 'Los importes coinciden.' }
   if (!payment.needs_reason) return { clase: verde, titulo: '', texto: `${difference < 0 ? 'Faltan' : 'Sobran'} ${monto}: dentro de la tolerancia de ${tolerancia}.` }
-  if (difference < 0) return { clase: rojo, titulo: `Faltan ${monto}`, texto: `: supera la tolerancia de ${tolerancia}. `, opciones: true }
-  return { clase: rojo, titulo: `Sobran ${monto}`, texto: `: supera la tolerancia de ${tolerancia}. Aprobar el pago pide motivo.` }
+  if (difference < 0) return { clase: rojo, titulo: `⚠ Faltan ${monto}`, texto: `: supera la tolerancia de ${tolerancia}. `, opciones: true }
+  return { clase: rojo, titulo: `⚠ Sobran ${monto}`, texto: `: supera la tolerancia de ${tolerancia}. Aprobar el pago pide motivo.` }
 })
 
 function fechaCorta(fecha?: string | null) {

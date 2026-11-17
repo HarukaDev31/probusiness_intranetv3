@@ -105,8 +105,11 @@
           <p v-if="adjustedToBank" class="mt-3 rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
             <strong>Ajustado al importe del banco:</strong> Ventas registró ${{ money(deposit.recorded_amount!) }} y el abono quedó validado por ${{ money(deposit.amount) }}. Se avisó a Ventas.
           </p>
-          <p v-else-if="deposit.corrected_by_admin" class="mt-2 text-xs text-muted">
-            Corregido por Administración: queda registrado y se avisa a Ventas.
+          <!-- #2110: el aviso dice qué corrigió Administración («N.° de operación: 024158111 → 024158115»). -->
+          <p v-else-if="deposit.corrected_by_admin" class="mt-3 rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
+            <strong>Corregido por Administración:</strong>
+            <template v-if="deposit.admin_corrections?.length"> {{ deposit.admin_corrections.map((change) => `${change.field}: ${change.from} → ${change.to}`).join('; ') }}.</template>
+            <template v-else> queda registrado y se avisa a Ventas.</template>
           </p>
           <p v-if="deposit.shared" class="mt-3 flex items-center gap-2 text-xs text-muted">
             <UIcon name="i-heroicons-information-circle" class="size-4 shrink-0 text-highlighted" />

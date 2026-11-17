@@ -380,7 +380,7 @@ const columns = computed<TableColumn<UnifiedRow>[]>(() => [
     h('div', { class: `font-semibold ${TEXTO_PRINCIPAL}` }, row.original.supplier_code || '—'),
     h('div', { class: 'min-w-40 max-w-64 whitespace-normal text-xs text-muted' }, row.original.supplier_name || '')
   ]) },
-  { accessorKey: 'request_code', header: 'Código de solicitud', cell: ({ row }) => h('span', { class: TEXTO_PRINCIPAL }, row.original.request_code || '—') },
+  { accessorKey: 'request_code', header: 'Código de solicitud', cell: ({ row }) => h('span', { class: `font-bold ${TEXTO_PRINCIPAL}` }, row.original.request_code || '—') },
   {
     accessorKey: 'payment_type',
     header: 'Tipo de pago',
@@ -392,7 +392,7 @@ const columns = computed<TableColumn<UnifiedRow>[]>(() => [
     ])
   },
   // #1758: aire a ambos lados del importe para que no quede pegado a Tipo de pago ni a Estado.
-  { accessorKey: 'amount', header: 'Importe', cell: ({ row }) => h('span', { class: `block whitespace-nowrap pr-6 ${TEXTO_PRINCIPAL}` }, `$${Number(row.original.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}`) },
+  { accessorKey: 'amount', header: 'Importe', cell: ({ row }) => h('span', { class: `block whitespace-nowrap pr-6 font-bold ${TEXTO_PRINCIPAL}` }, `$${Number(row.original.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}`) },
   ...(bucket.value === APPROVAL_BUCKET.PENDING
     ? [
         { accessorKey: 'deposit_text', header: 'Depósito', cell: ({ row }) => h('div', { class: 'w-20 whitespace-normal' }, [
