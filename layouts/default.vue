@@ -436,9 +436,10 @@ const sidebarCategories = computed(() => {
       const index = reglas.findIndex((regla) => regla(route, name))
       return index === -1 ? 50 : index
     }
-    if (!modules.some((mod: { route?: string }) => String(mod.route || '').startsWith('/flujo-caja'))) {
-      const operaciones = modules.findIndex((mod: { route?: string }) => String(mod.route || '').startsWith('/operaciones-china'))
-      modules.splice(operaciones === -1 ? modules.length : operaciones, 0, {
+    // Flujo de caja acompaña a Operaciones: solo lo ve quien tiene ese módulo (Encargado China), no el almacén de consolidado.
+    const operaciones = modules.findIndex((mod: { route?: string }) => String(mod.route || '').startsWith('/operaciones-china'))
+    if (operaciones !== -1 && !modules.some((mod: { route?: string }) => String(mod.route || '').startsWith('/flujo-caja'))) {
+      modules.splice(operaciones, 0, {
         id: 'flujo-caja',
         name: 'Flujo de caja',
         nameEn: 'Cash flow',
