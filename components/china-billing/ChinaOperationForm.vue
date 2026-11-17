@@ -304,7 +304,7 @@ const subtitle = computed(() => {
   if (props.draft) return 'Generada al cerrar el consolidado. Completa FOB y flete, revisa CBM y tarifa; al aprobar se crea el N° de orden.'
   return props.operation ? 'Los pagos aplicados a esta orden se mantienen.' : 'El número de orden se genera al guardar.'
 })
-/** Tarifa 1 (menos de 1 CBM) y tarifa 2 (1 CBM o más) del socio; el usuario elige cuál usar. */
+/** Tarifa 1 y 2 del socio; según el CBM que llegue al almacén, China elige cuál aplicar. */
 const clientRates = computed(() => {
   const org = selectedOrganization.value
   if (!org || org.type === 'importer') return []
