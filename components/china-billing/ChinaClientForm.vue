@@ -71,10 +71,10 @@
           <p class="mb-3 text-xs text-muted">Se ofrecen al crear una operación para este socio y se pueden modificar en cada una.</p>
           <div class="grid gap-3 sm:grid-cols-2">
             <UFormField label="Tarifa 1 · menos de 1 CBM" required>
-              <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.rate_1" :min="0" :step="1" placeholder="Ingresa la tarifa" class="w-full" />
+              <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.rate_1" :min="0" :step="0.01" placeholder="Ingresa la tarifa" class="w-full" />
             </UFormField>
             <UFormField label="Tarifa 2 · 1 CBM o más" required>
-              <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.rate_2" :min="0" :step="1" placeholder="Ingresa la tarifa" class="w-full" />
+              <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.rate_2" :min="0" :step="0.01" placeholder="Ingresa la tarifa" class="w-full" />
             </UFormField>
           </div>
         </div>

@@ -78,7 +78,7 @@
               </div>
             </div>
             <UFormField label="Monto real recibido en el banco (USD)">
-              <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="received" :min="0" :step="1" class="w-full" />
+              <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="received" :min="0" :step="0.01" class="w-full" />
             </UFormField>
             <div v-if="needsShortfall" class="mt-3 rounded-lg border border-error/30 bg-error/5 p-3">
               <p class="mb-2 text-sm text-error">Llegaron <strong>{{ usd(shortfallAmount) }}</strong> menos. ¿A qué operación cargas la diferencia?</p>

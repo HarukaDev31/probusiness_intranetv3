@@ -41,7 +41,7 @@
             <span class="text-muted">{{ usd(creditBalance) }} disponible</span>
           </div>
           <div class="flex gap-2">
-            <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="creditAmount" :min="0" :max="creditMax" :step="1" class="flex-1" />
+            <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="creditAmount" :min="0" :max="creditMax" :step="0.01" class="flex-1" />
             <UButton color="primary" :loading="busy" :disabled="!creditAmount || creditAmount > creditMax" @click="applyCredit">Aplicar</UButton>
           </div>
           <p class="mt-1 text-xs text-muted">Máximo {{ usd(creditMax) }} para esta operación.</p>
