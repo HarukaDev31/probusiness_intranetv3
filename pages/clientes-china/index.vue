@@ -127,7 +127,7 @@ const columns: TableColumn<ChinaClient>[] = [
   { accessorKey: 'type', header: 'Tipo', cell: ({ row }) => h('span', {
     class: `inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${row.original.type === 'partner' ? 'bg-[#fff3ea] text-[#b4480c]' : 'bg-[#eef1f6] text-[#4a5a72]'}`
   }, row.original.type === 'partner' ? 'Socio' : 'Importador') },
-  { accessorKey: 'service_amount', header: 'Total servicio', meta: { class: right }, cell: ({ row }) => h('span', usd(row.original.service_amount)) },
+  { accessorKey: 'service_amount', header: 'Total servicio', meta: { class: right }, cell: ({ row }) => h('span', { class: 'font-semibold text-success' }, usd(row.original.service_amount)) },
   { accessorKey: 'total_billed', header: 'Total facturado', meta: { class: right }, cell: ({ row }) => h('span', usd(row.original.total_billed)) },
   { accessorKey: 'paid', header: 'Total pagado', meta: { class: right }, cell: ({ row }) => h('span', usd(row.original.paid)) },
   { accessorKey: 'receivable', header: 'Por cobrar', meta: { class: right }, cell: ({ row }) => h('span', { class: row.original.receivable > 0.005 ? 'font-semibold text-error' : '' }, usd(row.original.receivable)) },
