@@ -187,6 +187,9 @@ export interface ChinaBankAccount {
   beneficiary_country: string
   beneficiary_state: string
   beneficiary_city: string
+  beneficiary_tax_id: string
+  beneficiary_uscc: string
+  beneficiary_email: string
   account_number: string
   intermediary_bank: string
   intermediary_swift: string

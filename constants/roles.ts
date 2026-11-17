@@ -1,6 +1,7 @@
 // Constantes globales de roles
 export const ROLES = {
     CONTENEDOR_ALMACEN: 'ContenedorAlmacen',
+    ENCARGADO_CHINA: 'Encargado China',
     CONTENEDOR_CONSOLIDADO: 'ContenedorConsolidado',
     COORDINACION: 'Coordinación',
     ADMIN: 'Admin',
