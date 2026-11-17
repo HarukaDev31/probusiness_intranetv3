@@ -36,20 +36,47 @@
       @update:open="(value: boolean) => !value && (selected = null)"
     >
       <template #body>
-        <div v-if="selected">
-          <div class="flex items-start justify-between gap-3 border-b border-default px-6 py-5">
-            <div class="min-w-0">
-              <p class="text-xs text-muted">Cliente de {{ name }} · solo lectura</p>
-              <p class="text-xl font-bold text-highlighted">{{ selected.name }}</p>
-              <span class="mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium" :class="selected.category === 'Prospecto' ? 'bg-[#eef1f6] text-[#4a5a72]' : 'bg-[#e3edfd] text-[#1d4f91]'">{{ selected.category }}</span>
-            </div>
+        <div v-if="selected" class="px-6 py-5">
+          <div class="flex items-start justify-between gap-3">
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+              <UIcon name="i-heroicons-lock-closed" class="size-3.5" />Cliente de {{ label }} - Solo lectura
+            </span>
             <UButton color="neutral" variant="ghost" icon="i-heroicons-x-mark" aria-label="Cerrar" @click="selected = null" />
           </div>
-          <dl class="grid grid-cols-[8rem_1fr] gap-y-3 px-6 py-5 text-sm">
-            <template v-for="field in fields(selected)" :key="field.label">
-              <dt class="text-muted">{{ field.label }}</dt><dd class="font-medium break-words">{{ field.value || '-' }}</dd>
-            </template>
-          </dl>
+          <div class="mt-4 flex items-center gap-4 border-b border-primary/20 pb-5">
+            <div class="grid size-16 shrink-0 place-items-center rounded-full bg-primary/15 text-xl font-bold text-primary">{{ initials(selected.name) }}</div>
+            <div class="min-w-0">
+              <p class="text-lg font-bold uppercase text-highlighted">{{ selected.name }}</p>
+              <p class="text-sm text-muted">Cliente registrado</p>
+            </div>
+          </div>
+
+          <section class="border-b border-default py-4">
+            <p class="mb-2 flex items-center gap-2 font-semibold text-highlighted"><UIcon name="i-heroicons-user" class="size-5 text-primary" />Información personal</p>
+            <div class="flex items-center justify-between gap-3 py-1.5 text-sm">
+              <span class="text-toned">Documento de identidad</span>
+              <span class="flex items-center gap-2 font-medium">{{ selected.document ? `DNI: ${selected.document}` : '-' }}<button v-if="selected.document" type="button" class="text-primary" title="Copiar" @click="copy(selected.document)"><UIcon name="i-heroicons-clipboard-document" class="size-5" /></button></span>
+            </div>
+          </section>
+
+          <section class="border-b border-default py-4">
+            <p class="mb-2 flex items-center gap-2 font-semibold text-highlighted"><UIcon name="i-heroicons-phone" class="size-5 text-primary" />Información de contacto</p>
+            <div v-for="item in [{ label: 'Teléfono', value: selected.phone }, { label: 'Correo electrónico', value: selected.email }]" :key="item.label" class="flex items-center justify-between gap-3 border-b border-default/60 py-1.5 text-sm last:border-0">
+              <span class="text-toned">{{ item.label }}</span>
+              <span class="flex min-w-0 items-center gap-2 font-medium"><span class="truncate">{{ item.value || '-' }}</span><button v-if="item.value" type="button" class="text-primary" title="Copiar" @click="copy(item.value)"><UIcon name="i-heroicons-clipboard-document" class="size-5" /></button></span>
+            </div>
+          </section>
+
+          <section class="py-4">
+            <p class="mb-2 flex items-center gap-2 font-semibold text-highlighted"><UIcon name="i-heroicons-briefcase" class="size-5 text-primary" />Información comercial</p>
+            <div v-for="item in [{ label: 'Fecha de registro', value: fullDate(selected.registered_on) }, { label: 'Provincia', value: selected.province }, { label: 'Origen', value: selected.origin }, { label: 'Servicio', value: selected.service }]" :key="item.label" class="flex items-center justify-between gap-3 border-b border-default/60 py-1.5 text-sm">
+              <span class="text-toned">{{ item.label }}</span><span class="font-medium">{{ item.value || '-' }}</span>
+            </div>
+            <div class="flex items-center justify-between gap-3 py-1.5 text-sm">
+              <span class="text-toned">Categoría</span>
+              <span class="rounded-full bg-primary/15 px-4 py-1 text-sm font-medium text-primary">{{ selected.category }}</span>
+            </div>
+          </section>
         </div>
       </template>
     </USlideover>
@@ -79,16 +106,8 @@ const fullDate = (date: string | null): string => {
   return year ? `${day}/${month}/${year}` : '—'
 }
 
-const fields = (client: ChinaOrganizationClient) => [
-  { label: 'Fecha', value: fullDate(client.registered_on) },
-  { label: 'Documento', value: client.document },
-  { label: 'Teléfono', value: client.phone },
-  { label: 'Correo', value: client.email },
-  { label: 'Provincia', value: client.province },
-  { label: 'Origen', value: client.origin },
-  { label: 'Servicio', value: client.service },
-  { label: 'Categoría', value: client.category }
-]
+const initials = (value: string) => (value || '').split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0]).join('').toUpperCase()
+const copy = (value: string) => { try { navigator.clipboard?.writeText(value) } catch { /* sin portapapeles */ } }
 
 const columns: TableColumn<ChinaOrganizationClient>[] = [
   { accessorKey: 'number', header: 'N°', cell: ({ row }) => h('span', { class: 'text-muted' }, String(row.original.number)) },
