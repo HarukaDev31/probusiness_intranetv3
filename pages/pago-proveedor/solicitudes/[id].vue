@@ -403,7 +403,7 @@
         <UCollapsible v-model:open="historialAbierto" :unmount-on-hide="false">
           <UButton color="neutral" variant="ghost" icon="i-lucide-history" trailing-icon="i-lucide-chevron-down" class="px-0" block>Historial de la solicitud</UButton>
           <template #content>
-            <div class="pp-tabla-simple mt-3">
+            <div class="pp-tabla-simple mt-3 overflow-x-auto">
               <table class="w-full text-sm">
                 <thead>
                   <tr class="text-left text-xs uppercase tracking-wide text-muted">
@@ -416,7 +416,7 @@
                   <tr v-for="(evento, index) in solicitud.historial" :key="`${evento.fecha}-${index}`" class="border-t border-default">
                     <td class="whitespace-nowrap py-2 pr-3 text-muted">{{ evento.fecha ? new Date(evento.fecha).toLocaleString('es-PE') : '—' }}</td>
                     <td class="whitespace-nowrap py-2 pr-3">{{ evento.usuario || '—' }}</td>
-                    <td class="py-2">{{ textoHistorial(evento).accion }}<span v-if="textoHistorial(evento).detalle" class="text-muted"> · {{ textoHistorial(evento).detalle }}</span></td>
+                    <td class="whitespace-nowrap py-2">{{ textoHistorial(evento).accion }}<span v-if="textoHistorial(evento).detalle" class="text-muted"> · {{ textoHistorial(evento).detalle }}</span></td>
                   </tr>
                 </tbody>
               </table>
