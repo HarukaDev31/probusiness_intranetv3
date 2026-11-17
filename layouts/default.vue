@@ -400,25 +400,8 @@ const sidebarCategories = computed(() => {
     }]
   })
 
-  // Para Jefe Importación: poner "Mi Progreso (Importaciones)" en 4.ª posición (índice 3)
-  const miProgresoIndex = modules.findIndex((m: any) =>
-    m.route === '/calendar' || (m.name && m.name.includes('Mi Progreso') && m.name.includes('Importaciones'))
-  )
-  const desiredPosition = 3 // 4to lugar (0-based)
-  if (miProgresoIndex !== -1 && miProgresoIndex !== desiredPosition) {
-    const [item] = modules.splice(miProgresoIndex, 1)
-    modules.splice(desiredPosition, 0, item)
-  }
-
-  // PRY-26-0003: «Verificación» va primero y luego «Pago a Proveedor» (el orden de BD los deja al revés).
-  const verificacionIndex = modules.findIndex((m: any) => m.route === '/verificacion')
-  const pagoProveedorIndex = modules.findIndex((m: any) =>
-    (m.children ?? []).some((c: any) => String(c.route || '').startsWith('/pago-proveedor'))
-  )
-  if (verificacionIndex !== -1 && pagoProveedorIndex !== -1 && pagoProveedorIndex < verificacionIndex) {
-    const [item] = modules.splice(pagoProveedorIndex, 1)
-    modules.splice(verificacionIndex, 0, item)
-  }
+  // Orden del sidebar: viene del back (menu_orden_usuario > menu_orden_grupo > Nu_Orden).
+  // Sin reorders hardcodeados aquí; se gestiona en panel-acceso/orden-menus.
 
   // PRY-26-0003: menú de Almacén China en el orden de la maqueta.
   if (currentRole.value === ROLES.CONTENEDOR_ALMACEN) {
