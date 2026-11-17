@@ -136,7 +136,7 @@
 
       <UCard v-for="proveedor in solicitud.proveedores || []" :key="proveedor.id" :ui="{ body: 'p-0 sm:p-0' }">
         <button type="button" class="flex w-full items-center gap-4 p-5 text-left" @click="toggleProveedor(proveedor.id)">
-          <UAvatar icon="i-lucide-store" size="lg" class="bg-primary/10" :ui="{ icon: 'text-primary' }" />
+          <UAvatar icon="i-lucide-store" size="xl" class="size-12 bg-primary/10" :ui="{ icon: 'size-6 text-primary' }" />
           <div class="min-w-0 flex-1">
             <p class="flex flex-wrap items-center gap-2">
               <strong class="text-lg text-highlighted">{{ proveedor.code_supplier || proveedor.titulo }}</strong>
@@ -415,7 +415,7 @@
                 <tbody>
                   <tr v-for="(evento, index) in solicitud.historial" :key="`${evento.fecha}-${index}`" class="border-t border-default">
                     <td class="whitespace-nowrap py-2 pr-3 text-muted">{{ evento.fecha ? new Date(evento.fecha).toLocaleString('es-PE') : '—' }}</td>
-                    <td class="py-2 pr-3">{{ evento.usuario || '—' }}</td>
+                    <td class="whitespace-nowrap py-2 pr-3">{{ evento.usuario || '—' }}</td>
                     <td class="py-2">{{ textoHistorial(evento).accion }}<span v-if="textoHistorial(evento).detalle" class="text-muted"> · {{ textoHistorial(evento).detalle }}</span></td>
                   </tr>
                 </tbody>
@@ -794,6 +794,12 @@
               Enviar por WhatsApp
             </UButton>
           </template>
+          <template v-else-if="vistaPrevia?.tipo === 'cuentas'">
+            <UButton color="neutral" variant="outline" @click="cerrarVistaPrevia">Cerrar</UButton>
+            <UButton color="success" icon="i-heroicons-paper-airplane" :loading="enviandoCuentas" :disabled="!vistaPrevia.puede_enviar" @click="enviarCuentasWhatsapp">
+              Enviar por WhatsApp
+            </UButton>
+          </template>
           <UButton v-else color="neutral" variant="soft" @click="cerrarVistaPrevia">Cerrar</UButton>
         </template>
       </SupplierPaymentWindow>
@@ -864,6 +870,7 @@ const candidatosElegidos = ref<string[]>([])
 const pedidoDatos = reactive({ texto: '', nota: '', puedeEnviar: false, cargando: false })
 let pedidoDatosTurno = 0
 const enviandoResumen = ref(false)
+const enviandoCuentas = ref(false)
 const voucher = ref<File | null>(null)
 const voucherAbierto = ref<PagoProveedorAbono | null>(null)
 const formularioAbierto = ref<PagoProveedorSolicitudProveedor | null>(null)
@@ -1256,6 +1263,21 @@ async function enviarResumenWhatsapp() {
   }
 }
 
+async function enviarCuentasWhatsapp() {
+  if (!solicitud.value || !vistaPrevia.value?.puede_enviar) return
+  enviandoCuentas.value = true
+  try {
+    const respuesta = await withSpinner(() => api.sendBankAccounts(solicitud.value!.id), 'Enviando WhatsApp…')
+    vistaPrevia.value = null
+    aplicar(respuesta.data.solicitud)
+    showSuccess('WhatsApp enviado', respuesta.data.nota || 'Cuentas bancarias enviadas al cliente.')
+  } catch (error: any) {
+    showError('Cuentas', error?.data?.message || error.message || 'No se pudo enviar el mensaje.')
+  } finally {
+    enviandoCuentas.value = false
+  }
+}
+
 async function descargarResumen() {
   if (!solicitud.value?.cotizacion_id) return
   guardandoAviso.value = true
@@ -1280,9 +1302,10 @@ async function descargarResumen() {
 async function enviarCuentas() {
   try {
     const respuesta = await withSpinner(() => api.getBankAccounts(solicitud.value!.id), 'Preparando mensaje…')
-    const datos = respuesta.data as { texto: string; nota?: string; imagen?: string }
+    const datos = respuesta.data as { texto: string; nota?: string; imagen?: string; puede_enviar?: boolean }
     vistaPrevia.value = {
       ...datos,
+      tipo: 'cuentas',
       imagen: datos.imagen || '/images/pago-proveedor/cuentas-bancarias.jpg'
     }
   } catch (error: any) {

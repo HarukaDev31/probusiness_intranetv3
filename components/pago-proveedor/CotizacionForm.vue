@@ -53,14 +53,14 @@
       </p>
 
       <UCard>
-        <!-- La cotización de C. Consolidada va arriba y luego los datos del cliente. -->
-        <div v-if="cotizacion.cod_cotizacion_cc" class="mb-3 flex justify-end">
-          <UBadge color="success" variant="subtle">
-            Cotización de C. Consolidada: {{ cotizacion.cod_cotizacion_cc }}
-          </UBadge>
-        </div>
         <h2 class="text-lg font-semibold">Datos del cliente</h2>
         <p class="mt-1 text-sm text-muted">Datos tomados de la cotización de C. Consolidada. Para cambiar de cliente, vuelve y crea otra cotización.</p>
+        <!-- #2058/#2059: la cotización de C. Consolidada va bajo la descripción, a la izquierda. -->
+        <div v-if="cotizacion.cod_cotizacion_cc" class="mt-3">
+          <UBadge color="success" variant="subtle" size="lg" class="rounded-full px-3">
+            Cotización de C. Consolidada: <strong class="ml-1">{{ cotizacion.cod_cotizacion_cc }}</strong>
+          </UBadge>
+        </div>
         <div class="mt-4 grid gap-4 md:grid-cols-2">
           <UFormField label="N.° de consolidado" required>
             <UInput :model-value="soloConsolidado(cotizacion.consolidado)" disabled class="w-full" />
