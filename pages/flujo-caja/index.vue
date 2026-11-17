@@ -1,5 +1,5 @@
 <template>
-  <SupplierPaymentPage title="Flujo de caja" subtitle="Cobros que entran a caja y pagos que salen en China.">
+  <SupplierPaymentPage wide-tables title="Flujo de caja" subtitle="Cobros que entran a caja y pagos que salen en China.">
     <div class="grid gap-4 sm:grid-cols-2">
       <UCard>
         <p class="text-sm font-semibold uppercase tracking-wide text-primary">In</p>

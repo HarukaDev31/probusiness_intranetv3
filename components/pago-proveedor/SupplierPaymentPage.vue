@@ -37,6 +37,9 @@ withDefaults(defineProps<{
 <style>
 /* DataTable deja las tablas sin desborde a su ancho natural y centradas (`utable-narrow`);
    en Pago a Proveedor se estiran a todo el ancho para dar aire a cliente y proveedor. */
+.supplier-payment-wide-tables .table-scroll-container .utable-narrow {
+  align-items: stretch;
+}
 .supplier-payment-wide-tables .table-scroll-container .utable-narrow table {
   width: 100% !important;
   min-width: 100% !important;
