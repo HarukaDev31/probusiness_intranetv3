@@ -86,8 +86,8 @@
             color="neutral"
             variant="outline"
             icon="i-lucide-pencil"
-            :disabled="!hayAccionEtapa1"
-            :to="hayAccionEtapa1 ? `/pago-proveedor/cotizaciones/${solicitud.cotizacion_id}?desde=solicitud` : undefined"
+            :disabled="!hayAccionEtapa1 || enPorCobrar"
+            :to="hayAccionEtapa1 && !enPorCobrar ? `/pago-proveedor/cotizaciones/${solicitud.cotizacion_id}?desde=solicitud` : undefined"
           >
             Formulario de la solicitud
           </UButton>
@@ -98,7 +98,7 @@
             icon="i-lucide-send"
             title="Si cambias algo en la solicitud, reenvía el resumen actualizado."
             :loading="guardandoAviso"
-            :disabled="!hayAccionEtapa1"
+            :disabled="!hayAccionEtapa1 || enPorCobrar"
             @click="enviarResumen"
           >
             Enviar resumen al cliente
@@ -270,7 +270,7 @@
                 </div>
               </div>
               <p v-if="!abonosProveedor(proveedor.id).length" class="mb-3 text-sm text-muted">Sin abonos registrados.</p>
-              <UButton v-if="!soloLectura && (proveedor.puede_editar_etapa1 || proveedor.puede_registrar_diferencia) && proveedor.saldo > 0.004" size="sm" color="primary" @click="abrirAbono()">
+              <UButton v-if="!soloLectura && (proveedor.puede_editar_etapa1 || proveedor.puede_registrar_diferencia) && proveedor.saldo > 0.004" size="sm" color="primary" @click="abrirAbono(proveedor)">
                 {{ proveedor.importe_abonado > 0 ? 'Registrar otro abono' : 'Registrar comprobante' }}
               </UButton>
             </UCard>
@@ -316,7 +316,7 @@
             @lift-china="levantarChina(proveedor)"
             @edit-deposit="(id) => editarAbonoPorId(id)"
             @view-voucher="(id) => verVoucherPorId(id)"
-            @register-difference="abrirAbono()"
+            @register-difference="abrirAbono(proveedor)"
             @choose-providers="abrirContinuacion(proveedor)"
             @decide-surplus="(id, decision) => decidir(id, decision)"
           />
@@ -596,7 +596,7 @@
             description="Revisar si el banco aplicó comisiones o cargos bancarios."
           />
 
-          <UCard :ui="{ body: 'space-y-2 p-4 sm:p-4' }" class="bg-elevated/50">
+          <UCard v-if="!proveedorFijoId || abonoEditandoId" :ui="{ body: 'space-y-2 p-4 sm:p-4' }" class="bg-elevated/50">
             <div class="flex items-center justify-between gap-2">
               <h3 class="text-sm font-bold text-highlighted">Aplicar el abono a</h3>
               <UButton type="button" size="xs" color="primary" variant="link" @click="distribuir">Distribuir automáticamente</UButton>
@@ -641,6 +641,7 @@
             <p v-if="sinAsignar > 0.005" class="text-xs font-medium text-warning">Excedente de ${{ dinero(sinAsignar) }}: El cliente decidirá si se realiza el reembolso o su aplicación {{ destinoExcedente }}.</p>
             <p v-else-if="sinAsignar < -0.005" class="text-xs font-semibold text-error">Estás aplicando ${{ dinero(Math.abs(sinAsignar)) }} más de lo recibido.</p>
           </UCard>
+          <p v-if="proveedorFijoId && !abonoEditandoId && sinAsignar > 0.005" class="text-xs font-medium text-warning">Excedente de ${{ dinero(sinAsignar) }}: El cliente decidirá si se realiza el reembolso o su aplicación {{ destinoExcedente }}.</p>
         </form>
         <template #footer>
           <UButton color="neutral" variant="outline" @click="cerrarAbono">Cancelar</UButton>
@@ -900,10 +901,15 @@ const bancos = [{ label: 'BCP', value: 'bcp' }, { label: 'Interbank', value: 'in
 
 const dinero = (valor: number) => Number(valor || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const abonoEnEdicion = computed(() => (solicitud.value?.abonos || []).find(item => item.id === abonoEditandoId.value) || null)
+// #2124: al registrar desde un proveedor, el abono es para ese proveedor; no se elige a quién aplicarlo.
+const proveedorFijoId = ref<number | null>(null)
 const proveedoresConSaldo = computed(() => (solicitud.value?.proveedores || []).filter((item) => {
+  if (proveedorFijoId.value && !abonoEditandoId.value) return item.id === proveedorFijoId.value
   if (abonoEnEdicion.value?.aplicaciones?.some(aplicacion => aplicacion.solicitud_proveedor_id === item.id)) return true
   return (item.puede_editar_etapa1 || item.puede_registrar_diferencia) && item.saldo > 0
 }))
+// #2122: con una diferencia por cobrar (observado por Administración) no se edita la cotización ni se reenvía el resumen.
+const enPorCobrar = computed(() => (solicitud.value?.proveedores || []).some(item => item.puede_registrar_diferencia))
 const hayAccionEtapa1 = computed(() => (solicitud.value?.proveedores || []).some(item => item.puede_editar_etapa1 || item.puede_registrar_diferencia || item.observacion_china))
 const ctaPrincipal = computed<'datos' | 'resumen' | 'cuentas' | ''>(() => {
   const proveedores = solicitud.value?.proveedores || []
@@ -1596,7 +1602,8 @@ function abrirContinuacion(proveedor: PagoProveedorSolicitudProveedor) {
   abonoContinuacion.value = abonosProveedor(proveedor.id).find(item => item.puede_elegir_continuacion) || null
 }
 
-function abrirAbono() {
+function abrirAbono(proveedor?: PagoProveedorSolicitudProveedor) {
+  proveedorFijoId.value = proveedor?.id ?? null
   abonoEditandoId.value = null
   abono.importe = 0
   abono.fecha = ''
@@ -1611,6 +1618,7 @@ function abrirAbono() {
 }
 
 function editarAbono(abonoItem: PagoProveedorAbono) {
+  proveedorFijoId.value = null
   abonoEditandoId.value = abonoItem.id
   abono.importe = abonoItem.importe
   abono.fecha = abonoItem.fecha_pago
