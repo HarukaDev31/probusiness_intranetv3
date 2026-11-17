@@ -75,7 +75,7 @@
               <div class="flex h-9 items-center rounded-md bg-primary/10 px-3 font-semibold text-highlighted">{{ usd(serviceAmount) }}</div>
             </UFormField>
           </div>
-          <div v-if="clientRates.length" class="flex flex-wrap items-center gap-2 text-sm">
+          <div v-if="clientRates.length" class="mt-2 flex flex-wrap items-center gap-2 text-sm">
             <span class="text-muted">Tarifas del cliente:</span>
             <UButton
               v-for="rate in clientRates"
@@ -89,7 +89,7 @@
               Tarifa {{ rate.tier }} · {{ usd(rate.value) }}
             </UButton>
           </div>
-          <p v-if="clientRates.length && selectedOrganization" class="flex items-center gap-1 text-xs" :class="activeTier ? 'text-success' : 'text-muted'">
+          <p v-if="clientRates.length && selectedOrganization" class="mt-1 flex items-center gap-1 text-xs" :class="activeTier ? 'text-success' : 'text-muted'">
             <UIcon :name="activeTier ? 'i-heroicons-check' : 'i-heroicons-pencil'" class="size-3.5" />
             <template v-if="activeTier">Tarifa {{ activeTier }} del socio {{ selectedOrganization.name }} · puedes modificarla</template>
             <template v-else>Tarifa escrita a mano para esta operación</template>
@@ -115,11 +115,6 @@
             <UButton color="error" variant="ghost" icon="i-heroicons-trash" aria-label="Quitar costo" @click="form.costs.splice(index, 1)" />
           </div>
           <UButton size="sm" color="primary" variant="link" class="px-0" icon="i-heroicons-plus" @click="addCost">Agregar costo</UButton>
-        </div>
-
-        <div>
-          <p class="mb-1 text-sm font-medium text-highlighted">Packing list (Excel)</p>
-          <YuanFilePick label="Adjuntar packing list" accept=".xls,.xlsx" :current-name="operation?.packing_list_url ? 'Packing list cargado' : ''" @pick="packing = $event" />
         </div>
 
         <UAlert
@@ -149,7 +144,6 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
-import YuanFilePick from '~/components/pago-proveedor/YuanFilePick.vue'
 import { CHINA_BILLING_TYPE } from '~/constants/chinaBilling'
 import { ChinaBillingService } from '~/services/chinaBillingService'
 import type { ChinaCountryOption, ChinaOperation, ChinaOrganizationOption } from '~/types/china-billing'
