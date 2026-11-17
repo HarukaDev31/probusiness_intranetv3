@@ -385,6 +385,8 @@ export const    useCotizacionProveedor = () => {
         } catch (err: any) {
             error.value = err.message || 'Error al actualizar el proveedor'
             console.error('Error en updateProveedor:', err)
+            // Devolver el fallo para que la vista lo muestre (antes se perdía en silencio)
+            return { success: false, message: error.value }
         } finally {
             loading.value = false
         }

@@ -3970,17 +3970,36 @@ const updateProveedorData = async (row: any) => {
     }
     formData.append('id', data.id)
 
+    // Almacén (China) trabaja en inglés; el resto de roles en español.
+    const isAlmacen = currentRole.value === ROLES.CONTENEDOR_ALMACEN
+    const showSaveProveedorError = (detail?: string) => {
+        if (isAlmacen) {
+            showError(
+                'Supplier was not saved',
+                'The changes were NOT saved. Please check the values (boxes, pallets, CBM, weight and arrive date) and try again. If the problem continues, contact IT support.'
+            )
+            return
+        }
+        const extra = detail ? ` Detalle: ${detail}` : ''
+        showError(
+            'No se guardó el proveedor',
+            `Los cambios NO se guardaron. Revisa los valores (cajas, pallets, CBM, peso y fecha) e inténtalo de nuevo.${extra}`
+        )
+    }
+
     try {
         await withSpinner(async () => {
             const response = await updateProveedor(formData)
             if (response?.success) {
                 showSuccess('Proveedor actualizado correctamente', 'El proveedor se ha actualizado correctamente.')
                 await getCotizacionProveedor(Number(id))
+            } else {
+                showSaveProveedorError(response?.message)
             }
         }, 'Actualizando proveedor...')
 
-    } catch (error) {
-        showError('Error al actualizar el proveedor', error)
+    } catch (error: any) {
+        showSaveProveedorError(error?.message)
     }
 
 }
