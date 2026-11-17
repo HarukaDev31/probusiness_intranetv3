@@ -252,10 +252,10 @@
 
               <div v-if="form.tipo_cliente === 'socio'" class="grid gap-3 sm:grid-cols-2">
                 <UFormField label="Tarifa 1 (USD/CBM)" hint="menos de 1 CBM">
-                  <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.tarifa_1" :min="0" :step="1" placeholder="Ingresa la tarifa" class="w-full" />
+                  <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.tarifa_1" :min="0" :step="0.01" placeholder="Ingresa la tarifa" class="w-full" />
                 </UFormField>
                 <UFormField label="Tarifa 2 (USD/CBM)" hint="1 CBM o más">
-                  <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.tarifa_2" :min="0" :step="1" placeholder="Ingresa la tarifa" class="w-full" />
+                  <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.tarifa_2" :min="0" :step="0.01" placeholder="Ingresa la tarifa" class="w-full" />
                 </UFormField>
               </div>
 
