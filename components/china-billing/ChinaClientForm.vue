@@ -3,14 +3,14 @@
     :open="open"
     :title="client ? 'Editar cliente' : 'Nuevo cliente'"
     :dismissible="!saving"
-    :ui="{ content: 'w-full max-w-2xl sm:max-w-2xl', header: 'border-t-[5px] border-t-primary-500', title: 'text-lg font-bold text-highlighted' }"
+    :ui="{ content: 'w-full max-w-4xl sm:max-w-4xl', header: 'border-t-[5px] border-t-primary-500', title: 'text-lg font-bold text-highlighted' }"
     @update:open="(value: boolean) => !value && emit('close')"
   >
     <template #body>
       <!-- PRY-26-0003: cada cliente es una organización (socio o importador). -->
-      <div class="grid gap-4 sm:grid-cols-2">
-        <div class="sm:col-span-2">
-          <p class="mb-1.5 text-sm font-medium text-highlighted">Tipo de cliente</p>
+      <div class="grid gap-4 sm:grid-cols-3">
+        <div class="sm:col-span-3">
+          <p class="mb-1.5 text-sm font-semibold text-highlighted">Tipo de cliente</p>
           <div class="flex gap-2">
             <UButton
               v-for="option in typeOptions"
@@ -25,10 +25,10 @@
           </div>
         </div>
 
-        <UFormField label="Nombre o empresa" required help="Es el nombre de su organización.">
-          <UInput v-model="form.name" placeholder="ej. Importaciones Sur SAC" class="w-full" />
+        <UFormField label="Nombre o empresa" required>
+          <UInput v-model="form.name" icon="i-heroicons-building-office" placeholder="ej. Importaciones Sur SAC" class="w-full" />
         </UFormField>
-        <UFormField label="País de origen" required>
+        <UFormField label="País de origen" required :help="isPartner ? 'País desde donde opera el socio.' : undefined">
           <USelectMenu
             v-model="form.origin_country_id"
             :items="countryItems"
@@ -39,7 +39,7 @@
           />
         </UFormField>
 
-        <UFormField v-if="isPartner" label="Países para consolidar" class="sm:col-span-2" help="Por defecto, su país de origen.">
+        <UFormField v-if="isPartner" label="Países para consolidar" help="País destino donde se enviará la carga.">
           <USelectMenu
             v-model="form.consolidation_country_ids"
             :items="countryItems"
@@ -52,34 +52,33 @@
         </UFormField>
 
         <UFormField label="WhatsApp" required>
-          <UInput v-model="form.whatsapp" type="tel" placeholder="+51 999 999 999" class="w-full" />
+          <UInput v-model="form.whatsapp" icon="i-simple-icons-whatsapp" type="tel" placeholder="+51 999 999 999" class="w-full" />
         </UFormField>
         <UFormField label="Contacto" hint="(opcional)">
-          <UInput v-model="form.contact_name" placeholder="Nombre de la persona" class="w-full" />
+          <UInput v-model="form.contact_name" icon="i-heroicons-user" placeholder="Nombre de la persona" class="w-full" />
         </UFormField>
         <UFormField
           label="Correo"
           hint="(opcional)"
-          class="sm:col-span-2"
-          help="Si lo ingresas, se crea su usuario de la plataforma: usuario y contraseña serán este correo."
+          help="Este correo se utilizará para crear el acceso a la plataforma."
         >
-          <UInput v-model="form.email" type="email" placeholder="correo@empresa.com" class="w-full" />
+          <UInput v-model="form.email" icon="i-heroicons-envelope" type="email" placeholder="correo@empresa.com" class="w-full" />
         </UFormField>
 
-        <div v-if="isPartner" class="rounded-xl border border-default p-4 sm:col-span-2">
-          <p class="font-semibold text-highlighted">Tarifas del socio (USD / CBM)</p>
-          <p class="mb-3 text-xs text-muted">Se ofrecen al crear una operación para este socio y se pueden modificar en cada una.</p>
+        <div v-if="isPartner" class="rounded-xl border border-primary/40 bg-primary/5 p-4 sm:col-span-3">
+          <p class="flex items-center gap-2 font-semibold text-highlighted"><UIcon name="i-heroicons-banknotes" class="size-6 text-primary" />Precios del socio</p>
+          <p class="mb-3 text-xs text-toned">Se cargan solos al crear una operación para este socio y se pueden modificar en cada una.</p>
           <div class="grid gap-3 sm:grid-cols-2">
-            <UFormField label="Tarifa 1 · menos de 1 CBM" required>
+            <UFormField label="Consolidado · tarifa 1 (USD/CBM)" required>
               <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.rate_1" :min="0" :step="0.01" placeholder="Ingresa la tarifa" class="w-full" />
             </UFormField>
-            <UFormField label="Tarifa 2 · 1 CBM o más" required>
+            <UFormField label="Consolidado · tarifa 2 (USD/CBM)" required>
               <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.rate_2" :min="0" :step="0.01" placeholder="Ingresa la tarifa" class="w-full" />
             </UFormField>
           </div>
         </div>
 
-        <UAlert v-if="errorMessage" class="sm:col-span-2" color="error" variant="subtle" icon="i-heroicons-exclamation-triangle" :description="errorMessage" />
+        <UAlert v-if="errorMessage" class="sm:col-span-3" color="error" variant="subtle" icon="i-heroicons-exclamation-triangle" :description="errorMessage" />
       </div>
     </template>
     <template #footer>

@@ -134,7 +134,7 @@ export interface ChinaOrganizationOption {
   origin_country?: string
   /** Países donde el socio puede consolidar. */
   consolidation_country_ids?: number[]
-  /** Tarifa 1 (menos de 1 CBM) y tarifa 2 (1 CBM o más), USD por CBM. Solo socios. */
+  /** Tarifa 1 y tarifa 2 (se elige cuál aplicar por operación), USD por CBM. Solo socios. */
   rate_1?: number | null
   rate_2?: number | null
   /** Tarifas del socio (USD por CBM) para precargar la operación. */
