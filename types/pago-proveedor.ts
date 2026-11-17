@@ -259,6 +259,7 @@ export interface PagoProveedorSolicitudProveedor {
     vendedor_nombre: string | null
     wechat: string | null
     correccion_solicitada: boolean
+    formulario_enviado_el?: string | null
     beneficiario_nombre: string | null
     beneficiario_cuenta?: string | null
     beneficiario_direccion?: string | null
