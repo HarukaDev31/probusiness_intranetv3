@@ -209,7 +209,7 @@
             </span>
             <span class="flex shrink-0 items-center gap-2">
               <UBadge color="info" variant="subtle" size="sm">{{ row.provider.stage }}. {{ stageShort(row.provider.stage) }}</UBadge>
-              <UBadge color="info" variant="subtle" size="sm">{{ statusLabel(row.provider.status) }}</UBadge>
+              <UBadge color="info" variant="subtle" size="sm">{{ providerStatusLabel(row.provider) }}</UBadge>
               <!-- Toda la fila ya es enlace: «Ver» es solo visual (un botón dentro de <a> no es HTML válido). -->
               <span class="rounded-md border border-default px-2.5 py-1 text-xs font-semibold text-highlighted">Ver</span>
             </span>
@@ -678,6 +678,15 @@ function stageLabel(stage: number) {
   }[stage] || 'Solicitud y datos de pago'
 }
 
+/** #2119: con una diferencia por cobrar, el estado dice «Por cobrar» en vez de «Observado». */
+function providerStatusLabel(provider: SupplierPaymentProviderRow) {
+  return provider.approval_status === APPROVAL_STATUS.TO_COLLECT && provider.status === PROVIDER_STATUS.OBSERVED ? 'Por cobrar' : statusLabel(provider.status)
+}
+
+function providerStatusColor(provider: SupplierPaymentProviderRow): PillColor {
+  return provider.approval_status === APPROVAL_STATUS.TO_COLLECT && provider.status === PROVIDER_STATUS.OBSERVED ? 'warning' : statusColor(provider.status)
+}
+
 function statusLabel(status: string) {
   return {
     [PROVIDER_STATUS.IN_PROGRESS]: 'En proceso',
@@ -739,7 +748,7 @@ const columns: TableColumn<RequestLine>[] = [
   { accessorKey: 'paymentShape', header: 'Forma de pago', cell: ({ row }) => formaDePago(row.original.provider) },
   { accessorKey: 'paymentType', header: 'Tipo de pago', cell: ({ row }) => paymentLabel(row.original.provider) },
   { accessorKey: 'stage', header: 'Etapa', cell: ({ row }) => pill(`${row.original.provider.stage}. ${stageLabel(row.original.provider.stage)}`, 'info') },
-  { accessorKey: 'status', header: 'Estado', cell: ({ row }) => pill(statusLabel(row.original.provider.status), statusColor(row.original.provider.status)) },
+  { accessorKey: 'status', header: 'Estado', cell: ({ row }) => pill(providerStatusLabel(row.original.provider), providerStatusColor(row.original.provider)) },
   { accessorKey: 'owner', header: 'Responsable', cell: ({ row }) => responsableEtapa(row.original.provider) },
   {
     accessorKey: 'actions',
