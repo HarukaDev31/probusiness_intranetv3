@@ -10,13 +10,14 @@
       <!-- #1995/#1996: aviso de éxito, historial con el más reciente resaltado. -->
       <UAlert
         v-if="justIssued"
-        class="mb-4"
+        class="mb-3 !p-2.5"
         color="success"
         variant="subtle"
         icon="i-heroicons-check-circle"
         title="Documento generado correctamente"
         description="Se ha agregado un nuevo registro en el historial."
-        :close="{ color: 'neutral', variant: 'link' }"
+        :ui="{ title: 'text-xs font-semibold', description: 'text-xs', icon: 'size-4' }"
+        :close="{ color: 'neutral', variant: 'link', size: 'xs' }"
         @update:open="justIssued = false"
       />
       <div class="mb-2 flex items-center gap-2 border-b border-default pb-2">

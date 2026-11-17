@@ -54,6 +54,31 @@
       </template>
     </DataTable>
 
+    <!-- #2024: confirmación de eliminar con el formato de la maqueta. -->
+    <UModal
+      :open="!!deleting"
+      :title="deleting ? `¿Eliminar ${deleting.row.code}?` : ''"
+      :description="deleting ? `${deleting.row.service_name} · ${deleting.row.organization.name} · ${usd(deleting.row.total)}` : ''"
+      :dismissible="!deleteBusy"
+      :ui="{ content: 'w-full max-w-lg sm:max-w-lg', title: 'text-lg font-bold text-highlighted', description: 'text-sm text-toned' }"
+      @update:open="(value: boolean) => !value && (deleting = null)"
+    >
+      <template #body>
+        <div v-if="deleting" class="flex flex-col gap-3 text-sm">
+          <div v-if="deleting.warnings.length" class="rounded-lg bg-error/10 px-4 py-3 text-error">
+            <p v-for="warning in deleting.warnings" :key="warning">{{ warning }}</p>
+          </div>
+          <p class="text-toned">Esta acción no se puede deshacer.</p>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex w-full justify-end gap-2">
+          <UButton color="neutral" variant="outline" :disabled="deleteBusy" @click="deleting = null">Cancelar</UButton>
+          <UButton color="error" :loading="deleteBusy" @click="confirmRemove">Eliminar operación</UButton>
+        </div>
+      </template>
+    </UModal>
+
     <ChinaOperationDrawer
       :operation="selected"
       :credits="credits"
@@ -273,21 +298,27 @@ function dismissDraft(row: ChinaOperation) {
   })
 }
 
+const deleting = ref<{ row: ChinaOperation; warnings: string[] } | null>(null)
+const deleteBusy = ref(false)
+
 function removeOperation(row: ChinaOperation) {
   const hasPayments = (row.payments || []).length > 0 || (row.credits || []).length > 0
   const received = (row.costs || []).filter((cost) => cost.source_operation_id).map((cost) => cost.name.replace('Diferencia ', ''))
-  const warning = [
-    hasPayments ? `Tiene pagos aplicados. Ese monto quedará sin asignar en el pago y pasará a saldo a favor del cliente.` : '',
-    received.length ? `Incluye diferencias trasladadas desde ${received.join(', ')}; esas órdenes volverán a mostrar su diferencia pendiente.` : ''
-  ].filter(Boolean).join(' ')
-  showConfirmation(`¿Eliminar ${row.code}?`, `${row.service_name} · ${row.organization.name} · ${usd(row.total)}. ${warning} Esta acción no se puede deshacer.`.replace('  ', ' '), async () => {
-    try {
-      await ChinaBillingService.deleteOperation(row.id!)
-      refresh()
-    } catch (error: any) {
-      showError('Operaciones', error?.message || 'No se pudo eliminar.')
-    }
-  })
+  deleting.value = { row, warnings: [hasPayments ? 'Tiene pagos aplicados. Ese monto quedará sin asignar en el pago y pasará a saldo a favor del cliente.' : '', received.length ? `Incluye diferencias trasladadas desde ${received.join(', ')}; esas órdenes volverán a mostrar su diferencia pendiente.` : ''].filter(Boolean) }
+}
+
+async function confirmRemove() {
+  if (!deleting.value) return
+  deleteBusy.value = true
+  try {
+    await ChinaBillingService.deleteOperation(deleting.value.row.id!)
+    deleting.value = null
+    refresh()
+  } catch (error: any) {
+    showError('Operaciones', error?.message || 'No se pudo eliminar.')
+  } finally {
+    deleteBusy.value = false
+  }
 }
 
 function startTransfer(row: ChinaOperation, mode: 'difference' | 'credit') {
