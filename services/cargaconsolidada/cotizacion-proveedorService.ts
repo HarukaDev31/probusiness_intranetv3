@@ -204,7 +204,8 @@ export class CotizacionProveedorService extends BaseService {
             return response
         } catch (error) {
             console.error('Error al actualizar el proveedor:', error)
-            throw new Error('No se pudo actualizar el proveedor')
+            // Conserva el mensaje del backend para mostrarlo en el modal de error
+            throw error instanceof Error ? error : new Error('No se pudo actualizar el proveedor')
         }
     }
     static async updateProveedorEstado(data: any): Promise<any> {
