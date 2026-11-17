@@ -88,6 +88,7 @@
             icon="i-lucide-pencil"
             :disabled="!hayAccionEtapa1 || enPorCobrar"
             :to="hayAccionEtapa1 && !enPorCobrar ? `/pago-proveedor/cotizaciones/${solicitud.cotizacion_id}?desde=solicitud` : undefined"
+            :title="haySolicitudConAbonos ? 'Con abonos registrados, la cotización queda solo de lectura.' : 'Ver o editar la cotización (mientras no haya abonos)'"
           >
             Formulario de la solicitud
           </UButton>
@@ -910,6 +911,7 @@ const proveedoresConSaldo = computed(() => (solicitud.value?.proveedores || []).
   return (item.puede_editar_etapa1 || item.puede_registrar_diferencia) && item.saldo > 0
 }))
 // #2122: con una diferencia por cobrar (observado por Administración) no se edita la cotización ni se reenvía el resumen.
+const haySolicitudConAbonos = computed(() => (solicitud.value?.abonos || []).some(item => item.estado !== 'anulado' && item.estado !== 'anulada'))
 const enPorCobrar = computed(() => (solicitud.value?.proveedores || []).some(item => item.puede_registrar_diferencia))
 const hayAccionEtapa1 = computed(() => (solicitud.value?.proveedores || []).some(item => item.puede_editar_etapa1 || item.puede_registrar_diferencia || item.observacion_china))
 const ctaPrincipal = computed<'datos' | 'resumen' | 'cuentas' | ''>(() => {

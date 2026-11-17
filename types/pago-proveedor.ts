@@ -96,6 +96,7 @@ export interface PagoProveedorCotizacion {
   total_ahora: number
   comisiones: number
   puede_editar: boolean
+  puede_editar_desde_solicitud?: boolean
   puede_anular?: boolean
   observacion?: { motivo: string; detalle?: string | null; plazo?: string | null } | null
   puede_eliminar: boolean

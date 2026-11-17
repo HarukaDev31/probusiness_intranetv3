@@ -89,6 +89,14 @@
             <div class="flex items-center gap-2">
               <UBadge v-if="proveedor.moneda" :color="proveedor.moneda === 'RMB' ? 'warning' : 'success'" variant="soft">{{ proveedor.moneda }}</UBadge>
               <UButton v-if="editable && proveedores.length > 1" type="button" color="error" variant="ghost" icon="i-lucide-trash-2" size="sm" @click="quitar(indice)" />
+              <!-- #2067: con la solicitud ya creada, cada proveedor se habilita para editar y se guarda por separado. -->
+              <template v-if="editableDesdeSolicitud">
+                <UButton v-if="!editandoProveedor[indice]" type="button" color="neutral" variant="outline" size="sm" icon="i-lucide-pencil" @click="editandoProveedor[indice] = true">Editar</UButton>
+                <template v-else>
+                  <UButton type="button" color="neutral" variant="ghost" size="sm" @click="cancelarEdicionProveedor(indice)">Cancelar</UButton>
+                  <UButton type="button" color="primary" size="sm" icon="i-lucide-check" :loading="guardandoProveedor === indice" :disabled="!puedeGuardarCotizacion" @click="guardarProveedor(indice)">Guardar</UButton>
+                </template>
+              </template>
             </div>
           </div>
 
@@ -100,7 +108,7 @@
                 :items="opcionesCodigo(proveedor.code_supplier)"
                 value-key="value"
                 label-key="label"
-                :disabled="!editable"
+                :disabled="bloqueado(indice)"
                 placeholder="Selecciona"
                 class="w-full"
                 @update:model-value="(codigo) => alElegirCodigo(proveedor, codigo)"
@@ -108,7 +116,7 @@
             </UFormField>
             <UFormField label="Nombre del proveedor">
               <template #hint><UBadge color="neutral" variant="soft" size="sm">Opcional</UBadge></template>
-              <UInput v-model="proveedor.nombre_proveedor" :disabled="!editable" placeholder="Ej: Foshan Light Industry Co." class="w-full" />
+              <UInput v-model="proveedor.nombre_proveedor" :disabled="bloqueado(indice)" placeholder="Ej: Foshan Light Industry Co." class="w-full" />
             </UFormField>
             <UFormField label="Nombre del producto" help="Información registrada por Ventas en Por embarcar." :ui="{ help: 'text-[11px] text-muted' }">
               <template #hint><UBadge color="info" variant="soft" size="sm">Autocompletado</UBadge></template>
@@ -116,17 +124,17 @@
             </UFormField>
             <UFormField label="Moneda" required>
               <template #hint><UBadge color="primary" variant="soft" size="sm">Ventas</UBadge></template>
-              <USelect :model-value="proveedor.moneda || SIN_MONEDA" :items="monedas" :disabled="!editable" class="w-full" @update:model-value="(valor) => alElegirMoneda(proveedor, valor)" />
+              <USelect :model-value="proveedor.moneda || SIN_MONEDA" :items="monedas" :disabled="bloqueado(indice)" class="w-full" @update:model-value="(valor) => alElegirMoneda(proveedor, valor)" />
             </UFormField>
             <UFormField label="Tipo de pago">
               <template #hint><UBadge color="info" variant="soft" size="sm">Auto / según moneda</UBadge></template>
-              <USelect v-model="proveedor.tipo_pago" :items="opcionesTipoPago(proveedor)" :disabled="proveedor.moneda !== 'USD' || !editable" class="w-full" />
+              <USelect v-model="proveedor.tipo_pago" :items="opcionesTipoPago(proveedor)" :disabled="proveedor.moneda !== 'USD' || bloqueado(indice)" class="w-full" />
             </UFormField>
             <UFormField :label="proveedor.moneda === 'RMB' ? 'Valor de carga (¥)' : 'Valor de carga (USD)'" required>
               <template #hint><UBadge color="primary" variant="soft" size="sm">Ventas</UBadge></template>
               <UInput
                 :model-value="valorNativo(indice)"
-                :disabled="!editable"
+                :disabled="bloqueado(indice)"
                 type="number"
                 min="0"
                 step="0.01"
@@ -158,7 +166,7 @@
               <URadioGroup
                 v-model="proveedor.modalidad_abono"
                 :items="opcionesAbono"
-                :disabled="!editable"
+                :disabled="bloqueado(indice)"
                 orientation="horizontal"
                 variant="list"
                 color="primary"
@@ -181,7 +189,7 @@
               <URadioGroup
                 v-model="proveedor.modalidad_pago"
                 :items="opcionesPago"
-                :disabled="!editable || proveedor.moneda === 'USD'"
+                :disabled="bloqueado(indice) || proveedor.moneda === 'USD'"
                 orientation="horizontal"
                 variant="list"
                 color="primary"
@@ -207,14 +215,14 @@
               </div>
             </div>
             <div class="mt-3 flex flex-wrap gap-2">
-              <UButton v-for="preset in presets" :key="preset.a" type="button" size="sm" color="primary" class="rounded-full" :variant="esPreset(proveedor, preset.a) ? 'solid' : 'outline'" :disabled="!editable" @click="elegirPreset(proveedor, indice, preset.a, preset.b)">{{ preset.label }}</UButton>
-              <UButton type="button" size="sm" color="primary" class="rounded-full" :variant="esOtro(proveedor, indice) ? 'solid' : 'outline'" :disabled="!editable" @click="activarOtro(indice)">{{ etiquetaOtro(proveedor, indice) }}</UButton>
+              <UButton v-for="preset in presets" :key="preset.a" type="button" size="sm" color="primary" class="rounded-full" :variant="esPreset(proveedor, preset.a) ? 'solid' : 'outline'" :disabled="bloqueado(indice)" @click="elegirPreset(proveedor, indice, preset.a, preset.b)">{{ preset.label }}</UButton>
+              <UButton type="button" size="sm" color="primary" class="rounded-full" :variant="esOtro(proveedor, indice) ? 'solid' : 'outline'" :disabled="bloqueado(indice)" @click="activarOtro(indice)">{{ etiquetaOtro(proveedor, indice) }}</UButton>
             </div>
             <UFormField v-if="esOtro(proveedor, indice)" class="mt-3">
               <template #label>Monto de la 1.ª parte <span class="text-xs font-normal text-muted">({{ proveedor.moneda === 'RMB' ? 'yuanes' : 'dólares' }})</span></template>
               <UInput
                 :model-value="montoOtroBorrador[indice] ?? montoPrimera(proveedor)"
-                :disabled="!editable"
+                :disabled="bloqueado(indice)"
                 type="number"
                 min="0"
                 step="0.01"
@@ -253,7 +261,7 @@
                       title="Es una fecha aproximada: en el PDF se muestra como «fecha aprox.». Aparece en Mis pendientes, con aviso 2 días antes."
                     >ⓘ</span>
                   </p>
-                  <UInput v-model="proveedor.fecha_cuota_2" :disabled="!editable" type="date" :min="hoy" class="mt-3 w-full" />
+                  <UInput v-model="proveedor.fecha_cuota_2" :disabled="bloqueado(indice)" type="date" :min="hoy" class="mt-3 w-full" />
                   <p class="mt-2 text-xs" :class="proveedor.fecha_cuota_2 ? 'text-highlighted' : 'text-muted'">{{ textoFecha(proveedor.fecha_cuota_2) }}</p>
                   <div class="mt-2.5 flex flex-wrap items-center gap-2">
                     <span class="text-xs text-muted">Atajo:</span>
@@ -265,7 +273,7 @@
                       color="primary"
                       class="rounded-full"
                       :variant="proveedor.fecha_cuota_2 === sumarDias(dias) ? 'solid' : 'outline'"
-                      :disabled="!editable"
+                      :disabled="bloqueado(indice)"
                       @click="() => { proveedor.fecha_cuota_2 = sumarDias(dias) }"
                     >
                       En {{ dias }} días
@@ -286,11 +294,11 @@
             <!-- Solo el cuadro marca/desmarca: el texto va aparte para no cambiarlo por un clic accidental en la fila. -->
             <div class="mt-2 flex flex-col items-start gap-2">
               <div class="flex items-center gap-2">
-                <UCheckbox v-model="proveedor.comision_bancaria" :disabled="!editable" aria-label="Comisión bancaria / plataforma" />
+                <UCheckbox v-model="proveedor.comision_bancaria" :disabled="bloqueado(indice)" aria-label="Comisión bancaria / plataforma" />
                 <span class="text-sm font-medium" :class="editable ? 'text-default' : 'text-muted'">Comisión bancaria / plataforma <span class="text-[11px] font-normal text-muted">(tarifa fija configurada)</span></span>
               </div>
               <div class="flex items-center gap-2">
-                <UCheckbox v-model="proveedor.comision_administrativa" :disabled="!editable" aria-label="Comisión administrativa" />
+                <UCheckbox v-model="proveedor.comision_administrativa" :disabled="bloqueado(indice)" aria-label="Comisión administrativa" />
                 <span class="text-sm font-medium" :class="editable ? 'text-default' : 'text-muted'">Comisión administrativa <span class="text-[11px] font-normal text-muted">(tarifa fija configurada)</span></span>
               </div>
             </div>
@@ -301,7 +309,7 @@
             <div class="mt-2 flex flex-wrap items-center gap-3">
               <label class="inline-flex" :class="editable ? 'cursor-pointer' : 'pointer-events-none opacity-60'">
                 <UButton as="span" color="neutral" variant="outline" size="sm">Seleccionar archivo</UButton>
-                <input type="file" class="sr-only" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" :disabled="!editable" @change="elegirProforma(indice, $event)" />
+                <input type="file" class="sr-only" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" :disabled="bloqueado(indice)" @change="elegirProforma(indice, $event)" />
               </label>
               <span class="text-xs text-muted">{{ nombreProforma(proveedor, indice) }}</span>
               <a v-if="proveedor.proforma_url && !proformasPendientes[indice]" :href="proveedor.proforma_url" target="_blank" class="text-sm font-semibold text-primary">Ver</a>
@@ -518,7 +526,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import type { PagoProveedorBusquedaCc, PagoProveedorCalculoLinea, PagoProveedorCotizacion, PagoProveedorDocumentoEmitido, PagoProveedorProveedor } from '~/types/pago-proveedor'
 import PageHeader from '~/components/PageHeader.vue'
 import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
@@ -598,6 +606,29 @@ const presets = [
 ]
 
 const editable = computed(() => !!cotizacion.value?.puede_editar)
+// Cotización confirmada: se edita desde la solicitud, proveedor por proveedor, mientras no haya abonos.
+const editableDesdeSolicitud = computed(() => !editable.value && !!cotizacion.value?.puede_editar_desde_solicitud)
+const editandoProveedor = reactive<Record<number, boolean>>({})
+const guardandoProveedor = ref<number | null>(null)
+const bloqueado = (indice: number) => !(editable.value || (editableDesdeSolicitud.value && editandoProveedor[indice]))
+
+async function guardarProveedor(indice: number) {
+  guardandoProveedor.value = indice
+  try {
+    await withSpinner(() => persistir(), 'Guardando…')
+    editandoProveedor[indice] = false
+    showSuccess('Cotización actualizada', 'Los cambios del proveedor quedaron en la cotización y en la solicitud.')
+  } catch (error: any) {
+    showError('No se pudo guardar', error.message || 'Revisa los datos.')
+  } finally {
+    guardandoProveedor.value = null
+  }
+}
+
+async function cancelarEdicionProveedor(indice: number) {
+  editandoProveedor[indice] = false
+  if (cotizacion.value?.id) aplicar((await fetchQuote(cotizacion.value.id)).data)
+}
 /** PDF ya emitido: se reutiliza mientras el paso y los datos no cambien. */
 const documentoPdf = computed(() => cotizacion.value?.documento ?? null)
 const fechaDocumento = (valor: string) => new Date(valor).toLocaleString('es-PE', {
