@@ -2,7 +2,7 @@
   <UModal
     :open="open"
     :title="payment ? `Editar pago · ${payment.code}` : 'Registrar pago'"
-    description="Una transferencia puede cubrir varias operaciones del mismo cliente."
+    :description="isPartner ? 'Pro Business China confirmará el ingreso al recibir la transferencia.' : 'Una transferencia puede cubrir varias operaciones del mismo cliente.'"
     :dismissible="!saving"
     :ui="{ content: 'w-full max-w-2xl sm:max-w-2xl', header: 'border-t-[5px] border-t-primary-500', title: 'text-lg font-bold text-highlighted' }"
     @update:open="(value: boolean) => !value && emit('close')"
@@ -19,23 +19,24 @@
             class="w-full"
           />
         </UFormField>
-        <UFormField label="Fecha del pago" required>
+        <UFormField :label="isPartner ? 'Monto transferido (USD)' : 'Monto enviado (USD)'" required :class="isPartner ? 'sm:order-1' : 'sm:order-2'">
+          <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="amountSent" :min="0" :step="0.01" placeholder="0.00" class="w-full" />
+        </UFormField>
+
+        <UFormField :label="isPartner ? 'Fecha de transferencia' : 'Fecha del pago'" required :class="isPartner ? 'sm:order-2' : 'sm:order-1'">
           <UInput v-model="paidOn" type="date" class="w-full" />
         </UFormField>
-        <UFormField label="Monto enviado (USD)" required>
-          <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="amountSent" :min="0" :step="0.01" class="w-full" />
-        </UFormField>
-
-        <div class="sm:col-span-2">
-          <p class="mb-1 text-sm font-medium text-highlighted">
-            Comprobante<span v-if="isPartner"> (obligatorio)</span><span v-else> (opcional)</span>
-          </p>
-          <YuanFilePick label="Adjuntar comprobante (PDF o imagen)" :accept="RECEIPT_ACCEPT" :current-name="payment?.receipt_name" @pick="receipt = $event" />
+        <div class="sm:col-span-2" :class="isPartner ? 'sm:order-4' : 'sm:order-3'">
+          <p v-if="!isPartner" class="mb-1 text-sm font-medium text-highlighted">Comprobante (opcional)</p>
+          <div class="relative">
+            <YuanFilePick :label="isPartner ? 'Adjuntar comprobante de la transferencia (PDF o imagen)' : 'Adjuntar comprobante (PDF o imagen)'" :accept="RECEIPT_ACCEPT" :current-name="payment?.receipt_name" @pick="receipt = $event" />
+            <span v-if="isPartner" class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-medium text-primary">Obligatorio</span>
+          </div>
         </div>
 
-        <div class="sm:col-span-2">
+        <div class="sm:col-span-2" :class="isPartner ? 'sm:order-3' : 'sm:order-4'">
           <div class="mb-2 flex items-center justify-between gap-3">
-            <p class="text-sm font-semibold text-highlighted">{{ isPartner ? 'Facturas a pagar' : 'Aplicar a operaciones' }}</p>
+            <p class="text-sm font-semibold text-highlighted">{{ isPartner ? 'Facturas que cubre este pago' : 'Aplicar a operaciones' }}</p>
             <UButton size="xs" color="primary" variant="link" class="font-semibold" :disabled="!pending.length" @click="distribute">
               Distribuir automáticamente
             </UButton>
@@ -59,21 +60,21 @@
               <p class="truncate text-xs text-muted">{{ [dayLabel(operation.issued_on), operation.consolidado_label, operation.description].filter(Boolean).join(' · ') }}</p>
             </div>
             <span class="text-right text-xs font-semibold uppercase tracking-wide text-muted">
-              Pendiente<br>
+              {{ isPartner ? 'Saldo' : 'Pendiente' }}<br>
               <span class="text-sm normal-case tracking-normal text-highlighted">{{ usd(operation.pending) }}</span>
             </span>
             <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="amounts[operation.id!]" :min="0" :max="operation.pending" :step="0.01" />
           </div>
         </div>
 
-        <UAlert v-if="errorMessage" class="sm:col-span-2" color="error" variant="subtle" icon="i-heroicons-exclamation-triangle" :description="errorMessage" />
+        <UAlert v-if="errorMessage" class="sm:order-5 sm:col-span-2" color="error" variant="subtle" icon="i-heroicons-exclamation-triangle" :description="errorMessage" />
       </div>
     </template>
     <template #footer>
       <div class="flex w-full flex-col gap-2">
         <div class="flex flex-wrap items-end justify-between gap-3">
           <div class="flex gap-6 text-sm">
-            <div>
+            <div v-if="!isPartner">
               <p class="text-[11px] font-semibold uppercase tracking-wide text-muted">Enviado</p>
               <p class="font-bold text-highlighted">{{ usd(sentAmount) }}</p>
             </div>
@@ -88,7 +89,7 @@
           </div>
           <div class="flex gap-2">
             <UButton color="neutral" variant="outline" :disabled="saving" @click="emit('close')">Cancelar</UButton>
-            <UButton color="primary" :loading="saving" @click="save">{{ payment ? 'Guardar cambios' : 'Registrar pago' }}</UButton>
+            <UButton color="primary" :loading="saving" @click="save">{{ payment ? 'Guardar cambios' : (isPartner ? 'Enviar pago' : 'Registrar pago') }}</UButton>
           </div>
         </div>
         <p v-if="sentAmount > 0 && unassignedAmount <= 0.004" class="text-xs text-muted">Todo el monto está asignado.</p>

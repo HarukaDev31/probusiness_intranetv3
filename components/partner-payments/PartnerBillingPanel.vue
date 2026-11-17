@@ -229,8 +229,8 @@ const paymentColumns: TableColumn<ChinaPayment>[] = [
     const pending = row.original.status === CHINA_STATUS.TO_CONFIRM
     const key = pending ? CHINA_STATUS.TO_CONFIRM : CHINA_STATUS.CONFIRMED
     return h('div', { class: 'flex min-w-32 flex-col items-start gap-1.5' }, [
-      // #2044: «Confirmado» va en verde.
-      pill(CHINA_STATUS_LABEL[key], pending ? CHINA_STATUS_PILL[key] : 'bg-[#e8f6ee] text-[#1f7a45]'),
+      // #2044/#2050: «Confirmado» en verde y «Por confirmar» en azul.
+      pill(CHINA_STATUS_LABEL[key], pending ? 'bg-[#e7f0fd] text-[#1d4f91]' : 'bg-[#e8f6ee] text-[#1f7a45]'),
       pending ? h('div', { class: 'flex gap-3 text-xs font-medium' }, [
         h('button', { type: 'button', class: 'text-primary hover:underline', onClick: () => openPayment(null, false, row.original) }, 'Editar'),
         h('button', { type: 'button', class: 'text-error hover:underline', onClick: () => cancelPayment(row.original) }, 'Anular envío')
