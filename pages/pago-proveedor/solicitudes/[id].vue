@@ -270,7 +270,7 @@
                 </div>
               </div>
               <p v-if="!abonosProveedor(proveedor.id).length" class="mb-3 text-sm text-muted">Sin abonos registrados.</p>
-              <UButton v-if="!soloLectura && (proveedor.puede_editar_etapa1 || proveedor.puede_registrar_diferencia) && proveedor.saldo > 0.004" size="sm" color="primary" @click="abrirAbono(proveedor)">
+              <UButton v-if="!soloLectura && (proveedor.puede_editar_etapa1 || proveedor.puede_registrar_diferencia) && proveedor.saldo > 0.004" size="sm" color="primary" @click="abrirAbono(proveedor.puede_registrar_diferencia ? proveedor : undefined)">
                 {{ proveedor.importe_abonado > 0 ? 'Registrar otro abono' : 'Registrar comprobante' }}
               </UButton>
             </UCard>
@@ -317,6 +317,7 @@
             @edit-deposit="(id) => editarAbonoPorId(id)"
             @view-voucher="(id) => verVoucherPorId(id)"
             @register-difference="abrirAbono(proveedor)"
+            @add-voucher="abrirAbono(proveedor)"
             @choose-providers="abrirContinuacion(proveedor)"
             @decide-surplus="(id, decision) => decidir(id, decision)"
           />
@@ -331,7 +332,7 @@
           <UAlert
             v-if="!soloLectura && (vistaEtapa[proveedor.id] ?? proveedor.etapa) === proveedor.etapa && porRealizar(proveedor)"
             class="mt-3"
-            color="info"
+            :color="abonoObservado(proveedor) ? 'warning' : 'info'"
             variant="subtle"
             :ui="{ root: 'px-4 py-2.5 items-center', description: 'mt-0 text-sm' }"
           >
@@ -901,7 +902,7 @@ const bancos = [{ label: 'BCP', value: 'bcp' }, { label: 'Interbank', value: 'in
 
 const dinero = (valor: number) => Number(valor || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const abonoEnEdicion = computed(() => (solicitud.value?.abonos || []).find(item => item.id === abonoEditandoId.value) || null)
-// #2124: al registrar desde un proveedor, el abono es para ese proveedor; no se elige a quién aplicarlo.
+// #2124: solo al registrar la diferencia de un pago observado por Administración, el abono es para ese proveedor (no se elige a quién aplicarlo). El registro normal sigue igual.
 const proveedorFijoId = ref<number | null>(null)
 const proveedoresConSaldo = computed(() => (solicitud.value?.proveedores || []).filter((item) => {
   if (proveedorFijoId.value && !abonoEditandoId.value) return item.id === proveedorFijoId.value
@@ -1679,7 +1680,9 @@ function aplicadoPorAbonoEnEdicion(proveedor: PagoProveedorSolicitudProveedor) {
 }
 
 function saldoParaAbono(proveedor: PagoProveedorSolicitudProveedor) {
-  return Math.round((proveedor.saldo + aplicadoPorAbonoEnEdicion(proveedor)) * 100) / 100
+  // Con un depósito observado (no ingresó), el voucher nuevo repone ese importe: no cuenta lo observado.
+  const base = proveedor.deposito_observado && !abonoEditandoId.value ? (proveedor.saldo_sin_observados ?? proveedor.saldo) : proveedor.saldo
+  return Math.round((base + aplicadoPorAbonoEnEdicion(proveedor)) * 100) / 100
 }
 
 function abonadoOtros(proveedor: PagoProveedorSolicitudProveedor) {
