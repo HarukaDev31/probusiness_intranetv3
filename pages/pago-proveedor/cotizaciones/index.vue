@@ -26,7 +26,8 @@
       @items-per-page-change="alCambiarTamano"
     >
       <template #body-top>
-        <div class="grid w-full gap-3 rounded-xl border border-default bg-default p-4 md:grid-cols-[1fr_auto_auto_auto]">
+        <!-- #2056: el recuadro de filtros queda a la altura de la tabla (sin el margen interno del contenedor). -->
+        <div class="grid w-full gap-3 rounded-xl border border-default bg-default p-4 md:-mx-4 md:w-[calc(100%+2rem)] md:grid-cols-[1fr_auto_auto_auto]">
           <UFormField label="Buscar cliente o cotización" :ui="{ label: 'text-[11px] font-semibold uppercase text-muted' }">
             <UInput :model-value="busqueda" icon="i-heroicons-magnifying-glass" placeholder="Ej: Juan Pérez, COT-03" class="w-full" @update:model-value="(v) => alBuscar(String(v ?? ''))" />
           </UFormField>
