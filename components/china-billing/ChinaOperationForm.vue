@@ -14,6 +14,8 @@
           <UFormField label="País">
             <!-- PRY-26-0003: autocompletado contra la tabla de países (5 por página; primero los países con clientes). -->
             <UInputMenu
+              open-on-click
+              open-on-focus
               v-model="country"
               v-model:search-term="countrySearch"
               :items="countryItems"
