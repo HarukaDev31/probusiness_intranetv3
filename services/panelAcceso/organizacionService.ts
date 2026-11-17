@@ -12,6 +12,15 @@ export interface Organizacion {
   paises_habilitados_nombres?: string[]
   prefijo?: string | null
   estado: number
+  /** PRY-26-0003: datos de cliente de Almacén China. */
+  tipo_cliente?: TipoClienteOrganizacion
+  pais_origen_id?: number | null
+  pais_origen?: string | null
+  tarifa_1?: number | null
+  tarifa_2?: number | null
+  whatsapp?: string | null
+  contacto?: string | null
+  correo?: string | null
   url_clientes?: string | null
   url_excel_confirmacion?: string | null
   url_datos_proveedor?: string | null
@@ -54,6 +63,8 @@ export const FLUJOS_CATALOGO_FALLBACK: FlujoCatalogoItem[] = [
   { key: 'cotizacion_pdf', grupo: 'Comercial', label: 'PDF / contrato (ventas)' },
 ]
 
+export type TipoClienteOrganizacion = 'socio' | 'importador'
+
 export interface CreateOrganizacionRequest {
   id_empresa: number
   no_organizacion: string
@@ -61,6 +72,16 @@ export interface CreateOrganizacionRequest {
   id_pais?: number | null
   paises_habilitados?: number[]
   estado: number
+  /** Socio (por defecto) o importador. Importador: sin tarifas ni países para consolidar. */
+  tipo_cliente?: TipoClienteOrganizacion
+  pais_origen_id?: number | null
+  /** USD por CBM: tarifa 1 (menos de 1 CBM) y tarifa 2 (1 CBM o más). Solo socio. */
+  tarifa_1?: number | null
+  tarifa_2?: number | null
+  whatsapp?: string | null
+  contacto?: string | null
+  /** Si viene, se crea el usuario de la plataforma (usuario y contraseña = correo). */
+  correo?: string | null
   envios_habilitados?: boolean
   rotulado_habilitado?: boolean
   flujos?: Record<string, boolean>

@@ -54,7 +54,12 @@
               class="border-b hover:bg-gray-50 dark:hover:bg-gray-800"
             >
               <td class="py-2 px-4 text-gray-500 text-xs">{{ o.empresa || '—' }}</td>
-              <td class="py-2 px-4 font-medium">{{ o.no_organizacion }}</td>
+              <td class="py-2 px-4 font-medium">
+                {{ o.no_organizacion }}
+                <UBadge v-if="o.id !== 1" size="sm" variant="subtle" :color="o.tipo_cliente === 'importador' ? 'neutral' : 'primary'" class="ml-1">
+                  {{ o.tipo_cliente === 'importador' ? 'Importador' : 'Socio' }}
+                </UBadge>
+              </td>
               <td class="py-2 px-4">{{ o.pais || '—' }}</td>
               <td class="py-2 px-4 text-xs text-gray-600">{{ labelPaisesConsolidado(o) }}</td>
               <td class="py-2 px-4 font-mono text-xs">{{ o.prefijo ? `+${o.prefijo}` : '—' }}</td>
@@ -218,8 +223,61 @@
               Prefijo telefónico: <span class="font-mono font-medium">+{{ prefijoPreview }}</span>
             </p>
 
+            <template v-if="!esOrgAdminEditada">
+              <UFormField label="Tipo de cliente" hint="Almacén China">
+                <div class="flex gap-2">
+                  <UButton
+                    v-for="option in tiposCliente"
+                    :key="option.value"
+                    size="sm"
+                    :color="form.tipo_cliente === option.value ? 'primary' : 'neutral'"
+                    :variant="form.tipo_cliente === option.value ? 'soft' : 'outline'"
+                    @click="form.tipo_cliente = option.value"
+                  >
+                    {{ option.label }}
+                  </UButton>
+                </div>
+              </UFormField>
+
+              <UFormField label="País de origen">
+                <USelectMenu
+                  v-model="form.pais_origen_id"
+                  :items="paisesOptions"
+                  value-key="value"
+                  placeholder="Seleccionar país de origen"
+                  class="w-full"
+                  :search-input="{ placeholder: 'Buscar país...' }"
+                />
+              </UFormField>
+
+              <div v-if="form.tipo_cliente === 'socio'" class="grid gap-3 sm:grid-cols-2">
+                <UFormField label="Tarifa 1 (USD/CBM)" hint="menos de 1 CBM">
+                  <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.tarifa_1" :min="0" :step="1" placeholder="Ingresa la tarifa" class="w-full" />
+                </UFormField>
+                <UFormField label="Tarifa 2 (USD/CBM)" hint="1 CBM o más">
+                  <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.tarifa_2" :min="0" :step="1" placeholder="Ingresa la tarifa" class="w-full" />
+                </UFormField>
+              </div>
+
+              <div class="grid gap-3 sm:grid-cols-2">
+                <UFormField label="WhatsApp">
+                  <UInput v-model="form.whatsapp" type="tel" placeholder="+51 999 999 999" class="w-full" />
+                </UFormField>
+                <UFormField label="Contacto" hint="(opcional)">
+                  <UInput v-model="form.contacto" placeholder="Nombre de la persona" class="w-full" />
+                </UFormField>
+              </div>
+              <UFormField
+                label="Correo"
+                hint="(opcional)"
+                help="Si lo ingresas, se crea su usuario de la plataforma (usuario y contraseña = correo) con el rol Socio o Importador."
+              >
+                <UInput v-model="form.correo" type="email" placeholder="correo@empresa.com" class="w-full" />
+              </UFormField>
+            </template>
+
             <UFormField
-              v-if="!esOrgAdminEditada"
+              v-if="!esOrgAdminEditada && form.tipo_cliente === 'socio'"
               label="Países para consolidado"
               hint="Solo estos países aparecerán al crear un consolidado en esta organización."
             >
@@ -459,7 +517,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Organizacion, CreateOrganizacionRequest, PaisOption } from '~/services/panelAcceso/organizacionService'
+import type { Organizacion, CreateOrganizacionRequest, PaisOption, TipoClienteOrganizacion } from '~/services/panelAcceso/organizacionService'
 import { FLUJOS_CATALOGO_FALLBACK } from '~/services/panelAcceso/organizacionService'
 import { useOrganizaciones } from '~/composables/panel-acceso/useOrganizaciones'
 import { useSpinner } from '~/composables/commons/useSpinner'
@@ -503,6 +561,26 @@ const form = reactive<CreateOrganizacionRequest>({
   paises_habilitados: [],
   estado: 1,
   flujos: {},
+  tipo_cliente: 'socio',
+  pais_origen_id: undefined,
+  tarifa_1: null,
+  tarifa_2: null,
+  whatsapp: '',
+  contacto: '',
+  correo: '',
+})
+
+const tiposCliente: { value: TipoClienteOrganizacion; label: string }[] = [
+  { value: 'socio', label: 'Socio' },
+  { value: 'importador', label: 'Importador' },
+]
+
+// El país de origen es el país para consolidado por defecto del socio.
+watch(() => form.pais_origen_id, (value, previous) => {
+  if (!value || form.tipo_cliente !== 'socio' || !showModal.value) return
+  const actuales = normalizePaisesHabilitados(form.paises_habilitados).filter((id) => id !== previous)
+  if (actuales.length === 0) form.paises_habilitados = [value]
+  else if (previous && normalizePaisesHabilitados(form.paises_habilitados).includes(previous) && !actuales.includes(value)) form.paises_habilitados = [value, ...actuales]
 })
 
 const flujosCatalogo = computed(() => {
@@ -609,6 +687,13 @@ async function openModal(organizacion?: Organizacion) {
     form.paises_habilitados = [...(organizacion.paises_habilitados ?? [])]
     form.estado = organizacion.estado
     form.flujos = { ...flujosVacios(false), ...(organizacion.flujos ?? {}) }
+    form.tipo_cliente = organizacion.tipo_cliente === 'importador' ? 'importador' : 'socio'
+    form.pais_origen_id = organizacion.pais_origen_id ?? undefined
+    form.tarifa_1 = organizacion.tarifa_1 ?? null
+    form.tarifa_2 = organizacion.tarifa_2 ?? null
+    form.whatsapp = organizacion.whatsapp ?? ''
+    form.contacto = organizacion.contacto ?? ''
+    form.correo = organizacion.correo ?? ''
   } else {
     editingOrganizacion.value = null
     form.id_empresa = empresasOptions.value[0]?.value ?? 0
@@ -618,6 +703,13 @@ async function openModal(organizacion?: Organizacion) {
     form.paises_habilitados = []
     form.estado = 1
     form.flujos = flujosVacios(false)
+    form.tipo_cliente = 'socio'
+    form.pais_origen_id = undefined
+    form.tarifa_1 = null
+    form.tarifa_2 = null
+    form.whatsapp = ''
+    form.contacto = ''
+    form.correo = ''
   }
 
   showModal.value = true
@@ -647,14 +739,27 @@ async function submitForm() {
   formError.value = ''
   saving.value = true
 
+  const esSocio = form.tipo_cliente === 'socio'
+  const datosCliente = esOrgAdminEditada.value
+    ? {}
+    : {
+        tipo_cliente: form.tipo_cliente,
+        pais_origen_id: form.pais_origen_id || null,
+        tarifa_1: esSocio ? (form.tarifa_1 ?? null) : null,
+        tarifa_2: esSocio ? (form.tarifa_2 ?? null) : null,
+        whatsapp: (form.whatsapp || '').trim() || null,
+        contacto: (form.contacto || '').trim() || null,
+        correo: (form.correo || '').trim() || null,
+      }
   const payload = {
     id_empresa: form.id_empresa,
     no_organizacion: form.no_organizacion.trim(),
     txt_organizacion: form.txt_organizacion || undefined,
     id_pais: form.id_pais || null,
-    paises_habilitados: esOrgAdminEditada.value ? undefined : normalizePaisesHabilitados(form.paises_habilitados),
+    paises_habilitados: esOrgAdminEditada.value ? undefined : (esSocio ? normalizePaisesHabilitados(form.paises_habilitados) : []),
     estado: Number(form.estado),
     flujos: { ...flujosVacios(false), ...(form.flujos ?? {}) },
+    ...datosCliente,
   }
 
   try {
