@@ -115,7 +115,8 @@ const iconButton = (icon: string, label: string, onClick: () => void, tone = 'ho
 }, h(UIcon, { name: icon, class: 'size-4' }))
 
 const columns: TableColumn<ChinaClient>[] = [
-  { accessorKey: 'number', header: 'N°', cell: ({ row }) => h('span', { class: 'text-muted' }, String(row.original.number ?? '')) },
+  // #1979/#1981: numeración correlativa de la lista mostrada (Todos, Socios o Importadores), de 1 en adelante.
+  { id: 'number', header: 'N°', cell: ({ row }) => h('span', { class: 'text-muted' }, String((pagination.value.current_page - 1) * pagination.value.per_page + row.index + 1)) },
   { accessorKey: 'registered_on', header: 'Fecha', cell: ({ row }) => h('span', { class: 'whitespace-nowrap' }, fullDate(row.original.registered_on)) },
   { accessorKey: 'name', header: 'Cliente', cell: ({ row }) => h('div', { class: 'flex min-w-48 flex-col' }, [
     h('span', { class: 'font-semibold' }, row.original.name),

@@ -56,7 +56,7 @@
 
         <div class="grid gap-3 sm:grid-cols-[2fr_1fr]">
           <UFormField label="Descripción" required>
-            <UInput v-model="form.description" placeholder="Escribe o elige un consolidado del cliente" class="w-full" />
+            <UInput v-model="form.description" placeholder="ej. Consolidado #49 · menaje de cocina" class="w-full" />
           </UFormField>
           <UFormField label="Fecha">
             <UInput v-model="form.issued_on" type="date" class="w-full" />
