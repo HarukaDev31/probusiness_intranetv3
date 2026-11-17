@@ -239,7 +239,8 @@ export class ViaticoService extends BaseService {
   static async exportViaticos(status?: string, filters?: ViaticoFilters): Promise<Blob> {
     try {
       const queryParams = new URLSearchParams()
-      queryParams.append('status', status || '')
+      const statusNorm = (status || '').trim()
+      if (statusNorm && statusNorm !== 'todos') queryParams.append('status', statusNorm)
       if (filters?.fecha_inicio) queryParams.append('fecha_inicio', filters.fecha_inicio)
       if (filters?.fecha_fin) queryParams.append('fecha_fin', filters.fecha_fin)
       if (filters?.requesting_area && filters.requesting_area !== 'todos') queryParams.append('requesting_area', filters.requesting_area)
@@ -247,7 +248,11 @@ export class ViaticoService extends BaseService {
       if (filters?.solicitante && filters.solicitante !== 'todos') queryParams.append('solicitante', filters.solicitante)
       if (filters?.search) queryParams.append('search', filters.search)
       const response = await this.apiCall<Blob>(`${this.baseUrl}/export?${queryParams.toString()}`, {
-        method: 'GET'
+        method: 'GET',
+        responseType: 'blob',
+        headers: {
+          Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        }
       })
       return response
     } catch (error: any) {
