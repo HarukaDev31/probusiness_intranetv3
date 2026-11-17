@@ -34,7 +34,8 @@ const sections: { title: string; rows: Row[] }[] = [
   ] },
   { title: 'Beneficiario', rows: [
     { label: 'Cuenta', keys: ['account_number'] }, { label: 'Beneficiario', keys: ['beneficiary'] }, { label: 'Dirección', keys: ['beneficiary_address'] },
-    { label: 'País / Ciudad', keys: ['beneficiary_country', 'beneficiary_state', 'beneficiary_city'] }
+    { label: 'País / Ciudad', keys: ['beneficiary_country', 'beneficiary_state', 'beneficiary_city'] },
+    { label: 'Tax ID', keys: ['beneficiary_tax_id'] }, { label: 'USCC', keys: ['beneficiary_uscc'] }, { label: 'Correo', keys: ['beneficiary_email'] }
   ] }
 ]
 const loading = ref(true)

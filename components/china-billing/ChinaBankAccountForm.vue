@@ -43,7 +43,7 @@ const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ close: []; saved: [] }>()
 
 const form = reactive<ChinaBankAccount>({
-  company: '', company_address: '', beneficiary: '', beneficiary_address: '', beneficiary_country: '', beneficiary_state: '', beneficiary_city: '',
+  company: '', company_address: '', beneficiary: '', beneficiary_address: '', beneficiary_country: '', beneficiary_state: '', beneficiary_city: '', beneficiary_tax_id: '', beneficiary_uscc: '', beneficiary_email: '',
   account_number: '', intermediary_bank: '', intermediary_swift: '', intermediary_country: '', intermediary_state: '', intermediary_city: '',
   payer_bank: '', payer_swift: '', payer_country: '', payer_state: '', payer_city: ''
 })
@@ -61,7 +61,9 @@ const sections: { title: string; fields: Field[] }[] = [
   { title: 'Beneficiario', fields: [
     { key: 'account_number', label: 'Cuenta' }, { key: 'beneficiary', label: 'Beneficiario' },
     { key: 'beneficiary_address', label: 'Dirección', wide: true },
-    { key: 'beneficiary_country', label: 'País' }, { key: 'beneficiary_state', label: 'Estado' }, { key: 'beneficiary_city', label: 'Ciudad' }
+    { key: 'beneficiary_country', label: 'País' }, { key: 'beneficiary_state', label: 'Estado' }, { key: 'beneficiary_city', label: 'Ciudad' },
+    { key: 'beneficiary_tax_id', label: 'Tax ID (si el banco lo solicita)' }, { key: 'beneficiary_uscc', label: 'USCC (si el banco lo solicita)' },
+    { key: 'beneficiary_email', label: 'Correo', wide: true }
   ] }
 ]
 const loading = ref(false)
