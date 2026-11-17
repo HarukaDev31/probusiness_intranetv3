@@ -500,6 +500,7 @@ export interface SupplierPaymentDeposit {
   observation_detail: string | null
   observe_until: string | null
   corrected_by_admin: boolean
+  admin_corrections?: { field: string; from: string; to: string }[]
   verified_at: string | null
   providers: SupplierPaymentDepositProvider[]
   shared: boolean
