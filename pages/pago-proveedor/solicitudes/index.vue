@@ -127,7 +127,7 @@
               <p class="truncate text-sm font-bold text-highlighted" :title="row.clientName || ''">{{ row.clientName || 'Cliente' }}</p>
               <p class="truncate text-xs text-muted">C{{ consolidadoNumero(row.consolidation) || '—' }} · {{ supplierLabel(row.provider) }} · {{ row.provider.currency }}</p>
               <p class="text-sm" :class="row.provider.sales_task === SALES_TASK.OBSERVED ? 'text-error' : 'text-default'">
-                <b v-if="row.provider.sales_task === SALES_TASK.OBSERVED">Observado: </b>{{ actionText(row.provider) }}
+                <b v-if="row.provider.sales_task === SALES_TASK.OBSERVED && !actionText(row.provider).startsWith('Observado')">Observado: </b>{{ actionText(row.provider) }}
                 <UBadge v-if="row.provider.payment_shape === PAYMENT_SHAPE.CLIENT_INSTALLMENTS" color="warning" variant="subtle" size="sm" class="ml-1 align-middle">Cuota {{ installmentTag(row.provider) }}</UBadge>
               </p>
               <div class="mt-1 flex items-center justify-between gap-2">
@@ -707,6 +707,10 @@ function taskText(provider: SupplierPaymentProviderRow, withDeadlineText = true)
   if (provider.approval_status === 'error_registro') {
     return 'Corrige el voucher o los datos: Administración marcó un error de registro.'
   }
+  if (provider.sales_task === SALES_TASK.OBSERVED && provider.deposit_observation_label) {
+    // #2133: «Observado por Administración: No ingresó · Informar al cliente».
+    return withDeadline(`Observado por Administración: ${provider.deposit_observation_label} · Informar al cliente`)
+  }
   if (provider.sales_task === SALES_TASK.OBSERVED) {
     const reason = provider.observe_label ? `Observado por Operaciones China: ${provider.observe_label}` : 'Subsanar la observación.'
     return withDeadline(reason)
@@ -748,7 +752,11 @@ const columns: TableColumn<RequestLine>[] = [
   { accessorKey: 'paymentShape', header: 'Forma de pago', cell: ({ row }) => formaDePago(row.original.provider) },
   { accessorKey: 'paymentType', header: 'Tipo de pago', cell: ({ row }) => paymentLabel(row.original.provider) },
   { accessorKey: 'stage', header: 'Etapa', cell: ({ row }) => pill(`${row.original.provider.stage}. ${stageLabel(row.original.provider.stage)}`, 'info') },
-  { accessorKey: 'status', header: 'Estado', cell: ({ row }) => pill(providerStatusLabel(row.original.provider), providerStatusColor(row.original.provider)) },
+  { accessorKey: 'status', header: 'Estado', cell: ({ row }) => h('div', { class: 'flex flex-col items-start gap-0.5' }, [
+    pill(providerStatusLabel(row.original.provider), providerStatusColor(row.original.provider)),
+    // #2134: el motivo de la observación bajo el estado («No ingresó»).
+    row.original.provider.deposit_observation_label ? h('span', { class: 'text-[11px] text-muted' }, row.original.provider.deposit_observation_label) : null
+  ]) },
   { accessorKey: 'owner', header: 'Responsable', cell: ({ row }) => responsableEtapa(row.original.provider) },
   {
     accessorKey: 'actions',
