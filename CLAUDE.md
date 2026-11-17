@@ -43,6 +43,6 @@ https://qaintranet.probusiness.pe, despliega solo ~2 min después del push a `qa
 ## Estado PRY-26-0003 (Pago a Proveedor + Almacén China)
 - Rama `soporte/PRY-26-0003-2` en front y back, en `qa`. PRs abiertos sin merge: front #166, back intranet_back#41 (van juntos; el back trae migraciones y elimina `china_clients`).
 - Ticket en la intranet: id 121 (chat de Meliza Valle). Al atender: responder en el chat con "[Soporte Bot] …" y marcar los mensajes como revisados
-  (`PATCH /api/soporte-ti/chats/{uuid}/mensajes/{id}/revisado`). Todas las observaciones hasta el mensaje 1986 están atendidas y marcadas.
+  (`PATCH /api/soporte-ti/chats/{uuid}/mensajes/{id}/revisado`). Todas las observaciones hasta el mensaje 1999 están atendidas y marcadas.
 - Datos de prueba en QA: socio "[QA-PRUEBA] Socio Colombia" (org 6) e importador "[QA-PRUEBA] Importador Lima" (org 7), ambos con usuario (correo); operaciones/cobros "[QA-E2E …]".
 - Pendiente: tarifas de Pro Business (org 1) se configuran en Panel de acceso; e2e local `e2e/china-billing` desactualizado.
