@@ -37,6 +37,8 @@
           <p v-if="deposit.recorded_amount != null" class="mt-1 text-sm text-muted">Registraste ${{ money(deposit.recorded_amount) }}: se ajustó al importe del banco.</p>
         </div>
         <UButton v-if="!readonly && aprobacion.state === 'waiting_shared'" class="mt-3" size="sm" color="primary" @click="emit('choose-providers')">Elegir proveedores</UButton>
+        <!-- #2144: con el depósito observado, Ventas agrega el voucher nuevo desde aquí. -->
+        <UButton v-if="!readonly && proveedor.deposito_observado" class="mt-3" size="sm" color="neutral" variant="outline" icon="i-lucide-plus" @click="emit('add-voucher')">Agregar voucher</UButton>
       </UCard>
 
       <UCard :ui="bloque" :class="depositosObservados.length ? 'bg-warning/10 ring-warning/30' : ''">
@@ -46,9 +48,11 @@
         </div>
         <template v-if="depositosObservados.length">
           <UBadge color="error" variant="soft" :label="`Observado${depositosObservados[0].observation?.reason ? ` · ${depositosObservados[0].observation?.reason}` : ''}`" />
-          <p class="mt-2 text-sm text-muted">Administración no pudo confirmar el ingreso del dinero.</p>
+          <p v-if="depositosObservados[0].observation?.reason?.toLowerCase().includes('no ingres')" class="mt-2 text-sm text-muted"><strong class="text-highlighted">No ingresó:</strong> El dinero no aparece en el banco: confirma con el cliente que la transferencia se emitió y registra el voucher correcto.</p>
+          <p v-else class="mt-2 text-sm text-muted">Administración no pudo confirmar el ingreso del dinero.</p>
           <p v-if="depositosObservados[0].observation?.detail" class="mt-1 text-sm text-highlighted">{{ depositosObservados[0].observation?.detail }}</p>
           <p v-if="depositosObservados[0].observation?.deadline_text" class="mt-1 text-xs text-muted">Plazo: {{ depositosObservados[0].observation?.deadline_text }}</p>
+          <UButton v-if="!readonly && proveedor.deposito_observado" class="mt-3" size="sm" color="neutral" variant="outline" @click="emit('lift')">Levantar observación</UButton>
         </template>
         <template v-else-if="depositosPorValidar.length">
           <UBadge :color="depositosPorValidar[0].deadline_overdue ? 'error' : 'warning'" variant="soft" :label="`Por validar${depositosPorValidar[0].deadline_text ? ` · ${depositosPorValidar[0].deadline_text}` : ''}`" />
@@ -452,6 +456,7 @@ const props = withDefaults(defineProps<{
   canCancelDeposit?: (depositId: number) => boolean
 }>(), { readonly: false, viewing: null, tipoCambio: null, canCancelDeposit: () => false })
 const emit = defineEmits<{
+  'add-voucher': []
   saved: []
   'complete-data': []
   'view-data': []

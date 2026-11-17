@@ -233,6 +233,8 @@ export interface PagoProveedorSolicitudProveedor {
   codigo_solicitud: string | null
   puede_editar_etapa1: boolean
   puede_registrar_diferencia?: boolean
+  deposito_observado?: boolean
+  saldo_sin_observados?: number
   puede_levantar?: boolean
   cuota_actual?: number
   cuota_carga?: number | null
