@@ -230,9 +230,9 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
             console.error('Error en getConsolidadoPasos:', error)
         }
     }
-    const getValidContainers = async () => {
+    const getValidContainers = async (anio?: number) => {
         try {
-            const response = await ConsolidadoService.getValidContainers()
+            const response = await ConsolidadoService.getValidContainers(anio)
             validContainers.value = response.data
             return response
         } catch (error) {
