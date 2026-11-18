@@ -118,7 +118,7 @@
 <script setup lang="ts">
 import type { CreateConsolidadoModalProps } from './types'
 import { TC_YUAN_DEFAULT_NO_ADMIN } from './constants'
-import { ref, computed, defineEmits, defineProps } from 'vue'
+import { ref, computed, watch, defineEmits, defineProps } from 'vue'
 import { CalendarDate } from '@internationalized/date'
 import { getLocalTimeZone, DateFormatter, } from '@internationalized/date'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
@@ -335,10 +335,22 @@ const handleSubmit = async () => {
         loading.value = false
     }
 }
+// La numeración de cargas reinicia cada año: los números ocupados son los del año de la fecha de cierre
+// (el back calcula el año del consolidado con esa fecha). Así, en enero 2027 vuelve a estar libre la #1.
+const anioCarga = computed(() => fechaCierre.value?.year ?? new Date().getFullYear())
+watch(anioCarga, async (anio, anterior) => {
+    if (anio === anterior) return
+    await getValidContainers(anio)
+    // Al crear, si el número elegido ya está usado en el nuevo año, se limpia para elegir otro.
+    if (!props.id && carga.value && validContainers.value?.some((c: any) => Number(c.value) === Number(carga.value) && c.disabled)) {
+        carga.value = undefined
+    }
+})
+
 onMounted(async () => {
     fetchCurrentUser()
     await getPaisesHabilitados()
-    await Promise.all([getValidContainers(), getEmpresasCreadas()])
+    await Promise.all([getValidContainers(anioCarga.value), getEmpresasCreadas()])
     if (!props.id && !isOrgAdmin.value) {
         tcYuan.value = TC_YUAN_DEFAULT_NO_ADMIN
     }
