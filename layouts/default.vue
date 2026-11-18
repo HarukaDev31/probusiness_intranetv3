@@ -403,6 +403,14 @@ const sidebarCategories = computed(() => {
   // Orden del sidebar: viene del back (menu_orden_usuario > menu_orden_grupo > Nu_Orden).
   // Sin reorders hardcodeados aquí; se gestiona en panel-acceso/orden-menus.
 
+  // PRY-26-0003: si «Pago a Proveedor» tiene una sola opción (Encargado China: solo «Pago a proveedores»),
+  // va como un único ítem del menú (Supplier Payment) sin desplegable, directo a esa pantalla.
+  modules.forEach((m: any, index: number) => {
+    const hijos = m.children ?? []
+    if (hijos.length !== 1 || hijos[0].children?.length || !String(hijos[0].route || '').startsWith('/pago-proveedor')) return
+    modules[index] = { ...m, route: hijos[0].route, notificationCount: m.notificationCount || hijos[0].notificationCount, children: [] }
+  })
+
   // PRY-26-0003: menú de Almacén China en el orden de la maqueta.
   if (currentRole.value === ROLES.CONTENEDOR_ALMACEN) {
     const ordenChina = (mod: { route?: string; name?: string; order?: number }) => {

@@ -7,6 +7,10 @@ export interface ModalData {
   persistent?: boolean
   confirmLabel?: string
   cancelLabel?: string
+  /** Ícono propio (p. ej. 'i-lucide-trash-2'); si no, el del tipo. */
+  icon?: string
+  /** Tono del ícono propio: 'danger' lo pinta en rojo. */
+  iconTone?: 'danger'
   onConfirm?: () => void | Promise<void>
   onCancel?: () => void | Promise<void>
 }

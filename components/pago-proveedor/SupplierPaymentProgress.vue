@@ -171,7 +171,7 @@
           <div v-for="execution in progress.executions" :key="execution.id" class="mt-2 text-sm">
             <UButton v-if="execution.receipt_url" class="px-0" size="xs" color="primary" variant="link" icon="i-lucide-receipt-text" :to="execution.receipt_url" target="_blank">Ver constancia</UButton>
             <p v-else class="text-muted">Constancia pendiente</p>
-            <p class="text-xs text-muted">{{ execution.registered_by || responsablePago }}<template v-if="execution.registered_at"> · {{ fechaHora(execution.registered_at) }}</template></p>
+            <p class="text-xs text-muted">{{ responsablePago }}<template v-if="execution.registered_at"> · {{ fechaHora(execution.registered_at) }}</template></p>
           </div>
           <p class="mt-1 text-sm text-muted">{{ proveedor.moneda === 'RMB' ? 'La constancia queda en el sistema; no se envía al cliente.' : 'Constancia enviada al cliente por WhatsApp.' }}</p>
         </template>
@@ -213,25 +213,37 @@
               <dd class="whitespace-nowrap text-right"><span class="text-xs text-muted">USD</span> <strong class="text-base">${{ money(pagadoUsd) }}</strong><small v-if="pagadoYuan > 0" class="block text-xs text-muted">¥{{ money(pagadoYuan) }}</small></dd>
             </div>
           </dl>
-          <p class="mt-3 flex items-center gap-2 text-sm font-bold text-highlighted"><UIcon name="i-lucide-file-text" class="size-4 text-primary" />Documentos</p>
-          <div class="mt-2 grid grid-cols-2 gap-2">
-            <UButton size="sm" color="info" variant="outline" icon="i-lucide-eye" trailing-icon="i-lucide-chevron-right" :class="botonDocumento" :ui="{ trailingIcon: 'ms-auto' }" @click="emit('view-form')">Ver formulario</UButton>
-            <UButton v-if="proveedor.proforma_url" size="sm" color="info" variant="outline" icon="i-lucide-eye" trailing-icon="i-lucide-chevron-right" :class="botonDocumento" :ui="{ trailingIcon: 'ms-auto' }" :to="proveedor.proforma_url" target="_blank">Ver proforma</UButton>
-            <UButton
-              v-for="deposit in depositosValidados"
-              :key="`doc-${deposit.id}`"
-              size="sm"
-              color="info"
-              variant="outline"
-              icon="i-lucide-eye"
-              trailing-icon="i-lucide-chevron-right"
-              :class="[botonDocumento, 'col-span-2 whitespace-nowrap text-xs']"
-              :ui="{ trailingIcon: 'ms-auto', label: 'truncate' }"
-              :title="`Ver depósito validado por Administración${depositosValidados.length > 1 ? ` (#${deposit.number ?? deposit.id})` : ''}`"
-              @click="emit('view-deposit', deposit.id)"
-            >
-              Ver depósito validado por Administración{{ depositosValidados.length > 1 ? ` (#${deposit.number ?? deposit.id})` : '' }}
-            </UButton>
+          <!-- Documentos reorganizado según la referencia de Meliza: fila «Solicitud» (Formulario, Proforma) y fila «Depósitos validados» (Dep. 1, Dep. 2…). -->
+          <div class="mt-3 rounded-lg border border-default px-3 py-2.5">
+            <div class="flex items-center justify-between gap-2">
+              <p class="flex items-center gap-2 text-sm font-bold text-highlighted"><UIcon name="i-lucide-file-text" class="size-4 text-primary" />Documentos</p>
+              <UBadge color="neutral" variant="soft" size="sm" :label="String(totalDocumentos)" />
+            </div>
+            <div class="mt-2 grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 text-xs">
+              <span class="flex items-center gap-1.5 text-muted"><span class="size-1.5 shrink-0 rounded-full bg-primary" />Solicitud</span>
+              <div class="flex flex-wrap gap-1.5">
+                <UButton size="xs" color="primary" variant="outline" icon="i-lucide-eye" :class="botonDocumento" @click="emit('view-form')">Formulario</UButton>
+                <UButton v-if="proveedor.proforma_url" size="xs" color="primary" variant="outline" icon="i-lucide-download" :class="botonDocumento" title="Descargar proforma" :to="proveedor.proforma_url" target="_blank" download>Proforma</UButton>
+              </div>
+              <template v-if="depositosValidados.length">
+                <span class="flex items-center gap-1.5 leading-tight text-muted"><span class="size-1.5 shrink-0 rounded-full bg-info" />Depósitos<br>validados</span>
+                <div class="flex flex-wrap gap-1.5">
+                  <UButton
+                    v-for="(deposit, index) in depositosValidados"
+                    :key="`doc-${deposit.id}`"
+                    size="xs"
+                    color="info"
+                    variant="outline"
+                    icon="i-lucide-eye"
+                    :class="[botonDocumento, 'bg-info/5']"
+                    :title="`Ver depósito ${index + 1} validado por Administración`"
+                    @click="emit('view-deposit', deposit.id)"
+                  >
+                    Dep. {{ index + 1 }}
+                  </UButton>
+                </div>
+              </template>
+            </div>
           </div>
         </UCard>
 
@@ -243,8 +255,8 @@
           <div v-for="(execution, index) in progress.executions" :key="`receipt-${execution.id}`" :class="fila">
             <UAvatar icon="i-lucide-file-text" size="sm" class="shrink-0 bg-primary/10" :ui="{ icon: 'text-primary' }" />
             <div class="min-w-0 flex-1">
-              <strong>{{ dosPagos ? `Constancia · pago ${index + 1}` : 'Constancia de pago' }}</strong>
-              <p class="text-xs text-muted">{{ execution.registered_by || responsablePago }}<template v-if="execution.registered_at"> · {{ fechaHora(execution.registered_at) }}</template></p>
+              <strong :class="tituloFila">{{ dosPagos ? `Constancia · pago ${index + 1}` : 'Constancia de pago' }}</strong>
+              <p class="text-xs text-muted">{{ responsablePago }}<template v-if="execution.registered_at"> · {{ fechaHora(execution.registered_at) }}</template></p>
             </div>
             <UButton v-if="execution.receipt_url" class="shrink-0 whitespace-nowrap" size="xs" color="success" variant="soft" :to="execution.receipt_url" target="_blank">{{ proveedor.moneda === 'RMB' ? '✓ Registrada' : '✓ Enviada' }}</UButton>
             <UBadge v-else color="warning" variant="soft" :label="proveedor.moneda === 'RMB' ? 'Falta registrarla' : 'Falta enviarla'" />
@@ -264,10 +276,10 @@
               </div>
             </template>
             <div v-else :class="[filaDecision, infoPendiente ? 'border-warning/40 bg-warning/5' : '']">
-              <div class="flex items-start gap-2">
+              <div class="flex flex-wrap items-start gap-2">
                 <UAvatar icon="i-lucide-chart-no-axes-column" size="sm" class="shrink-0 bg-primary/10" :ui="{ icon: 'text-primary' }" />
                 <div class="min-w-0 flex-1">
-                  <strong>{{ dosPagos ? 'Balance de cambio general' : 'Balance de cambio' }}</strong>
+                  <strong :class="tituloFila">{{ dosPagos ? 'Balance de cambio general' : 'Balance de cambio' }}</strong>
                   <p class="text-xs text-muted">{{ textoBalance }}</p>
                   <UBadge v-if="!readonly && balanceDocumento" class="mt-1" :color="balanceDocumento.desactualizado ? 'warning' : 'neutral'" variant="soft" size="sm">
                     {{ balanceDocumento.desactualizado ? 'Se regenerará' : `Paso ${balanceDocumento.paso} · al día` }}
@@ -294,9 +306,9 @@
 
           <!-- Diferencia de cambio -->
           <div v-if="diferenciaVista" :class="filaDecision">
-            <div class="flex items-start justify-between gap-2">
+            <div class="flex flex-wrap items-start justify-between gap-2">
               <UAvatar icon="i-lucide-circle-dollar-sign" size="sm" class="shrink-0 bg-primary/10" :ui="{ icon: 'text-primary' }" />
-              <div class="min-w-0 flex-1"><strong>Diferencia de cambio</strong><p class="text-xs text-muted">{{ diferenciaVista.text }}</p></div>
+              <div class="min-w-0 flex-1"><strong :class="tituloFila">Diferencia de cambio</strong><p class="text-xs text-muted">{{ diferenciaVista.text }}</p></div>
               <UBadge :color="diferenciaVista.color" variant="soft" :label="diferenciaVista.label" />
             </div>
             <UButton v-if="!readonly && progress.confirmation.can_register_exchange && !progress.confirmation.exchange_validating" class="mt-2" size="sm" color="primary" @click="differenceOpen = true">Registrar voucher de la diferencia</UButton>
@@ -617,12 +629,15 @@ const textoReembolso = computed(() => {
 
 // Tarjetas internas del seguimiento: mismo cuerpo compacto que la maqueta.
 const bloque = { body: 'p-4 sm:p-4' }
-const fila = 'mt-2 flex items-start justify-between gap-2 rounded-lg border border-default bg-default px-3 py-2.5 text-sm'
+const fila = 'mt-2 flex flex-wrap items-start justify-between gap-2 rounded-lg border border-default bg-default px-3 py-2.5 text-sm'
 // Las decisiones van a todo el ancho: en fila, sus botones se montan uno sobre otro.
 const filaDecision = 'mt-2 rounded-lg border border-default bg-default px-3 py-2.5 text-sm'
 // Registro de pago pendiente: recuadro punteado, como la maqueta.
 const filaPendiente = 'mt-2 rounded-lg border border-dashed border-accented bg-elevated/40 px-3 py-2 text-sm first:mt-0'
-const botonDocumento = 'w-full rounded-lg bg-info/5 font-semibold'
+// Título de cada fila de las tarjetas: más chico para que entre en una sola línea.
+const tituloFila = 'block whitespace-nowrap text-[13px] leading-snug'
+const botonDocumento = 'rounded-lg font-semibold'
+const totalDocumentos = computed(() => 1 + (props.proveedor.proforma_url ? 1 : 0) + depositosValidados.value.length)
 
 const deadlineText = computed(() => {
   const confirmation = progress.value?.confirmation
