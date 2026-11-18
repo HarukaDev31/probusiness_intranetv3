@@ -43,7 +43,13 @@ https://qaintranet.probusiness.pe, despliega solo ~2 min después del push a `qa
 ## Estado PRY-26-0003 (Pago a Proveedor + Almacén China)
 - Rama `soporte/PRY-26-0003-2` en front y back, mergeada a `qa`. PRs abiertos sin merge: front #166, back intranet_back#41 (van juntos; el back trae migraciones, elimina `china_clients`, crea el rol y reordena menús).
 - Ticket en la intranet: id 121 (chat de Meliza Valle). Al atender: responder con "[Soporte Bot] …" (POST `/soporte-ti/solicitudes/121/mensajes`) y marcar revisados
-  (`PATCH /api/soporte-ti/chats/{uuid}/mensajes/{id}/revisado` con `{"revisado":true}`). Atendido y marcado hasta ~2193; después de eso revisar mensajes nuevos.
+  (`PATCH /api/soporte-ti/chats/{uuid}/mensajes/{id}/revisado` con `{"revisado":true}`). Atendido y marcado hasta ~2239; después de eso revisar mensajes nuevos.
+- Ronda 18/11 (msgs 2194–2239): ícono en «Anular abono» (`useModal` acepta `icon`/`iconTone`), cabecera común `SupplierPaymentHeader.vue`
+  (Cotizaciones/Solicitudes con ícono naranja), Documentos en filas Solicitud / Depósitos validados, constancia con el área, y
+  «Pago a Proveedor» con un solo hijo = ítem único (Supplier Payment de Encargado China).
+- En `qa` el orden del sidebar viene del back (`panel-acceso/orden-menus`, commit e571ec7): **no** agregar reorders en `layouts/default.vue`.
+  Verificación antes de Pago a Proveedor (Patricia) se configura ahí para el cargo Administración.
+- El texto «Si abona total a Pro Business, se paga total al proveedor…» (msg 2195) no existe en ninguna rama; se pidió a Meliza recargar.
 - Hecho además: flujo observado/«No ingresó» (agregar voucher, levantar observación), editar cotización mientras no haya abonos (re-sincroniza la solicitud),
   formulario T-T (Ventas con formato del cliente, Ver, fecha de envío, mensaje de autorización), links al cliente de 12 caracteres, rol **Encargado China** (Armando: Operaciones, Clientes, Flujo de caja, Pago a Proveedor China; el almacén `ContenedorAlmacen` ya no los ve),
   cuenta bancaria de China actualizada (+Tax ID, USCC, correo), menú Pago a Proveedor para todos los Cotizador, comando `php artisan qa:limpiar-pruebas` (solo QA).
