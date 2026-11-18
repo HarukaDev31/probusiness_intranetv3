@@ -1,8 +1,8 @@
 <template>
   <div class="supplier-payment-requests md:p-6">
-    <header class="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <PageHeader title="Solicitudes" subtitle="Pago a proveedor" icon="i-heroicons-clipboard-document-list" :hide-back-button="true" align-subtitle />
-      <div v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" class="flex flex-wrap items-center gap-2">
+    <!-- Misma cabecera que el resto de Pago a Proveedor: icono naranja y a la altura de la tabla. -->
+    <SupplierPaymentHeader title="Solicitudes" icon="i-heroicons-clipboard-document-list">
+      <template v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" #actions>
         <!-- #1743: el plazo por defecto de los pendientes se ve y se cambia desde aquí. -->
         <UButton
           color="neutral"
@@ -14,8 +14,8 @@
           @click="abrirPlazoTareas"
         />
         <UButton label="Nueva cotización" icon="i-heroicons-plus" color="primary" class="h-11 font-normal" @click="nuevaCotizacion = true" />
-      </div>
-    </header>
+      </template>
+    </SupplierPaymentHeader>
     <SupplierPaymentWindow
       v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES"
       :open="plazoTareasAbierto"
@@ -234,6 +234,7 @@
 
       <DataTable
         class="pp-tabla"
+        :fill-viewport="false"
         filters-layout="inline"
         :data="allRows"
         :columns="columns"
@@ -274,6 +275,7 @@ import {
 import { useModal } from '~/composables/commons/useModal'
 import { useSupplierPaymentProfile } from '~/composables/pago-proveedor/useSupplierPaymentProfile'
 import NuevaCotizacionModal from '~/components/pago-proveedor/NuevaCotizacionModal.vue'
+import SupplierPaymentHeader from '~/components/pago-proveedor/SupplierPaymentHeader.vue'
 import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
 import { UBadge, UButton } from '#components'
 

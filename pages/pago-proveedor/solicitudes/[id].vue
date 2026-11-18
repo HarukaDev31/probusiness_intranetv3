@@ -440,7 +440,7 @@
       <SupplierPaymentWindow
         :open="datosAbiertoId !== null"
         :title="datosProveedor ? `${datosProveedor.moneda === 'RMB' ? 'Datos del proveedor' : 'Datos bancarios del proveedor (T-T)'} — ${datosProveedor.code_supplier}` : ''"
-        :subtitle="datosProveedor?.moneda !== 'RMB' && !ttSoloLectura ? 'Solo en casos excepcionales: quedan como borrador y el cliente debe autorizarlos antes de usarlos para el pago.' : ''"
+        :subtitle="datosProveedor?.moneda !== 'RMB' && !ttSoloLectura ? 'Solo en casos excepcionales: registra los datos que te envió el cliente. Quedan como borrador: el cliente debe revisarlos y autorizarlos antes de que se usen para el pago.' : ''"
         :hint="datosProveedor && !ttSoloLectura ? '¿Falta algún dato? Usa «Pedir datos del proveedor» en la barra de acciones de arriba.' : ''"
         @close="cerrarDatos"
       >
@@ -690,11 +690,11 @@
             <UButton size="xs" color="neutral" variant="outline" icon="i-lucide-eye" @click="abrirDatos(formularioAbierto, true)">Ver datos</UButton>
           </div>
           <div v-if="formularioAbierto.proforma_url" class="px-2 text-sm">
-            <p class="flex items-center gap-2 text-highlighted"><UIcon name="i-lucide-file-text" class="size-4 shrink-0 text-muted" />Proforma de la carga — {{ formularioAbierto.proforma_nombre || 'proforma' }}</p>
-            <div class="mt-2 flex gap-2">
-              <UButton size="sm" color="primary" variant="outline" icon="i-lucide-eye" title="Ver proforma" :to="formularioAbierto.proforma_url" target="_blank" />
-              <UButton size="sm" color="primary" variant="outline" icon="i-lucide-download" title="Descargar proforma" :to="formularioAbierto.proforma_url" target="_blank" download />
-            </div>
+            <!-- Ícono de descarga primero y a su costado el documento (observación de Meliza). -->
+            <p class="flex items-center gap-2 text-highlighted">
+              <UButton size="sm" color="primary" variant="outline" icon="i-lucide-download" title="Descargar proforma" class="shrink-0" :to="formularioAbierto.proforma_url" target="_blank" download />
+              <span class="min-w-0 break-words">Proforma de la carga — {{ formularioAbierto.proforma_nombre || 'proforma' }}</span>
+            </p>
           </div>
           <UCollapsible v-model:open="desgloseFormularioAbierto" class="px-2">
             <UButton color="info" variant="link" size="sm" class="px-0" :icon="desgloseFormularioAbierto ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'">Desglose del cobro</UButton>
@@ -1764,7 +1764,7 @@ function anularAbono(abonoItem: { id: number }) {
     } catch (error: any) {
       showError('Abono', error.message || 'No se pudo anular.')
     }
-  })
+  }, undefined, { icon: 'i-lucide-trash-2', iconTone: 'danger' })
 }
 
 function nombreProveedor(id: number) {

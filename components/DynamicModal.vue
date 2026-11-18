@@ -136,9 +136,10 @@ const iconComponents = {
   confirmation: 'i-heroicons-question-mark-circle'
 }
 
-const iconComponent = computed(() => iconComponents[props.modal?.type ?? 'info'])
+const iconComponent = computed(() => props.modal?.icon || iconComponents[props.modal?.type ?? 'info'])
 
 const iconContainerClasses = computed(() => {
+  if (props.modal?.iconTone === 'danger') return 'bg-red-100 dark:bg-red-900/30'
   const classes = {
     success: 'bg-green-100 dark:bg-green-900/30',
     error: 'bg-red-100 dark:bg-red-900/30',
@@ -150,6 +151,7 @@ const iconContainerClasses = computed(() => {
 })
 
 const iconClasses = computed(() => {
+  if (props.modal?.iconTone === 'danger') return 'text-red-600 dark:text-red-400'
   const classes = {
     success: 'text-green-600 dark:text-green-400',
     error: 'text-red-600 dark:text-red-400',

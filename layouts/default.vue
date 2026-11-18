@@ -410,10 +410,23 @@ const sidebarCategories = computed(() => {
     modules.splice(desiredPosition, 0, item)
   }
 
+  // PRY-26-0003: si «Pago a Proveedor» tiene una sola opción (Encargado China: solo «Pago a proveedores»),
+  // va como un único ítem del menú (Supplier Payment) sin desplegable, directo a esa pantalla.
+  modules.forEach((m: any, index: number) => {
+    const hijos = m.children ?? []
+    if (hijos.length !== 1 || hijos[0].children?.length || !String(hijos[0].route || '').startsWith('/pago-proveedor')) return
+    modules[index] = { ...m, route: hijos[0].route, notificationCount: m.notificationCount || hijos[0].notificationCount, children: [] }
+  })
+
   // PRY-26-0003: «Verificación» va primero y luego «Pago a Proveedor» (el orden de BD los deja al revés).
-  const verificacionIndex = modules.findIndex((m: any) => m.route === '/verificacion')
+  // La ruta puede venir en el padre o solo en su hijo (padre «Verificación» con un único hijo), y el nombre con o sin tilde.
+  const sinTildes = (texto: unknown) => String(texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase()
+  const esVerificacion = (m: any) =>
+    [m.route, ...(m.children ?? []).map((c: any) => c.route)].some((r: unknown) => /^\/verificacion(\/|$)/i.test(String(r || '')))
+    || sinTildes(m.name) === 'verificacion'
+  const verificacionIndex = modules.findIndex(esVerificacion)
   const pagoProveedorIndex = modules.findIndex((m: any) =>
-    (m.children ?? []).some((c: any) => String(c.route || '').startsWith('/pago-proveedor'))
+    [m.route, ...(m.children ?? []).map((c: any) => c.route)].some((r: unknown) => String(r || '').startsWith('/pago-proveedor'))
   )
   if (verificacionIndex !== -1 && pagoProveedorIndex !== -1 && pagoProveedorIndex < verificacionIndex) {
     const [item] = modules.splice(pagoProveedorIndex, 1)

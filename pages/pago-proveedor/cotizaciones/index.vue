@@ -1,12 +1,25 @@
 <template>
   <div class="md:p-6">
+    <!-- Misma cabecera que el resto de Pago a Proveedor: icono naranja y a la altura de la tabla. -->
+    <SupplierPaymentHeader title="Cotizaciones" icon="i-heroicons-banknotes">
+      <template #actions>
+        <UButton
+          size="md"
+          color="neutral"
+          variant="soft"
+          icon="i-heroicons-cog-6-tooth"
+          class="h-8 md:h-11"
+          @click="() => { vigenciaAbierta = true }"
+        >
+          Vigencia de cotizaciones
+        </UButton>
+        <UButton label="Nueva cotización" icon="i-heroicons-plus" color="primary" class="h-8 font-normal md:h-11" @click="() => { nuevaAbierta = true }" />
+      </template>
+    </SupplierPaymentHeader>
     <DataTable
       class="pp-tabla"
-      title="Cotizaciones"
-      subtitle="Pago a proveedor"
-      :show-title="true"
-      icon="i-heroicons-banknotes"
-      align-subtitle
+      :show-title="false"
+      :fill-viewport="false"
       :data="filas"
       :columns="columns"
       :loading="cargando"
@@ -19,9 +32,7 @@
       :show-body-top="true"
       :show-export="false"
       empty-state-message="No hay cotizaciones que coincidan con los filtros."
-      :show-new-button="true"
-      new-button-label="Nueva cotización"
-      :on-new-button-click="() => nuevaAbierta = true"
+      :show-new-button="false"
       @page-change="alCambiarPagina"
       @items-per-page-change="alCambiarTamano"
     >
@@ -41,18 +52,6 @@
             <UInput :model-value="filtros.resaltar_desde" type="number" min="0" placeholder="Sin definir" class="w-full md:w-40" @update:model-value="(v) => alFiltrar('resaltar_desde', v)" />
           </UFormField>
         </div>
-      </template>
-      <template #actions>
-        <UButton
-          size="md"
-          color="neutral"
-          variant="soft"
-          icon="i-heroicons-cog-6-tooth"
-          class="h-8 md:h-11"
-          @click="() => { vigenciaAbierta = true }"
-        >
-          Vigencia de cotizaciones
-        </UButton>
       </template>
     </DataTable>
     <p class="mt-2 text-xs text-muted">
@@ -186,6 +185,7 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 import { useSupplierPaymentQuotes } from '~/composables/pago-proveedor/useSupplierPaymentQuotes'
 import { UBadge, UButton } from '#components'
 import NuevaCotizacionModal from '~/components/pago-proveedor/NuevaCotizacionModal.vue'
+import SupplierPaymentHeader from '~/components/pago-proveedor/SupplierPaymentHeader.vue'
 import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
 
 const { showSuccess, showError, showConfirmation } = useModal()
