@@ -41,8 +41,14 @@ https://qaintranet.probusiness.pe, despliega solo ~2 min después del push a `qa
 - Una sesión nueva por ronda de observaciones; leer "Estado" abajo en vez de reconstruir el historial.
 
 ## Estado PRY-26-0003 (Pago a Proveedor + Almacén China)
-- Rama `soporte/PRY-26-0003-2` en front y back, en `qa`. PRs abiertos sin merge: front #166, back intranet_back#41 (van juntos; el back trae migraciones y elimina `china_clients`).
-- Ticket en la intranet: id 121 (chat de Meliza Valle). Al atender: responder en el chat con "[Soporte Bot] …" y marcar los mensajes como revisados
-  (`PATCH /api/soporte-ti/chats/{uuid}/mensajes/{id}/revisado`). Todas las observaciones hasta el mensaje 2160 están atendidas y marcadas.
-- Datos de prueba en QA: socio "[QA-PRUEBA] Socio Colombia" (org 6) e importador "[QA-PRUEBA] Importador Lima" (org 7), ambos con usuario (correo); operaciones/cobros "[QA-E2E …]".
-- Pendiente: tarifas de Pro Business (org 1) se configuran en Panel de acceso; e2e local `e2e/china-billing` desactualizado.
+- Rama `soporte/PRY-26-0003-2` en front y back, mergeada a `qa`. PRs abiertos sin merge: front #166, back intranet_back#41 (van juntos; el back trae migraciones, elimina `china_clients`, crea el rol y reordena menús).
+- Ticket en la intranet: id 121 (chat de Meliza Valle). Al atender: responder con "[Soporte Bot] …" (POST `/soporte-ti/solicitudes/121/mensajes`) y marcar revisados
+  (`PATCH /api/soporte-ti/chats/{uuid}/mensajes/{id}/revisado` con `{"revisado":true}`). Atendido y marcado hasta ~2193; después de eso revisar mensajes nuevos.
+- Hecho además: flujo observado/«No ingresó» (agregar voucher, levantar observación), editar cotización mientras no haya abonos (re-sincroniza la solicitud),
+  formulario T-T (Ventas con formato del cliente, Ver, fecha de envío, mensaje de autorización), links al cliente de 12 caracteres, rol **Encargado China** (Armando: Operaciones, Clientes, Flujo de caja, Pago a Proveedor China; el almacén `ContenedorAlmacen` ya no los ve),
+  cuenta bancaria de China actualizada (+Tax ID, USCC, correo), menú Pago a Proveedor para todos los Cotizador, comando `php artisan qa:limpiar-pruebas` (solo QA).
+- `useUserRole.currentRole` agrupa Encargado China como `ContenedorAlmacen` (pantallas); `displayRole` es el nombre real.
+- Pendientes: probar el formulario del cliente con un token real; confirmar que el back de QA arma los links con el beta de clientes (`APP_URL_CLIENTES`); correo del beneficiario `mvillegas@probusiness.pe` por confirmar;
+  el menú «Configuración» de la maqueta no existe; notificaciones websocket del rol Encargado China sin revisar; correr `qa:limpiar-pruebas --dry-run` en QA; PR qa→master del front de clientes para el formulario en prod.
+- Clientes (repo `probusiness-clientes-front`): el form T-T vive solo en `qa`; beta = https://qa--nimble-gumption-e62d9f.netlify.app (variable Netlify `NUXT_API_BASE_URL` en contexto branch-deploy → API de QA). NUNCA publicar un deploy de `qa` como producción (apunta a la API de QA).
+- Pruebas QA: las credenciales van solo por variables de entorno `QA_*` (nunca en el repo). Datos de prueba: socio org 6, importador org 7, «[QA-PRUEBA]» / «[QA-E2E]».
