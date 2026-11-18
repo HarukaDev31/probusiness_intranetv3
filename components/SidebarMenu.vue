@@ -249,7 +249,7 @@
           :class="['w-10 h-10']" />
         <div class="flex-1 min-w-0" v-if="!collapsed">
           <div class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ userName || uiLabels.user }}</div>
-          <div class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ currentRole || uiLabels.noRole }}</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ displayRole || currentRole || uiLabels.noRole }}</div>
         </div>
       </NuxtLink>
     </div>
@@ -302,6 +302,7 @@ const emit = defineEmits<Emits>()
 const {
   userData,
   currentRole,
+  displayRole,
   currentOrganizacionId,
   userName,
   userEmail,
