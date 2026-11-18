@@ -169,9 +169,11 @@ export class ConsolidadoService extends BaseService {
         return response
     }
 
-    static async getValidContainers(): Promise<any> {
+    /** Números de carga del año indicado (la numeración reinicia cada año); sin año, el actual. */
+    static async getValidContainers(anio?: number): Promise<any> {
         try {
-            const response = await this.apiCall<any>(`${this.baseUrl}/valid-containers`, {
+            const query = anio ? `?anio=${anio}` : ''
+            const response = await this.apiCall<any>(`${this.baseUrl}/valid-containers${query}`, {
                 method: 'GET'
             })
             return response
