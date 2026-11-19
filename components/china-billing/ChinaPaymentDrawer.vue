@@ -150,12 +150,12 @@
         </section>
 
         <!-- Eliminar -->
-        <section class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#f3c9c5] bg-[#fdf1f0] p-4">
-          <div class="flex flex-1 flex-col text-sm">
-            <span class="font-semibold text-highlighted">¿Registraste este pago por error?</span>
-            <span class="text-xs text-muted">{{ deleteText }}</span>
+        <section class="flex items-start justify-between gap-3 rounded-xl border border-[#f3c9c5] bg-[#fdf1f0] p-4">
+          <div class="min-w-0 flex-1 text-sm">
+            <p class="font-semibold text-highlighted">¿Registraste este pago por error?</p>
+            <p class="mt-2 text-xs leading-5 text-muted">{{ deleteText }}</p>
           </div>
-          <UButton color="error" variant="outline" icon="i-heroicons-trash" @click="remove">Eliminar pago</UButton>
+          <UButton class="shrink-0" color="error" variant="outline" icon="i-heroicons-trash" @click="remove">Eliminar pago</UButton>
         </section>
       </div>
     </template>
