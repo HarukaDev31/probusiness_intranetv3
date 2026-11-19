@@ -278,6 +278,8 @@ export interface ChinaClient {
   open_count: number
   closed_count: number
   can_delete: boolean
+  /** Pro Business (org 1): solo se editan sus tarifas. */
+  is_house?: boolean
   can_download_balance: boolean
   services?: ChinaClientService[]
 }

@@ -1,7 +1,7 @@
 <template>
   <UModal
     :open="open"
-    :title="client ? 'Editar cliente' : 'Nuevo cliente'"
+    :title="isHouse ? `Tarifas · ${client?.name}` : (client ? 'Editar cliente' : 'Nuevo cliente')"
     :dismissible="!saving"
     :ui="{ content: 'w-full max-w-4xl sm:max-w-4xl', header: 'border-t-[5px] border-t-primary-500', title: 'text-lg font-bold text-highlighted' }"
     @update:open="(value: boolean) => !value && emit('close')"
@@ -9,6 +9,8 @@
     <template #body>
       <!-- PRY-26-0003: cada cliente es una organización (socio o importador). -->
       <div class="grid gap-4 sm:grid-cols-3">
+        <!-- Pro Business (org 1) es la organización principal: aquí solo se editan sus tarifas. -->
+        <template v-if="!isHouse">
         <div class="sm:col-span-3">
           <p class="mb-1.5 text-sm font-semibold text-highlighted">Tipo de cliente</p>
           <div class="flex gap-2">
@@ -64,10 +66,11 @@
         >
           <UInput v-model="form.email" icon="i-heroicons-envelope" type="email" placeholder="correo@empresa.com" class="w-full" />
         </UFormField>
+        </template>
 
         <div v-if="isPartner" class="rounded-xl border border-primary/40 bg-primary/5 p-4 sm:col-span-3">
-          <p class="flex items-center gap-2 font-semibold text-highlighted"><UIcon name="i-heroicons-banknotes" class="size-6 text-primary" />Precios del socio</p>
-          <p class="mb-3 text-xs text-toned">Se cargan solos al crear una operación para este socio y se pueden modificar en cada una.</p>
+          <p class="flex items-center gap-2 font-semibold text-highlighted"><UIcon name="i-heroicons-banknotes" class="size-6 text-primary" />{{ isHouse ? 'Precios de Pro Business' : 'Precios del socio' }}</p>
+          <p class="mb-3 text-xs text-toned">Se cargan solos al crear una operación para {{ isHouse ? 'Pro Business' : 'este socio' }} y se pueden modificar en cada una.</p>
           <div class="grid gap-3 sm:grid-cols-2">
             <UFormField label="Consolidado · tarifa 1 (USD/CBM)" required>
               <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.rate_1" :min="0" :step="0.01" placeholder="Ingresa la tarifa" class="w-full" />
@@ -171,8 +174,25 @@ function fail(message: string) {
   errorMessage.value = message
 }
 
+const isHouse = computed(() => !!props.client?.is_house)
+
+/** Pro Business: solo se envían las tarifas (el back no toca su tipo, rol, menú ni usuarios). */
+async function saveHouseRates() {
+  if (!(Number(form.rate_1) > 0) || !(Number(form.rate_2) > 0)) return fail('Ingresa la tarifa 1 y la tarifa 2.')
+  saving.value = true
+  try {
+    await ChinaBillingService.updateClient(props.client!.id, { ...(props.client as any), rate_1: form.rate_1, rate_2: form.rate_2 } as ChinaClientPayload)
+    emit('saved')
+  } catch (error: any) {
+    errorMessage.value = error?.message || 'No se pudieron guardar las tarifas.'
+  } finally {
+    saving.value = false
+  }
+}
+
 async function save() {
   errorMessage.value = ''
+  if (isHouse.value) return saveHouseRates()
   if (!form.name.trim()) return fail('Ingresa el nombre del cliente.')
   if (!form.origin_country_id) return fail('Elige el país de origen del cliente.')
   if (!form.whatsapp.trim()) return fail('Ingresa el WhatsApp del cliente.')
