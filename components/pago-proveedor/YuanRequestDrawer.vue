@@ -95,21 +95,20 @@
                 </UFormField>
               </div>
               <YuanFilePick
-                :label="provider.needs_receipt ? 'Adjuntar constancia del pago' : 'Adjuntar voucher del pago (opcional)'"
+                :label="'Adjuntar constancia del pago (opcional)'"
                 accept="image/*,.pdf"
                 @pick="(file) => receipt = file"
               />
-              <p v-if="provider.needs_notice && !request.incomes.length" class="rounded-lg bg-warning/10 px-3.5 py-3 text-sm text-highlighted">
-                Primero registra el dinero recibido: el tipo de cambio real sale de ese ingreso.
+              <!-- #2266: se puede pagar antes de recibir el dinero del socio; la diferencia se calcula al registrar el ingreso. -->
+              <p v-if="provider.needs_notice && !request.incomes.length" class="rounded-lg bg-info/10 px-3.5 py-3 text-sm text-highlighted">
+                Aún no se registra el dinero del socio: el pago queda con el tipo de cambio pendiente y la diferencia se calcula cuando registres el ingreso.
               </p>
               <div v-if="provider.needs_notice" class="flex flex-col gap-2 rounded-lg bg-muted px-3.5 py-3">
                 <span class="text-sm font-semibold text-highlighted">Aviso al cliente</span>
                 <!-- eslint-disable-next-line vue/no-v-html -->
                 <pre class="whitespace-pre-wrap font-sans text-sm" v-html="whatsappHtml(notice) || 'Cargando aviso…'" />
-                <span class="text-xs text-muted">Sin importe y sin código de solicitud.</span>
-                <UButton class="self-start" color="neutral" variant="outline" :loading="saving" :disabled="!(yuanPaid > 0) || noticeReady" @click="sendNotice(provider.provider_id)">
-                  {{ noticeReady ? 'Aviso enviado' : 'Enviar aviso al cliente' }}
-                </UButton>
+                <!-- #2262/#2264: el aviso sale solo al confirmar el pago. -->
+                <span class="text-xs text-muted">Sin importe y sin código de solicitud. Se envía al cliente al confirmar el pago.</span>
               </div>
               <div class="flex justify-end gap-2">
                 <UButton color="neutral" variant="outline" @click="cancel">Cancelar</UButton>
@@ -299,8 +298,8 @@ async function startPay(provider: SupplierPaymentYuan) {
 
 function canPay(provider: SupplierPaymentYuan) {
   if (!(yuanPaid.value > 0)) return false
-  if (!provider.needs_notice) return true
-  return !!props.request?.incomes.length && !!receipt.value && noticeReady.value
+  // Constancia opcional (#2257), aviso automático (#2262) y sin exigir el ingreso del socio (#2266).
+  return !!provider
 }
 
 async function run(title: string, spinner: string, action: () => Promise<unknown>) {

@@ -42,9 +42,9 @@
       <div class="flex flex-col gap-3.5">
         <!-- h-auto/shrink-0: cada tarjeta mide lo que su contenido (antes se recortaban y el botón Editar quedaba oculto). -->
         <SupplierPaymentCard title="Datos registrados por Ventas" class="h-auto shrink-0">
-          <SupplierPaymentFact label="Cliente" :value="deposit.client_name || '—'" />
+          <SupplierPaymentFact label="Cliente" :value="formatNombrePropio(deposit.client_name) || '—'" />
           <SupplierPaymentFact label="N.° de consolidado" :value="deposit.consolidation || '—'" />
-          <SupplierPaymentFact label="Código de solicitud">
+          <SupplierPaymentFact label="N. orden">
             <span v-if="providerCodes.length" class="flex flex-col items-end gap-0.5">
               <a
                 v-for="code in providerCodes"
@@ -246,6 +246,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatNombrePropio } from '~/utils/formatters'
 import { computed, ref, watch } from 'vue'
 import SupplierPaymentCard from '~/components/pago-proveedor/SupplierPaymentCard.vue'
 import SupplierPaymentFact from '~/components/pago-proveedor/SupplierPaymentFact.vue'
@@ -344,7 +345,7 @@ const reasonLabel = computed(() => props.reasons.find((item) => item.code === pr
   || (props.deposit?.observation_reason === REASON_OTHER ? 'Otro motivo' : props.deposit?.observation_reason))
 const subtitle = computed(() => {
   if (!props.deposit) return ''
-  return `${props.deposit.client_name || 'Cliente'} · Consolidado ${props.deposit.consolidation || 'sin identificar'}`
+  return `${formatNombrePropio(props.deposit.client_name) || 'Cliente'} · Consolidado ${props.deposit.consolidation || 'sin identificar'}`
 })
 
 /** Pista del pie: solo al validar (igual que la maqueta); en estados cerrados el pie queda limpio. */

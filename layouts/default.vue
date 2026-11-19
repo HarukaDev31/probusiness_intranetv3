@@ -415,7 +415,8 @@ const sidebarCategories = computed(() => {
   modules.forEach((m: any, index: number) => {
     const hijos = m.children ?? []
     if (hijos.length !== 1 || hijos[0].children?.length || !String(hijos[0].route || '').startsWith('/pago-proveedor')) return
-    modules[index] = { ...m, route: hijos[0].route, notificationCount: m.notificationCount || hijos[0].notificationCount, children: [] }
+    // Con una sola opción, el ítem lleva el nombre de esa opción («Pago a proveedores», como la maqueta #2349).
+    modules[index] = { ...m, name: hijos[0].name || m.name, nameEn: hijos[0].nameEn || m.nameEn, route: hijos[0].route, notificationCount: m.notificationCount || hijos[0].notificationCount, children: [] }
   })
 
   // PRY-26-0003: «Verificación» va primero y luego «Pago a Proveedor» (el orden de BD los deja al revés).

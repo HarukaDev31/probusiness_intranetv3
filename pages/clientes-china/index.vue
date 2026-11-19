@@ -80,9 +80,9 @@ const { showConfirmation, showError } = useModal()
 
 // Pestaña «China»: socios e importadores. Una pestaña por organización: los clientes que registró.
 const tab = ref('china')
+// #2344: solo queda la pestaña «China» (las de cada organización ya no se muestran).
 const tabs = computed(() => [
-  { label: 'China', value: 'china', count: counts.value.all ?? 0 },
-  ...groups.value.map((group) => ({ label: group.label, value: `org-${group.organization_id}`, count: group.count }))
+  { label: 'China', value: 'china', count: counts.value.all ?? 0 }
 ])
 const activeGroup = computed(() => groups.value.find((group) => `org-${group.organization_id}` === tab.value) || null)
 

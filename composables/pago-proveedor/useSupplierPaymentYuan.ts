@@ -15,14 +15,15 @@ const emptyIndicators = (): SupplierPaymentYuanIndicators => ({
 
 export function useSupplierPaymentYuan() {
   const { showError } = useModal()
-  const bucket = ref<string>(YUAN_BUCKET.OPEN)
+  // #2338: el panel de estados arranca en «Todos».
+  const bucket = ref<string>('all')
   const search = ref('')
   const country = ref('')
   const dateFrom = ref('')
   const dateTo = ref('')
   const rows = ref<SupplierPaymentYuanRequest[]>([])
   const indicators = ref<SupplierPaymentYuanIndicators>(emptyIndicators())
-  const counts = ref({ open: 0, completed: 0 })
+  const counts = ref({ open: 0, completed: 0, all: 0, pending: 0, observed: 0, paid: 0 })
   const countries = ref<string[]>([])
   const organizations = ref<SupplierPaymentYuanOrganization[]>([])
   const suggestions = ref<SupplierPaymentYuanSuggestions>({ partners: {}, clients: {} })
@@ -59,6 +60,13 @@ export function useSupplierPaymentYuan() {
     { label: 'Abiertos', value: YUAN_BUCKET.OPEN, count: counts.value.open },
     { label: 'Completados', value: YUAN_BUCKET.COMPLETED, count: counts.value.completed }
   ])
+  // #2338/#2339: panel de estados de la maqueta (Todos / Pendiente / Observado / Pagado), que además filtra la lista.
+  const statusPanel = computed(() => [
+    { label: 'Todos', value: 'all', count: counts.value.all, dot: 'bg-gray-900' },
+    { label: 'Pendiente', value: 'pendiente', count: counts.value.pending, dot: 'bg-primary' },
+    { label: 'Observado', value: 'observed', count: counts.value.observed, dot: 'bg-error' },
+    { label: 'Pagado', value: 'paid', count: counts.value.paid, dot: 'bg-success' }
+  ])
 
   let lastRequest = 0
 
@@ -82,7 +90,11 @@ export function useSupplierPaymentYuan() {
       const nextCounts = response.counts || {}
       counts.value = {
         open: Number(nextCounts.open ?? nextCounts.pending ?? 0),
-        completed: Number(nextCounts.completed ?? nextCounts.paid ?? 0)
+        completed: Number(nextCounts.completed ?? nextCounts.paid ?? 0),
+        all: Number(nextCounts.all ?? 0),
+        pending: Number(nextCounts.pending_only ?? nextCounts.pending ?? 0),
+        observed: Number(nextCounts.observed ?? 0),
+        paid: Number(nextCounts.paid ?? nextCounts.completed ?? 0)
       }
       countries.value = response.countries || []
       organizations.value = response.organizations || []
@@ -141,6 +153,7 @@ export function useSupplierPaymentYuan() {
     selected,
     cards,
     tabs,
+    statusPanel,
     load,
     reload,
     changeBucket

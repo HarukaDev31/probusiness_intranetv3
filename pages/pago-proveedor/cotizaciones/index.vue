@@ -17,7 +17,7 @@
       </template>
     </SupplierPaymentHeader>
     <DataTable
-      class="pp-tabla"
+      class="pp-tabla pp-tabla-clientes"
       :show-title="false"
       :fill-viewport="false"
       :data="filas"
@@ -64,7 +64,7 @@
     <SupplierPaymentWindow
       :open="!!renovarCotizacion"
       title="Renovar cotización"
-      :subtitle="renovarCotizacion ? `${renovarCotizacion.cliente_nombre || ''} · Consolidado ${soloConsolidado(renovarCotizacion.consolidado)}` : ''"
+      :subtitle="renovarCotizacion ? `${formatNombrePropio(renovarCotizacion.cliente_nombre)} · Consolidado ${soloConsolidado(renovarCotizacion.consolidado)}` : ''"
       :code="renovarCotizacion?.codigo"
       @close="renovarCotizacion = null"
     >
@@ -82,7 +82,7 @@
     <SupplierPaymentWindow
       :open="!!solicitudCotizacion"
       title="Crear solicitud"
-      :subtitle="solicitudCotizacion ? `${solicitudCotizacion.cliente_nombre || ''} · Consolidado ${soloConsolidado(solicitudCotizacion.consolidado)}` : ''"
+      :subtitle="solicitudCotizacion ? `${formatNombrePropio(solicitudCotizacion.cliente_nombre)} · Consolidado ${soloConsolidado(solicitudCotizacion.consolidado)}` : ''"
       :code="solicitudCotizacion?.codigo"
       code-right
       @close="solicitudCotizacion = null"
@@ -136,10 +136,7 @@
       :subtitle="whatsappDestinatario ? `Destino: ${whatsappDestinatario}` : 'Vista previa del mensaje'"
       @close="cerrarWhatsapp"
     >
-      <UCard variant="subtle">
-        <!-- eslint-disable-next-line vue/no-v-html -->
-        <pre class="max-h-80 overflow-auto whitespace-pre-wrap font-sans text-sm text-highlighted" v-html="whatsappHtml(whatsappTexto)" />
-      </UCard>
+      <MensajeWhatsapp :texto="whatsappTexto" />
       <p v-if="whatsappNota" class="text-sm text-muted">{{ whatsappNota }}</p>
       <template #footer>
         <UButton color="neutral" variant="outline" @click="cerrarWhatsapp">Cerrar</UButton>
@@ -176,6 +173,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatNombrePropio } from '~/utils/formatters'
 import { computed, h, onMounted, ref, type VNode } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import type { FilterConfig } from '~/types/data-table'
@@ -185,6 +183,7 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 import { useSupplierPaymentQuotes } from '~/composables/pago-proveedor/useSupplierPaymentQuotes'
 import { UBadge, UButton } from '#components'
 import NuevaCotizacionModal from '~/components/pago-proveedor/NuevaCotizacionModal.vue'
+import MensajeWhatsapp from '~/components/pago-proveedor/MensajeWhatsapp.vue'
 import SupplierPaymentHeader from '~/components/pago-proveedor/SupplierPaymentHeader.vue'
 import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
 
@@ -211,7 +210,7 @@ const whatsappNota = ref('')
 const whatsappDestinatario = ref<string | null>(null)
 const whatsappPuedeEnviar = ref(false)
 const enviandoWhatsapp = ref(false)
-const whatsappTitulo = computed(() => whatsappCodigo.value ? `WhatsApp · ${whatsappCodigo.value}` : 'WhatsApp')
+const whatsappTitulo = computed(() => whatsappCodigo.value ? `Enviar resumen al cliente · ${whatsappCodigo.value}` : 'Enviar resumen al cliente')
 
 const filtrosConfig = computed<FilterConfig[]>(() => [
   {
@@ -288,7 +287,7 @@ const columns: TableColumn<PagoProveedorCotizacion>[] = [
   },
   { accessorKey: 'consolidado', header: 'Consolidado', cell: ({ row }) => h('span', { class: NEGRO }, soloConsolidado(row.original.consolidado)) },
   // Cliente y el detalle de cuotas pueden partirse en 2 líneas para que «Acciones» entre a 1920 px.
-  { accessorKey: 'cliente_nombre', header: 'Cliente', cell: ({ row }) => h('span', { class: `${NEGRO} block min-w-48 whitespace-normal` }, row.original.cliente_nombre || '—') },
+  { accessorKey: 'cliente_nombre', header: 'Cliente', cell: ({ row }) => h('span', { class: `${NEGRO} block min-w-48 whitespace-normal` }, formatNombrePropio(row.original.cliente_nombre) || '—') },
   { accessorKey: 'proveedores', header: 'Proveedores', cell: ({ row }) => supplierSummary(row.original) },
   {
     accessorKey: 'total_ahora',

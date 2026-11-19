@@ -8,13 +8,22 @@
         <p v-if="card.sub" class="text-xs text-muted">{{ card.sub }}</p>
       </UCard>
     </div>
-    <SupplierPaymentTabs
-      class="mb-4"
-      :model-value="bucket"
-      :items="tabs"
-      @update:model-value="changeBucket"
-    />
+    <!-- #2338/#2339: panel de estados como la maqueta del perfil de Armando; cada tarjeta filtra la lista. -->
+    <div class="mb-4 grid grid-cols-2 overflow-hidden rounded-xl border border-default bg-default sm:grid-cols-4">
+      <button
+        v-for="item in statusPanel"
+        :key="item.value"
+        type="button"
+        class="flex flex-col items-start gap-1 border-b-2 px-5 py-4 text-left transition-colors sm:border-l sm:border-l-default sm:first:border-l-0"
+        :class="bucket === item.value ? 'border-b-primary bg-primary/10' : 'border-b-transparent hover:bg-elevated'"
+        @click="changeBucket(item.value)"
+      >
+        <span class="flex items-center gap-2 text-sm text-highlighted"><span class="size-2 rounded-full" :class="item.dot" />{{ item.label }}</span>
+        <span class="text-2xl font-bold text-highlighted">{{ item.count }}</span>
+      </button>
+    </div>
     <DataTable
+      :fill-viewport="false"
       class="pp-tabla"
       sticky-last-column
       keep-spanish-headers
@@ -80,7 +89,6 @@
 <script setup lang="ts">
 import { computed, h, onBeforeUnmount, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import SupplierPaymentTabs from '~/components/pago-proveedor/SupplierPaymentTabs.vue'
 import YuanRequestDrawer from '~/components/pago-proveedor/YuanRequestDrawer.vue'
 import YuanRequestForm from '~/components/pago-proveedor/YuanRequestForm.vue'
 import { useSupplierPaymentYuan } from '~/composables/pago-proveedor/useSupplierPaymentYuan'
@@ -90,7 +98,7 @@ import { UBadge, UButton } from '#components'
 
 const {
   bucket, search, country, dateFrom, dateTo, rows, countries, organizations, suggestions, pagination, loading,
-  selectedId, selected, cards, tabs, load, reload, changeBucket
+  selectedId, selected, cards, tabs, statusPanel, load, reload, changeBucket
 } = useSupplierPaymentYuan()
 
 const formOpen = ref(false)

@@ -14,9 +14,17 @@
 
     <template v-else-if="solicitud">
       <header class="space-y-3">
-        <div class="flex flex-wrap items-center gap-3">
-          <h1 class="text-2xl font-bold tracking-tight text-highlighted">Orden N.° {{ solicitud.numero_orden }} — {{ solicitud.cliente_nombre }}</h1>
-          <UBadge v-if="solicitud.cod_cotizacion_cc" color="neutral" variant="subtle">Cotización C.C N.° {{ solicitud.cod_cotizacion_cc }}</UBadge>
+        <!-- #2305-#2307: el título es el cliente; debajo, la cotización C.C, la cotización P.P y la fecha de la solicitud.
+             El «N°» de las listas es solo su posición, por eso ya no va en el título. -->
+        <div>
+          <h1 class="text-2xl font-bold tracking-tight text-highlighted">{{ formatNombrePropio(solicitud.cliente_nombre) || 'Cliente' }}</h1>
+          <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+            <span v-if="solicitud.cod_cotizacion_cc" class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-gray-400" /><span class="text-muted">Cotización C.C</span> <strong class="text-highlighted">{{ solicitud.cod_cotizacion_cc }}</strong></span>
+            <span v-if="solicitud.cod_cotizacion_cc && solicitud.cotizacion_codigo" class="hidden h-px w-10 bg-gray-300 sm:block" />
+            <span v-if="solicitud.cotizacion_codigo" class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-gray-400" /><span class="text-muted">Cotización P.P</span> <strong class="text-highlighted">{{ solicitud.cotizacion_codigo }}</strong></span>
+            <span v-if="solicitud.creado_en" class="hidden h-px w-10 bg-gray-300 sm:block" />
+            <span v-if="solicitud.creado_en" class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-primary" /><span class="text-muted">Solicitud creada</span> <strong class="text-highlighted">{{ new Date(solicitud.creado_en).toLocaleDateString('es-PE') }}</strong></span>
+          </div>
         </div>
 
         <UCard>
@@ -24,20 +32,13 @@
             <UAvatar icon="i-lucide-user" size="md" class="bg-primary/10" :ui="{ icon: 'text-primary' }" />
             <h2 class="text-base font-bold text-highlighted">Datos del cliente</h2>
           </div>
-          <dl class="grid gap-3 sm:grid-cols-2">
-            <div><dt class="text-sm text-muted">N.° de consolidado</dt><dd class="font-bold text-highlighted">{{ solicitud.consolidado ? `Consolidado ${soloConsolidado(solicitud.consolidado)}` : '—' }}</dd></div>
-            <div><dt class="text-sm text-muted">Nombre y apellido</dt><dd class="font-bold text-highlighted">{{ solicitud.cliente_nombre || '—' }}</dd></div>
-            <div><dt class="text-sm text-muted">WhatsApp</dt><dd class="font-bold text-highlighted">{{ solicitud.cliente_whatsapp || '—' }}</dd></div>
-            <div><dt class="text-sm text-muted">Correo electrónico</dt><dd class="font-bold text-highlighted">{{ solicitud.cliente_correo || '—' }}</dd></div>
+          <dl class="grid gap-3 sm:grid-cols-3 sm:divide-x sm:divide-default">
+            <div><dt class="text-sm text-muted">N.° de consolidado</dt><dd class="mt-0.5 flex items-center gap-1.5 font-bold text-highlighted"><UIcon name="i-lucide-container" class="size-4 shrink-0 text-muted" />{{ solicitud.consolidado ? `Consolidado ${soloConsolidado(solicitud.consolidado)}` : '—' }}</dd></div>
+            <div class="sm:pl-4"><dt class="text-sm text-muted">WhatsApp</dt><dd class="mt-0.5 flex items-center gap-1.5 font-bold text-highlighted"><UIcon name="i-mdi-whatsapp" class="size-4 shrink-0 text-muted" />{{ solicitud.cliente_whatsapp || '—' }}</dd></div>
+            <div class="min-w-0 sm:pl-4"><dt class="text-sm text-muted">Correo electrónico</dt><dd class="mt-0.5 flex min-w-0 items-center gap-1.5 font-bold text-highlighted"><UIcon name="i-lucide-mail" class="size-4 shrink-0 text-muted" /><span class="truncate">{{ solicitud.cliente_correo || '—' }}</span></dd></div>
           </dl>
         </UCard>
 
-        <UAlert
-          v-if="solicitud.cotizacion_codigo"
-          color="info"
-          variant="subtle"
-          :description="`Creada desde la cotización ${solicitud.cotizacion_codigo}.`"
-        />
 
         <UCard>
           <div class="mb-4 flex items-center gap-3">
@@ -50,8 +51,9 @@
               <dd class="mt-1 text-3xl font-bold text-highlighted">${{ dinero(solicitud.total_cotizado || 0) }}</dd>
             </UCard>
             <UCard variant="subtle" :ui="{ body: 'p-4 sm:p-4' }">
-              <dt class="text-sm text-muted">Total abonado</dt>
-              <dd class="mt-1 text-3xl font-bold text-highlighted">${{ dinero(solicitud.total_abonado || 0) }}</dd>
+              <dt class="text-sm text-muted">Total abonado (validado)</dt>
+              <dd class="mt-1 text-3xl font-bold text-highlighted">${{ dinero(solicitud.total_validado ?? solicitud.total_abonado ?? 0) }}</dd>
+              <em v-if="(solicitud.por_validar || 0) > 0.004" class="mt-1 block text-sm font-semibold not-italic text-warning">+ ${{ dinero(solicitud.por_validar || 0) }} por validar</em>
             </UCard>
             <UCard
               variant="subtle"
@@ -61,7 +63,7 @@
               <!-- Naranja de la maqueta (primario), no el ámbar de warning. -->
               <dt class="text-sm" :class="(solicitud.saldo_pendiente || 0) > 0.004 ? 'text-primary' : 'text-success'">Saldo pendiente</dt>
               <dd class="mt-1 text-3xl font-bold" :class="(solicitud.saldo_pendiente || 0) > 0.004 ? 'text-primary' : 'text-success'">${{ dinero(solicitud.saldo_pendiente || 0) }}</dd>
-              <em class="mt-1 block text-sm font-semibold not-italic" :class="(solicitud.saldo_pendiente || 0) > 0.004 ? 'text-primary-800' : 'text-success'">{{ (solicitud.saldo_pendiente || 0) > 0.004 ? 'Falta abonar' : '✓ Cubierto' }}</em>
+              <em class="mt-1 block text-sm font-semibold not-italic" :class="(solicitud.saldo_pendiente || 0) > 0.004 ? 'text-primary-800' : 'text-success'">{{ textoSaldo }}</em>
             </UCard>
             <UCard v-if="(solicitud.excedente || 0) > 0.004" variant="subtle" class="bg-info/10 ring-info/30" :ui="{ body: 'p-4 sm:p-4' }">
               <dt class="text-sm text-info">Excedente</dt>
@@ -547,12 +549,8 @@
             v-model="candidatosElegidos"
             :items="candidatosDatos.map(candidato => ({ label: `${candidato.titulo} · ${candidato.moneda}`, value: String(candidato.id) }))"
           />
-          <UCard variant="subtle">
-            <p v-if="!candidatosElegidos.length" class="text-sm text-muted">Elige al menos un proveedor para ver el mensaje.</p>
-            <p v-else-if="pedidoDatos.cargando && !pedidoDatos.texto" class="text-sm text-muted">Preparando mensaje…</p>
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <pre v-else class="max-h-80 overflow-auto whitespace-pre-wrap font-sans text-sm text-highlighted" :class="pedidoDatos.cargando ? 'opacity-60' : ''" v-html="whatsappHtml(pedidoDatos.texto)" />
-          </UCard>
+          <p v-if="!candidatosElegidos.length" class="text-sm text-muted">Elige al menos un proveedor para ver el mensaje.</p>
+          <MensajeWhatsapp v-else :texto="pedidoDatos.texto" :cargando="pedidoDatos.cargando" />
           <p v-if="pedidoDatos.nota && candidatosElegidos.length" class="text-sm text-muted">{{ pedidoDatos.nota }}</p>
         </template>
         <template #footer>
@@ -734,7 +732,7 @@
             <SupplierPaymentCard title="Datos registrados por Ventas" class="h-auto shrink-0">
               <SupplierPaymentFact label="Cliente" :value="solicitud.cliente_nombre || '—'" />
               <SupplierPaymentFact label="N.° de consolidado" :value="solicitud.consolidado || '—'" />
-              <SupplierPaymentFact label="Código de solicitud" :value="depositoAbierto.proveedor.codigo_solicitud || '—'" />
+              <SupplierPaymentFact label="N. orden" :value="depositoAbierto.proveedor.codigo_solicitud || '—'" />
               <SupplierPaymentFact label="Banco" :value="depositoAbierto.abono.banco.toUpperCase()" />
               <SupplierPaymentFact label="Fecha del depósito" :value="fechaCorta(depositoAbierto.abono.fecha_pago)" />
               <SupplierPaymentFact label="N.° de operación" :value="depositoAbierto.abono.numero_operacion || '—'" />
@@ -794,7 +792,7 @@
       <SupplierPaymentWindow
         :open="!!vistaPrevia"
         :width-class="vistaPrevia?.tipo === 'cuentas' ? 'max-w-md sm:max-w-md' : ''"
-        :title="vistaPrevia?.tipo === 'resumen' && solicitud.cotizacion_codigo ? `WhatsApp · ${solicitud.cotizacion_codigo}` : (vistaPrevia?.enlace ? 'Vista previa — mensaje al cliente' : 'Vista previa de WhatsApp')"
+        :title="tituloVistaPrevia"
         :subtitle="solicitud.cliente_whatsapp ? `Destino: ${solicitud.cliente_whatsapp}` : ''"
         @close="cerrarVistaPrevia"
       >
@@ -806,10 +804,7 @@
             alt="Cuentas bancarias oficiales"
             class="max-h-80 w-full rounded-lg border border-default bg-elevated object-contain"
           >
-          <UCard variant="subtle">
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <pre class="max-h-80 overflow-auto whitespace-pre-wrap font-sans text-sm text-highlighted" v-html="whatsappHtml(vistaPrevia.texto)" />
-          </UCard>
+          <MensajeWhatsapp :texto="vistaPrevia.texto" />
           <p v-if="vistaPrevia.nota" class="text-sm text-muted">{{ vistaPrevia.nota }}</p>
         </template>
         <template #footer>
@@ -822,6 +817,8 @@
           </template>
           <template v-else-if="vistaPrevia?.tipo === 'cuentas'">
             <UButton color="neutral" variant="outline" @click="cerrarVistaPrevia">Cerrar</UButton>
+            <!-- #2289: la imagen oficial de cuentas también se puede descargar. -->
+            <UButton v-if="vistaPrevia.imagen" color="neutral" variant="outline" icon="i-lucide-download" :to="vistaPrevia.imagen" target="_blank" download="cuentas-bancarias.jpg">Descargar imagen</UButton>
             <UButton color="success" icon="i-heroicons-paper-airplane" :loading="enviandoCuentas" :disabled="!vistaPrevia.puede_enviar" @click="enviarCuentasWhatsapp">
               Enviar por WhatsApp
             </UButton>
@@ -829,6 +826,10 @@
           <template v-else-if="vistaPrevia?.enlace">
             <UButton color="neutral" variant="outline" @click="cerrarVistaPrevia">Cerrar</UButton>
             <UButton color="primary" variant="outline" icon="i-lucide-external-link" :to="vistaPrevia.enlace" target="_blank" rel="noopener">Abrir como cliente</UButton>
+            <!-- #2251/#2293: el mensaje del formulario (o de autorización) también se envía desde aquí. -->
+            <UButton v-if="vistaPrevia.proveedorId" color="success" icon="i-heroicons-paper-airplane" :loading="enviandoFormulario" :disabled="!solicitud.cliente_whatsapp" @click="enviarMensajeFormulario">
+              Enviar por WhatsApp
+            </UButton>
           </template>
           <UButton v-else color="neutral" variant="soft" @click="cerrarVistaPrevia">Cerrar</UButton>
         </template>
@@ -845,8 +846,9 @@ import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useSupplierPaymentProfile } from '~/composables/pago-proveedor/useSupplierPaymentProfile'
 import { useSupplierPaymentRequest } from '~/composables/pago-proveedor/useSupplierPaymentRequest'
-import { whatsappHtml } from '~/utils/whatsappFormat'
 import FormularioBancario from '~/components/pago-proveedor/FormularioBancario.vue'
+import MensajeWhatsapp from '~/components/pago-proveedor/MensajeWhatsapp.vue'
+import { formatNombrePropio } from '~/utils/formatters'
 import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
 import SupplierPaymentProgress from '~/components/pago-proveedor/SupplierPaymentProgress.vue'
 import VoucherViewer from '~/components/pago-proveedor/VoucherViewer.vue'
@@ -863,6 +865,7 @@ interface VistaPrevia {
   imagen?: string
   tipo?: string
   puede_enviar?: boolean
+  proveedorId?: number
 }
 
 const route = useRoute()
@@ -908,6 +911,26 @@ const desgloseFormularioAbierto = ref(true)
 const depositoAbierto = ref<{ proveedor: PagoProveedorSolicitudProveedor; abono: PagoProveedorAbono; registrado: number | null } | null>(null)
 const { slaText, slaOverdue } = useSlaCountdown()
 const vistaPrevia = ref<VistaPrevia | null>(null)
+const enviandoFormulario = ref(false)
+// Títulos de las ventanas de mensajes (#2244, #2246, #2248).
+// #2271: si lo que falta es la diferencia de cambio, se dice así.
+const textoSaldo = computed(() => {
+  const saldo = solicitud.value?.saldo_pendiente || 0
+  if (saldo <= 0.004) return '✓ Cubierto'
+  const diferencia = solicitud.value?.diferencia_por_cobrar || 0
+  if (diferencia > 0.004 && Math.abs(diferencia - saldo) <= 0.004) return `Faltan $${dinero(diferencia)} de diferencia de cambio`
+  if (diferencia > 0.004) return `Falta abonar · incluye $${dinero(diferencia)} de diferencia de cambio`
+  return 'Falta abonar'
+})
+const tituloVistaPrevia = computed(() => {
+  const vista = vistaPrevia.value
+  if (!vista) return ''
+  if (vista.tipo === 'resumen') return solicitud.value?.cotizacion_codigo ? `Enviar resumen al cliente (Actualizado) · ${solicitud.value.cotizacion_codigo}` : 'Enviar resumen al cliente (Actualizado)'
+  if (vista.tipo === 'cuentas') return 'Enviar cuentas bancarias'
+  if (vista.tipo === 'autorizacion') return 'Enviar mensaje de Autorización'
+  if (vista.tipo === 'formulario') return 'Enviar formulario de datos bancarios'
+  return 'Vista previa de WhatsApp'
+})
 const continuacion = reactive<Record<number, number[]>>({})
 const abono = reactive({
   importe: 0,
@@ -1179,7 +1202,7 @@ function abonoConDetalle(item: PagoProveedorAbono) {
 
 function etiquetaDatos(estado: string, enviadoEl?: string | null) {
   const fecha = enviadoEl ? ` ${new Date(enviadoEl).toLocaleDateString('es-PE')}` : ''
-  return { pendiente: 'Sin enviar', enviado: `Formulario enviado${fecha} · esperando al cliente`, por_autorizar: 'Por autorizar', recibido: 'Recibido ✓' }[estado] || estado
+  return { pendiente: 'Sin enviar', enviado: `Formulario enviado${fecha} · esperando al cliente`, por_autorizar: `Por autorizar${fecha ? ` · enviado${fecha}` : ''} · esperando al cliente`, recibido: 'Recibido ✓' }[estado] || estado
 }
 
 function textoExcedente(abonoItem: PagoProveedorAbono) {
@@ -1401,7 +1424,7 @@ function eliminarDatosRmb(proveedor: PagoProveedorSolicitudProveedor) {
 async function enviarFormulario(proveedor: PagoProveedorSolicitudProveedor) {
   try {
     const respuesta = await withSpinner(() => api.sendForm(solicitud.value!.id, proveedor.id), 'Preparando enlace…')
-    vistaPrevia.value = respuesta.data
+    vistaPrevia.value = { ...respuesta.data, tipo: 'formulario', proveedorId: proveedor.id }
     aplicar(respuesta.data.solicitud)
   } catch (error: any) {
     showError('Formulario T-T', error.message || 'No se pudo preparar el enlace.')
@@ -1426,10 +1449,26 @@ async function llenarTt(proveedor: PagoProveedorSolicitudProveedor) {
 async function pedirValidacion(proveedor: PagoProveedorSolicitudProveedor) {
   try {
     const respuesta = await withSpinner(() => api.requestValidation(solicitud.value!.id, proveedor.id), 'Preparando mensaje…')
-    vistaPrevia.value = respuesta.data
+    vistaPrevia.value = { ...respuesta.data, tipo: 'autorizacion', proveedorId: proveedor.id }
     aplicar(respuesta.data.solicitud)
   } catch (error: any) {
     showError('Validación', error.message || 'No se pudo pedir la validación.')
+  }
+}
+
+async function enviarMensajeFormulario() {
+  const proveedorId = vistaPrevia.value?.proveedorId
+  if (!solicitud.value || !proveedorId) return
+  enviandoFormulario.value = true
+  try {
+    const respuesta = await withSpinner(() => api.sendFormMessage(solicitud.value!.id, proveedorId), 'Enviando WhatsApp…')
+    vistaPrevia.value = null
+    aplicar(respuesta.data.solicitud)
+    showSuccess('WhatsApp enviado', respuesta.data.nota || 'Mensaje enviado al cliente.')
+  } catch (error: any) {
+    showError('WhatsApp', error?.data?.message || error.message || 'No se pudo enviar el mensaje.')
+  } finally {
+    enviandoFormulario.value = false
   }
 }
 
@@ -1610,7 +1649,7 @@ function filasFormulario(proveedor: PagoProveedorSolicitudProveedor) {
     { label: 'Código de proveedor', value: proveedor.code_supplier || '—' },
     { label: 'Proveedor', value: proveedor.nombre_proveedor || '—' },
     { label: 'Producto', value: proveedor.producto || '—' },
-    { label: 'Código de solicitud', value: proveedor.codigo_solicitud || '—' },
+    { label: 'N. orden', value: proveedor.codigo_solicitud || '—' },
     { label: 'Moneda / tipo de pago', value: rmbProveedor ? 'RMB / Transferencia' : 'USD / T-T' },
     { label: 'Modalidad de abono del cliente', value: proveedor.modalidad_abono === 'fraccionado' ? '2 cuotas' : 'Total' },
     { label: 'Modalidad de pago al proveedor', value: proveedor.modalidad_pago === 'fraccionado' ? '2 pagos' : 'Total' },

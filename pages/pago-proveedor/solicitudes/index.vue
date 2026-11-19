@@ -220,7 +220,7 @@
 
     <div v-else class="space-y-4">
       <form class="grid w-full gap-3 rounded-xl border border-default bg-default p-4 lg:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto_auto]" @submit.prevent="aplicarFiltros">
-        <UFormField label="Buscar cliente o código de solicitud" :ui="{ label: 'text-[11px] font-semibold uppercase text-muted' }">
+        <UFormField label="Buscar cliente o N. orden" :ui="{ label: 'text-[11px] font-semibold uppercase text-muted' }">
           <UInput v-model="borrador.search" icon="i-heroicons-magnifying-glass" placeholder="Ej: María Torres, PE¥01" class="w-full" />
         </UFormField>
         <UFormField v-for="filtro in filtrosConfig" :key="filtro.key" :label="filtro.label" :ui="{ label: 'text-[11px] font-semibold uppercase text-muted' }">
@@ -233,7 +233,7 @@
       </form>
 
       <DataTable
-        class="pp-tabla"
+        class="pp-tabla pp-tabla-clientes"
         :fill-viewport="false"
         filters-layout="inline"
         :data="allRows"
@@ -276,6 +276,7 @@ import { useModal } from '~/composables/commons/useModal'
 import { useSupplierPaymentProfile } from '~/composables/pago-proveedor/useSupplierPaymentProfile'
 import NuevaCotizacionModal from '~/components/pago-proveedor/NuevaCotizacionModal.vue'
 import SupplierPaymentHeader from '~/components/pago-proveedor/SupplierPaymentHeader.vue'
+import { formatNombrePropio } from '~/utils/formatters'
 import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
 import { UBadge, UButton } from '#components'
 
@@ -312,11 +313,12 @@ const filtros = ref<Record<string, string>>({
 })
 const borrador = ref<Record<string, string>>({ search: '', ...filtros.value })
 
-const lines = computed<RequestLine[]>(() => requests.value.flatMap((request) => (request.providers || []).map((provider, groupIndex) => ({
+// #2312: «N°» es solo la posición en la lista (la más antigua es 1); el número de la solicitud va en «N. orden».
+const lines = computed<RequestLine[]>(() => requests.value.flatMap((request, requestIndex) => (request.providers || []).map((provider, groupIndex) => ({
   groupIndex,
   groupSize: request.providers.length,
   requestId: request.id,
-  orderNumber: request.numero_orden,
+  orderNumber: (pagination.value.total || requests.value.length) - ((pagination.value.current_page - 1) * pagination.value.per_page + requestIndex),
   clientName: request.cliente_nombre,
   consolidation: request.consolidado,
   createdAt: request.creado_en,
@@ -744,22 +746,27 @@ const orderCell = {
   class: { td: (cell: { row: { original: RequestLine } }) => cell.row.original.groupIndex ? 'hidden' : '' }
 }
 
+// Celdas de proveedor: entre proveedores de la misma solicitud la línea es fina; entre clientes, gruesa (#2335).
+const providerCell = {
+  class: { td: (cell: { row: { original: RequestLine } }) => cell.row.original.groupIndex ? 'pp-subfila' : '' }
+}
+
 const columns: TableColumn<RequestLine>[] = [
-  { accessorKey: 'orderNumber', header: 'N.°', meta: orderCell },
+  { accessorKey: 'orderNumber', header: 'N°', meta: orderCell },
   { accessorKey: 'createdAt', header: 'Fecha', meta: orderCell, cell: ({ row }) => row.original.createdAt ? new Date(row.original.createdAt).toLocaleDateString('es-PE') : '—' },
   { accessorKey: 'consolidation', header: 'Consolidado', meta: orderCell, cell: ({ row }) => consolidadoNumero(row.original.consolidation) || '—' },
-  { accessorKey: 'clientName', header: 'Cliente', meta: orderCell, cell: ({ row }) => h('span', { class: 'block w-32 whitespace-normal' }, row.original.clientName) },
-  { accessorKey: 'provider', header: 'Proveedor', cell: ({ row }) => row.original.provider.supplier_code || 'Sin código' },
-  { accessorKey: 'requestCode', header: 'Código de solicitud', cell: ({ row }) => row.original.provider.request_code || '—' },
-  { accessorKey: 'paymentShape', header: 'Forma de pago', cell: ({ row }) => formaDePago(row.original.provider) },
-  { accessorKey: 'paymentType', header: 'Tipo de pago', cell: ({ row }) => paymentLabel(row.original.provider) },
-  { accessorKey: 'stage', header: 'Etapa', cell: ({ row }) => pill(`${row.original.provider.stage}. ${stageLabel(row.original.provider.stage)}`, 'info') },
-  { accessorKey: 'status', header: 'Estado', cell: ({ row }) => h('div', { class: 'flex flex-col items-start gap-0.5' }, [
+  { accessorKey: 'clientName', header: 'Cliente', meta: orderCell, cell: ({ row }) => h('span', { class: 'block w-32 whitespace-normal' }, formatNombrePropio(row.original.clientName)) },
+  { accessorKey: 'provider', header: 'Proveedor', meta: providerCell, cell: ({ row }) => row.original.provider.supplier_code || 'Sin código' },
+  { accessorKey: 'requestCode', header: 'N. orden', meta: providerCell, cell: ({ row }) => row.original.provider.request_code ? h('span', { class: 'font-bold' }, row.original.provider.request_code) : '—' },
+  { accessorKey: 'paymentShape', header: 'Forma de pago', meta: providerCell, cell: ({ row }) => formaDePago(row.original.provider) },
+  { accessorKey: 'paymentType', header: 'Tipo de pago', meta: providerCell, cell: ({ row }) => paymentLabel(row.original.provider) },
+  { accessorKey: 'stage', header: 'Etapa', meta: providerCell, cell: ({ row }) => pill(`${row.original.provider.stage}. ${stageLabel(row.original.provider.stage)}`, 'info') },
+  { accessorKey: 'status', header: 'Estado', meta: providerCell, cell: ({ row }) => h('div', { class: 'flex flex-col items-start gap-0.5' }, [
     pill(providerStatusLabel(row.original.provider), providerStatusColor(row.original.provider)),
     // #2134: el motivo de la observación bajo el estado («No ingresó»).
     row.original.provider.deposit_observation_label ? h('span', { class: 'text-[11px] text-muted' }, row.original.provider.deposit_observation_label) : null
   ]) },
-  { accessorKey: 'owner', header: 'Responsable', cell: ({ row }) => responsableEtapa(row.original.provider) },
+  { accessorKey: 'owner', header: 'Responsable', meta: providerCell, cell: ({ row }) => responsableEtapa(row.original.provider) },
   {
     accessorKey: 'actions',
     header: 'Acciones',
