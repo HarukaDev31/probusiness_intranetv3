@@ -45,7 +45,7 @@
             <UButton size="xs" color="error" variant="ghost" icon="i-heroicons-trash" aria-label="Eliminar pago" @click="removePayment(item)" />
           </div>
           <div v-for="credit in operation.credits" :key="credit.id" class="flex items-center gap-3 border-b border-default py-2.5 text-sm">
-            <span class="flex flex-1 flex-col"><span class="font-semibold">Saldo a favor</span><span class="text-xs text-muted">Aplicado a esta operación</span></span>
+            <span class="flex flex-1 flex-col"><span class="font-semibold">Saldo a favor</span><span class="text-xs text-muted">{{ creditOrigin(credit) }}</span></span>
             <span class="font-semibold">{{ usd(credit.amount) }}</span>
             <span class="rounded-full px-2.5 py-0.5 text-xs font-medium" :class="CHINA_STATUS_PILL[CHINA_STATUS.CONFIRMED]">{{ CHINA_STATUS_LABEL[CHINA_STATUS.CONFIRMED] }}</span>
             <UButton size="xs" color="error" variant="ghost" icon="i-heroicons-trash" aria-label="Quitar saldo a favor" @click="undoCredit(credit.id)" />
@@ -56,12 +56,12 @@
 
         <UCard v-if="creditBalance > 0 && (operation.pending || 0) > 0" class="ring-1 ring-success/40" :ui="{ root: 'bg-success/5', body: 'p-4 sm:p-4' }">
           <div class="mb-2 flex items-center justify-between gap-3 text-sm">
-            <span class="font-semibold text-success">Aplicar saldo a favor</span>
+            <span class="font-semibold text-highlighted">Aplicar saldo a favor</span>
             <span class="font-semibold text-success">{{ usd(creditBalance) }} disponible</span>
           </div>
-          <div class="flex gap-2">
+          <div class="flex gap-2" @input="onCreditTyping" @focusout="onCreditBlur">
             <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="creditAmount" :min="0" :max="creditMax" :step="0.01" class="flex-1" />
-            <UButton color="primary" :loading="busy" :disabled="!creditAmount || creditAmount > creditMax" @click="applyCredit">Aplicar</UButton>
+            <UButton color="primary" :loading="busy" :disabled="!liveCredit || liveCredit > creditMax" @click="applyCredit">Aplicar</UButton>
           </div>
           <p class="mt-1 text-xs text-muted">Máximo {{ usd(creditMax) }} para esta operación.</p>
         </UCard>
@@ -89,6 +89,9 @@ const emit = defineEmits<{
 const { showError, showConfirmation } = useModal()
 const busy = ref(false)
 const creditAmount = ref<number | null>(null)
+const creditTyping = ref(false)
+const creditDraft = ref<number | null>(null)
+const liveCredit = computed(() => creditTyping.value ? creditDraft.value : creditAmount.value)
 
 function sameClient(row: ChinaOperation, operation: ChinaOperation) {
   if (Number(row.organization.id) === Number(operation.organization.id)) return true
@@ -108,7 +111,39 @@ const creditBalance = computed(() => {
 })
 const creditMax = computed(() => Math.min(creditBalance.value, props.operation?.pending || 0))
 
-watch(() => props.operation?.id, () => { creditAmount.value = null })
+watch(() => props.operation?.id, () => {
+  creditAmount.value = null
+  creditTyping.value = false
+  creditDraft.value = null
+})
+
+function parseTyped(raw: string): number | null {
+  const text = raw.replace(/\s/g, '').replace(',', '.')
+  if (text === '' || text === '-' || text === '.' || text === '-.') return null
+  const value = Number(text)
+  return Number.isFinite(value) ? value : null
+}
+
+function onCreditTyping(event: Event) {
+  const target = event.target
+  if (!(target instanceof HTMLInputElement)) return
+  creditTyping.value = true
+  creditDraft.value = parseTyped(target.value)
+}
+
+function onCreditBlur() {
+  creditTyping.value = false
+  creditDraft.value = null
+}
+
+function creditOrigin(credit: { payment_code?: string | null; applied_on?: string | null }) {
+  if (!credit.payment_code) return 'Aplicado a esta operación'
+  if (!credit.applied_on) return `Desde ${credit.payment_code}`
+  const [year, month, day] = credit.applied_on.split('-')
+  const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+  const label = year ? `${Number(day)} ${months[Number(month) - 1] || ''}` : ''
+  return `Desde ${credit.payment_code}${label ? ` · ${label}` : ''}`
+}
 
 async function run(action: () => Promise<unknown>) {
   busy.value = true
@@ -123,10 +158,13 @@ async function run(action: () => Promise<unknown>) {
 }
 
 async function applyCredit() {
-  if (!creditAmount.value) return
+  if (creditTyping.value && creditDraft.value !== null) creditAmount.value = creditDraft.value
+  if (!liveCredit.value) return
   await run(async () => {
-    await ChinaBillingService.applyCredit(props.operation!.id!, creditAmount.value!)
+    await ChinaBillingService.applyCredit(props.operation!.id!, liveCredit.value!)
     creditAmount.value = null
+    creditTyping.value = false
+    creditDraft.value = null
   })
 }
 
