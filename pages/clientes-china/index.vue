@@ -142,7 +142,7 @@ const columns: TableColumn<ChinaClient>[] = [
     iconButton('i-heroicons-pencil-square', row.original.is_house ? 'Editar tarifas' : 'Editar', () => openForm(row.original)),
     iconButton(
       'i-heroicons-trash',
-      row.original.can_delete ? 'Eliminar' : row.original.is_house ? 'Pro Business no se puede eliminar' : (row.original.type === 'partner' ? 'Los socios se administran desde su organización' : 'Tiene operaciones: no se puede eliminar'),
+      row.original.can_delete ? 'Eliminar' : 'Pro Business no se puede eliminar',
       () => remove(row.original),
       'text-toned hover:bg-error/10 hover:text-error',
       !row.original.can_delete
@@ -168,7 +168,12 @@ function openBalance(client: ChinaClient) {
 }
 
 function remove(client: ChinaClient) {
-  showConfirmation(`¿Eliminar a ${client.name}?`, 'Esta acción no se puede deshacer.', async () => {
+  // Baja lógica: el cliente deja de ser facturable; su organización, usuario, operaciones y pagos se mantienen.
+  const tipo = client.type === 'partner' ? 'socio' : 'importador'
+  showConfirmation(
+    `¿Eliminar al ${tipo} ${client.name}?`,
+    `Dejará de aparecer en Clientes y ya no se le podrán crear operaciones. Sus operaciones, pagos y su acceso a la plataforma se mantienen.`,
+    async () => {
     try {
       await ChinaBillingService.deleteClient(client.id)
       load()
