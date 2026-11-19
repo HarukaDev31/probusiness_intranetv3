@@ -54,10 +54,10 @@
           <UButton v-if="(operation.pending || 0) > 0" class="mt-3 w-full justify-center" color="primary" @click="emit('register-payment', operation)">Registrar pago</UButton>
         </UCard>
 
-        <UCard v-if="creditBalance > 0 && (operation.pending || 0) > 0" variant="subtle" :ui="{ body: 'p-4 sm:p-4' }">
-          <div class="mb-2 flex items-center justify-between text-sm">
+        <UCard v-if="creditBalance > 0 && (operation.pending || 0) > 0" class="ring-1 ring-success/40" :ui="{ root: 'bg-success/5', body: 'p-4 sm:p-4' }">
+          <div class="mb-2 flex items-center justify-between gap-3 text-sm">
             <span class="font-semibold text-success">Aplicar saldo a favor</span>
-            <span class="text-muted">{{ usd(creditBalance) }} disponible</span>
+            <span class="font-semibold text-success">{{ usd(creditBalance) }} disponible</span>
           </div>
           <div class="flex gap-2">
             <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="creditAmount" :min="0" :max="creditMax" :step="0.01" class="flex-1" />
@@ -78,7 +78,7 @@ import { ChinaBillingService } from '~/services/chinaBillingService'
 import type { ChinaCredit, ChinaOperation, ChinaOperationPaymentRef } from '~/types/china-billing'
 import { formatNombreEmpresa } from '~/utils/formatters'
 
-const props = defineProps<{ operation: ChinaOperation | null; credits: ChinaCredit[] }>()
+const props = defineProps<{ operation: ChinaOperation | null; credits: ChinaCredit[]; operations?: ChinaOperation[] }>()
 const emit = defineEmits<{
   close: []
   changed: []
@@ -90,7 +90,22 @@ const { showError, showConfirmation } = useModal()
 const busy = ref(false)
 const creditAmount = ref<number | null>(null)
 
-const creditBalance = computed(() => props.credits.find((credit) => credit.organization_id === props.operation?.organization.id)?.balance ?? 0)
+function sameClient(row: ChinaOperation, operation: ChinaOperation) {
+  if (Number(row.organization.id) === Number(operation.organization.id)) return true
+  return formatNombreEmpresa(row.organization.name).toLocaleLowerCase('es-PE') === formatNombreEmpresa(operation.organization.name).toLocaleLowerCase('es-PE')
+}
+
+const creditBalance = computed(() => {
+  const operation = props.operation
+  if (!operation) return 0
+  const name = formatNombreEmpresa(operation.organization.name).toLocaleLowerCase('es-PE')
+  const listed = props.credits.find((credit) => Number(credit.organization_id) === Number(operation.organization.id))
+    ?? props.credits.find((credit) => formatNombreEmpresa(credit.name).toLocaleLowerCase('es-PE') === name)
+  if ((listed?.balance || 0) > 0) return listed!.balance
+  return (props.operations || [])
+    .filter((row) => row.id !== operation.id && sameClient(row, operation) && !row.transferred && (row.difference ?? 0) < -0.004)
+    .reduce((sum, row) => sum + Math.abs(row.difference || 0), 0)
+})
 const creditMax = computed(() => Math.min(creditBalance.value, props.operation?.pending || 0))
 
 watch(() => props.operation?.id, () => { creditAmount.value = null })
