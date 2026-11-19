@@ -9,24 +9,28 @@
   >
     <template #body>
       <div class="grid gap-4 sm:grid-cols-2">
-        <UFormField v-if="!isPartner" label="Cliente" required class="sm:col-span-2">
-          <USelectMenu
-            v-model="organizationId"
-            :items="organizationItems"
-            value-key="value"
-            placeholder="Selecciona un cliente"
-            :disabled="!!payment || !!lockedOrganizationId"
-            class="w-full"
-          />
+        <div v-if="!isPartner" class="grid gap-4 sm:col-span-2 sm:grid-cols-3">
+          <UFormField label="Cliente" required>
+            <USelectMenu
+              v-model="organizationId"
+              :items="organizationItems"
+              value-key="value"
+              placeholder="Selecciona un cliente"
+              :disabled="!!payment || !!lockedOrganizationId"
+              class="w-full"
+            />
+          </UFormField>
+          <UFormField label="Fecha del pago" required>
+            <UInput v-model="paidOn" type="date" class="w-full" />
+          </UFormField>
+          <UFormField label="Monto enviado (USD)" required>
+            <UInput :model-value="amountDraft" inputmode="decimal" placeholder="0.00" class="w-full" @update:model-value="onAmountDraft" />
+          </UFormField>
+        </div>
+        <UFormField v-if="isPartner" label="Monto transferido (USD)" required class="sm:order-1">
+          <UInput :model-value="amountDraft" inputmode="decimal" placeholder="0.00" class="w-full" @update:model-value="onAmountDraft" />
         </UFormField>
-        <UFormField :label="isPartner ? 'Monto transferido (USD)' : 'Monto enviado (USD)'" required :class="isPartner ? 'sm:order-1' : 'sm:order-2'">
-          <!-- El número solo confirma el valor al salir del campo; el input actualiza la barra al teclear. -->
-          <div @input="onSentTyping" @focusout="onSentBlur">
-            <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="amountSent" :min="0" :step="0.01" placeholder="0.00" class="w-full" />
-          </div>
-        </UFormField>
-
-        <UFormField :label="isPartner ? 'Fecha de transferencia' : 'Fecha del pago'" required :class="isPartner ? 'sm:order-2' : 'sm:order-1'">
+        <UFormField v-if="isPartner" label="Fecha de transferencia" required class="sm:order-2">
           <UInput v-model="paidOn" type="date" class="w-full" />
         </UFormField>
         <div class="sm:col-span-2" :class="isPartner ? 'sm:order-4' : 'sm:order-3'">
@@ -130,6 +134,7 @@ const isPartner = computed(() => props.mode === 'partner')
 const organizationId = ref<number | null>(null)
 const paidOn = ref(new Date().toISOString().slice(0, 10))
 const amountSent = ref<number | null>(null)
+const amountDraft = ref('')
 const amounts = ref<Record<number, number | null>>({})
 const pending = ref<ChinaOperation[]>([])
 const loadingPending = ref(false)
@@ -139,31 +144,28 @@ const errorMessage = ref('')
 
 const organizationItems = computed(() => (props.organizations || []).map((org) => ({ value: org.id, label: `${formatNombreEmpresa(org.name)}${org.country ? ` · ${org.country}` : ''}` })))
 const clientLabel = computed(() => organizationItems.value.find((item) => item.value === organizationId.value)?.label || 'el cliente')
-/** Mientras se escribe, la barra usa el texto del campo. Al salir, queda el valor confirmado. */
-const sentDraft = ref<number | null>(null)
-const sentTyping = ref(false)
-const sentAmount = computed(() => sentTyping.value ? Number(sentDraft.value || 0) : Number(amountSent.value || 0))
-
-function parseTypedAmount(raw: string): number | null {
-  const text = raw.replace(/\s/g, '').replace(',', '.')
-  if (text === '' || text === '-' || text === '.' || text === '-.') return null
-  const value = Number(text)
-  return Number.isFinite(value) ? value : null
-}
-
-function onSentTyping(event: Event) {
-  const target = event.target
-  if (!(target instanceof HTMLInputElement)) return
-  sentTyping.value = true
-  sentDraft.value = parseTypedAmount(target.value)
-}
-
-function onSentBlur() {
-  sentTyping.value = false
-  sentDraft.value = null
-}
+const sentAmount = computed(() => Number(amountSent.value || 0))
 const assignedAmount = computed(() => roundTwo(pending.value.reduce((sum, operation) => sum + Number(amounts.value[operation.id!] || 0), 0)))
 const unassignedAmount = computed(() => roundTwo(Math.max(0, sentAmount.value - assignedAmount.value)))
+
+function parseMoney(value: string | number | null | undefined): number | null {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null
+  const clean = String(value ?? '').replace(/\s/g, '').replace(',', '.')
+  if (clean === '' || clean === '.') return null
+  const amount = Number(clean)
+  return Number.isFinite(amount) ? amount : null
+}
+
+function setAmount(value: number | null) {
+  amountSent.value = value
+  amountDraft.value = value == null ? '' : String(value)
+}
+
+function onAmountDraft(value: string | number) {
+  const text = String(value ?? '')
+  amountDraft.value = text
+  amountSent.value = parseMoney(text)
+}
 
 function covered(id: number) {
   return Number(amounts.value[id] || 0) > 0.004
@@ -180,9 +182,7 @@ watch(() => [props.open, props.payment, props.lockedOrganizationId], async () =>
   amounts.value = {}
   pending.value = []
   paidOn.value = props.payment?.paid_on || new Date().toISOString().slice(0, 10)
-  amountSent.value = props.payment?.amount_sent ?? null
-  sentTyping.value = false
-  sentDraft.value = null
+  setAmount(props.payment?.amount_sent ?? null)
   organizationId.value = props.payment?.organization.id ?? props.lockedOrganizationId ?? null
   if (isPartner.value || organizationId.value) await loadPending()
 }, { immediate: true })
