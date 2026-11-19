@@ -54,7 +54,7 @@
             v-for="operation in pending"
             :key="operation.id!"
             class="mb-2 grid grid-cols-[auto_1fr_auto_8.5rem] items-center gap-3 rounded-lg border px-3 py-2"
-            :class="covered(operation.id!) ? 'border-primary-400 bg-primary-50/70' : 'border-default bg-elevated/40'"
+            :class="covered(operation.id!) ? 'border-primary bg-primary/10' : 'border-default bg-elevated/40'"
           >
             <UCheckbox
               :model-value="covered(operation.id!)"
@@ -64,7 +64,7 @@
             <div class="min-w-0">
               <!-- #1909: como la maqueta, «OP-0004 · Consolidado» y debajo «02 oct · Consolidado #46 · producto». -->
               <p class="truncate text-sm font-semibold text-highlighted">{{ operation.code }} · {{ operation.service_name }}</p>
-              <p class="truncate text-xs text-muted">{{ operationSubtitle(operation) }}</p>
+              <p class="truncate text-xs text-muted">{{ isPartner ? partnerInvoiceLine(operation) : operationSubtitle(operation) }}</p>
             </div>
             <span class="text-right text-xs font-semibold uppercase tracking-wide text-muted">
               {{ isPartner ? 'Saldo' : 'Pendiente' }}<br>
@@ -96,7 +96,7 @@
           </div>
           <div class="flex gap-2">
             <UButton color="neutral" variant="outline" :disabled="saving" @click="emit('close')">Cancelar</UButton>
-            <UButton color="primary" :loading="saving" @click="save">{{ payment ? 'Guardar cambios' : (isPartner ? 'Enviar pago' : 'Registrar pago') }}</UButton>
+            <UButton color="primary" :loading="saving" :disabled="partnerNeedsReceipt" @click="save">{{ payment ? 'Guardar cambios' : (isPartner ? 'Enviar pago' : 'Registrar pago') }}</UButton>
           </div>
         </div>
         <p v-if="sentAmount > 0 && unassignedAmount <= 0.004" class="text-xs text-muted">Todo el monto está asignado.</p>
@@ -151,6 +151,11 @@ const organizationItems = computed(() => {
   return items
 })
 
+/** En el pago del socio: fecha y país del consolidado, sin el detalle del servicio. */
+function partnerInvoiceLine(operation: ChinaOperation) {
+  return [dayLabel(operation.issued_on), operation.organization?.country].filter(Boolean).join(' · ')
+}
+
 function operationSubtitle(operation: ChinaOperation) {
   const consolidado = operation.consolidado_label || ''
   let detail = operation.description || ''
@@ -161,6 +166,7 @@ function operationSubtitle(operation: ChinaOperation) {
   return [dayLabel(operation.issued_on), consolidado, detail].filter(Boolean).join(' · ')
 }
 const clientLabel = computed(() => organizationItems.value.find((item) => item.value === organizationId.value)?.label || 'el cliente')
+const partnerNeedsReceipt = computed(() => isPartner.value && !receipt.value && !props.payment?.receipt_url)
 const sentAmount = computed(() => Number(amountSent.value || 0))
 const assignedAmount = computed(() => roundTwo(pending.value.reduce((sum, operation) => sum + Number(amounts.value[operation.id!] || 0), 0)))
 const unassignedAmount = computed(() => roundTwo(Math.max(0, sentAmount.value - assignedAmount.value)))
