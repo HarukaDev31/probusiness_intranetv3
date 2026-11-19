@@ -130,3 +130,11 @@ export const SURPLUS_DECISION = {
   APPLY: 'aplicado_cuota',
   KEEP: 'no_devuelve',
 } as const
+
+/**
+ * #2364–#2367: por ahora Ventas no envía mensajes automáticos por WhatsApp (los copia con «Copiar texto»).
+ * Siguen habilitadas las confirmaciones de pago de Administración (dólares) y de China (yuanes).
+ * Poner en true para volver a habilitar los envíos de Ventas.
+ */
+export const VENTAS_WHATSAPP_HABILITADO = false
+export const VENTAS_WHATSAPP_DESHABILITADO_TEXTO = 'El envío automático está deshabilitado por ahora: usa «Copiar texto» y envíalo desde WhatsApp.'

@@ -518,13 +518,14 @@
       <template #footer>
         <UButton type="button" color="neutral" variant="outline" @click="vistaPrevia = null">Cerrar</UButton>
         <UButton type="button" color="neutral" variant="outline" icon="i-lucide-file-text" :loading="generandoPdf" @click="descargarPdf">Descargar PDF</UButton>
-        <UButton type="button" color="success" icon="i-lucide-send" :loading="enviandoReal" :disabled="!vistaPrevia?.puede_enviar" @click="enviarWhatsapp">Enviar por WhatsApp</UButton>
+        <UButton type="button" color="success" icon="i-lucide-send" :loading="enviandoReal" :disabled="!VENTAS_WHATSAPP_HABILITADO || !vistaPrevia?.puede_enviar" :title="VENTAS_WHATSAPP_HABILITADO ? undefined : VENTAS_WHATSAPP_DESHABILITADO_TEXTO" @click="enviarWhatsapp">Enviar por WhatsApp</UButton>
       </template>
     </SupplierPaymentWindow>
   </div>
 </template>
 
 <script setup lang="ts">
+import { VENTAS_WHATSAPP_HABILITADO, VENTAS_WHATSAPP_DESHABILITADO_TEXTO } from '~/constants/supplierPayment'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import type { PagoProveedorBusquedaCc, PagoProveedorCalculoLinea, PagoProveedorCotizacion, PagoProveedorDocumentoEmitido, PagoProveedorProveedor } from '~/types/pago-proveedor'
 import PageHeader from '~/components/PageHeader.vue'

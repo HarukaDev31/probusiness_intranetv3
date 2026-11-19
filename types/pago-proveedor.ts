@@ -411,6 +411,7 @@ export interface PagoProveedorAbono {
   excedente_decide_overdue?: boolean
   excedente_decide_text?: string | null
   operacion_repetida: boolean
+  operacion_repetida_detalle?: string | null
   puede_editar: boolean
   puede_anular?: boolean
   observacion?: { motivo: string; detalle?: string | null; plazo?: string | null } | null
