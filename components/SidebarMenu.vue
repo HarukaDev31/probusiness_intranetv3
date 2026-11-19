@@ -588,15 +588,19 @@ const getCustomMenuName = (itemName: string, childName: string) => {
   return childName
 }
 
+// #2349: Encargado China (Armando) comparte pantallas con el almacén, pero su menú va en español.
+const menuEnIngles = computed(() => usesEnglishTableHeaders(currentRole.value)
+  && String(displayRole.value || '').trim().toLowerCase() !== ROLES.ENCARGADO_CHINA.toLowerCase())
+
 const displayMenuName = (name: string, parentName?: string, nameEn?: string) => {
   const custom = parentName ? getCustomMenuName(parentName, name) : name
-  if (!usesEnglishTableHeaders(currentRole.value)) return custom
+  if (!menuEnIngles.value) return custom
   if (parentName && custom !== name) return custom
   return translateMenuLabel(name, currentRole.value, nameEn)
 }
 
 const uiLabels = computed(() => {
-  const en = usesEnglishTableHeaders(currentRole.value)
+  const en = menuEnIngles.value
   const pick = (es: string) => (en ? (MENU_LABELS_EN[es] || es) : es)
   return {
     loading: pick('Cargando menú...'),

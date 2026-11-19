@@ -28,6 +28,7 @@
     />
 
     <DataTable
+      :fill-viewport="false"
       class="pp-tabla"
       sticky-last-column
       :data="unifiedRows"
@@ -373,14 +374,15 @@ const filterConfig = computed(() => [
 ])
 
 const columns = computed<TableColumn<UnifiedRow>[]>(() => [
-  { accessorKey: 'order_number', header: 'N.° de orden', cell: ({ row }) => h('span', { class: TEXTO_PRINCIPAL }, row.original.order_number ?? '—') },
+  // #2316: «N°» es la posición en la bandeja (la más antigua es 1); el número de la solicitud va en «N. orden».
+  { accessorKey: 'order_number', header: 'N°', cell: ({ row }) => h('span', { class: TEXTO_PRINCIPAL }, String(Math.max(1, (unifiedTotal.value || unifiedRows.value.length) - ((pagination.value.current_page - 1) * pagination.value.per_page + row.index)))) },
   { accessorKey: 'client_name', header: 'Cliente', cell: ({ row }) => h('span', { class: `block min-w-36 max-w-56 whitespace-normal ${TEXTO_PRINCIPAL}` }, formatNombrePropio(row.original.client_name) || '—') },
   { accessorKey: 'consolidation', header: 'Consolidado', cell: ({ row }) => h('span', { class: TEXTO_PRINCIPAL }, soloConsolidado(row.original.consolidation)) },
   { accessorKey: 'supplier_code', header: 'Proveedor', cell: ({ row }) => h('div', [
     h('div', { class: `font-semibold ${TEXTO_PRINCIPAL}` }, row.original.supplier_code || '—'),
     h('div', { class: 'min-w-40 max-w-64 whitespace-normal text-xs text-muted' }, row.original.supplier_name || '')
   ]) },
-  { accessorKey: 'request_code', header: 'Código de solicitud', cell: ({ row }) => h('span', { class: `font-bold ${TEXTO_PRINCIPAL}` }, row.original.request_code || '—') },
+  { accessorKey: 'request_code', header: 'N. orden', cell: ({ row }) => h('span', { class: `font-bold ${TEXTO_PRINCIPAL}` }, row.original.request_code || '—') },
   {
     accessorKey: 'payment_type',
     header: 'Tipo de pago',

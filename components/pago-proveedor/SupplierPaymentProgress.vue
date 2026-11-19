@@ -254,7 +254,7 @@
           </div>
           <div v-for="(execution, index) in progress.executions" :key="`receipt-${execution.id}`" :class="fila">
             <UAvatar icon="i-lucide-file-text" size="sm" class="shrink-0 bg-primary/10" :ui="{ icon: 'text-primary' }" />
-            <div class="min-w-0 flex-1">
+            <div class="min-w-0 flex-[1_1_auto]">
               <strong :class="tituloFila">{{ dosPagos ? `Constancia · pago ${index + 1}` : 'Constancia de pago' }}</strong>
               <p class="text-xs text-muted">{{ responsablePago }}<template v-if="execution.registered_at"> · {{ fechaHora(execution.registered_at) }}</template></p>
             </div>
@@ -278,7 +278,7 @@
             <div v-else :class="[filaDecision, infoPendiente ? 'border-warning/40 bg-warning/5' : '']">
               <div class="flex flex-wrap items-start gap-2">
                 <UAvatar icon="i-lucide-chart-no-axes-column" size="sm" class="shrink-0 bg-primary/10" :ui="{ icon: 'text-primary' }" />
-                <div class="min-w-0 flex-1">
+                <div class="min-w-0 flex-[1_1_auto]">
                   <strong :class="tituloFila">{{ dosPagos ? 'Balance de cambio general' : 'Balance de cambio' }}</strong>
                   <p class="text-xs text-muted">{{ textoBalance }}</p>
                   <UBadge v-if="!readonly && balanceDocumento" class="mt-1" :color="balanceDocumento.desactualizado ? 'warning' : 'neutral'" variant="soft" size="sm">
@@ -308,7 +308,7 @@
           <div v-if="diferenciaVista" :class="filaDecision">
             <div class="flex flex-wrap items-start justify-between gap-2">
               <UAvatar icon="i-lucide-circle-dollar-sign" size="sm" class="shrink-0 bg-primary/10" :ui="{ icon: 'text-primary' }" />
-              <div class="min-w-0 flex-1"><strong :class="tituloFila">Diferencia de cambio</strong><p class="text-xs text-muted">{{ diferenciaVista.text }}</p></div>
+              <div class="min-w-0 flex-[1_1_auto]"><strong :class="tituloFila">Diferencia de cambio</strong><p class="text-xs text-muted">{{ diferenciaVista.text }}</p></div>
               <UBadge :color="diferenciaVista.color" variant="soft" :label="diferenciaVista.label" />
             </div>
             <UButton v-if="!readonly && progress.confirmation.can_register_exchange && !progress.confirmation.exchange_validating" class="mt-2" size="sm" color="primary" @click="differenceOpen = true">Registrar voucher de la diferencia</UButton>
@@ -405,20 +405,17 @@
 
     <SupplierPaymentWindow
       :open="!!balancePreview"
-      title="Balance por WhatsApp"
+      title="Enviar balance de cambio"
       subtitle="Revisa el mensaje antes de enviarlo."
       @close="balancePreview = null"
     >
       <template v-if="balancePreview">
-        <UCard variant="subtle">
-          <!-- eslint-disable-next-line vue/no-v-html -->
-          <pre class="max-h-80 overflow-auto whitespace-pre-wrap font-sans text-sm text-highlighted" v-html="whatsappHtml(balancePreview.texto)" />
-        </UCard>
+        <MensajeWhatsapp :texto="balancePreview.texto" />
         <p class="text-sm text-muted">Adjunto: {{ balancePreview.archivo }}</p>
       </template>
       <template #footer>
         <UButton color="neutral" variant="soft" @click="balancePreview = null">Cancelar</UButton>
-        <UButton color="primary" :loading="saving" @click="sendBalance">Enviar balance</UButton>
+        <UButton color="success" icon="i-heroicons-paper-airplane" :loading="saving" @click="sendBalance">Enviar por WhatsApp</UButton>
       </template>
     </SupplierPaymentWindow>
 
@@ -452,6 +449,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { INSTALLMENT_CHOICE, PAYMENT_CHOICE, REFUND_STATUS, SURPLUS_DECISION } from '~/constants/supplierPayment'
 import type { PagoProveedorSolicitudProveedor } from '~/types/pago-proveedor'
+import MensajeWhatsapp from '~/components/pago-proveedor/MensajeWhatsapp.vue'
 import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
 import { whatsappHtml } from '~/utils/whatsappFormat'
 import { useModal } from '~/composables/commons/useModal'
@@ -659,7 +657,8 @@ function importeEnMoneda(usd: number) {
 
 function fechaHora(fecha?: string | null) {
   if (!fecha) return ''
-  return new Date(fecha).toLocaleString('es-PE', { timeZone: 'America/Lima', day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  // Corta como la maqueta («16/11 06:05»), para que la fila no se haga de tres líneas.
+  return new Date(fecha).toLocaleString('es-PE', { timeZone: 'America/Lima', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', '')
 }
 
 function money(value: number) {

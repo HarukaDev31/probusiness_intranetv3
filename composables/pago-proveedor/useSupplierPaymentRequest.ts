@@ -43,6 +43,9 @@ export function useSupplierPaymentRequest() {
   const fillForm = (solicitudId: number, proveedorId: number, body: Record<string, unknown>) =>
     PagoProveedorService.llenarTt(solicitudId, proveedorId, body)
 
+  const sendFormMessage = (solicitudId: number, proveedorId: number) =>
+    PagoProveedorService.enviarMensajeFormulario(solicitudId, proveedorId)
+
   const requestValidation = (solicitudId: number, proveedorId: number) =>
     PagoProveedorService.solicitarValidacion(solicitudId, proveedorId)
 
@@ -84,6 +87,7 @@ export function useSupplierPaymentRequest() {
     sendForm,
     fillForm,
     requestValidation,
+    sendFormMessage,
     observeProvider,
     cancelProvider,
     liftObservation,

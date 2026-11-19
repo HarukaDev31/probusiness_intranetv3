@@ -24,7 +24,7 @@
 
       <div class="grid gap-4 lg:grid-cols-3">
         <SupplierPaymentCard title="Solicitud" icon="i-lucide-file-text">
-          <SupplierPaymentFact label="Cliente" :value="payment.client_name || '—'" />
+          <SupplierPaymentFact label="Cliente" :value="formatNombrePropio(payment.client_name) || '—'" />
           <SupplierPaymentFact label="Código de proveedor" :value="payment.supplier_code || '—'" />
           <SupplierPaymentFact v-if="payment.supplier_name" label="Proveedor" :value="payment.supplier_name" />
           <SupplierPaymentFact label="Producto" :value="payment.product || '—'" />
@@ -144,6 +144,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatNombrePropio } from '~/utils/formatters'
 import { computed, ref, watch } from 'vue'
 import SupplierPaymentCard from '~/components/pago-proveedor/SupplierPaymentCard.vue'
 import SupplierPaymentFact from '~/components/pago-proveedor/SupplierPaymentFact.vue'
@@ -203,7 +204,7 @@ function fechaCorta(fecha?: string | null) {
 
 const subtitle = computed(() => {
   if (!props.payment) return ''
-  return `${props.payment.client_name || 'Cliente'} · Consolidado ${(props.payment.consolidation || '—').replace(/\s*-\s*\d{4}\s*$/, '')}`
+  return `${formatNombrePropio(props.payment.client_name) || 'Cliente'} · Consolidado ${(props.payment.consolidation || '—').replace(/\s*-\s*\d{4}\s*$/, '')}`
 })
 
 watch(() => props.payment?.id, () => {

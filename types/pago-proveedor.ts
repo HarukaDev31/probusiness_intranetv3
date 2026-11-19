@@ -149,6 +149,9 @@ export interface PagoProveedorSolicitud {
   providers?: SupplierPaymentProviderRow[]
   total_cotizado?: number
   total_abonado?: number
+  total_validado?: number
+  por_validar?: number
+  diferencia_por_cobrar?: number
   saldo_pendiente?: number
   excedente?: number
   creado_en: string | null
@@ -636,6 +639,9 @@ export interface SupplierPaymentExecution {
   deposit_bank?: string | null
   bank: SupplierPaymentBankData
   bank_copy_text: string
+  bank_received_at?: string | null
+  bank_source_label?: string | null
+  bank_form_url?: string | null
 }
 
 export interface SupplierPaymentExecutionTotals {

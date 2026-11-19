@@ -17,7 +17,7 @@
           <UInput v-model="modelo.beneficiario_direccion" :disabled="bloqueado" class="w-full" />
         </UFormField>
         <div class="grid gap-3 sm:grid-cols-2">
-          <UFormField label="País" required><UInput v-model="modelo.beneficiario_pais" :disabled="bloqueado" class="w-full" /></UFormField>
+          <UFormField label="País" required><USelect v-model="modelo.beneficiario_pais" :items="paisesDe(modelo.beneficiario_pais)" :disabled="bloqueado" placeholder="Selecciona" class="w-full" /></UFormField>
           <UFormField label="Ciudad" required><UInput v-model="modelo.beneficiario_ciudad" :disabled="bloqueado" class="w-full" /></UFormField>
         </div>
       </div>
@@ -42,7 +42,7 @@
           <UInput v-model="modelo.banco_direccion" :disabled="bloqueado" class="w-full" />
         </UFormField>
         <div class="grid gap-3 sm:grid-cols-2">
-          <UFormField label="País" required><UInput v-model="modelo.banco_pais" :disabled="bloqueado" class="w-full" /></UFormField>
+          <UFormField label="País" required><USelect v-model="modelo.banco_pais" :items="paisesDe(modelo.banco_pais)" :disabled="bloqueado" placeholder="Selecciona" class="w-full" /></UFormField>
           <UFormField label="Ciudad" required><UInput v-model="modelo.banco_ciudad" :disabled="bloqueado" class="w-full" /></UFormField>
         </div>
       </div>
@@ -64,7 +64,7 @@
         <UFormField label="Nombre del banco intermediario" required><UInput v-model="modelo.inter_nombre" :disabled="bloqueado" class="w-full" /></UFormField>
         <UFormField label="Dirección" required><UInput v-model="modelo.inter_direccion" :disabled="bloqueado" class="w-full" /></UFormField>
         <div class="grid gap-3 sm:grid-cols-2">
-          <UFormField label="País" required><UInput v-model="modelo.inter_pais" :disabled="bloqueado" class="w-full" /></UFormField>
+          <UFormField label="País" required><USelect v-model="modelo.inter_pais" :items="paisesDe(modelo.inter_pais)" :disabled="bloqueado" placeholder="Selecciona" class="w-full" /></UFormField>
           <UFormField label="Ciudad" required><UInput v-model="modelo.inter_ciudad" :disabled="bloqueado" class="w-full" /></UFormField>
         </div>
       </div>
@@ -75,6 +75,14 @@
 <script setup lang="ts">
 const modelo = defineModel<Record<string, any>>({ required: true })
 const props = defineProps<{ bloqueado?: boolean }>()
+
+// #2254: misma lista de países que el formulario del cliente (clientes-front, formulario-tt).
+const PAISES = ['China', 'Hong Kong', 'Taiwán', 'Singapur', 'Malasia', 'Tailandia', 'Vietnam', 'India', 'Japón', 'Corea del Sur', 'Indonesia', 'Filipinas', 'Emiratos Árabes Unidos', 'Turquía', 'Estados Unidos', 'Canadá', 'México', 'Panamá', 'Colombia', 'Chile', 'Brasil', 'Argentina', 'Perú', 'España', 'Alemania', 'Italia', 'Francia', 'Reino Unido', 'Países Bajos', 'Portugal', 'Otro país']
+/** Si el dato guardado no está en la lista (datos antiguos), se agrega para que se siga viendo. */
+function paisesDe(valor: unknown) {
+  const actual = String(valor || '').trim()
+  return actual && !PAISES.includes(actual) ? [actual, ...PAISES] : PAISES
+}
 
 const tiposCodigo = ['SWIFT', 'ABA', 'CHIPS', 'Sort Code', 'Otro'].map((value) => ({ label: value, value }))
 

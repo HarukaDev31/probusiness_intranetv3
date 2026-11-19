@@ -135,3 +135,16 @@
 .dark .pp-tabla .table-scroll-container table tbody tr:hover td {
   background-color: #1e293b;
 }
+
+/* #2335: entre clientes (cotizaciones / solicitudes) la línea es más gruesa, como la maqueta;
+   entre proveedores de una misma solicitud sigue siendo fina. */
+.pp-tabla-clientes .table-scroll-container table tbody tr + tr td,
+.pp-tabla-clientes .table-scroll-container table tbody tr td {
+  border-top: 2px solid #cbd5e1 !important;
+}
+.pp-tabla-clientes .table-scroll-container table tbody tr td.pp-subfila {
+  border-top: 1px solid #f1f5f9 !important;
+}
+.pp-tabla-clientes .table-scroll-container table tbody tr:first-child td {
+  border-top: 0 !important;
+}

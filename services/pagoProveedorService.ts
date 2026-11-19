@@ -259,6 +259,14 @@ export class PagoProveedorService extends BaseService {
     })
   }
 
+  /** Envía por WhatsApp el mensaje del formulario T-T (o el de autorización) que se ve en la vista previa. */
+  static async enviarMensajeFormulario(solicitudId: number, proveedorId: number) {
+    return this.apiCall<Uno<{ texto: string; enviado: boolean; nota: string; solicitud: PagoProveedorSolicitud }>>(
+      `${this.baseUrl}/solicitudes/${solicitudId}/proveedores/${proveedorId}/enviar-mensaje-formulario`,
+      { method: 'POST' }
+    )
+  }
+
   static async solicitarValidacion(solicitudId: number, proveedorId: number) {
     return this.apiCall<Uno<{ enlace: string; texto: string; solicitud: PagoProveedorSolicitud }>>(
       `${this.baseUrl}/solicitudes/${solicitudId}/proveedores/${proveedorId}/solicitar-validacion`,
@@ -517,7 +525,7 @@ export class PagoProveedorService extends BaseService {
     return this.apiCall<Lista<SupplierPaymentYuanRequest> & {
       pending_count: number
       indicators: SupplierPaymentYuanIndicators
-      counts: { open?: number; completed?: number; all?: number; pending?: number; observed?: number; paid?: number }
+      counts: { open?: number; completed?: number; all?: number; pending?: number; pending_only?: number; observed?: number; paid?: number }
       countries: string[]
       organizations: SupplierPaymentYuanOrganization[]
       suggestions: SupplierPaymentYuanSuggestions

@@ -38,6 +38,7 @@
     </div>
 
     <DataTable
+      :fill-viewport="false"
       class="pp-tabla"
       sticky-last-column
       :data="rows"
@@ -196,7 +197,7 @@ const TEXTO_PRINCIPAL = 'text-highlighted'
 
 const columns = computed<TableColumn<SupplierPaymentExecution>[]>(() => [
   // Numeración correlativa de la bandeja, de mayor a menor (3, 2, 1): el número de la solicitud ya va en el código.
-  { accessorKey: 'order_number', header: 'N.° de orden', cell: ({ row }) => h('span', { class: TEXTO_PRINCIPAL }, String((pagination.value.total || 0) - ((pagination.value.current_page - 1) * pagination.value.per_page + row.index))) },
+  { accessorKey: 'order_number', header: 'N°', cell: ({ row }) => h('span', { class: TEXTO_PRINCIPAL }, String((pagination.value.total || 0) - ((pagination.value.current_page - 1) * pagination.value.per_page + row.index))) },
   { accessorKey: 'client_name', header: 'Cliente', cell: ({ row }) => h('span', { class: `block min-w-36 max-w-56 whitespace-normal ${TEXTO_PRINCIPAL}` }, formatNombrePropio(row.original.client_name) || '—') },
   { accessorKey: 'consolidation', header: 'Consolidado', cell: ({ row }) => h('span', { class: TEXTO_PRINCIPAL }, soloConsolidado(row.original.consolidation)) },
   {
@@ -209,7 +210,7 @@ const columns = computed<TableColumn<SupplierPaymentExecution>[]>(() => [
   },
   {
     accessorKey: 'request_code',
-    header: 'Código de solicitud',
+    header: 'N. orden',
     cell: ({ row }) => row.original.request_code
       ? h('span', { class: `whitespace-nowrap font-semibold ${TEXTO_PRINCIPAL}` }, row.original.request_code)
       : '—'

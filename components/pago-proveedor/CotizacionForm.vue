@@ -459,8 +459,9 @@
       <div v-if="editable" class="flex flex-col gap-2 sm:flex-row">
         <UButton type="submit" color="neutral" variant="outline" size="lg" class="flex-1 justify-center" :loading="guardando" :disabled="!puedeGuardarCotizacion">{{ etiquetaGuardarCotizacion }}</UButton>
         <UButton v-if="cotizacion.puede_renovar" type="button" color="warning" variant="soft" size="lg" class="flex-1 justify-center" @click="renovar">Renovar cotización</UButton>
+        <!-- #2341/#2342: al crear una cotización no se ofrece crear la solicitud; aparece al editarla. -->
         <UButton
-          v-if="!cotizacion.puede_renovar"
+          v-if="!cotizacion.puede_renovar && !esNueva"
           type="button"
           color="primary"
           size="lg"
@@ -473,9 +474,9 @@
         </UButton>
       </div>
       <p v-if="editable && motivoAccion" class="text-sm text-error">{{ motivoAccion }}</p>
-      <p v-if="editable && esNueva" class="text-sm text-muted"><strong>Toda solicitud nace de una cotización.</strong> Usa Guardar cotización si el cliente solo quiere saber el costo. Si ya confirmó, Guardar y crear solicitud registra la cotización y crea la solicitud en un solo paso.</p>
+      <p v-if="editable && esNueva" class="text-sm text-muted"><strong>Toda solicitud nace de una cotización.</strong> Crea la cotización; cuando el cliente confirme, edítala y usa «Crear solicitud».</p>
       <p v-else-if="editable && cotizacion.puede_renovar" class="text-sm text-muted"><strong>Renovar la cotización:</strong> confirma el tipo de cambio de hoy y guárdala. La vigencia vuelve a empezar y tendrás que reenviarla al cliente.</p>
-      <p v-if="editable && faltantesSolicitud.length" class="text-sm text-error">{{ esNueva ? 'Para guardar y crear la solicitud falta' : 'Para crear la solicitud falta' }}: {{ faltantesSolicitud.map(falta => falta.replace(/\.$/, '').replace(/: falta (la |el )?/, ': ')).join(' · ') }}.</p>
+      <p v-if="editable && !esNueva && faltantesSolicitud.length" class="text-sm text-error">{{ esNueva ? 'Para guardar y crear la solicitud falta' : 'Para crear la solicitud falta' }}: {{ faltantesSolicitud.map(falta => falta.replace(/\.$/, '').replace(/: falta (la |el )?/, ': ')).join(' · ') }}.</p>
     </form>
 
     <SupplierPaymentWindow
@@ -512,9 +513,7 @@
       :subtitle="vistaPrevia?.destinatario ? `Destino: ${vistaPrevia.destinatario}` : 'Vista previa del mensaje'"
       @close="vistaPrevia = null"
     >
-      <UCard variant="subtle">
-        <pre class="max-h-80 overflow-auto whitespace-pre-wrap font-sans text-sm text-highlighted">{{ vistaPrevia?.texto }}</pre>
-      </UCard>
+      <MensajeWhatsapp :texto="vistaPrevia?.texto" />
       <p v-if="vistaPrevia?.nota" class="text-sm text-muted">{{ vistaPrevia.nota }}</p>
       <template #footer>
         <UButton type="button" color="neutral" variant="outline" @click="vistaPrevia = null">Cerrar</UButton>
@@ -529,6 +528,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import type { PagoProveedorBusquedaCc, PagoProveedorCalculoLinea, PagoProveedorCotizacion, PagoProveedorDocumentoEmitido, PagoProveedorProveedor } from '~/types/pago-proveedor'
 import PageHeader from '~/components/PageHeader.vue'
+import MensajeWhatsapp from '~/components/pago-proveedor/MensajeWhatsapp.vue'
 import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
 import { useSupplierPaymentQuotes } from '~/composables/pago-proveedor/useSupplierPaymentQuotes'
 import { useModal } from '~/composables/commons/useModal'
@@ -670,7 +670,10 @@ const proveedoresConValor = computed(() => proveedores.value.filter((proveedor, 
   if (!proveedor.moneda) return false
   return Number(proveedor.valor_carga_usd) > 0 || Number(valoresNativos.value[indice]) > 0
 }))
-const etiquetaGuardarCotizacion = computed(() => cotizacion.value?.puede_renovar ? 'Renovar cotización' : 'Guardar cotización')
+const etiquetaGuardarCotizacion = computed(() => {
+  if (cotizacion.value?.puede_renovar) return 'Renovar cotización'
+  return esNueva.value ? 'Crear Cotización' : 'Guardar cotización'
+})
 const etiquetaCrearSolicitud = computed(() => esNueva.value ? 'Guardar y crear solicitud' : 'Crear solicitud')
 const muestraEstadoTc = computed(() => !esNueva.value && editable.value && hayYuanes.value && cotizacion.value?.estado === 'pendiente' && !cotizacion.value?.puede_renovar)
 /** Creada hoy (hora de Lima): su tipo de cambio ya es el del día, no se vuelve a pedir confirmarlo (igual que el back). */
@@ -692,7 +695,14 @@ const faltantesProforma = computed(() => proveedores.value
   .filter((falta): falta is string => !!falta))
 const faltantesSolicitud = computed(() => {
   // El aviso del servidor sobre el tipo de cambio lo cubre el botón Confirmar de esta pantalla.
-  const base = (cotizacion.value?.faltantes || []).filter(falta => !(pideConfirmacionTc.value && falta === 'Confirma el tipo de cambio.'))
+  const base = (cotizacion.value?.faltantes || [])
+    .filter(falta => !(pideConfirmacionTc.value && falta === 'Confirma el tipo de cambio.'))
+    // #2241: si ya se adjuntó la proforma en esta pantalla (se sube al guardar), el aviso del servidor ya no aplica.
+    .filter((falta) => {
+      if (!/proforma/i.test(falta)) return true
+      const numero = Number(/Proveedor\s+(\d+)/i.exec(falta)?.[1] || 0)
+      return !(numero && proformasPendientes.value[numero - 1])
+    })
   if (pideConfirmacionTc.value && !tcConfirmadoSesion.value) {
     base.push('confirmar el tipo de cambio del día')
   }
