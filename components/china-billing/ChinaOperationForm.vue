@@ -92,7 +92,7 @@
           </div>
           <p v-if="clientRates.length && selectedOrganization" class="mt-1 flex items-center gap-1 text-xs" :class="activeTier ? 'text-success' : 'text-muted'">
             <UIcon :name="activeTier ? 'i-heroicons-check' : 'i-heroicons-pencil'" class="size-3.5" />
-            <template v-if="activeTier">Precio del socio {{ selectedOrganization.name }}: {{ usd(Number(form.rate || 0)) }} por CBM · puedes modificarlo</template>
+            <template v-if="activeTier">Precio del socio {{ formatNombreEmpresa(selectedOrganization.name) }}: {{ usd(Number(form.rate || 0)) }} por CBM · puedes modificarlo</template>
             <template v-else>Tarifa escrita a mano para esta operación</template>
           </p>
         </div>
@@ -148,6 +148,7 @@ import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { CHINA_BILLING_TYPE } from '~/constants/chinaBilling'
 import { ChinaBillingService } from '~/services/chinaBillingService'
 import type { ChinaCountryOption, ChinaOperation, ChinaOrganizationOption } from '~/types/china-billing'
+import { formatNombreEmpresa } from '~/utils/formatters'
 
 const props = defineProps<{
   open: boolean
@@ -299,7 +300,7 @@ function hoyLocal() {
 }
 const isEdit = computed(() => !!props.operation)
 const title = computed(() => {
-  if (props.draft) return `Aprobar operación · ${props.draft.organization.name}`
+  if (props.draft) return `Aprobar operación · ${formatNombreEmpresa(props.draft.organization.name)}`
   return props.operation ? `Editar operación · ${props.operation.code}` : 'Nueva operación'
 })
 const subtitle = computed(() => {
@@ -343,7 +344,7 @@ watch(() => [form.organization_id, form.billing_type], () => {
 const saveLabel = computed(() => (props.draft ? 'Aprobar operación' : props.operation ? 'Guardar cambios' : 'Guardar'))
 const organizationItems = computed(() => props.organizations
   .filter((org) => !country.value || servesCountry(org, country.value.value))
-  .map((org) => ({ value: org.id, label: org.name })))
+  .map((org) => ({ value: org.id, label: formatNombreEmpresa(org.name) })))
 
 watch(() => [props.open, props.operation, props.draft], () => {
   if (!props.open) return

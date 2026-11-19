@@ -120,6 +120,7 @@ import { useChinaOperations } from '~/composables/china-billing/useChinaOperatio
 import { useModal } from '~/composables/commons/useModal'
 import { ChinaBillingService } from '~/services/chinaBillingService'
 import type { ChinaDocumentTarget, ChinaOperation, ChinaPayment } from '~/types/china-billing'
+import { formatNombreEmpresa } from '~/utils/formatters'
 import { UButton, UCheckbox, UIcon } from '#components'
 
 const props = defineProps<{ range: { from: string; to: string } }>()
@@ -149,7 +150,7 @@ const filters = ref<Record<string, string>>({ status: CHINA_STATUS.ALL, date_fro
 
 const selectedRows = computed(() => rows.value.filter((row) => selectedIds.value.includes(row.id as number)))
 const selectedOrganizationId = computed(() => selectedRows.value[0]?.organization.id ?? null)
-const selectedOrganizationName = computed(() => selectedRows.value[0]?.organization.name ?? '')
+const selectedOrganizationName = computed(() => formatNombreEmpresa(selectedRows.value[0]?.organization.name))
 const selectedPending = computed(() => selectedRows.value.reduce((sum, row) => sum + (row.pending || 0), 0))
 
 const filterConfig = computed(() => [
@@ -251,7 +252,7 @@ const columns: TableColumn<ChinaOperation>[] = [
     h('span', { class: 'text-xs text-muted' }, monthLabel(row.original.issued_on))
   ]) },
   { id: 'country', header: 'País', cell: ({ row }) => h('span', row.original.organization.country || '—') },
-  { accessorKey: 'organization', header: 'Cliente', cell: ({ row }) => h('span', { class: 'block w-28 whitespace-normal' }, row.original.organization.name) },
+  { accessorKey: 'organization', header: 'Cliente', cell: ({ row }) => h('span', { class: 'block w-36 whitespace-normal' }, formatNombreEmpresa(row.original.organization.name)) },
   { accessorKey: 'description', header: 'Servicio', cell: ({ row }) => h('div', { class: 'flex min-w-48 flex-col gap-0.5' }, [
     h('div', { class: 'flex items-center gap-2' }, [
       h('span', { class: 'font-semibold' }, row.original.service_name),

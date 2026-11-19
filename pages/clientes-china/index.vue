@@ -73,6 +73,7 @@ import { useChinaClients } from '~/composables/china-billing/useChinaClients'
 import { useModal } from '~/composables/commons/useModal'
 import { ChinaBillingService } from '~/services/chinaBillingService'
 import type { ChinaClient, ChinaDocumentTarget } from '~/types/china-billing'
+import { formatNombreEmpresa } from '~/utils/formatters'
 import { UIcon } from '#components'
 
 const { type, search, rows, counts, groups, pagination, loading, load, reload, changeType } = useChinaClients()
@@ -119,7 +120,7 @@ const columns: TableColumn<ChinaClient>[] = [
   { id: 'number', header: 'N°', cell: ({ row }) => h('span', { class: 'text-muted' }, String((pagination.value.current_page - 1) * pagination.value.per_page + row.index + 1)) },
   { accessorKey: 'registered_on', header: 'Fecha', cell: ({ row }) => h('span', { class: 'whitespace-nowrap' }, fullDate(row.original.registered_on)) },
   { accessorKey: 'name', header: 'Cliente', cell: ({ row }) => h('div', { class: 'flex min-w-48 flex-col' }, [
-    h('span', { class: 'font-semibold' }, row.original.name),
+    h('span', { class: 'font-semibold' }, formatNombreEmpresa(row.original.name)),
     h('span', { class: 'text-xs text-muted' }, row.original.whatsapp || '—'),
     h('span', { class: 'text-xs text-muted' }, [row.original.contact_name, row.original.email].filter(Boolean).join(' · ') || '—')
   ]) },

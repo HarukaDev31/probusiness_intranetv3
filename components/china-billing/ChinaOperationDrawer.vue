@@ -1,11 +1,21 @@
 <template>
-  <UModal
+  <!-- Al hacer clic en Pendiente la ficha sale al costado, como en la maqueta. -->
+  <USlideover
     :open="!!operation"
-    :title="operation ? `${operation.code} · ${operation.service_name}` : ''"
-    :description="operation ? `${operation.organization.name} · ${operation.organization.country || '—'} · ${operation.description}` : ''"
-    :ui="{ content: 'w-full max-w-xl sm:max-w-xl', header: 'border-t-[5px] border-t-primary-500', title: 'text-lg font-bold text-highlighted' }"
+    side="right"
+    :ui="{ content: 'w-full max-w-xl sm:max-w-xl', body: 'bg-elevated/40' }"
     @update:open="(value: boolean) => !value && emit('close')"
   >
+    <template #header>
+      <div v-if="operation" class="flex w-full items-start justify-between gap-3">
+        <div class="min-w-0">
+          <p class="text-sm text-muted">{{ operation.code }} · {{ operation.service_name }}</p>
+          <p class="truncate text-2xl font-bold text-highlighted">{{ formatNombreEmpresa(operation.organization.name) }}</p>
+          <p class="text-sm text-muted">{{ operation.organization.country || '—' }} · {{ operation.description }}</p>
+        </div>
+        <UButton color="neutral" variant="ghost" icon="i-heroicons-x-mark" aria-label="Cerrar" @click="emit('close')" />
+      </div>
+    </template>
     <template #body>
       <div v-if="operation" class="flex flex-col gap-5">
         <div class="grid grid-cols-3 gap-3">
@@ -32,7 +42,7 @@
             <UButton size="xs" color="error" variant="ghost" icon="i-heroicons-trash" aria-label="Quitar saldo a favor" @click="undoCredit(credit.id)" />
           </div>
           <p v-if="!operation.payments?.length && !operation.credits?.length" class="text-sm text-muted">Aún no hay pagos aplicados a esta operación.</p>
-          <UButton v-if="(operation.pending || 0) > 0" class="mt-3" color="primary" @click="emit('register-payment', operation)">Registrar pago</UButton>
+          <UButton v-if="(operation.pending || 0) > 0" class="mt-3 w-full justify-center" color="primary" @click="emit('register-payment', operation)">Registrar pago</UButton>
         </div>
 
         <div v-if="creditBalance > 0 && (operation.pending || 0) > 0" class="rounded-xl border border-[#c9e6d4] bg-[#eef8f2] p-4">
@@ -48,7 +58,7 @@
         </div>
       </div>
     </template>
-  </UModal>
+  </USlideover>
 </template>
 
 <script setup lang="ts">
@@ -57,6 +67,7 @@ import { CHINA_STATUS, CHINA_STATUS_LABEL, CHINA_STATUS_PILL } from '~/constants
 import { useModal } from '~/composables/commons/useModal'
 import { ChinaBillingService } from '~/services/chinaBillingService'
 import type { ChinaCredit, ChinaOperation, ChinaOperationPaymentRef } from '~/types/china-billing'
+import { formatNombreEmpresa } from '~/utils/formatters'
 
 const props = defineProps<{ operation: ChinaOperation | null; credits: ChinaCredit[] }>()
 const emit = defineEmits<{

@@ -10,7 +10,7 @@
       <div v-if="payment" class="flex w-full items-start justify-between gap-3">
         <div class="min-w-0">
           <p class="text-sm text-muted">{{ payment.code }} · {{ dayLabel(payment.paid_on) }}</p>
-          <p class="truncate text-2xl font-bold text-highlighted">{{ payment.organization.name }}</p>
+          <p class="truncate text-2xl font-bold text-highlighted">{{ formatNombreEmpresa(payment.organization.name) }}</p>
           <p class="text-sm text-muted">{{ payment.organization.country || '—' }} · Enviado <strong class="text-highlighted">{{ usd(payment.amount_sent) }}</strong></p>
         </div>
         <UButton color="neutral" variant="ghost" icon="i-heroicons-x-mark" aria-label="Cerrar" @click="emit('close')" />
@@ -95,7 +95,7 @@
                 <span class="font-semibold text-highlighted">{{ usd(item.amount) }}</span>
               </button>
             </div>
-            <p v-if="liveExcess > 0" class="mt-3 rounded-lg bg-[#eef8f2] px-3 py-2 text-sm text-success">{{ usd(liveExcess) }} quedará como saldo a favor de {{ payment.organization.name }}.</p>
+            <p v-if="liveExcess > 0" class="mt-3 rounded-lg bg-[#eef8f2] px-3 py-2 text-sm text-success">{{ usd(liveExcess) }} quedará como saldo a favor de {{ formatNombreEmpresa(payment.organization.name) }}.</p>
             <UButton class="mt-3" block color="primary" :loading="busy" :disabled="!received || (needsShortfall && !shortfallOperationId)" @click="confirm">Confirmar ingreso</UButton>
           </template>
 
@@ -171,6 +171,7 @@ import { CHINA_STATUS, RECEIPT_ACCEPT } from '~/constants/chinaBilling'
 import { useModal } from '~/composables/commons/useModal'
 import { ChinaBillingService } from '~/services/chinaBillingService'
 import type { ChinaPayment, ChinaPaymentAllocation } from '~/types/china-billing'
+import { formatNombreEmpresa } from '~/utils/formatters'
 
 const props = defineProps<{ payment: ChinaPayment | null }>()
 const emit = defineEmits<{ close: []; changed: []; edit: [payment: ChinaPayment] }>()

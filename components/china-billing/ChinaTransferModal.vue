@@ -19,7 +19,7 @@
         >
           <span class="flex flex-col">
             <span class="font-semibold text-highlighted">{{ option.row.code }} · {{ option.row.service_name }}</span>
-            <span class="text-xs text-muted">{{ option.row.organization.name }} · {{ option.row.organization.country || '—' }} · {{ mode === 'credit' ? `pendiente ${usd(option.row.pending)}` : 'mismo cliente' }}</span>
+            <span class="text-xs text-muted">{{ formatNombreEmpresa(option.row.organization.name) }} · {{ option.row.organization.country || '—' }} · {{ mode === 'credit' ? `pendiente ${usd(option.row.pending)}` : 'mismo cliente' }}</span>
           </span>
           <span class="font-semibold text-highlighted">{{ mode === 'credit' ? `Aplica ${usd(option.amount)}` : usd(option.row.total) }}</span>
         </button>
@@ -39,6 +39,7 @@ import { computed, ref } from 'vue'
 import { useModal } from '~/composables/commons/useModal'
 import { ChinaBillingService } from '~/services/chinaBillingService'
 import type { ChinaOperation } from '~/types/china-billing'
+import { formatNombreEmpresa } from '~/utils/formatters'
 
 const props = defineProps<{
   operation: ChinaOperation | null

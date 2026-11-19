@@ -3,7 +3,7 @@
   <USlideover
     :open="!!client"
     side="right"
-    :title="client?.name || ''"
+    :title="formatNombreEmpresa(client?.name)"
     :ui="{ content: 'w-full max-w-2xl sm:max-w-2xl', header: 'hidden', body: 'p-0 sm:p-0' }"
     @update:open="(value: boolean) => !value && emit('close')"
   >
@@ -12,7 +12,7 @@
         <div class="flex items-start justify-between gap-3 border-b border-default bg-default px-6 py-5">
           <div class="min-w-0">
             <p class="text-xs text-muted">{{ typeLabel }} · {{ client.country || '—' }}</p>
-            <p class="text-xl font-bold text-highlighted">{{ client.name }}</p>
+            <p class="text-xl font-bold text-highlighted">{{ formatNombreEmpresa(client.name) }}</p>
             <p class="text-sm text-toned">{{ contact || '—' }}</p>
           </div>
           <UButton color="neutral" variant="ghost" icon="i-heroicons-x-mark" aria-label="Cerrar" @click="emit('close')" />
@@ -64,6 +64,7 @@
 import { computed } from 'vue'
 import { CHINA_STATUS_LABEL, CHINA_STATUS_PILL } from '~/constants/chinaBilling'
 import type { ChinaClient } from '~/types/china-billing'
+import { formatNombreEmpresa } from '~/utils/formatters'
 
 const props = defineProps<{ client: ChinaClient | null }>()
 const emit = defineEmits<{ close: []; balance: [client: ChinaClient] }>()
