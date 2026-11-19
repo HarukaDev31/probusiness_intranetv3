@@ -141,6 +141,9 @@ function differenceColor(row: SupplierPaymentYuanRequest): string {
   return row.difference < 0 ? 'text-error' : 'text-success'
 }
 
+/** Los cinco montos van a la derecha, igual que el título de la columna. */
+const moneyColumn = { th: 'text-right', td: 'text-right' }
+
 const stacked = (top: string, bottom: string, topClass = '') => h('div', { class: 'flex flex-col items-end text-right' }, [
   // #1820: el dato principal va en negro; la línea de abajo, gris.
   h('span', { class: `text-highlighted ${topClass}` }, top),
@@ -176,14 +179,14 @@ const columns: TableColumn<SupplierPaymentYuanRequest>[] = [
       h('span', { class: 'text-xs text-toned whitespace-nowrap' }, rmb(provider.yuan_amount))
     ])
   ]))) },
-  { accessorKey: 'usd_total', header: 'Monto USD', cell: ({ row }) => stacked(usd(row.original.usd_total), `${rmb(row.original.yuan_total)} · TC ${row.original.exchange_rate}`, 'font-semibold') },
-  { accessorKey: 'usd_received', header: 'Recibido USD', cell: ({ row }) => stacked(row.original.usd_received ? usd(row.original.usd_received) : '—', '') },
-  { accessorKey: 'yuan_obtained', header: 'Cambiado RMB', cell: ({ row }) => stacked(
+  { accessorKey: 'usd_total', header: 'Monto USD', meta: { class: moneyColumn }, cell: ({ row }) => stacked(usd(row.original.usd_total), `${rmb(row.original.yuan_total)} · TC ${row.original.exchange_rate}`, 'font-semibold') },
+  { accessorKey: 'usd_received', header: 'Recibido USD', meta: { class: moneyColumn }, cell: ({ row }) => stacked(row.original.usd_received ? usd(row.original.usd_received) : '—', '') },
+  { accessorKey: 'yuan_obtained', header: 'Cambiado RMB', meta: { class: moneyColumn }, cell: ({ row }) => stacked(
     row.original.yuan_obtained ? rmb(row.original.yuan_obtained) : '—',
     row.original.income_rates.length ? `TC ${row.original.income_rates.join(' / ')}` : ''
   ) },
-  { accessorKey: 'yuan_paid', header: 'Pagado RMB', cell: ({ row }) => stacked(row.original.yuan_paid ? rmb(row.original.yuan_paid) : '—', '') },
-  { accessorKey: 'difference', header: 'Diferencia RMB', cell: ({ row }) => {
+  { accessorKey: 'yuan_paid', header: 'Pagado RMB', meta: { class: moneyColumn }, cell: ({ row }) => stacked(row.original.yuan_paid ? rmb(row.original.yuan_paid) : '—', '') },
+  { accessorKey: 'difference', header: 'Diferencia RMB', meta: { class: moneyColumn }, cell: ({ row }) => {
     if (!row.original.incomes.length) return stacked('—', '')
     const color = differenceColor(row.original)
     return h('div', { class: `flex flex-col items-end text-right ${color}` }, [

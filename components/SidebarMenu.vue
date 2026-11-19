@@ -594,7 +594,8 @@ const menuEnIngles = computed(() => usesEnglishTableHeaders(currentRole.value)
 
 const displayMenuName = (name: string, parentName?: string, nameEn?: string) => {
   const custom = parentName ? getCustomMenuName(parentName, name) : name
-  if (!menuEnIngles.value) return custom
+  // #2383: con el menú en español, la pestaña «Finished» de Carga Consolidada se llama «Cerrados».
+  if (!menuEnIngles.value) return custom === 'Finished' ? 'Cerrados' : custom
   if (parentName && custom !== name) return custom
   return translateMenuLabel(name, currentRole.value, nameEn)
 }

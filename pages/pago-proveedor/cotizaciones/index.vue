@@ -141,7 +141,7 @@
       <template #footer>
         <UButton color="neutral" variant="outline" @click="cerrarWhatsapp">Cerrar</UButton>
         <UButton color="neutral" variant="outline" icon="i-heroicons-document-arrow-down" @click="descargarPdfWhatsapp">Descargar PDF</UButton>
-        <UButton color="success" icon="i-heroicons-paper-airplane" :loading="enviandoWhatsapp" :disabled="!whatsappPuedeEnviar" @click="enviarWhatsapp">
+        <UButton color="success" icon="i-heroicons-paper-airplane" :loading="enviandoWhatsapp" :disabled="!VENTAS_WHATSAPP_HABILITADO || !whatsappPuedeEnviar" :title="VENTAS_WHATSAPP_HABILITADO ? undefined : VENTAS_WHATSAPP_DESHABILITADO_TEXTO" @click="enviarWhatsapp">
           Enviar por WhatsApp
         </UButton>
       </template>
@@ -173,6 +173,7 @@
 </template>
 
 <script setup lang="ts">
+import { VENTAS_WHATSAPP_HABILITADO, VENTAS_WHATSAPP_DESHABILITADO_TEXTO } from '~/constants/supplierPayment'
 import { formatNombrePropio } from '~/utils/formatters'
 import { computed, h, onMounted, ref, type VNode } from 'vue'
 import type { TableColumn } from '@nuxt/ui'

@@ -9,21 +9,28 @@
   >
     <template #body>
       <div class="grid gap-4 sm:grid-cols-2">
-        <UFormField v-if="!isPartner" label="Cliente" required class="sm:col-span-2">
-          <USelectMenu
-            v-model="organizationId"
-            :items="organizationItems"
-            value-key="value"
-            placeholder="Selecciona un cliente"
-            :disabled="!!payment || !!lockedOrganizationId"
-            class="w-full"
-          />
+        <div v-if="!isPartner" class="grid gap-4 sm:col-span-2 sm:grid-cols-3">
+          <UFormField label="Cliente" required>
+            <USelectMenu
+              v-model="organizationId"
+              :items="organizationItems"
+              value-key="value"
+              placeholder="Selecciona un cliente"
+              :disabled="!!payment || !!lockedOrganizationId"
+              class="w-full"
+            />
+          </UFormField>
+          <UFormField label="Fecha del pago" required>
+            <UInput v-model="paidOn" type="date" class="w-full" />
+          </UFormField>
+          <UFormField label="Monto enviado (USD)" required>
+            <UInput :model-value="amountDraft" inputmode="decimal" placeholder="0.00" class="w-full" @update:model-value="onAmountDraft" />
+          </UFormField>
+        </div>
+        <UFormField v-if="isPartner" label="Monto transferido (USD)" required class="sm:order-1">
+          <UInput :model-value="amountDraft" inputmode="decimal" placeholder="0.00" class="w-full" @update:model-value="onAmountDraft" />
         </UFormField>
-        <UFormField :label="isPartner ? 'Monto transferido (USD)' : 'Monto enviado (USD)'" required :class="isPartner ? 'sm:order-1' : 'sm:order-2'">
-          <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="amountSent" :min="0" :step="0.01" placeholder="0.00" class="w-full" />
-        </UFormField>
-
-        <UFormField :label="isPartner ? 'Fecha de transferencia' : 'Fecha del pago'" required :class="isPartner ? 'sm:order-2' : 'sm:order-1'">
+        <UFormField v-if="isPartner" label="Fecha de transferencia" required class="sm:order-2">
           <UInput v-model="paidOn" type="date" class="w-full" />
         </UFormField>
         <div class="sm:col-span-2" :class="isPartner ? 'sm:order-4' : 'sm:order-3'">
@@ -47,7 +54,7 @@
             v-for="operation in pending"
             :key="operation.id!"
             class="mb-2 grid grid-cols-[auto_1fr_auto_8.5rem] items-center gap-3 rounded-lg border px-3 py-2"
-            :class="covered(operation.id!) ? 'border-primary-400 bg-primary-50/70' : 'border-default bg-elevated/40'"
+            :class="covered(operation.id!) ? 'border-primary bg-primary/10' : 'border-default bg-elevated/40'"
           >
             <UCheckbox
               :model-value="covered(operation.id!)"
@@ -57,7 +64,7 @@
             <div class="min-w-0">
               <!-- #1909: como la maqueta, «OP-0004 · Consolidado» y debajo «02 oct · Consolidado #46 · producto». -->
               <p class="truncate text-sm font-semibold text-highlighted">{{ operation.code }} · {{ operation.service_name }}</p>
-              <p class="truncate text-xs text-muted">{{ [dayLabel(operation.issued_on), operation.consolidado_label, operation.description].filter(Boolean).join(' · ') }}</p>
+              <p class="truncate text-xs text-muted">{{ isPartner ? partnerInvoiceLine(operation) : operationSubtitle(operation) }}</p>
             </div>
             <span class="text-right text-xs font-semibold uppercase tracking-wide text-muted">
               {{ isPartner ? 'Saldo' : 'Pendiente' }}<br>
@@ -89,7 +96,7 @@
           </div>
           <div class="flex gap-2">
             <UButton color="neutral" variant="outline" :disabled="saving" @click="emit('close')">Cancelar</UButton>
-            <UButton color="primary" :loading="saving" @click="save">{{ payment ? 'Guardar cambios' : (isPartner ? 'Enviar pago' : 'Registrar pago') }}</UButton>
+            <UButton color="primary" :loading="saving" :disabled="partnerNeedsReceipt" @click="save">{{ payment ? 'Guardar cambios' : (isPartner ? 'Enviar pago' : 'Registrar pago') }}</UButton>
           </div>
         </div>
         <p v-if="sentAmount > 0 && unassignedAmount <= 0.004" class="text-xs text-muted">Todo el monto está asignado.</p>
@@ -107,6 +114,7 @@ import YuanFilePick from '~/components/pago-proveedor/YuanFilePick.vue'
 import { RECEIPT_ACCEPT } from '~/constants/chinaBilling'
 import { ChinaBillingService } from '~/services/chinaBillingService'
 import type { ChinaOperation, ChinaOrganizationOption, ChinaPayment } from '~/types/china-billing'
+import { formatNombreEmpresa } from '~/utils/formatters'
 
 const props = defineProps<{
   open: boolean
@@ -126,6 +134,7 @@ const isPartner = computed(() => props.mode === 'partner')
 const organizationId = ref<number | null>(null)
 const paidOn = ref(new Date().toISOString().slice(0, 10))
 const amountSent = ref<number | null>(null)
+const amountDraft = ref('')
 const amounts = ref<Record<number, number | null>>({})
 const pending = ref<ChinaOperation[]>([])
 const loadingPending = ref(false)
@@ -133,11 +142,53 @@ const receipt = ref<File | null>(null)
 const saving = ref(false)
 const errorMessage = ref('')
 
-const organizationItems = computed(() => (props.organizations || []).map((org) => ({ value: org.id, label: `${org.name}${org.country ? ` · ${org.country}` : ''}` })))
+const organizationItems = computed(() => {
+  const items = (props.organizations || []).map((org) => ({ value: org.id, label: `${formatNombreEmpresa(org.name)}${org.country ? ` · ${org.country}` : ''}` }))
+  const current = props.payment?.organization
+  if (current && !items.some((item) => item.value === current.id)) {
+    items.unshift({ value: current.id, label: `${formatNombreEmpresa(current.name)}${current.country ? ` · ${current.country}` : ''}` })
+  }
+  return items
+})
+
+/** En el pago del socio: fecha y país del consolidado, sin el detalle del servicio. */
+function partnerInvoiceLine(operation: ChinaOperation) {
+  return [dayLabel(operation.issued_on), operation.organization?.country].filter(Boolean).join(' · ')
+}
+
+function operationSubtitle(operation: ChinaOperation) {
+  const consolidado = operation.consolidado_label || ''
+  let detail = operation.description || ''
+  for (const known of [operation.service_name, consolidado]) {
+    if (known) detail = detail.replace(new RegExp(known.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '')
+  }
+  detail = detail.replace(/(?:\s*[·-]\s*)+/g, ' · ').replace(/^(?:\s*·\s*)+|(?:\s*·\s*)+$/g, '').trim()
+  return [dayLabel(operation.issued_on), consolidado, detail].filter(Boolean).join(' · ')
+}
 const clientLabel = computed(() => organizationItems.value.find((item) => item.value === organizationId.value)?.label || 'el cliente')
+const partnerNeedsReceipt = computed(() => isPartner.value && !receipt.value && !props.payment?.receipt_url)
 const sentAmount = computed(() => Number(amountSent.value || 0))
 const assignedAmount = computed(() => roundTwo(pending.value.reduce((sum, operation) => sum + Number(amounts.value[operation.id!] || 0), 0)))
 const unassignedAmount = computed(() => roundTwo(Math.max(0, sentAmount.value - assignedAmount.value)))
+
+function parseMoney(value: string | number | null | undefined): number | null {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null
+  const clean = String(value ?? '').replace(/\s/g, '').replace(',', '.')
+  if (clean === '' || clean === '.') return null
+  const amount = Number(clean)
+  return Number.isFinite(amount) ? amount : null
+}
+
+function setAmount(value: number | null) {
+  amountSent.value = value
+  amountDraft.value = value == null ? '' : String(value)
+}
+
+function onAmountDraft(value: string | number) {
+  const text = String(value ?? '')
+  amountDraft.value = text
+  amountSent.value = parseMoney(text)
+}
 
 function covered(id: number) {
   return Number(amounts.value[id] || 0) > 0.004
@@ -154,7 +205,7 @@ watch(() => [props.open, props.payment, props.lockedOrganizationId], async () =>
   amounts.value = {}
   pending.value = []
   paidOn.value = props.payment?.paid_on || new Date().toISOString().slice(0, 10)
-  amountSent.value = props.payment?.amount_sent ?? null
+  setAmount(props.payment?.amount_sent ?? null)
   organizationId.value = props.payment?.organization.id ?? props.lockedOrganizationId ?? null
   if (isPartner.value || organizationId.value) await loadPending()
 }, { immediate: true })
@@ -170,7 +221,7 @@ async function loadPending() {
   try {
     const response = isPartner.value
       ? await ChinaBillingService.partnerPayableInvoices()
-      : await ChinaBillingService.pendingOperations(organizationId.value!)
+      : await ChinaBillingService.pendingOperations(organizationId.value!, (props.payment?.allocations || []).map((allocation) => allocation.operation_id))
     pending.value = response.data || []
     // Al editar, lo ya asignado a este pago vuelve a estar disponible para repartir.
     props.payment?.allocations.forEach((allocation) => {

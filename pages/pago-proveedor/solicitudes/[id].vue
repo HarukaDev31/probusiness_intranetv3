@@ -396,7 +396,7 @@
                 <tr v-if="abonoConDetalle(abono)">
                   <td colspan="8" class="pb-3">
                     <UAlert v-if="abono.observacion" color="error" variant="subtle" :title="`Observado: ${abono.observacion.motivo}`" :description="[abono.observacion.detalle, abono.observacion.plazo].filter(Boolean).join(' · ') || undefined" />
-                    <p v-if="abono.operacion_repetida" class="mt-1 text-sm text-warning">El número de operación ya estaba registrado.</p>
+                    <p v-if="abono.operacion_repetida" class="mt-1 text-sm text-warning">{{ abono.operacion_repetida_detalle || 'El número de operación ya estaba registrado.' }}</p>
                   </td>
                 </tr>
               </template>
@@ -560,7 +560,7 @@
             color="success"
             icon="i-heroicons-paper-airplane"
             :loading="guardandoAviso"
-            :disabled="!candidatosElegidos.length || pedidoDatos.cargando || !pedidoDatos.puedeEnviar"
+            :disabled="!VENTAS_WHATSAPP_HABILITADO || !candidatosElegidos.length || pedidoDatos.cargando || !pedidoDatos.puedeEnviar" :title="VENTAS_WHATSAPP_HABILITADO ? undefined : VENTAS_WHATSAPP_DESHABILITADO_TEXTO"
             @click="enviarPedirDatos"
           >
             Enviar mensaje al cliente
@@ -811,7 +811,7 @@
           <template v-if="vistaPrevia?.tipo === 'resumen'">
             <UButton color="neutral" variant="outline" @click="cerrarVistaPrevia">Cerrar</UButton>
             <UButton color="neutral" variant="outline" icon="i-heroicons-document-arrow-down" :loading="guardandoAviso" @click="descargarResumen">Descargar PDF</UButton>
-            <UButton color="success" icon="i-heroicons-paper-airplane" :loading="enviandoResumen" :disabled="!vistaPrevia.puede_enviar" @click="enviarResumenWhatsapp">
+            <UButton color="success" icon="i-heroicons-paper-airplane" :loading="enviandoResumen" :disabled="!VENTAS_WHATSAPP_HABILITADO || !vistaPrevia.puede_enviar" :title="VENTAS_WHATSAPP_HABILITADO ? undefined : VENTAS_WHATSAPP_DESHABILITADO_TEXTO" @click="enviarResumenWhatsapp">
               Enviar por WhatsApp
             </UButton>
           </template>
@@ -819,7 +819,7 @@
             <UButton color="neutral" variant="outline" @click="cerrarVistaPrevia">Cerrar</UButton>
             <!-- #2289: la imagen oficial de cuentas también se puede descargar. -->
             <UButton v-if="vistaPrevia.imagen" color="neutral" variant="outline" icon="i-lucide-download" :to="vistaPrevia.imagen" target="_blank" download="cuentas-bancarias.jpg">Descargar imagen</UButton>
-            <UButton color="success" icon="i-heroicons-paper-airplane" :loading="enviandoCuentas" :disabled="!vistaPrevia.puede_enviar" @click="enviarCuentasWhatsapp">
+            <UButton color="success" icon="i-heroicons-paper-airplane" :loading="enviandoCuentas" :disabled="!VENTAS_WHATSAPP_HABILITADO || !vistaPrevia.puede_enviar" :title="VENTAS_WHATSAPP_HABILITADO ? undefined : VENTAS_WHATSAPP_DESHABILITADO_TEXTO" @click="enviarCuentasWhatsapp">
               Enviar por WhatsApp
             </UButton>
           </template>
@@ -827,7 +827,7 @@
             <UButton color="neutral" variant="outline" @click="cerrarVistaPrevia">Cerrar</UButton>
             <UButton color="primary" variant="outline" icon="i-lucide-external-link" :to="enlaceAsesor(vistaPrevia.enlace || '')" target="_blank" rel="noopener">Abrir como cliente</UButton>
             <!-- #2251/#2293: el mensaje del formulario (o de autorización) también se envía desde aquí. -->
-            <UButton v-if="vistaPrevia.proveedorId" color="success" icon="i-heroicons-paper-airplane" :loading="enviandoFormulario" :disabled="!solicitud.cliente_whatsapp" @click="enviarMensajeFormulario">
+            <UButton v-if="vistaPrevia.proveedorId" color="success" icon="i-heroicons-paper-airplane" :loading="enviandoFormulario" :disabled="!VENTAS_WHATSAPP_HABILITADO || !solicitud.cliente_whatsapp" :title="VENTAS_WHATSAPP_HABILITADO ? undefined : VENTAS_WHATSAPP_DESHABILITADO_TEXTO" @click="enviarMensajeFormulario">
               Enviar por WhatsApp
             </UButton>
           </template>
@@ -839,6 +839,7 @@
 </template>
 
 <script setup lang="ts">
+import { VENTAS_WHATSAPP_HABILITADO, VENTAS_WHATSAPP_DESHABILITADO_TEXTO } from '~/constants/supplierPayment'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import type { PagoProveedorAbono, PagoProveedorSolicitud, PagoProveedorSolicitudProveedor } from '~/types/pago-proveedor'
 import { PROVIDER_STATUS, SUPPLIER_PAYMENT_PROFILE } from '~/constants/supplierPayment'

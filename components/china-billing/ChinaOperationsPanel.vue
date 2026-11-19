@@ -5,8 +5,8 @@
         v-for="state in states"
         :key="state.key"
         type="button"
-        class="flex flex-col gap-1.5 border-b-[3px] border-r border-r-[#eef1f6] px-5 py-4 text-left transition-colors hover:bg-[#fff8f2]"
-        :class="status === state.key ? 'border-b-primary bg-[#fff3ea]' : 'border-b-transparent'"
+        class="flex flex-col gap-1.5 border-b-[3px] border-r border-default px-5 py-4 text-left transition-colors hover:bg-elevated"
+        :class="status === state.key ? 'border-b-primary bg-primary/10' : 'border-b-transparent'"
         @click="changeStatus(state.key)"
       >
         <span class="flex items-center gap-2 text-[13px] text-toned"><span class="size-2.5 flex-none rounded-full" :class="state.dot" />{{ state.label }}</span>
@@ -44,7 +44,7 @@
       @items-per-page-change="onPageSize"
     >
       <template #inline-extra>
-        <div v-if="selectedIds.length" class="flex flex-wrap items-center gap-4 border-b border-[#f9c6a5] bg-[#fff3ea] px-4 py-3 text-sm">
+        <div v-if="selectedIds.length" class="flex flex-wrap items-center gap-4 border-b border-primary/30 bg-primary/10 px-4 py-3 text-sm">
           <span class="font-semibold text-highlighted">{{ selectedIds.length }} {{ selectedIds.length === 1 ? 'operación seleccionada' : 'operaciones seleccionadas' }}</span>
           <span class="text-toned">{{ selectedOrganizationName }} · Pendiente {{ usd(selectedPending) }}</span>
           <span class="flex-1" />
@@ -82,6 +82,7 @@
     <ChinaOperationDrawer
       :operation="selected"
       :credits="credits"
+      :operations="rows"
       @close="selectedId = null"
       @changed="refresh"
       @register-payment="(operation) => openPaymentFor(operation)"
@@ -120,7 +121,8 @@ import { useChinaOperations } from '~/composables/china-billing/useChinaOperatio
 import { useModal } from '~/composables/commons/useModal'
 import { ChinaBillingService } from '~/services/chinaBillingService'
 import type { ChinaDocumentTarget, ChinaOperation, ChinaPayment } from '~/types/china-billing'
-import { UButton, UCheckbox, UIcon } from '#components'
+import { formatNombreEmpresa } from '~/utils/formatters'
+import { UButton, UCheckbox, UIcon, UTooltip } from '#components'
 
 const props = defineProps<{ range: { from: string; to: string } }>()
 const emit = defineEmits<{ changed: []; 'range-change': [range: { from: string; to: string }] }>()
@@ -149,7 +151,7 @@ const filters = ref<Record<string, string>>({ status: CHINA_STATUS.ALL, date_fro
 
 const selectedRows = computed(() => rows.value.filter((row) => selectedIds.value.includes(row.id as number)))
 const selectedOrganizationId = computed(() => selectedRows.value[0]?.organization.id ?? null)
-const selectedOrganizationName = computed(() => selectedRows.value[0]?.organization.name ?? '')
+const selectedOrganizationName = computed(() => formatNombreEmpresa(selectedRows.value[0]?.organization.name))
 const selectedPending = computed(() => selectedRows.value.reduce((sum, row) => sum + (row.pending || 0), 0))
 
 const filterConfig = computed(() => [
@@ -170,7 +172,7 @@ const filterConfig = computed(() => [
 
 // Los borradores por aprobar se pintan en amarillo, como en la maqueta.
 const tableMeta = {
-  class: { td: ({ original }: { original: ChinaOperation }) => (original?.is_draft ? '!bg-[#fffcf3]' : '') }
+  class: { td: ({ original }: { original: ChinaOperation }) => (original?.is_draft ? '!bg-warning/10' : '') }
 }
 
 // La barra de estados y el filtro «Estado» siempre muestran lo mismo.
@@ -211,17 +213,20 @@ function differenceCell(row: ChinaOperation) {
   const received = (row.costs || []).filter((cost) => cost.source_operation_id).map((cost) => cost.name.replace('Diferencia ', ''))
   const favor = (row.difference ?? 0) < 0
   const owed = (row.difference ?? 0) > 0 && !row.transferred
-  const text = row.difference == null || row.difference === undefined
-    ? '—'
-    : favor ? `+${usd(Math.abs(row.difference))} a favor` : usd(row.difference)
-  const tone = favor ? 'text-success' : owed ? 'text-error' : row.transferred ? 'text-muted' : 'text-highlighted'
+  const moved = row.transferred && row.transferred_amount != null
+  const text = moved
+    ? usd(row.transferred_amount)
+    : row.difference == null || row.difference === undefined
+      ? '—'
+      : favor ? `+${usd(Math.abs(row.difference))} a favor` : usd(row.difference)
+  const tone = moved ? 'text-muted' : favor ? 'text-success' : owed ? 'text-error' : row.transferred ? 'text-muted' : 'text-highlighted'
   return h('div', { class: 'flex min-w-28 flex-col items-end gap-1' }, [
     h('span', { class: `font-medium ${tone}` }, text),
     owed || favor
       ? h('button', { type: 'button', class: 'text-xs font-medium text-primary hover:underline', onClick: () => startTransfer(row, favor ? 'credit' : 'difference') }, 'Trasladar a otra orden')
       : null,
     row.transferred_to_code
-      ? h('span', { class: 'text-xs text-muted' }, `Trasladada a ${row.transferred_to_code}`)
+      ? h('span', { class: 'text-xs text-muted' }, `Trasladado a ${row.transferred_to_code}`)
       : null,
     row.transferred_to_code
       ? h('button', { type: 'button', class: 'text-xs font-medium text-primary hover:underline', onClick: () => undoTransfer(row) }, 'Deshacer traslado')
@@ -238,6 +243,29 @@ const iconButton = (icon: string, label: string, onClick: () => void, tone = 'ho
   onClick
 }, h(UIcon, { name: icon, class: 'size-4' }))
 
+function totalWithDetail(operation: ChinaOperation) {
+  const service = operation.billing_type === 'cbm'
+    ? Number(operation.cbm || 0) * Number(operation.rate || 0)
+    : Number(operation.amount || 0)
+  const lines: [string, string][] = [[
+    operation.billing_type === 'cbm'
+      ? `Servicio (${Number(operation.cbm || 0)} CBM × ${usd(operation.rate || 0)})`
+      : (operation.service_name || 'Servicio'),
+    usd(service)
+  ], ['Costo FOB', usd(operation.fob || 0)], ['Flete', usd(operation.freight || 0)]]
+  for (const cost of operation.costs || []) lines.push([cost.name || 'Otro', usd(cost.amount)])
+  lines.push(['Total', usd(operation.total)])
+
+  return h(UTooltip, {
+    ui: { content: 'h-auto max-w-sm bg-inverted px-3 py-2.5 text-inverted' }
+  }, {
+    default: () => h('span', { class: 'cursor-help font-semibold underline decoration-dotted underline-offset-2' }, usd(operation.total)),
+    content: () => h('div', { class: 'min-w-56 space-y-1 text-xs text-inverted' }, lines.map(([label, value], index) => h('div', {
+      class: `flex items-center justify-between gap-6 text-inverted ${index === lines.length - 1 ? 'mt-1 border-t border-current/30 pt-1 font-semibold' : ''}`
+    }, [h('span', label), h('span', { class: 'font-medium' }, value)])))
+  })
+}
+
 const columns: TableColumn<ChinaOperation>[] = [
   { id: 'select', header: '', cell: ({ row }) => row.original.is_draft ? null : h(UCheckbox, {
     modelValue: selectedIds.value.includes(row.original.id!),
@@ -245,17 +273,17 @@ const columns: TableColumn<ChinaOperation>[] = [
     'onUpdate:modelValue': (value: boolean | 'indeterminate') => toggle(row.original, value === true)
   }) },
   // «N.» es solo la posición en la lista (la más antigua es 1), no el número de la operación (ese va en «OP-…»).
-  { id: 'number', header: 'N.', cell: ({ row }) => h('span', { class: 'text-muted' }, String(Math.max(1, (pagination.value.total || rows.value.length) - ((pagination.value.current_page - 1) * pagination.value.per_page + row.index)))) },
+  { id: 'number', header: 'N.', cell: ({ row }) => row.original.is_draft ? null : h('span', { class: 'text-muted' }, String(Math.max(1, (pagination.value.total || rows.value.length) - ((pagination.value.current_page - 1) * pagination.value.per_page + row.index)))) },
   { accessorKey: 'issued_on', header: 'Fecha', cell: ({ row }) => h('div', { class: 'flex flex-col whitespace-nowrap' }, [
     h('span', dayLabel(row.original.issued_on)),
     h('span', { class: 'text-xs text-muted' }, monthLabel(row.original.issued_on))
   ]) },
   { id: 'country', header: 'País', cell: ({ row }) => h('span', row.original.organization.country || '—') },
-  { accessorKey: 'organization', header: 'Cliente', cell: ({ row }) => h('span', { class: 'block w-28 whitespace-normal' }, row.original.organization.name) },
+  { accessorKey: 'organization', header: 'Cliente', cell: ({ row }) => h('span', { class: 'block w-36 whitespace-normal' }, formatNombreEmpresa(row.original.organization.name)) },
   { accessorKey: 'description', header: 'Servicio', cell: ({ row }) => h('div', { class: 'flex min-w-48 flex-col gap-0.5' }, [
     h('div', { class: 'flex items-center gap-2' }, [
       h('span', { class: 'font-semibold' }, row.original.service_name),
-      row.original.code ? h('span', { class: 'rounded-md bg-[#eef1f6] px-1.5 py-0.5 text-xs text-toned' }, row.original.code) : null
+      row.original.code ? h('span', { class: 'rounded-md bg-elevated px-1.5 py-0.5 text-xs text-toned' }, row.original.code) : null
     ]),
     h('span', { class: 'text-xs text-muted' }, row.original.is_draft ? `${row.original.description} · ${row.original.cbm} CBM` : row.original.description),
     row.original.is_draft ? null : h(UButton, {
@@ -263,7 +291,7 @@ const columns: TableColumn<ChinaOperation>[] = [
       onClick: () => { documentTarget.value = { kind: 'invoice', mode: 'china', title: `Factura ${row.original.code}`, operationId: row.original.id! } }
     }, () => 'Descargar factura')
   ]) },
-  { accessorKey: 'total', header: 'Monto total', meta: { class: right }, cell: ({ row }) => row.original.is_draft ? muted('') : h('span', { class: 'font-semibold' }, usd(row.original.total)) },
+  { accessorKey: 'total', header: 'Monto total', meta: { class: right }, cell: ({ row }) => row.original.is_draft ? muted('') : totalWithDetail(row.original) },
   { accessorKey: 'received', header: 'Recibido USD', meta: { class: right }, cell: ({ row }) => row.original.is_draft ? muted('') : h('span', row.original.received ? usd(row.original.received) : '—') },
   { id: 'difference', header: 'Diferencia USD', meta: { class: right }, cell: ({ row }) => row.original.is_draft ? muted('') : differenceCell(row.original) },
   { accessorKey: 'received_rmb', header: 'Recibido RMB', meta: { class: right }, cell: ({ row }) => row.original.is_draft ? muted('') : h('span', row.original.received_rmb ? rmb(row.original.received_rmb) : '—') },

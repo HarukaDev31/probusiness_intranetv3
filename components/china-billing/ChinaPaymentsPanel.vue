@@ -29,10 +29,10 @@
       @items-per-page-change="onPageSize"
     >
       <template #inline-extra>
-        <div v-if="credits.length" class="flex flex-wrap items-center gap-2.5 border-b border-[#d3eedd] bg-[#eef8f2] px-4 py-3 text-sm">
+        <div v-if="credits.length" class="flex flex-wrap items-center gap-2.5 border-b border-success/30 bg-success/10 px-4 py-3 text-sm">
           <span class="font-semibold text-success">Saldo a favor de clientes</span>
-          <span v-for="credit in credits" :key="credit.organization_id" class="rounded-full border border-[#c9e6d4] bg-default px-2.5 py-0.5">
-            {{ credit.name }} · <strong>{{ usd(credit.balance) }}</strong>
+          <span v-for="credit in credits" :key="credit.organization_id" class="rounded-full border border-success/30 bg-default px-2.5 py-0.5 text-highlighted">
+            {{ formatNombreEmpresa(credit.name) }} · <strong>{{ usd(credit.balance) }}</strong>
           </span>
         </div>
       </template>
@@ -51,6 +51,7 @@ import ChinaPaymentForm from '~/components/china-billing/ChinaPaymentForm.vue'
 import { CHINA_STATUS, CHINA_STATUS_LABEL, CHINA_STATUS_PILL } from '~/constants/chinaBilling'
 import { useChinaPayments } from '~/composables/china-billing/useChinaPayments'
 import type { ChinaCredit, ChinaPayment } from '~/types/china-billing'
+import { formatNombreEmpresa } from '~/utils/formatters'
 import { UIcon } from '#components'
 
 const props = defineProps<{ range: { from: string; to: string }; credits: ChinaCredit[] }>()
@@ -97,11 +98,11 @@ const columns: TableColumn<ChinaPayment>[] = [
     h('span', { class: 'text-xs text-muted' }, monthLabel(row.original.paid_on))
   ]) },
   { accessorKey: 'organization', header: 'Cliente', cell: ({ row }) => h('div', { class: 'flex min-w-36 flex-col' }, [
-    h('span', { class: 'text-highlighted' }, row.original.organization.name),
+    h('span', { class: 'text-highlighted' }, formatNombreEmpresa(row.original.organization.name)),
     h('span', { class: 'text-xs text-muted' }, row.original.organization.country || '—')
   ]) },
   { id: 'operations', header: 'Operaciones', cell: ({ row }) => h('div', { class: 'flex min-w-40 flex-wrap gap-1.5' }, (row.original.allocations.length ? row.original.allocations.map((a) => a.code) : ['Sin asignar'])
-    .map((code) => h('span', { class: 'rounded-md bg-[#eef1f6] px-2 py-0.5 text-xs text-toned' }, code))) },
+    .map((code) => h('span', { class: 'rounded-md bg-elevated px-2 py-0.5 text-xs text-toned' }, code))) },
   { accessorKey: 'amount_sent', header: 'Enviado', meta: { class: right }, cell: ({ row }) => h('span', { class: 'font-semibold text-highlighted' }, usd(row.original.amount_sent)) },
   { accessorKey: 'amount_received', header: 'Recibido USD', meta: { class: right }, cell: ({ row }) => h('span', { class: 'text-highlighted' }, row.original.amount_received === null ? '—' : usd(row.original.amount_received)) },
   { id: 'credit', header: 'Saldo a favor', meta: { class: right }, cell: ({ row }) => row.original.credit_generated > 0

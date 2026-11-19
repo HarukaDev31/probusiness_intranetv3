@@ -136,8 +136,10 @@ export class ChinaBillingService extends BaseService {
     return this.apiCall<Done>(`${this.baseUrl}/credit-applications/${applicationId}`, { method: 'DELETE' })
   }
 
-  static async pendingOperations(organizationId: number) {
-    return this.apiCall<{ success: boolean; data: ChinaOperation[] }>(`${this.baseUrl}/organizations/${organizationId}/pending-operations`)
+  static async pendingOperations(organizationId: number, includeIds: number[] = []) {
+    const include = includeIds.filter(Boolean).join(',')
+    const query = include ? `?include=${include}` : ''
+    return this.apiCall<{ success: boolean; data: ChinaOperation[] }>(`${this.baseUrl}/organizations/${organizationId}/pending-operations${query}`)
   }
 
   // --- Almacén China: cobros ---
@@ -173,6 +175,12 @@ export class ChinaBillingService extends BaseService {
     form.append('exchange_rate', String(exchangeRate))
     if (voucher) form.append('voucher', voucher)
     return this.apiCall<One<ChinaPayment>>(`${this.baseUrl}/payments/${id}/cash`, { method: 'POST', body: form })
+  }
+
+  static async attachCashVoucher(id: number, voucher: File) {
+    const form = new FormData()
+    form.append('voucher', voucher)
+    return this.apiCall<One<ChinaPayment>>(`${this.baseUrl}/payments/${id}/cash-voucher`, { method: 'POST', body: form })
   }
 
   static async uncashPayment(id: number) {

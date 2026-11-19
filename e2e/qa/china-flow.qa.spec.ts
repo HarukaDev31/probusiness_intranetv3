@@ -50,7 +50,7 @@ async function partnerPays(page: Page, op: string, amount: string) {
   const d = page.getByRole('dialog').last()
   await d.locator('input[inputmode], input[type=number]').first().fill(amount)
   await d.locator('input[type=file]').first().setInputFiles(RECEIPT)
-  await d.getByRole('button', { name: /Registrar pago/ }).last().click()
+  await d.getByRole('button', { name: /Enviar pago|Registrar pago/ }).last().click()
   await page.getByText(/Mis pagos/).first().click()
   const row = page.locator('tr', { hasText: op }).filter({ visible: true }).first()
   await expect(row).toContainText('Por confirmar')

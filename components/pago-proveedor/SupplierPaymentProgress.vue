@@ -415,7 +415,7 @@
       </template>
       <template #footer>
         <UButton color="neutral" variant="soft" @click="balancePreview = null">Cancelar</UButton>
-        <UButton color="success" icon="i-heroicons-paper-airplane" :loading="saving" @click="sendBalance">Enviar por WhatsApp</UButton>
+        <UButton color="success" icon="i-heroicons-paper-airplane" :loading="saving" :disabled="!VENTAS_WHATSAPP_HABILITADO" :title="VENTAS_WHATSAPP_HABILITADO ? undefined : VENTAS_WHATSAPP_DESHABILITADO_TEXTO" @click="sendBalance">Enviar por WhatsApp</UButton>
       </template>
     </SupplierPaymentWindow>
 
@@ -446,6 +446,7 @@
 </template>
 
 <script setup lang="ts">
+import { VENTAS_WHATSAPP_HABILITADO, VENTAS_WHATSAPP_DESHABILITADO_TEXTO } from '~/constants/supplierPayment'
 import { computed, reactive, ref, watch } from 'vue'
 import { INSTALLMENT_CHOICE, PAYMENT_CHOICE, REFUND_STATUS, SURPLUS_DECISION } from '~/constants/supplierPayment'
 import type { PagoProveedorSolicitudProveedor } from '~/types/pago-proveedor'

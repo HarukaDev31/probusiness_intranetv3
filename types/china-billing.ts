@@ -16,12 +16,17 @@ export interface ChinaOperationPaymentRef {
   code: string
   amount: number
   status: string
+  paid_on?: string | null
+  receipt_name?: string | null
+  amount_sent?: number | null
 }
 
 export interface ChinaCreditApplication {
   id: number
   amount: number
   from_operation_id: number | null
+  payment_code?: string | null
+  applied_on?: string | null
 }
 
 /** Operación aprobada o borrador "Por aprobar" (is_draft). Todos los montos los calcula el backend. */
@@ -49,6 +54,7 @@ export interface ChinaOperation {
   costs?: ChinaOperationCost[]
   transferred_to_operation_id?: number | null
   transferred_to_code?: string | null
+  transferred_amount?: number | null
   payments?: ChinaOperationPaymentRef[]
   credits?: ChinaCreditApplication[]
   status: string
@@ -278,6 +284,8 @@ export interface ChinaClient {
   open_count: number
   closed_count: number
   can_delete: boolean
+  /** Pro Business (org 1): solo se editan sus tarifas. */
+  is_house?: boolean
   can_download_balance: boolean
   services?: ChinaClientService[]
 }

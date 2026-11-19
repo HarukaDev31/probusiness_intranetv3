@@ -39,7 +39,7 @@
       @items-per-page-change="onPageSize"
     >
       <template #actions>
-        <div class="order-first inline-flex rounded-xl bg-[#eef1f6] p-1">
+        <div class="order-first inline-flex rounded-xl bg-elevated p-1">
           <button
             v-for="item in types"
             :key="item.key"
@@ -73,6 +73,7 @@ import { useChinaClients } from '~/composables/china-billing/useChinaClients'
 import { useModal } from '~/composables/commons/useModal'
 import { ChinaBillingService } from '~/services/chinaBillingService'
 import type { ChinaClient, ChinaDocumentTarget } from '~/types/china-billing'
+import { formatNombreEmpresa } from '~/utils/formatters'
 import { UIcon } from '#components'
 
 const { type, search, rows, counts, groups, pagination, loading, load, reload, changeType } = useChinaClients()
@@ -119,13 +120,13 @@ const columns: TableColumn<ChinaClient>[] = [
   { id: 'number', header: 'N°', cell: ({ row }) => h('span', { class: 'text-muted' }, String((pagination.value.current_page - 1) * pagination.value.per_page + row.index + 1)) },
   { accessorKey: 'registered_on', header: 'Fecha', cell: ({ row }) => h('span', { class: 'whitespace-nowrap' }, fullDate(row.original.registered_on)) },
   { accessorKey: 'name', header: 'Cliente', cell: ({ row }) => h('div', { class: 'flex min-w-48 flex-col' }, [
-    h('span', { class: 'font-semibold' }, row.original.name),
+    h('span', { class: 'font-semibold' }, formatNombreEmpresa(row.original.name)),
     h('span', { class: 'text-xs text-muted' }, row.original.whatsapp || '—'),
     h('span', { class: 'text-xs text-muted' }, [row.original.contact_name, row.original.email].filter(Boolean).join(' · ') || '—')
   ]) },
   { accessorKey: 'country', header: 'País', cell: ({ row }) => h('span', row.original.country || '—') },
   { accessorKey: 'type', header: 'Tipo', cell: ({ row }) => h('span', {
-    class: `inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${row.original.type === 'partner' ? 'bg-[#fff3ea] text-[#b4480c]' : 'bg-[#eef1f6] text-[#4a5a72]'}`
+    class: `inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${row.original.type === 'partner' ? 'bg-primary/15 text-primary' : 'bg-elevated text-toned'}`
   }, row.original.type === 'partner' ? 'Socio' : 'Importador') },
   { accessorKey: 'service_amount', header: 'Total servicio', meta: { class: right }, cell: ({ row }) => h('span', { class: 'font-semibold text-success' }, usd(row.original.service_amount)) },
   { accessorKey: 'total_billed', header: 'Total facturado', meta: { class: right }, cell: ({ row }) => h('span', usd(row.original.total_billed)) },
@@ -139,10 +140,10 @@ const columns: TableColumn<ChinaClient>[] = [
   { id: 'actions', header: 'Acciones', cell: ({ row }) => h('div', { class: 'flex gap-1' }, [
     // #1990: el ojo va en naranja.
     iconButton('i-heroicons-eye', 'Ver cliente', () => openDetail(row.original), 'text-primary hover:bg-primary/10'),
-    iconButton('i-heroicons-pencil-square', 'Editar', () => openForm(row.original)),
+    iconButton('i-heroicons-pencil-square', row.original.is_house ? 'Editar tarifas' : 'Editar', () => openForm(row.original)),
     iconButton(
       'i-heroicons-trash',
-      row.original.can_delete ? 'Eliminar' : (row.original.type === 'partner' ? 'Los socios se administran desde su organización' : 'Tiene operaciones: no se puede eliminar'),
+      row.original.can_delete ? 'Eliminar' : 'Pro Business no se puede eliminar',
       () => remove(row.original),
       'text-toned hover:bg-error/10 hover:text-error',
       !row.original.can_delete
@@ -168,7 +169,12 @@ function openBalance(client: ChinaClient) {
 }
 
 function remove(client: ChinaClient) {
-  showConfirmation(`¿Eliminar a ${client.name}?`, 'Esta acción no se puede deshacer.', async () => {
+  // Baja lógica: el cliente deja de ser facturable; su organización, usuario, operaciones y pagos se mantienen.
+  const tipo = client.type === 'partner' ? 'socio' : 'importador'
+  showConfirmation(
+    `¿Eliminar al ${tipo} ${client.name}?`,
+    `Dejará de aparecer en Clientes y ya no se le podrán crear operaciones. Sus operaciones, pagos y su acceso a la plataforma se mantienen.`,
+    async () => {
     try {
       await ChinaBillingService.deleteClient(client.id)
       load()

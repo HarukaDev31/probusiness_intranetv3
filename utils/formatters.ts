@@ -331,3 +331,35 @@ export const formatNombrePropio = (value: string | null | undefined): string => 
     })
     .join(' ')
 }
+
+/** «SAC» → «S.A.C.». La clave es el sufijo sin puntos, en minúscula. */
+const SUFIJOS_EMPRESA: Record<string, string> = {
+  sac: 'S.A.C.',
+  sa: 'S.A.',
+  srl: 'S.R.L.',
+  eirl: 'E.I.R.L.',
+  saa: 'S.A.A.',
+  sas: 'S.A.S.'
+}
+/** Palabras cortas que sí se escriben en mayúscula y minúscula («PRO» → «Pro»). */
+const PALABRAS_CORTAS_EMPRESA = new Set(['pro', 'de', 'del', 'la', 'las', 'los', 'y', 'e', 'al'])
+
+/**
+ * Razón social en mayúscula y minúscula.
+ * «ABC IMPORTACIONES» → «ABC Importaciones»; «PRO MUNDO COMEX SAC» → «Pro Mundo Comex S.A.C.».
+ * Conserva siglas de 2 o 3 letras («ABC») y el prefijo entre corchetes («[QA-PRUEBA]»).
+ */
+export const formatNombreEmpresa = (value: string | null | undefined): string => {
+  const text = String(value ?? '').trim().replace(/\s+/g, ' ')
+  if (!text) return ''
+  const tokens = text.split(' ')
+  const especiales = tokens.map((original) => {
+    if (original.startsWith('[')) return original
+    const compacto = original.replace(/\./g, '').toLocaleLowerCase('es-PE')
+    if (SUFIJOS_EMPRESA[compacto]) return SUFIJOS_EMPRESA[compacto]
+    if (/^[A-ZÁÉÍÓÚÑ]{2,3}$/.test(original) && !PALABRAS_CORTAS_EMPRESA.has(compacto)) return original
+    return null
+  })
+  const propios = formatNombrePropio(tokens.map((token, index) => (especiales[index] ? 'x' : token)).join(' ')).split(' ')
+  return tokens.map((_, index) => especiales[index] ?? propios[index] ?? '').join(' ')
+}

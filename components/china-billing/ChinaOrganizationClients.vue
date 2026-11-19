@@ -122,7 +122,7 @@ const columns: TableColumn<ChinaOrganizationClient>[] = [
   { accessorKey: 'origin', header: 'Origen', cell: ({ row }) => h('span', row.original.origin || '-') },
   { accessorKey: 'service', header: 'Servicio', cell: ({ row }) => h('span', row.original.service || '—') },
   { accessorKey: 'category', header: 'Categoría', cell: ({ row }) => h('span', {
-    class: `inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${row.original.category === 'Prospecto' ? 'bg-[#eef1f6] text-[#4a5a72]' : 'bg-[#e3edfd] text-[#1d4f91]'}`
+    class: `inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${row.original.category === 'Prospecto' ? 'bg-elevated text-toned' : 'bg-info/15 text-info'}`
   }, row.original.category) },
   { id: 'actions', header: 'Acción', cell: ({ row }) => h('button', {
     type: 'button',
