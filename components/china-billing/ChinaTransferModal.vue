@@ -35,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useModal } from '~/composables/commons/useModal'
 import { ChinaBillingService } from '~/services/chinaBillingService'
 import type { ChinaOperation } from '~/types/china-billing'
@@ -51,6 +51,25 @@ const emit = defineEmits<{ close: []; done: [] }>()
 
 const { showError } = useModal()
 const busy = ref(false)
+const remote = ref<ChinaOperation[]>([])
+
+watch(() => props.operation?.id, async (id) => {
+  remote.value = []
+  if (!id || !props.operation) return
+  try {
+    const response = await ChinaBillingService.pendingOperations(props.operation.organization.id)
+    remote.value = response.data || []
+  } catch {
+    remote.value = []
+  }
+}, { immediate: true })
+
+function sameClient(row: ChinaOperation) {
+  const source = props.operation
+  if (!source) return false
+  if (row.organization.id === source.organization.id) return true
+  return formatNombreEmpresa(row.organization.name).toLocaleLowerCase('es-PE') === formatNombreEmpresa(source.organization.name).toLocaleLowerCase('es-PE')
+}
 
 /** Lo que se traslada: la diferencia por cobrar o el saldo a favor (diferencia negativa). */
 const amount = computed(() => Math.abs(props.operation?.difference ?? 0))
@@ -62,9 +81,15 @@ const description = computed(() => {
     : `${usd(amount.value)} de ${props.operation.code} se agregará como costo en otra orden del mismo cliente y se cobrará en esa factura.`
 })
 
-const options = computed(() => props.siblings
-  .filter((row) => !row.is_draft && row.id !== props.operation?.id && row.organization.id === props.operation?.organization.id && !row.transferred && (row.pending || 0) > 0)
-  .map((row) => ({ row, amount: Math.min(amount.value, row.pending || 0) })))
+const options = computed(() => {
+  const byId = new Map<number, ChinaOperation>()
+  for (const row of [...props.siblings, ...remote.value]) {
+    if (row.id) byId.set(row.id, row)
+  }
+  return [...byId.values()]
+    .filter((row) => !row.is_draft && row.id !== props.operation?.id && !row.transferred && sameClient(row) && ((row.pending || 0) > 0 || row.status === 'pending'))
+    .map((row) => ({ row, amount: Math.min(amount.value, row.pending || amount.value) }))
+})
 
 async function pick(row: ChinaOperation) {
   if (!props.operation) return
