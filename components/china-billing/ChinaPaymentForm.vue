@@ -107,6 +107,7 @@ import YuanFilePick from '~/components/pago-proveedor/YuanFilePick.vue'
 import { RECEIPT_ACCEPT } from '~/constants/chinaBilling'
 import { ChinaBillingService } from '~/services/chinaBillingService'
 import type { ChinaOperation, ChinaOrganizationOption, ChinaPayment } from '~/types/china-billing'
+import { formatNombreEmpresa } from '~/utils/formatters'
 
 const props = defineProps<{
   open: boolean
@@ -133,7 +134,7 @@ const receipt = ref<File | null>(null)
 const saving = ref(false)
 const errorMessage = ref('')
 
-const organizationItems = computed(() => (props.organizations || []).map((org) => ({ value: org.id, label: `${org.name}${org.country ? ` · ${org.country}` : ''}` })))
+const organizationItems = computed(() => (props.organizations || []).map((org) => ({ value: org.id, label: `${formatNombreEmpresa(org.name)}${org.country ? ` · ${org.country}` : ''}` })))
 const clientLabel = computed(() => organizationItems.value.find((item) => item.value === organizationId.value)?.label || 'el cliente')
 const sentAmount = computed(() => Number(amountSent.value || 0))
 const assignedAmount = computed(() => roundTwo(pending.value.reduce((sum, operation) => sum + Number(amounts.value[operation.id!] || 0), 0)))
