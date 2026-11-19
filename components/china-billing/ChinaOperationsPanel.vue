@@ -82,6 +82,7 @@
     <ChinaOperationDrawer
       :operation="selected"
       :credits="credits"
+      :operations="rows"
       @close="selectedId = null"
       @changed="refresh"
       @register-payment="(operation) => openPaymentFor(operation)"
