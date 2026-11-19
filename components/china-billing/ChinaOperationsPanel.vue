@@ -213,17 +213,20 @@ function differenceCell(row: ChinaOperation) {
   const received = (row.costs || []).filter((cost) => cost.source_operation_id).map((cost) => cost.name.replace('Diferencia ', ''))
   const favor = (row.difference ?? 0) < 0
   const owed = (row.difference ?? 0) > 0 && !row.transferred
-  const text = row.difference == null || row.difference === undefined
-    ? '—'
-    : favor ? `+${usd(Math.abs(row.difference))} a favor` : usd(row.difference)
-  const tone = favor ? 'text-success' : owed ? 'text-error' : row.transferred ? 'text-muted' : 'text-highlighted'
+  const moved = row.transferred && row.transferred_amount != null
+  const text = moved
+    ? usd(row.transferred_amount)
+    : row.difference == null || row.difference === undefined
+      ? '—'
+      : favor ? `+${usd(Math.abs(row.difference))} a favor` : usd(row.difference)
+  const tone = moved ? 'text-muted' : favor ? 'text-success' : owed ? 'text-error' : row.transferred ? 'text-muted' : 'text-highlighted'
   return h('div', { class: 'flex min-w-28 flex-col items-end gap-1' }, [
     h('span', { class: `font-medium ${tone}` }, text),
     owed || favor
       ? h('button', { type: 'button', class: 'text-xs font-medium text-primary hover:underline', onClick: () => startTransfer(row, favor ? 'credit' : 'difference') }, 'Trasladar a otra orden')
       : null,
     row.transferred_to_code
-      ? h('span', { class: 'text-xs text-muted' }, `Trasladada a ${row.transferred_to_code}`)
+      ? h('span', { class: 'text-xs text-muted' }, `Trasladado a ${row.transferred_to_code}`)
       : null,
     row.transferred_to_code
       ? h('button', { type: 'button', class: 'text-xs font-medium text-primary hover:underline', onClick: () => undoTransfer(row) }, 'Deshacer traslado')

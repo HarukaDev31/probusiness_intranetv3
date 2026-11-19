@@ -22,6 +22,8 @@ export interface ChinaCreditApplication {
   id: number
   amount: number
   from_operation_id: number | null
+  payment_code?: string | null
+  applied_on?: string | null
 }
 
 /** Operación aprobada o borrador "Por aprobar" (is_draft). Todos los montos los calcula el backend. */
@@ -49,6 +51,7 @@ export interface ChinaOperation {
   costs?: ChinaOperationCost[]
   transferred_to_operation_id?: number | null
   transferred_to_code?: string | null
+  transferred_amount?: number | null
   payments?: ChinaOperationPaymentRef[]
   credits?: ChinaCreditApplication[]
   status: string
