@@ -26,17 +26,25 @@ export function useSupplierPaymentRequest() {
 
   const getBankAccounts = (solicitudId: number) => PagoProveedorService.cuentas(solicitudId)
 
+  const sendBankAccounts = (solicitudId: number) => PagoProveedorService.enviarCuentas(solicitudId)
+
   const liftChina = (solicitudId: number, proveedorId: number, vendedor: string, wechat: string) =>
     PagoProveedorService.levantarChina(solicitudId, proveedorId, vendedor, wechat)
 
   const saveRmb = (solicitudId: number, proveedorId: number, vendedor: string, wechat: string) =>
     PagoProveedorService.guardarDatosRmb(solicitudId, proveedorId, vendedor, wechat)
 
+  const deleteRmb = (solicitudId: number, proveedorId: number) =>
+    PagoProveedorService.eliminarDatosRmb(solicitudId, proveedorId)
+
   const sendForm = (solicitudId: number, proveedorId: number) =>
     PagoProveedorService.enviarFormulario(solicitudId, proveedorId)
 
   const fillForm = (solicitudId: number, proveedorId: number, body: Record<string, unknown>) =>
     PagoProveedorService.llenarTt(solicitudId, proveedorId, body)
+
+  const sendFormMessage = (solicitudId: number, proveedorId: number) =>
+    PagoProveedorService.enviarMensajeFormulario(solicitudId, proveedorId)
 
   const requestValidation = (solicitudId: number, proveedorId: number) =>
     PagoProveedorService.solicitarValidacion(solicitudId, proveedorId)
@@ -72,11 +80,14 @@ export function useSupplierPaymentRequest() {
     sendProviderData,
     downloadSummary,
     getBankAccounts,
+    sendBankAccounts,
     liftChina,
     saveRmb,
+    deleteRmb,
     sendForm,
     fillForm,
     requestValidation,
+    sendFormMessage,
     observeProvider,
     cancelProvider,
     liftObservation,

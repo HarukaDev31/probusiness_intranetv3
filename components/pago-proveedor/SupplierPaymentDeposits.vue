@@ -13,6 +13,8 @@
       <strong>{{ observedCount }} depósito{{ observedCount === 1 ? '' : 's' }} observado{{ observedCount === 1 ? '' : 's' }}</strong>
     </div>
     <DataTable
+      :fill-viewport="false"
+      class="pp-tabla"
       sticky-last-column
       title=""
       subtitle=""
@@ -31,7 +33,7 @@
       <template #filters>
         <SupplierPaymentFilterBar
           :search="search"
-          search-placeholder="Cliente, N.° de operación, importe o código de solicitud"
+          search-placeholder="Cliente, N.° de operación, importe o N. orden"
           :fields="filterConfig"
           :values="filters"
           @update:search="onSearch"
@@ -39,12 +41,13 @@
         />
       </template>
     </DataTable>
-    <DepositReviewModal :deposit="selected" :reasons="reasons" @close="selected = null" @saved="load" />
+    <DepositReviewModal :deposit="selected" :reasons="reasons" @close="selected = null" @saved="load" @updated="(deposit) => { selected = deposit }" />
     <VoucherPreviewModal :deposit="preview" @close="preview = null" />
   </div>
 </template>
 
 <script setup lang="ts">
+import { formatNombrePropio } from '~/utils/formatters'
 import { computed, h, onMounted, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import DepositReviewModal from '~/components/pago-proveedor/DepositReviewModal.vue'
@@ -136,13 +139,14 @@ const filterConfig = computed(() => [
 ])
 
 const columns: TableColumn<SupplierPaymentDeposit>[] = [
-  { accessorKey: 'order_number', header: 'N.° de orden' },
+  // #2314: «N°» es la posición en la lista (la más antigua es 1).
+  { accessorKey: 'order_number', header: 'N°', cell: ({ row }) => String(Math.max(1, (pagination.value.total || rows.value.length) - ((pagination.value.current_page - 1) * pagination.value.per_page + row.index))) },
   { accessorKey: 'client_name', header: 'Cliente', cell: ({ row }) => h('div', [
-    h('div', { class: 'w-32 whitespace-normal font-medium' }, row.original.client_name || '—'),
+    h('div', { class: 'w-32 whitespace-normal font-medium' }, formatNombrePropio(row.original.client_name) || '—'),
     h('div', { class: 'text-xs text-muted' }, [row.original.client_document, row.original.client_whatsapp].filter(Boolean).join(' · '))
   ]) },
   { accessorKey: 'consolidation', header: 'Consolidado' },
-  { accessorKey: 'providers', header: 'Código de solicitud', cell: ({ row }) => {
+  { accessorKey: 'providers', header: 'N. orden', cell: ({ row }) => {
     const codes = row.original.providers.map((provider) => provider.request_code).filter(Boolean)
     if (!codes.length) {
       return h('span', {

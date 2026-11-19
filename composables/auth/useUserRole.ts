@@ -87,8 +87,12 @@ export const useUserRole = () => {
   const error = globalError || (globalError = ref<string | null>(null))
 
   // Computed para obtener el rol (grupo.nombre)
+  // Nombre real del rol (para mostrarlo); currentRole agrupa Encargado China con el almacén para las pantallas.
+  const displayRole = computed(() => userData.value?.raw?.grupo?.nombre || '')
   const currentRole = computed(() => {
-    return userData.value?.raw?.grupo?.nombre || ''
+    const role = userData.value?.raw?.grupo?.nombre || ''
+    // Encargado China usa las mismas pantallas de almacén (Carga Consolidada, Pago a Proveedor China, etc.).
+    return role.trim().toLowerCase() === ROLES.ENCARGADO_CHINA.toLowerCase() ? ROLES.CONTENEDOR_ALMACEN : role
   })
 const currentId = computed(() => {
   return userData.value?.raw?.id || ''
@@ -202,6 +206,7 @@ const currentId = computed(() => {
     currentOrganizacionId,
     currentEmpresaId,
     currentRole,
+    displayRole,
     userName,
     userEmail,
     userCompany,

@@ -96,6 +96,7 @@ export interface PagoProveedorCotizacion {
   total_ahora: number
   comisiones: number
   puede_editar: boolean
+  puede_editar_desde_solicitud?: boolean
   puede_anular?: boolean
   observacion?: { motivo: string; detalle?: string | null; plazo?: string | null } | null
   puede_eliminar: boolean
@@ -148,6 +149,9 @@ export interface PagoProveedorSolicitud {
   providers?: SupplierPaymentProviderRow[]
   total_cotizado?: number
   total_abonado?: number
+  total_validado?: number
+  por_validar?: number
+  diferencia_por_cobrar?: number
   saldo_pendiente?: number
   excedente?: number
   creado_en: string | null
@@ -197,9 +201,12 @@ export interface SupplierPaymentProviderRow {
   observe_until?: string | null
   observe_text?: string | null
   observe_label?: string | null
+  deposit_observation_label?: string | null
   /** Fecha límite (ISO) de la tarea pendiente de Ventas; null si no tiene plazo. */
   deadline_at?: string | null
-  deadline_kind?: 'collect' | 'observation' | 'decision' | 'commitment' | null
+  deadline_kind?: 'collect' | 'observation' | 'decision' | 'commitment' | 'task' | null
+  /** #1745: si no le toca a Ventas, quién lo tiene y qué le falta para cerrar. */
+  waiting_on?: { area: string; task: string } | null
 }
 
 export interface PagoProveedorSolicitudProveedor {
@@ -230,6 +237,8 @@ export interface PagoProveedorSolicitudProveedor {
   codigo_solicitud: string | null
   puede_editar_etapa1: boolean
   puede_registrar_diferencia?: boolean
+  deposito_observado?: boolean
+  saldo_sin_observados?: number
   puede_levantar?: boolean
   cuota_actual?: number
   cuota_carga?: number | null
@@ -253,6 +262,7 @@ export interface PagoProveedorSolicitudProveedor {
     vendedor_nombre: string | null
     wechat: string | null
     correccion_solicitada: boolean
+    formulario_enviado_el?: string | null
     beneficiario_nombre: string | null
     beneficiario_cuenta?: string | null
     beneficiario_direccion?: string | null
@@ -498,6 +508,7 @@ export interface SupplierPaymentDeposit {
   observation_detail: string | null
   observe_until: string | null
   corrected_by_admin: boolean
+  admin_corrections?: { field: string; from: string; to: string }[]
   verified_at: string | null
   providers: SupplierPaymentDepositProvider[]
   shared: boolean
@@ -628,6 +639,9 @@ export interface SupplierPaymentExecution {
   deposit_bank?: string | null
   bank: SupplierPaymentBankData
   bank_copy_text: string
+  bank_received_at?: string | null
+  bank_source_label?: string | null
+  bank_form_url?: string | null
 }
 
 export interface SupplierPaymentExecutionTotals {
@@ -730,6 +744,8 @@ export interface SupplierPaymentYuanRequest {
   client: string | null
   organization_id: number | null
   organization: string | null
+  /** #1747: nombre del socio (organización; las de Ventas son de Pro Business). */
+  partner_name?: string | null
   manual: boolean
   consolidation: string | null
   exchange_rate: number

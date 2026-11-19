@@ -1,5 +1,5 @@
 <template>
-  <SupplierPaymentPage title="Pagos" subtitle="Tus facturas con Pro Business, tus pagos y tu saldo a favor.">
+  <SupplierPaymentPage wide-tables title="Pagos" subtitle="Tus facturas con Pro Business, tus pagos y tu saldo a favor.">
     <template #actions>
       <UButton color="neutral" variant="outline" icon="i-heroicons-arrow-down-tray" @click="panel?.openBalance()">Descargar balance</UButton>
       <UButton color="primary" icon="i-heroicons-plus" @click="panel?.openFreePayment()">Registrar pago</UButton>

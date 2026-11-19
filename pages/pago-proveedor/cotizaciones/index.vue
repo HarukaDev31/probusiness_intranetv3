@@ -1,11 +1,25 @@
 <template>
   <div class="md:p-6">
+    <!-- Misma cabecera que el resto de Pago a Proveedor: icono naranja y a la altura de la tabla. -->
+    <SupplierPaymentHeader title="Cotizaciones" icon="i-heroicons-banknotes">
+      <template #actions>
+        <UButton
+          size="md"
+          color="neutral"
+          variant="soft"
+          icon="i-heroicons-cog-6-tooth"
+          class="h-8 md:h-11"
+          @click="() => { vigenciaAbierta = true }"
+        >
+          Vigencia de cotizaciones
+        </UButton>
+        <UButton label="Nueva cotización" icon="i-heroicons-plus" color="primary" class="h-8 font-normal md:h-11" @click="() => { nuevaAbierta = true }" />
+      </template>
+    </SupplierPaymentHeader>
     <DataTable
-      title="Cotizaciones"
-      subtitle="Pago a proveedor"
-      :show-title="true"
-      icon="i-heroicons-banknotes"
-      align-subtitle
+      class="pp-tabla pp-tabla-clientes"
+      :show-title="false"
+      :fill-viewport="false"
       :data="filas"
       :columns="columns"
       :loading="cargando"
@@ -18,14 +32,13 @@
       :show-body-top="true"
       :show-export="false"
       empty-state-message="No hay cotizaciones que coincidan con los filtros."
-      :show-new-button="true"
-      new-button-label="Nueva cotización"
-      :on-new-button-click="() => nuevaAbierta = true"
+      :show-new-button="false"
       @page-change="alCambiarPagina"
       @items-per-page-change="alCambiarTamano"
     >
       <template #body-top>
-        <div class="grid w-full gap-3 rounded-xl border border-default bg-default p-4 md:grid-cols-[1fr_auto_auto_auto]">
+        <!-- #2056: el recuadro de filtros queda a la altura de la tabla (sin el margen interno del contenedor). -->
+        <div class="grid w-full gap-3 rounded-xl border border-default bg-default p-4 md:-mx-4 md:w-[calc(100%+2rem)] md:grid-cols-[1fr_auto_auto_auto]">
           <UFormField label="Buscar cliente o cotización" :ui="{ label: 'text-[11px] font-semibold uppercase text-muted' }">
             <UInput :model-value="busqueda" icon="i-heroicons-magnifying-glass" placeholder="Ej: Juan Pérez, COT-03" class="w-full" @update:model-value="(v) => alBuscar(String(v ?? ''))" />
           </UFormField>
@@ -40,18 +53,6 @@
           </UFormField>
         </div>
       </template>
-      <template #actions>
-        <UButton
-          size="md"
-          color="neutral"
-          variant="soft"
-          icon="i-heroicons-cog-6-tooth"
-          class="h-8 md:h-11"
-          @click="() => { vigenciaAbierta = true }"
-        >
-          Vigencia de cotizaciones
-        </UButton>
-      </template>
     </DataTable>
     <p class="mt-2 text-xs text-muted">
       Una cotización no tiene N.° de orden, etapa ni código, y no aparece en «Mis pendientes».
@@ -63,7 +64,7 @@
     <SupplierPaymentWindow
       :open="!!renovarCotizacion"
       title="Renovar cotización"
-      :subtitle="renovarCotizacion ? `${renovarCotizacion.cliente_nombre || ''} · Consolidado ${soloConsolidado(renovarCotizacion.consolidado)}` : ''"
+      :subtitle="renovarCotizacion ? `${formatNombrePropio(renovarCotizacion.cliente_nombre)} · Consolidado ${soloConsolidado(renovarCotizacion.consolidado)}` : ''"
       :code="renovarCotizacion?.codigo"
       @close="renovarCotizacion = null"
     >
@@ -81,7 +82,7 @@
     <SupplierPaymentWindow
       :open="!!solicitudCotizacion"
       title="Crear solicitud"
-      :subtitle="solicitudCotizacion ? `${solicitudCotizacion.cliente_nombre || ''} · Consolidado ${soloConsolidado(solicitudCotizacion.consolidado)}` : ''"
+      :subtitle="solicitudCotizacion ? `${formatNombrePropio(solicitudCotizacion.cliente_nombre)} · Consolidado ${soloConsolidado(solicitudCotizacion.consolidado)}` : ''"
       :code="solicitudCotizacion?.codigo"
       code-right
       @close="solicitudCotizacion = null"
@@ -135,10 +136,7 @@
       :subtitle="whatsappDestinatario ? `Destino: ${whatsappDestinatario}` : 'Vista previa del mensaje'"
       @close="cerrarWhatsapp"
     >
-      <UCard variant="subtle">
-        <!-- eslint-disable-next-line vue/no-v-html -->
-        <pre class="max-h-80 overflow-auto whitespace-pre-wrap font-sans text-sm text-highlighted" v-html="whatsappHtml(whatsappTexto)" />
-      </UCard>
+      <MensajeWhatsapp :texto="whatsappTexto" />
       <p v-if="whatsappNota" class="text-sm text-muted">{{ whatsappNota }}</p>
       <template #footer>
         <UButton color="neutral" variant="outline" @click="cerrarWhatsapp">Cerrar</UButton>
@@ -175,7 +173,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, onMounted, ref } from 'vue'
+import { formatNombrePropio } from '~/utils/formatters'
+import { computed, h, onMounted, ref, type VNode } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import type { FilterConfig } from '~/types/data-table'
 import type { PagoProveedorCotizacion, PagoProveedorPaginacion } from '~/types/pago-proveedor'
@@ -184,6 +183,8 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 import { useSupplierPaymentQuotes } from '~/composables/pago-proveedor/useSupplierPaymentQuotes'
 import { UBadge, UButton } from '#components'
 import NuevaCotizacionModal from '~/components/pago-proveedor/NuevaCotizacionModal.vue'
+import MensajeWhatsapp from '~/components/pago-proveedor/MensajeWhatsapp.vue'
+import SupplierPaymentHeader from '~/components/pago-proveedor/SupplierPaymentHeader.vue'
 import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
 
 const { showSuccess, showError, showConfirmation } = useModal()
@@ -209,7 +210,7 @@ const whatsappNota = ref('')
 const whatsappDestinatario = ref<string | null>(null)
 const whatsappPuedeEnviar = ref(false)
 const enviandoWhatsapp = ref(false)
-const whatsappTitulo = computed(() => whatsappCodigo.value ? `WhatsApp · ${whatsappCodigo.value}` : 'WhatsApp')
+const whatsappTitulo = computed(() => whatsappCodigo.value ? `Enviar resumen al cliente · ${whatsappCodigo.value}` : 'Enviar resumen al cliente')
 
 const filtrosConfig = computed<FilterConfig[]>(() => [
   {
@@ -227,8 +228,8 @@ const filtrosConfig = computed<FilterConfig[]>(() => [
     placeholder: 'Estado',
     options: [
       { label: 'Todos', value: 'todos' },
+      // Solo hay Pendiente y Confirmada: una vencida sigue Pendiente (el vencimiento se ve en Vigencia).
       { label: 'Pendiente', value: 'pendiente' },
-      { label: 'Vencida', value: 'vencida' },
       { label: 'Confirmada', value: 'confirmada' }
     ]
   },
@@ -286,7 +287,7 @@ const columns: TableColumn<PagoProveedorCotizacion>[] = [
   },
   { accessorKey: 'consolidado', header: 'Consolidado', cell: ({ row }) => h('span', { class: NEGRO }, soloConsolidado(row.original.consolidado)) },
   // Cliente y el detalle de cuotas pueden partirse en 2 líneas para que «Acciones» entre a 1920 px.
-  { accessorKey: 'cliente_nombre', header: 'Cliente', cell: ({ row }) => h('span', { class: `${NEGRO} block max-w-44 whitespace-normal` }, row.original.cliente_nombre || '—') },
+  { accessorKey: 'cliente_nombre', header: 'Cliente', cell: ({ row }) => h('span', { class: `${NEGRO} block min-w-48 whitespace-normal` }, formatNombrePropio(row.original.cliente_nombre) || '—') },
   { accessorKey: 'proveedores', header: 'Proveedores', cell: ({ row }) => supplierSummary(row.original) },
   {
     accessorKey: 'total_ahora',
@@ -322,10 +323,10 @@ const columns: TableColumn<PagoProveedorCotizacion>[] = [
     header: 'Estado',
     cell: ({ row }) => h('div', { class: 'flex flex-col items-start gap-1' }, [
       h(UBadge, {
-        // Pendiente en gris (neutral), como pidió Ventas.
-        color: row.original.estado === 'confirmada' ? 'success' : row.original.vencida ? 'error' : 'neutral',
+        // Pendiente en gris (neutral), como pidió Ventas. Una vencida sigue Pendiente: la alerta va en Vigencia.
+        color: row.original.estado === 'confirmada' ? 'success' : 'neutral',
         variant: 'soft',
-        label: row.original.estado === 'confirmada' ? 'Confirmada' : row.original.vencida ? 'Vencida' : 'Pendiente'
+        label: row.original.estado === 'confirmada' ? 'Confirmada' : 'Pendiente'
       }),
       row.original.estado === 'confirmada' && row.original.solicitud_id
         ? h('a', {
@@ -338,7 +339,7 @@ const columns: TableColumn<PagoProveedorCotizacion>[] = [
   {
     accessorKey: 'acciones',
     header: 'Acciones',
-    cell: ({ row }) => h('div', { class: 'flex flex-wrap gap-1' }, quoteActions(row.original))
+    cell: ({ row }) => quoteActions(row.original)
   }
 ]
 
@@ -362,7 +363,7 @@ function supplierSummary(quote: PagoProveedorCotizacion) {
   }))
 }
 
-function quoteActions(quote: PagoProveedorCotizacion) {
+function quoteActions(quote: PagoProveedorCotizacion): VNode {
   const open = () => { void navigateTo(`/pago-proveedor/cotizaciones/${quote.id}`) }
   const vencida = quote.estado === 'pendiente' && quote.puede_renovar
   const buttons = [
@@ -412,14 +413,19 @@ function quoteActions(quote: PagoProveedorCotizacion) {
       onClick: () => confirmDelete(quote)
     }))
   }
+  // #2063: los íconos (incluido el tachito) van juntos en una fila; el botón principal, debajo.
+  let principal = null
   if (quote.estado === 'confirmada') {
     // La solicitud se abre desde el enlace de la columna Estado; no es una acción.
   } else if (quote.puede_renovar) {
-    buttons.push(h(UButton, { size: 'xs', color: 'primary', label: 'Renovar', onClick: () => { renovarCotizacion.value = quote } }))
+    principal = h(UButton, { size: 'xs', color: 'primary', label: 'Renovar', onClick: () => { renovarCotizacion.value = quote } })
   } else if (quote.estado === 'pendiente' && quote.puede_editar) {
-    buttons.push(h(UButton, { size: 'xs', color: 'primary', label: 'Crear solicitud', onClick: () => createRequest(quote) }))
+    principal = h(UButton, { size: 'xs', color: 'primary', label: 'Crear solicitud', onClick: () => createRequest(quote) })
   }
-  return buttons
+  return h('div', { class: 'flex flex-col items-start gap-1' }, [
+    h('div', { class: 'flex flex-nowrap items-center gap-0.5' }, buttons),
+    principal
+  ])
 }
 
 async function cargar() {

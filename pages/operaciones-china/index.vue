@@ -1,5 +1,5 @@
 <template>
-  <SupplierPaymentPage title="Operaciones" subtitle="Servicios facturados a socios e importadores, cobros y caja.">
+  <SupplierPaymentPage wide-tables title="Operaciones" subtitle="Servicios facturados a socios e importadores, cobros y caja.">
     <template #actions>
       <UButton color="neutral" variant="outline" icon="i-heroicons-building-library" @click="operationsPanel?.openBank()">Datos bancarios</UButton>
       <UButton color="neutral" variant="outline" icon="i-heroicons-credit-card" @click="operationsPanel?.openPayment()">Registrar pago</UButton>

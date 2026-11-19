@@ -3,13 +3,14 @@
     :open="open"
     :title="client ? 'Editar cliente' : 'Nuevo cliente'"
     :dismissible="!saving"
-    :ui="{ content: 'w-full max-w-2xl sm:max-w-2xl', header: 'border-t-[5px] border-t-primary-500', title: 'text-lg font-bold text-highlighted' }"
+    :ui="{ content: 'w-full max-w-4xl sm:max-w-4xl', header: 'border-t-[5px] border-t-primary-500', title: 'text-lg font-bold text-highlighted' }"
     @update:open="(value: boolean) => !value && emit('close')"
   >
     <template #body>
-      <div class="grid gap-4 sm:grid-cols-2">
-        <div class="sm:col-span-2">
-          <p class="mb-1.5 text-sm font-medium text-highlighted">Tipo de cliente</p>
+      <!-- PRY-26-0003: cada cliente es una organización (socio o importador). -->
+      <div class="grid gap-4 sm:grid-cols-3">
+        <div class="sm:col-span-3">
+          <p class="mb-1.5 text-sm font-semibold text-highlighted">Tipo de cliente</p>
           <div class="flex gap-2">
             <UButton
               v-for="option in typeOptions"
@@ -17,7 +18,6 @@
               size="sm"
               :color="form.type === option.value ? 'primary' : 'neutral'"
               :variant="form.type === option.value ? 'soft' : 'outline'"
-              :disabled="!!client"
               @click="form.type = option.value"
             >
               {{ option.label }}
@@ -25,40 +25,60 @@
           </div>
         </div>
 
-        <UFormField label="Nombre o empresa" required :help="isPartner && !client ? 'Se crea como organización del socio.' : undefined">
-          <UInput v-model="form.name" :disabled="isPartner && !!client" placeholder="ej. Importaciones Sur SAC" class="w-full" />
+        <UFormField label="Nombre o empresa" required>
+          <UInput v-model="form.name" icon="i-heroicons-building-office" placeholder="ej. Importaciones Sur SAC" class="w-full" />
         </UFormField>
-        <UFormField v-if="isPartner && !client" label="País" required>
-          <USelectMenu v-model="form.country_id" :items="countryItems" value-key="value" placeholder="Selecciona el país" class="w-full" />
+        <UFormField label="País de origen" required :help="isPartner ? 'País desde donde opera el socio.' : 'País desde donde opera el importador.'">
+          <USelectMenu
+            v-model="form.origin_country_id"
+            :items="countryItems"
+            value-key="value"
+            placeholder="Selecciona el país"
+            :search-input="{ placeholder: 'Buscar país...' }"
+            class="w-full"
+          />
         </UFormField>
-        <UFormField v-else label="País">
-          <UInput v-model="form.country" :disabled="isPartner" placeholder="ej. Perú" class="w-full" />
+
+        <UFormField v-if="isPartner" label="Países para consolidar" help="País destino donde se enviará la carga.">
+          <USelectMenu
+            v-model="form.consolidation_country_ids"
+            :items="countryItems"
+            value-key="value"
+            multiple
+            placeholder="Selecciona los países"
+            :search-input="{ placeholder: 'Buscar país...' }"
+            class="w-full"
+          />
         </UFormField>
 
         <UFormField label="WhatsApp" required>
-          <UInput v-model="form.whatsapp" type="tel" placeholder="+51 999 999 999" class="w-full" />
+          <UInput v-model="form.whatsapp" icon="i-simple-icons-whatsapp" type="tel" placeholder="+51 999 999 999" class="w-full" />
         </UFormField>
         <UFormField label="Contacto" hint="(opcional)">
-          <UInput v-model="form.contact_name" placeholder="Nombre de la persona" class="w-full" />
+          <UInput v-model="form.contact_name" icon="i-heroicons-user" placeholder="Nombre de la persona" class="w-full" />
         </UFormField>
-        <UFormField label="Correo" hint="(opcional)" class="sm:col-span-2">
-          <UInput v-model="form.email" type="email" placeholder="correo@empresa.com" class="w-full" />
+        <UFormField
+          label="Correo"
+          hint="(opcional)"
+          help="Este correo se utilizará para crear el acceso a la plataforma."
+        >
+          <UInput v-model="form.email" icon="i-heroicons-envelope" type="email" placeholder="correo@empresa.com" class="w-full" />
         </UFormField>
 
-        <div v-if="isPartner" class="rounded-xl border border-default p-4 sm:col-span-2">
-          <p class="font-semibold text-highlighted">Precios del socio</p>
-          <p class="mb-3 text-xs text-muted">Se cargan solos al crear una operación para este socio y se pueden modificar en cada una.</p>
+        <div v-if="isPartner" class="rounded-xl border border-primary/40 bg-primary/5 p-4 sm:col-span-3">
+          <p class="flex items-center gap-2 font-semibold text-highlighted"><UIcon name="i-heroicons-banknotes" class="size-6 text-primary" />Precios del socio</p>
+          <p class="mb-3 text-xs text-toned">Se cargan solos al crear una operación para este socio y se pueden modificar en cada una.</p>
           <div class="grid gap-3 sm:grid-cols-2">
             <UFormField label="Consolidado · tarifa 1 (USD/CBM)" required>
-              <UInputNumber v-model="form.prices.consol" :min="0" :step="1" placeholder="Ingresa la tarifa" class="w-full" />
+              <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.rate_1" :min="0" :step="0.01" placeholder="Ingresa la tarifa" class="w-full" />
             </UFormField>
             <UFormField label="Consolidado · tarifa 2 (USD/CBM)" required>
-              <UInputNumber v-model="form.prices.consol_2" :min="0" :step="1" placeholder="Ingresa la tarifa" class="w-full" />
+              <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.rate_2" :min="0" :step="0.01" placeholder="Ingresa la tarifa" class="w-full" />
             </UFormField>
           </div>
         </div>
 
-        <UAlert v-if="errorMessage" class="sm:col-span-2" color="error" variant="subtle" icon="i-heroicons-exclamation-triangle" :description="errorMessage" />
+        <UAlert v-if="errorMessage" class="sm:col-span-3" color="error" variant="subtle" icon="i-heroicons-exclamation-triangle" :description="errorMessage" />
       </div>
     </template>
     <template #footer>
@@ -71,7 +91,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { ChinaBillingService } from '~/services/chinaBillingService'
 import type { ChinaClient, ChinaClientPayload, ChinaClientType, ChinaCountryOption } from '~/types/china-billing'
 
@@ -85,13 +105,14 @@ const typeOptions: { value: ChinaClientType; label: string }[] = [
 
 const blank = () => ({
   type: 'partner' as ChinaClientType,
-  country_id: null as number | null,
   name: '',
-  country: '',
+  origin_country_id: undefined as number | undefined,
+  consolidation_country_ids: [] as number[],
   whatsapp: '',
   contact_name: '',
   email: '',
-  prices: { consol: null as number | null, consol_2: null as number | null }
+  rate_1: null as number | null,
+  rate_2: null as number | null
 })
 
 const form = reactive(blank())
@@ -100,10 +121,25 @@ const errorMessage = ref('')
 const isPartner = computed(() => form.type === 'partner')
 const countries = ref<ChinaCountryOption[]>([])
 const countryItems = computed(() => countries.value.map((country) => ({ value: country.value, label: country.label })))
+/** Mientras se carga el cliente no se toca su lista de países para consolidar. */
+let loadingClient = false
+
+// El país de origen es el país para consolidar por defecto del socio.
+watch(() => form.origin_country_id, (value, previous) => {
+  if (loadingClient || !value || !isPartner.value) return
+  const list = form.consolidation_country_ids.filter((id) => id !== previous)
+  form.consolidation_country_ids = list.includes(value) ? list : [value, ...list]
+})
+watch(() => form.type, (type) => {
+  if (type === 'partner' && !form.consolidation_country_ids.length && form.origin_country_id) {
+    form.consolidation_country_ids = [form.origin_country_id]
+  }
+})
 
 watch(() => [props.open, props.client], async () => {
   if (!props.open) return
   errorMessage.value = ''
+  loadingClient = true
   Object.assign(form, blank())
   if (!countries.value.length) {
     try {
@@ -113,16 +149,22 @@ watch(() => [props.open, props.client], async () => {
     }
   }
   const client = props.client
-  if (!client) return
-  Object.assign(form, {
-    type: client.type,
-    name: client.name,
-    country: client.country,
-    whatsapp: client.whatsapp,
-    contact_name: client.contact_name,
-    email: client.email,
-    prices: { consol: client.prices?.consol ?? null, consol_2: client.prices?.consol_2 ?? null }
-  })
+  if (client) {
+    Object.assign(form, {
+      type: client.type,
+      name: client.name,
+      origin_country_id: client.origin_country_id ?? undefined,
+      consolidation_country_ids: [...(client.consolidation_country_ids || [])],
+      whatsapp: client.whatsapp,
+      contact_name: client.contact_name,
+      email: client.email,
+      rate_1: client.rate_1 ?? client.prices?.consol ?? null,
+      rate_2: client.rate_2 ?? client.prices?.consol_2 ?? null
+    })
+  }
+  // Deja pasar los watchers del Object.assign antes de volver a reaccionar al país de origen.
+  await nextTick()
+  loadingClient = false
 }, { immediate: true })
 
 function fail(message: string) {
@@ -132,23 +174,26 @@ function fail(message: string) {
 async function save() {
   errorMessage.value = ''
   if (!form.name.trim()) return fail('Ingresa el nombre del cliente.')
-  if (isPartner.value && !props.client && !form.country_id) return fail('Elige el país de la organización.')
+  if (!form.origin_country_id) return fail('Elige el país de origen del cliente.')
   if (!form.whatsapp.trim()) return fail('Ingresa el WhatsApp del cliente.')
-  if (isPartner.value && (!(form.prices.consol && form.prices.consol > 0) || !(form.prices.consol_2 && form.prices.consol_2 > 0))) {
-    return fail('Ingresa las dos tarifas de consolidado del socio.')
+  if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) return fail('El correo no es válido.')
+  if (isPartner.value && (!(Number(form.rate_1) > 0) || !(Number(form.rate_2) > 0))) {
+    return fail('Ingresa la tarifa 1 y la tarifa 2 del socio.')
   }
   saving.value = true
   try {
     const payload: ChinaClientPayload = {
       type: form.type,
-      organization_id: props.client?.organization_id ?? null,
-      country_id: isPartner.value && !props.client ? form.country_id : null,
       name: form.name.trim(),
-      country: form.country.trim(),
+      origin_country_id: form.origin_country_id ?? null,
+      consolidation_country_ids: isPartner.value
+        ? (form.consolidation_country_ids.length ? [...form.consolidation_country_ids] : [form.origin_country_id])
+        : [],
       whatsapp: form.whatsapp.trim(),
       contact_name: form.contact_name.trim(),
       email: form.email.trim(),
-      prices: isPartner.value ? { consol: form.prices.consol, consol_2: form.prices.consol_2 } : null
+      rate_1: isPartner.value ? form.rate_1 : null,
+      rate_2: isPartner.value ? form.rate_2 : null
     }
     if (props.client) await ChinaBillingService.updateClient(props.client.id, payload)
     else await ChinaBillingService.createClient(payload)

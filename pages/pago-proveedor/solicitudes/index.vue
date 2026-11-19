@@ -1,9 +1,36 @@
 <template>
   <div class="supplier-payment-requests md:p-6">
-    <header class="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <PageHeader title="Solicitudes" subtitle="Pago a proveedor" icon="i-heroicons-clipboard-document-list" :hide-back-button="true" align-subtitle />
-      <UButton v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" label="Nueva cotización" icon="i-heroicons-plus" color="primary" class="h-11 font-normal" @click="nuevaCotizacion = true" />
-    </header>
+    <!-- Misma cabecera que el resto de Pago a Proveedor: icono naranja y a la altura de la tabla. -->
+    <SupplierPaymentHeader title="Solicitudes" icon="i-heroicons-clipboard-document-list">
+      <template v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" #actions>
+        <!-- #1743: el plazo por defecto de los pendientes se ve y se cambia desde aquí. -->
+        <UButton
+          color="neutral"
+          variant="soft"
+          icon="i-heroicons-cog-6-tooth"
+          class="h-11 font-normal"
+          :label="`Plazo de pendientes · ${plazoTareasHoras} h`"
+          title="Configurar el plazo por defecto de los pendientes"
+          @click="abrirPlazoTareas"
+        />
+        <UButton label="Nueva cotización" icon="i-heroicons-plus" color="primary" class="h-11 font-normal" @click="nuevaCotizacion = true" />
+      </template>
+    </SupplierPaymentHeader>
+    <SupplierPaymentWindow
+      v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES"
+      :open="plazoTareasAbierto"
+      title="Plazo de pendientes"
+      subtitle="Fecha límite por defecto de las tareas de Ventas que no tienen un plazo propio (registrar datos, comprobante, diferencia de cambio…). Se cuenta desde que se crea la solicitud o desde el último cambio. También es el plazo máximo para cobrar al cliente una diferencia: corre desde que Administración la deja por cobrar."
+      @close="plazoTareasAbierto = false"
+    >
+      <label class="block text-sm text-muted">Plazo (horas)
+        <UInput v-model.number="plazoTareasBorrador" type="number" min="1" max="240" class="mt-1 w-full" />
+      </label>
+      <template #footer>
+        <UButton color="neutral" variant="outline" @click="() => { plazoTareasAbierto = false }">Cancelar</UButton>
+        <UButton color="primary" :loading="guardandoPlazoTareas" @click="guardarPlazoTareas">Guardar</UButton>
+      </template>
+    </SupplierPaymentWindow>
     <NuevaCotizacionModal v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES" :open="nuevaCotizacion" @close="nuevaCotizacion = false" @accepted="(codigo) => navigateTo({ path: '/pago-proveedor/cotizaciones/nueva', query: { cc: codigo } })" />
     <template v-if="profile === SUPPLIER_PAYMENT_PROFILE.SALES">
     <div class="mb-4 flex gap-1.5 border-b border-default">
@@ -100,7 +127,7 @@
               <p class="truncate text-sm font-bold text-highlighted" :title="row.clientName || ''">{{ row.clientName || 'Cliente' }}</p>
               <p class="truncate text-xs text-muted">C{{ consolidadoNumero(row.consolidation) || '—' }} · {{ supplierLabel(row.provider) }} · {{ row.provider.currency }}</p>
               <p class="text-sm" :class="row.provider.sales_task === SALES_TASK.OBSERVED ? 'text-error' : 'text-default'">
-                <b v-if="row.provider.sales_task === SALES_TASK.OBSERVED">Observado: </b>{{ actionText(row.provider) }}
+                <b v-if="row.provider.sales_task === SALES_TASK.OBSERVED && !actionText(row.provider).startsWith('Observado')">Observado: </b>{{ actionText(row.provider) }}
                 <UBadge v-if="row.provider.payment_shape === PAYMENT_SHAPE.CLIENT_INSTALLMENTS" color="warning" variant="subtle" size="sm" class="ml-1 align-middle">Cuota {{ installmentTag(row.provider) }}</UBadge>
               </p>
               <div class="mt-1 flex items-center justify-between gap-2">
@@ -170,15 +197,21 @@
             v-for="row in otherAreaRows"
             :key="`other-${row.provider.id}`"
             :to="`/pago-proveedor/solicitudes/${row.requestId}`"
-            class="flex items-center justify-between rounded-xl border border-default bg-default px-4 py-3 text-sm hover:border-primary"
+            class="flex flex-col gap-2 rounded-xl border border-default bg-default px-4 py-3 text-sm hover:border-primary md:flex-row md:items-center md:justify-between"
           >
-            <span>
-              <strong class="text-highlighted">{{ row.clientName }}</strong>
-              <span class="text-muted"> · {{ supplierLabel(row.provider) }} · En manos de {{ ownerLabel(row.provider) }}</span>
+            <!-- Según maqueta: cliente y proveedor en la 1.ª línea; quién lo tiene en la 2.ª; etapa, estado y «Ver» a la derecha. -->
+            <span class="min-w-0">
+              <span class="block">
+                <strong class="text-highlighted">{{ row.clientName }}</strong>
+                <span class="text-xs text-muted"> · {{ supplierLabel(row.provider) }} · {{ paymentLabel(row.provider) }}</span>
+              </span>
+              <span class="mt-0.5 block text-xs text-muted">{{ waitingText(row.provider) }}</span>
             </span>
-            <span class="flex items-center gap-2">
-              <UBadge color="neutral" variant="subtle" size="sm">{{ statusLabel(row.provider.status) }}</UBadge>
-              <span class="text-xs text-muted">{{ stageLabel(row.provider.stage) }}</span>
+            <span class="flex shrink-0 items-center gap-2">
+              <UBadge color="info" variant="subtle" size="sm">{{ row.provider.stage }}. {{ stageShort(row.provider.stage) }}</UBadge>
+              <UBadge color="info" variant="subtle" size="sm">{{ providerStatusLabel(row.provider) }}</UBadge>
+              <!-- Toda la fila ya es enlace: «Ver» es solo visual (un botón dentro de <a> no es HTML válido). -->
+              <span class="rounded-md border border-default px-2.5 py-1 text-xs font-semibold text-highlighted">Ver</span>
             </span>
           </NuxtLink>
         </div>
@@ -187,7 +220,7 @@
 
     <div v-else class="space-y-4">
       <form class="grid w-full gap-3 rounded-xl border border-default bg-default p-4 lg:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto_auto]" @submit.prevent="aplicarFiltros">
-        <UFormField label="Buscar cliente o código de solicitud" :ui="{ label: 'text-[11px] font-semibold uppercase text-muted' }">
+        <UFormField label="Buscar cliente o N. orden" :ui="{ label: 'text-[11px] font-semibold uppercase text-muted' }">
           <UInput v-model="borrador.search" icon="i-heroicons-magnifying-glass" placeholder="Ej: María Torres, PE¥01" class="w-full" />
         </UFormField>
         <UFormField v-for="filtro in filtrosConfig" :key="filtro.key" :label="filtro.label" :ui="{ label: 'text-[11px] font-semibold uppercase text-muted' }">
@@ -200,6 +233,8 @@
       </form>
 
       <DataTable
+        class="pp-tabla pp-tabla-clientes"
+        :fill-viewport="false"
         filters-layout="inline"
         :data="allRows"
         :columns="columns"
@@ -240,6 +275,9 @@ import {
 import { useModal } from '~/composables/commons/useModal'
 import { useSupplierPaymentProfile } from '~/composables/pago-proveedor/useSupplierPaymentProfile'
 import NuevaCotizacionModal from '~/components/pago-proveedor/NuevaCotizacionModal.vue'
+import SupplierPaymentHeader from '~/components/pago-proveedor/SupplierPaymentHeader.vue'
+import { formatNombrePropio } from '~/utils/formatters'
+import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
 import { UBadge, UButton } from '#components'
 
 interface RequestLine {
@@ -253,7 +291,7 @@ interface RequestLine {
   provider: SupplierPaymentProviderRow
 }
 
-const { showError } = useModal()
+const { showError, showSuccess } = useModal()
 const { profile } = useSupplierPaymentProfile()
 const requests = ref<PagoProveedorSolicitud[]>([])
 const loading = ref(false)
@@ -261,6 +299,11 @@ const search = ref('')
 const tab = ref<typeof INBOX_TAB[keyof typeof INBOX_TAB]>(INBOX_TAB.PENDING)
 const taskFilter = ref<typeof SALES_TASK[keyof typeof SALES_TASK]>(SALES_TASK.ALL)
 const nuevaCotizacion = ref(false)
+// #1742/#1743: plazo por defecto (48 h) de las tareas de Ventas sin plazo propio.
+const plazoTareasHoras = ref(48)
+const plazoTareasBorrador = ref(48)
+const plazoTareasAbierto = ref(false)
+const guardandoPlazoTareas = ref(false)
 const pagination = ref<PagoProveedorPaginacion>({ current_page: 1, last_page: 1, per_page: 15, total: 0 })
 const filtros = ref<Record<string, string>>({
   consolidado: 'todos',
@@ -270,11 +313,12 @@ const filtros = ref<Record<string, string>>({
 })
 const borrador = ref<Record<string, string>>({ search: '', ...filtros.value })
 
-const lines = computed<RequestLine[]>(() => requests.value.flatMap((request) => (request.providers || []).map((provider, groupIndex) => ({
+// #2312: «N°» es solo la posición en la lista (la más antigua es 1); el número de la solicitud va en «N. orden».
+const lines = computed<RequestLine[]>(() => requests.value.flatMap((request, requestIndex) => (request.providers || []).map((provider, groupIndex) => ({
   groupIndex,
   groupSize: request.providers.length,
   requestId: request.id,
-  orderNumber: request.numero_orden,
+  orderNumber: (pagination.value.total || requests.value.length) - ((pagination.value.current_page - 1) * pagination.value.per_page + requestIndex),
   clientName: request.cliente_nombre,
   consolidation: request.consolidado,
   createdAt: request.creado_en,
@@ -290,7 +334,10 @@ function isCuota2Task(provider: SupplierPaymentProviderRow) {
 }
 
 const pendingRows = computed(() => lines.value.filter((line) => line.provider.sales_task))
-const otherAreaRows = computed(() => lines.value.filter((line) => !line.provider.sales_task && line.provider.status !== PROVIDER_STATUS.CANCELLED))
+// #1745: los completados ya no están «en curso» (salvo que quede un reembolso abierto: lo dice waiting_on).
+const otherAreaRows = computed(() => lines.value.filter((line) => !line.provider.sales_task
+  && line.provider.status !== PROVIDER_STATUS.CANCELLED
+  && (line.provider.status !== PROVIDER_STATUS.COMPLETED || !!line.provider.waiting_on)))
 const visiblePending = computed(() => pendingRows.value.filter((line) => {
   if (taskFilter.value === SALES_TASK.ALL) return true
   if (taskFilter.value === SALES_TASK.INSTALLMENT_2) return isCuota2Task(line.provider)
@@ -442,7 +489,8 @@ function deadlineKindLabel(provider: SupplierPaymentProviderRow) {
     collect: 'Plazo para cobrar',
     observation: 'Plazo para subsanar',
     decision: 'Plazo para decidir',
-    commitment: 'Compromiso'
+    commitment: 'Compromiso',
+    task: 'Plazo de la tarea'
   }[kind]
 }
 
@@ -472,6 +520,11 @@ function stageShort(stage: number) {
 
 /** Acción corta (sin el plazo, que ya va en su propio bloque). */
 function actionText(provider: SupplierPaymentProviderRow, withArea = false) {
+  // Reembolso por consultar: tarea de Ventas que dice qué hacer (#1745).
+  if (provider.sales_task && provider.waiting_on?.area === 'Ventas') {
+    const task = provider.waiting_on.task
+    return task.charAt(0).toUpperCase() + task.slice(1)
+  }
   if (provider.approval_status === APPROVAL_STATUS.TO_COLLECT) {
     const amount = Number(provider.collect_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })
     return `Cobrar diferencia de $${amount} y registrar voucher`
@@ -572,6 +625,13 @@ function ownerLabel(provider: SupplierPaymentProviderRow) {
   return 'otra área'
 }
 
+/** #1745: «En manos de Administración: aprobar el pago» — qué área y qué le falta para cerrar. */
+function waitingText(provider: SupplierPaymentProviderRow) {
+  const waiting = provider.waiting_on
+  if (waiting) return `En manos de ${waiting.area}: ${waiting.task}`
+  return `En manos de ${ownerLabel(provider)}`
+}
+
 function installmentTag(provider: SupplierPaymentProviderRow) {
   if (provider.payment_shape !== PAYMENT_SHAPE.CLIENT_INSTALLMENTS && provider.payment_shape !== PAYMENT_SHAPE.SUPPLIER_INSTALLMENTS) {
     return ''
@@ -622,6 +682,15 @@ function stageLabel(stage: number) {
   }[stage] || 'Solicitud y datos de pago'
 }
 
+/** #2119: con una diferencia por cobrar, el estado dice «Por cobrar» en vez de «Observado». */
+function providerStatusLabel(provider: SupplierPaymentProviderRow) {
+  return provider.approval_status === APPROVAL_STATUS.TO_COLLECT && provider.status === PROVIDER_STATUS.OBSERVED ? 'Por cobrar' : statusLabel(provider.status)
+}
+
+function providerStatusColor(provider: SupplierPaymentProviderRow): PillColor {
+  return provider.approval_status === APPROVAL_STATUS.TO_COLLECT && provider.status === PROVIDER_STATUS.OBSERVED ? 'warning' : statusColor(provider.status)
+}
+
 function statusLabel(status: string) {
   return {
     [PROVIDER_STATUS.IN_PROGRESS]: 'En proceso',
@@ -641,6 +710,10 @@ function taskText(provider: SupplierPaymentProviderRow, withDeadlineText = true)
   }
   if (provider.approval_status === 'error_registro') {
     return 'Corrige el voucher o los datos: Administración marcó un error de registro.'
+  }
+  if (provider.sales_task === SALES_TASK.OBSERVED && provider.deposit_observation_label) {
+    // #2133: «Observado por Administración: No ingresó · Informar al cliente».
+    return withDeadline(`Observado por Administración: ${provider.deposit_observation_label} · Informar al cliente`)
   }
   if (provider.sales_task === SALES_TASK.OBSERVED) {
     const reason = provider.observe_label ? `Observado por Operaciones China: ${provider.observe_label}` : 'Subsanar la observación.'
@@ -673,18 +746,27 @@ const orderCell = {
   class: { td: (cell: { row: { original: RequestLine } }) => cell.row.original.groupIndex ? 'hidden' : '' }
 }
 
+// Celdas de proveedor: entre proveedores de la misma solicitud la línea es fina; entre clientes, gruesa (#2335).
+const providerCell = {
+  class: { td: (cell: { row: { original: RequestLine } }) => cell.row.original.groupIndex ? 'pp-subfila' : '' }
+}
+
 const columns: TableColumn<RequestLine>[] = [
-  { accessorKey: 'orderNumber', header: 'N.°', meta: orderCell },
+  { accessorKey: 'orderNumber', header: 'N°', meta: orderCell },
   { accessorKey: 'createdAt', header: 'Fecha', meta: orderCell, cell: ({ row }) => row.original.createdAt ? new Date(row.original.createdAt).toLocaleDateString('es-PE') : '—' },
   { accessorKey: 'consolidation', header: 'Consolidado', meta: orderCell, cell: ({ row }) => consolidadoNumero(row.original.consolidation) || '—' },
-  { accessorKey: 'clientName', header: 'Cliente', meta: orderCell, cell: ({ row }) => h('span', { class: 'block w-32 whitespace-normal' }, row.original.clientName) },
-  { accessorKey: 'provider', header: 'Proveedor', cell: ({ row }) => row.original.provider.supplier_code || 'Sin código' },
-  { accessorKey: 'requestCode', header: 'Código de solicitud', cell: ({ row }) => row.original.provider.request_code || '—' },
-  { accessorKey: 'paymentShape', header: 'Forma de pago', cell: ({ row }) => formaDePago(row.original.provider) },
-  { accessorKey: 'paymentType', header: 'Tipo de pago', cell: ({ row }) => paymentLabel(row.original.provider) },
-  { accessorKey: 'stage', header: 'Etapa', cell: ({ row }) => pill(`${row.original.provider.stage}. ${stageLabel(row.original.provider.stage)}`, 'info') },
-  { accessorKey: 'status', header: 'Estado', cell: ({ row }) => pill(statusLabel(row.original.provider.status), statusColor(row.original.provider.status)) },
-  { accessorKey: 'owner', header: 'Responsable', cell: ({ row }) => responsableEtapa(row.original.provider) },
+  { accessorKey: 'clientName', header: 'Cliente', meta: orderCell, cell: ({ row }) => h('span', { class: 'block w-32 whitespace-normal' }, formatNombrePropio(row.original.clientName)) },
+  { accessorKey: 'provider', header: 'Proveedor', meta: providerCell, cell: ({ row }) => row.original.provider.supplier_code || 'Sin código' },
+  { accessorKey: 'requestCode', header: 'N. orden', meta: providerCell, cell: ({ row }) => row.original.provider.request_code ? h('span', { class: 'font-bold' }, row.original.provider.request_code) : '—' },
+  { accessorKey: 'paymentShape', header: 'Forma de pago', meta: providerCell, cell: ({ row }) => formaDePago(row.original.provider) },
+  { accessorKey: 'paymentType', header: 'Tipo de pago', meta: providerCell, cell: ({ row }) => paymentLabel(row.original.provider) },
+  { accessorKey: 'stage', header: 'Etapa', meta: providerCell, cell: ({ row }) => pill(`${row.original.provider.stage}. ${stageLabel(row.original.provider.stage)}`, 'info') },
+  { accessorKey: 'status', header: 'Estado', meta: providerCell, cell: ({ row }) => h('div', { class: 'flex flex-col items-start gap-0.5' }, [
+    pill(providerStatusLabel(row.original.provider), providerStatusColor(row.original.provider)),
+    // #2134: el motivo de la observación bajo el estado («No ingresó»).
+    row.original.provider.deposit_observation_label ? h('span', { class: 'text-[11px] text-muted' }, row.original.provider.deposit_observation_label) : null
+  ]) },
+  { accessorKey: 'owner', header: 'Responsable', meta: providerCell, cell: ({ row }) => responsableEtapa(row.original.provider) },
   {
     accessorKey: 'actions',
     header: 'Acciones',
@@ -749,8 +831,44 @@ function onClearFilters() {
   loadRequests()
 }
 
+async function loadPlazoTareas() {
+  try {
+    const config = await PagoProveedorService.obtenerConfiguracion()
+    const horas = Number(config.data?.plazo_tarea_ventas_horas)
+    if (horas > 0) plazoTareasHoras.value = horas
+  } catch { /* sin configuración: queda 48 h */ }
+}
+
+function abrirPlazoTareas() {
+  plazoTareasBorrador.value = plazoTareasHoras.value
+  plazoTareasAbierto.value = true
+}
+
+async function guardarPlazoTareas() {
+  const horas = Math.round(Number(plazoTareasBorrador.value))
+  if (!horas || horas < 1 || horas > 240) {
+    showError('Plazo de pendientes', 'Ingresa un plazo entre 1 y 240 horas.')
+    return
+  }
+  guardandoPlazoTareas.value = true
+  try {
+    await PagoProveedorService.guardarPlazoTareas(horas)
+    plazoTareasHoras.value = horas
+    plazoTareasAbierto.value = false
+    showSuccess('Plazo de pendientes', `Las tareas sin plazo propio vencen a las ${horas} h.`)
+    await loadRequests()
+  } catch (error: any) {
+    showError('Plazo de pendientes', error?.data?.message || error.message || 'No se pudo guardar.')
+  } finally {
+    guardandoPlazoTareas.value = false
+  }
+}
+
 watch(profile, (value) => {
-  if (value === SUPPLIER_PAYMENT_PROFILE.SALES) loadRequests()
+  if (value === SUPPLIER_PAYMENT_PROFILE.SALES) {
+    loadRequests()
+    loadPlazoTareas()
+  }
   if (value === SUPPLIER_PAYMENT_PROFILE.ADMINISTRATION) navigateTo('/pago-proveedor/aprobacion-pagos', { replace: true })
   if (value === SUPPLIER_PAYMENT_PROFILE.WAREHOUSE) navigateTo('/pago-proveedor/pagos-yuanes', { replace: true })
 }, { immediate: true })

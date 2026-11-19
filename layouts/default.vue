@@ -85,6 +85,8 @@ import { ref, computed, onMounted, onBeforeUnmount, watch, defineAsyncComponent 
 import { useVerificationCounts } from '~/composables/verificacion/useVerificationCounts'
 import { isContentNarrow, setContentNarrow } from '~/composables/usePageLayout'
 import { useAuth } from '../composables/auth/useAuth'
+import { useUserRole } from '../composables/auth/useUserRole'
+import { ROLES } from '../constants/roles'
 import { useMenuPrefetch } from '../composables/navigation/useMenuPrefetch'
 import { useWebSocketNotifications } from '../composables/useWebSocketNotifications'
 // Lazy load componentes pesados para mejorar tiempo de carga inicial
@@ -240,6 +242,7 @@ const pageTitle = computed(() => {
 })
 
 const { user, logout, initializeAuth, menu } = useAuth()
+const { currentRole } = useUserRole()
 const { schedulePrefetchFromStorage } = useMenuPrefetch()
 
 // Notificaciones modales vía evento window (ligero; no abre sockets extra)
@@ -407,14 +410,70 @@ const sidebarCategories = computed(() => {
     modules.splice(desiredPosition, 0, item)
   }
 
+  // PRY-26-0003: si «Pago a Proveedor» tiene una sola opción (Encargado China: solo «Pago a proveedores»),
+  // va como un único ítem del menú (Supplier Payment) sin desplegable, directo a esa pantalla.
+  modules.forEach((m: any, index: number) => {
+    const hijos = m.children ?? []
+    if (hijos.length !== 1 || hijos[0].children?.length || !String(hijos[0].route || '').startsWith('/pago-proveedor')) return
+    // Con una sola opción, el ítem lleva el nombre de esa opción («Pago a proveedores», como la maqueta #2349).
+    modules[index] = { ...m, name: hijos[0].name || m.name, nameEn: hijos[0].nameEn || m.nameEn, route: hijos[0].route, notificationCount: m.notificationCount || hijos[0].notificationCount, children: [] }
+  })
+
   // PRY-26-0003: «Verificación» va primero y luego «Pago a Proveedor» (el orden de BD los deja al revés).
-  const verificacionIndex = modules.findIndex((m: any) => m.route === '/verificacion')
+  // La ruta puede venir en el padre o solo en su hijo (padre «Verificación» con un único hijo), y el nombre con o sin tilde.
+  const sinTildes = (texto: unknown) => String(texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase()
+  const esVerificacion = (m: any) =>
+    [m.route, ...(m.children ?? []).map((c: any) => c.route)].some((r: unknown) => /^\/verificacion(\/|$)/i.test(String(r || '')))
+    || sinTildes(m.name) === 'verificacion'
+  const verificacionIndex = modules.findIndex(esVerificacion)
   const pagoProveedorIndex = modules.findIndex((m: any) =>
-    (m.children ?? []).some((c: any) => String(c.route || '').startsWith('/pago-proveedor'))
+    [m.route, ...(m.children ?? []).map((c: any) => c.route)].some((r: unknown) => String(r || '').startsWith('/pago-proveedor'))
   )
   if (verificacionIndex !== -1 && pagoProveedorIndex !== -1 && pagoProveedorIndex < verificacionIndex) {
     const [item] = modules.splice(pagoProveedorIndex, 1)
     modules.splice(verificacionIndex, 0, item)
+  }
+
+  // PRY-26-0003: menú de Almacén China en el orden de la maqueta.
+  if (currentRole.value === ROLES.CONTENEDOR_ALMACEN) {
+    const ordenChina = (mod: { route?: string; name?: string; order?: number }) => {
+      const route = String(mod.route || '')
+      const name = String(mod.name || '').toLowerCase()
+      const reglas = [
+        // Orden final de la maqueta de Miguel (#2349).
+        (r: string, n: string) => r === '/' || n === 'inicio',
+        (r: string, n: string) => r.startsWith('/seguimiento-china') || n === 'seguimiento',
+        (r: string, n: string) => r.startsWith('/cargaconsolidada') || n.includes('carga consolidada'),
+        (r: string, n: string) => r.startsWith('/flujo-caja') || n.includes('flujo de caja'),
+        (r: string, n: string) => r.startsWith('/operaciones-china') || n === 'operaciones',
+        (r: string, n: string) => r.includes('pago-proveedor') || n.includes('pago a proveedor'),
+        (r: string, n: string) => r.startsWith('/estado-contenedores-china') || n === 'estado de contenedores',
+        (r: string, n: string) => r.startsWith('/clientes-china') || n === 'clientes',
+        (r: string, n: string) => r.startsWith('/configuracion-china') || n === 'configuración'
+      ]
+      const index = reglas.findIndex((regla) => regla(route, name))
+      return index === -1 ? 50 : index
+    }
+    // Flujo de caja acompaña a Operaciones: solo lo ve quien tiene ese módulo (Encargado China), no el almacén de consolidado.
+    const operaciones = modules.findIndex((mod: { route?: string }) => String(mod.route || '').startsWith('/operaciones-china'))
+    if (operaciones !== -1 && !modules.some((mod: { route?: string }) => String(mod.route || '').startsWith('/flujo-caja'))) {
+      modules.splice(operaciones, 0, {
+        id: 'flujo-caja',
+        name: 'Flujo de caja',
+        nameEn: 'Cash flow',
+        icon: 'i-heroicons-banknotes',
+        route: '/flujo-caja',
+        category: 'Menú',
+        categoryId: 'main',
+        order: 0,
+        isVisible: true,
+        hasNotifications: false,
+        notificationCount: 0,
+        permissions: ['view'],
+        children: []
+      })
+    }
+    modules.sort((a: { route?: string; name?: string }, b: { route?: string; name?: string }) => ordenChina(a) - ordenChina(b))
   }
 
   // Una sola categoría que contiene todos los módulos padre (para que SidebarMenu los muestre como botones)

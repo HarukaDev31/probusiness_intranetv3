@@ -42,9 +42,9 @@
       <div class="flex flex-col gap-3.5">
         <!-- h-auto/shrink-0: cada tarjeta mide lo que su contenido (antes se recortaban y el botón Editar quedaba oculto). -->
         <SupplierPaymentCard title="Datos registrados por Ventas" class="h-auto shrink-0">
-          <SupplierPaymentFact label="Cliente" :value="deposit.client_name || '—'" />
+          <SupplierPaymentFact label="Cliente" :value="formatNombrePropio(deposit.client_name) || '—'" />
           <SupplierPaymentFact label="N.° de consolidado" :value="deposit.consolidation || '—'" />
-          <SupplierPaymentFact label="Código de solicitud">
+          <SupplierPaymentFact label="N. orden">
             <span v-if="providerCodes.length" class="flex flex-col items-end gap-0.5">
               <a
                 v-for="code in providerCodes"
@@ -101,8 +101,15 @@
             </div>
           </div>
 
-          <p v-if="deposit.corrected_by_admin" class="mt-2 text-xs text-muted">
-            Corregido por Administración: queda registrado y se avisa a Ventas.
+          <!-- Maqueta: ya validado con el importe del banco, el aviso dice en qué quedó el abono (#1791). -->
+          <p v-if="adjustedToBank" class="mt-3 rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
+            <strong>Ajustado al importe del banco:</strong> Ventas registró ${{ money(deposit.recorded_amount!) }} y el abono quedó validado por ${{ money(deposit.amount) }}. Se avisó a Ventas.
+          </p>
+          <!-- #2110: el aviso dice qué corrigió Administración («N.° de operación: 024158111 → 024158115»). -->
+          <p v-else-if="deposit.corrected_by_admin" class="mt-3 rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
+            <strong>Corregido por Administración:</strong>
+            <template v-if="deposit.admin_corrections?.length"> {{ deposit.admin_corrections.map((change) => `${change.field}: ${change.from} → ${change.to}`).join('; ') }}.</template>
+            <template v-else> queda registrado y se avisa a Ventas.</template>
           </p>
           <p v-if="deposit.shared" class="mt-3 flex items-center gap-2 text-xs text-muted">
             <UIcon name="i-heroicons-information-circle" class="size-4 shrink-0 text-highlighted" />
@@ -129,27 +136,33 @@
             <UCard color="primary" variant="subtle" :ui="{ body: 'px-3 py-2 sm:px-3 sm:py-2' }">
               <p class="text-[11px] font-bold uppercase tracking-wide text-primary">Importe ingresado (Banco)</p>
               <p v-if="!deposit.can_validate" class="mt-1 text-lg font-bold text-primary">${{ money(deposit.bank_amount ?? deposit.amount) }}</p>
-              <div v-else class="mt-1 flex items-center gap-0.5 text-lg font-bold text-primary">
+              <!-- Mismo formato que el importe de Ventas (1,050.00); al editar se escribe el número sin comas. -->
+              <div v-else class="mt-1 flex items-center text-lg font-bold text-primary">
                 <span>$</span>
                 <UInput
-                  v-model.number="bankAmount"
-                  type="number"
-                  min="0"
-                  step="0.01"
+                  :model-value="bankAmountText"
+                  type="text"
+                  inputmode="decimal"
                   variant="none"
-                  class="w-full text-lg font-bold"
+                  class="w-full"
+                  :ui="{ base: 'px-0 text-lg font-bold text-primary' }"
                   aria-label="Importe ingresado (Banco) en USD"
+                  @update:model-value="onBankAmountInput"
+                  @focus="bankAmountText = bankAmount ? String(bankAmount) : ''"
+                  @blur="bankAmountText = formatBankAmount()"
                 />
               </div>
             </UCard>
           </div>
           <p class="mt-1.5 text-xs text-muted">Compáralo con el importe que muestra el comprobante.</p>
           <div class="mt-2 rounded-md px-3 py-2 text-xs" :class="differenceBox.class">
-            {{ differenceBox.text }}
+            <!-- Maqueta (#1789): al validar se avisa en qué queda el abono; la decisión sobre la diferencia es de Aprobación de pagos. -->
+            <template v-if="differenceBox.adjust">
+              El banco recibió <strong>{{ differenceBox.adjust.bank }}</strong> y Ventas registró {{ differenceBox.adjust.recorded }}.
+              El abono quedará validado por <strong>{{ differenceBox.adjust.bank }}</strong>: se ajusta el registro de Ventas y se le avisa.
+            </template>
+            <template v-else>{{ differenceBox.text }}</template>
           </div>
-          <p v-if="adjustedToBank" class="mt-1.5 text-xs text-muted">
-            Ventas registró ${{ money(deposit.recorded_amount!) }} · se ajustó al importe del banco.
-          </p>
         </SupplierPaymentCard>
       </div>
     </div>
@@ -233,6 +246,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatNombrePropio } from '~/utils/formatters'
 import { computed, ref, watch } from 'vue'
 import SupplierPaymentCard from '~/components/pago-proveedor/SupplierPaymentCard.vue'
 import SupplierPaymentFact from '~/components/pago-proveedor/SupplierPaymentFact.vue'
@@ -249,7 +263,7 @@ const props = defineProps<{
   reasons: SupplierPaymentObservationReason[]
 }>()
 
-const emit = defineEmits<{ close: []; saved: [] }>()
+const emit = defineEmits<{ close: []; saved: []; updated: [deposit: SupplierPaymentDeposit] }>()
 const { showError, showSuccess } = useModal()
 useSlaCountdown()
 
@@ -259,6 +273,7 @@ const extending = ref(false)
 const cancelling = ref(false)
 const saving = ref(false)
 const bankAmount = ref(0)
+const bankAmountText = ref('')
 const reason = ref('')
 const detail = ref('')
 const extendReason = ref('')
@@ -278,8 +293,10 @@ const motivos = computed(() => [
 const detailRequired = computed(() => reason.value === REASON_OTHER)
 const canObserve = computed(() => !!reason.value && (!detailRequired.value || !!detail.value.trim()))
 
-watch(() => props.deposit, (deposit) => {
+watch(() => props.deposit, (deposit, previous) => {
   editing.value = false
+  // Mismo depósito recargado tras «Guardar cambios»: se queda en la ventana y conserva el importe del banco que se estaba escribiendo.
+  if (deposit && previous && deposit.id === previous.id) return
   observing.value = false
   extending.value = false
   cancelling.value = false
@@ -290,6 +307,7 @@ watch(() => props.deposit, (deposit) => {
   reason.value = props.reasons[0]?.code || ''
   if (!deposit) return
   bankAmount.value = deposit.bank_amount ?? deposit.amount
+  bankAmountText.value = formatBankAmount()
   form.value = {
     bank: deposit.bank,
     paid_on: deposit.paid_on || '',
@@ -327,7 +345,7 @@ const reasonLabel = computed(() => props.reasons.find((item) => item.code === pr
   || (props.deposit?.observation_reason === REASON_OTHER ? 'Otro motivo' : props.deposit?.observation_reason))
 const subtitle = computed(() => {
   if (!props.deposit) return ''
-  return `${props.deposit.client_name || 'Cliente'} · Consolidado ${props.deposit.consolidation || 'sin identificar'}`
+  return `${formatNombrePropio(props.deposit.client_name) || 'Cliente'} · Consolidado ${props.deposit.consolidation || 'sin identificar'}`
 })
 
 /** Pista del pie: solo al validar (igual que la maqueta); en estados cerrados el pie queda limpio. */
@@ -371,11 +389,24 @@ const adjustedToBank = computed(() => {
     && deposit.recorded_amount != null && Math.abs(Number(deposit.recorded_amount) - Number(deposit.amount)) >= 0.005
 })
 
+function formatBankAmount() {
+  const value = Number(bankAmount.value)
+  return Number.isFinite(value) && value > 0 ? money(value) : ''
+}
+
+function onBankAmountInput(value: string | number) {
+  bankAmountText.value = String(value ?? '')
+  const parsed = Number(String(value ?? '').replace(/,/g, '').trim())
+  bankAmount.value = Number.isFinite(parsed) ? parsed : 0
+}
+
 /** Comparación en vivo: la tolerancia y el límite excepcional vienen del backend. */
-const differenceBox = computed(() => {
+const differenceBox = computed<{ class: string; text: string; adjust?: { bank: string; recorded: string } }>(() => {
   const deposit = props.deposit
   const value = Number(bankAmount.value)
   if (!deposit) return { class: 'bg-elevated text-muted', text: '' }
+  // Ya validado con el importe del banco: el registro de Ventas quedó igual al del banco (maqueta #1794).
+  if (adjustedToBank.value) return { class: 'bg-success/10 text-success', text: '✓ Coincide con el importe registrado.' }
   if (!Number.isFinite(value) || value <= 0) {
     return { class: 'bg-elevated text-error', text: 'Si el dinero no ingresó al banco, usa Observar.' }
   }
@@ -390,21 +421,8 @@ const differenceBox = computed(() => {
   const amount = money(difference)
   const withinTolerance = Math.abs(difference) <= tolerance
   const withinException = Math.abs(difference) <= exceptionLimit
-  if (adjustedToBank.value) {
-    // Ya validado: el registro tomó el importe del banco; la diferencia frente a lo que digitó Ventas se resuelve al aprobar el pago.
-    const base = `Validado con el importe del banco (${money(value)}).`
-    if (difference < 0) {
-      return {
-        class: withinTolerance ? 'bg-success/10 text-success' : withinException ? 'bg-warning/10 text-warning' : 'bg-error/10 text-error',
-        text: withinTolerance
-          ? `${base} Faltan ${amount} frente a lo que registró Ventas, dentro de la tolerancia de ${money(tolerance)}: lo asume Probusiness al aprobar el pago.`
-          : `${base} Faltan ${amount} frente a lo que registró Ventas (tolerancia ${money(tolerance)}): al aprobar el pago se asume o queda Por cobrar al cliente.`
-      }
-    }
-    return {
-      class: withinTolerance ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning',
-      text: `${base} Sobran ${amount} frente a lo que registró Ventas${withinTolerance ? `, dentro de la tolerancia de ${money(tolerance)}.` : ': Ventas consultará al cliente si prefiere reembolso o aplicarlo a la siguiente cuota.'}`
-    }
+  if (deposit.can_validate) {
+    return { class: 'bg-success/10 text-success', text: '', adjust: { bank: money(value), recorded: money(recorded) } }
   }
   if (difference < 0) {
     if (withinTolerance) {
@@ -464,12 +482,21 @@ async function run(action: () => Promise<void>, success: string) {
   }
 }
 
-function saveDetails() {
+/** Guardar la corrección no cierra la ventana (#1784): se sigue en «Validar depósito» con los datos ya corregidos. */
+async function saveDetails() {
   if (!props.deposit) return
-  return run(
-    () => PagoProveedorService.updateDeposit(props.deposit!.id, form.value).then(() => undefined),
-    'Los datos quedaron corregidos. El depósito sigue sin validar.'
-  )
+  saving.value = true
+  try {
+    const response = await PagoProveedorService.updateDeposit(props.deposit.id, form.value)
+    showSuccess('Depósito', 'Los datos quedaron corregidos. El depósito sigue sin validar.')
+    editing.value = false
+    if (response?.data) emit('updated', response.data)
+    emit('saved')
+  } catch (error: any) {
+    showError('Depósito', error?.data?.message || error?.message || 'No se pudo completar.')
+  } finally {
+    saving.value = false
+  }
 }
 
 function validate() {

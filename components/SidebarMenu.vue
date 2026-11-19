@@ -249,7 +249,7 @@
           :class="['w-10 h-10']" />
         <div class="flex-1 min-w-0" v-if="!collapsed">
           <div class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ userName || uiLabels.user }}</div>
-          <div class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ currentRole || uiLabels.noRole }}</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ displayRole || currentRole || uiLabels.noRole }}</div>
         </div>
       </NuxtLink>
     </div>
@@ -302,6 +302,7 @@ const emit = defineEmits<Emits>()
 const {
   userData,
   currentRole,
+  displayRole,
   currentOrganizacionId,
   userName,
   userEmail,
@@ -587,15 +588,19 @@ const getCustomMenuName = (itemName: string, childName: string) => {
   return childName
 }
 
+// #2349: Encargado China (Armando) comparte pantallas con el almacén, pero su menú va en español.
+const menuEnIngles = computed(() => usesEnglishTableHeaders(currentRole.value)
+  && String(displayRole.value || '').trim().toLowerCase() !== ROLES.ENCARGADO_CHINA.toLowerCase())
+
 const displayMenuName = (name: string, parentName?: string, nameEn?: string) => {
   const custom = parentName ? getCustomMenuName(parentName, name) : name
-  if (!usesEnglishTableHeaders(currentRole.value)) return custom
+  if (!menuEnIngles.value) return custom
   if (parentName && custom !== name) return custom
   return translateMenuLabel(name, currentRole.value, nameEn)
 }
 
 const uiLabels = computed(() => {
-  const en = usesEnglishTableHeaders(currentRole.value)
+  const en = menuEnIngles.value
   const pick = (es: string) => (en ? (MENU_LABELS_EN[es] || es) : es)
   return {
     loading: pick('Cargando menú...'),

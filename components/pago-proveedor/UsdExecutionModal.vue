@@ -4,6 +4,7 @@
     :title="payment?.can_register ? 'Ejecución de pago' : 'Pago ejecutado'"
     :subtitle="subtitle"
     :code="payment?.request_code"
+    code-right
     :hint="hintText"
     wide
     @close="emit('close')"
@@ -18,8 +19,8 @@
 
     <template v-if="payment">
       <div class="grid gap-4 lg:grid-cols-2">
-        <SupplierPaymentCard title="Solicitud">
-          <SupplierPaymentFact label="Cliente" :value="payment.client_name || '—'" />
+        <SupplierPaymentCard title="Solicitud" icon="i-lucide-file-text">
+          <SupplierPaymentFact label="Cliente" :value="formatNombrePropio(payment.client_name) || '—'" />
           <SupplierPaymentFact label="Código de proveedor" :value="payment.supplier_code || '—'" />
           <SupplierPaymentFact label="Proveedor" :value="payment.supplier_name || '—'" />
           <SupplierPaymentFact label="Producto" :value="payment.product || '—'" />
@@ -28,13 +29,13 @@
           <div v-if="payment.proforma_url" class="flex items-center justify-between gap-3 border-b border-default py-1.5 last:border-0">
             <span class="text-xs text-muted">Proforma</span>
             <span class="flex items-center gap-1">
-              <UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-eye" title="Ver proforma" aria-label="Ver proforma" @click="openPreview(payment.proforma_url, payment.proforma_name, 'Proforma')" />
-              <UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-arrow-down-tray" title="Descargar proforma" aria-label="Descargar proforma" :to="payment.proforma_url" target="_blank" rel="noopener" />
+              <UButton size="xs" color="primary" variant="ghost" icon="i-heroicons-eye" title="Ver proforma" aria-label="Ver proforma" @click="openPreview(payment.proforma_url, payment.proforma_name, 'Proforma')" />
+              <UButton size="xs" color="primary" variant="ghost" icon="i-heroicons-arrow-down-tray" title="Descargar proforma" aria-label="Descargar proforma" :to="payment.proforma_url" target="_blank" rel="noopener" />
             </span>
           </div>
         </SupplierPaymentCard>
 
-        <SupplierPaymentCard title="Importes">
+        <SupplierPaymentCard title="Importes" icon="i-lucide-circle-dollar-sign">
           <p class="text-3xl font-bold text-primary">${{ money(payment.cargo_amount) }}</p>
           <div class="flex flex-wrap gap-1.5">
             <UBadge color="info" variant="soft" label="USD" />
@@ -46,16 +47,24 @@
 
       <UCard>
         <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <h4 class="text-[15px] font-bold">Datos bancarios del proveedor</h4>
-          <div class="flex items-center gap-2">
-            <UBadge v-if="payment.bank_ready" color="success" variant="soft" label="✓ Recibido" />
+          <h4 class="flex items-center gap-3 text-[15px] font-bold text-highlighted">
+            <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-orange-500/10 text-orange-600"><UIcon name="i-lucide-landmark" class="size-5" /></span>
+            Datos bancarios del proveedor
+          </h4>
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- #2283: cuándo llegaron y quién los envió. -->
+            <UBadge v-if="payment.bank_ready" color="success" variant="soft" :label="recibidoLabel" />
             <UBadge v-else color="error" variant="soft" label="Pendientes" />
             <UButton size="xs" color="neutral" variant="soft" icon="i-heroicons-clipboard-document" :disabled="!payment.bank_copy_text" @click="copy(payment.bank_copy_text, 'Todos los datos bancarios')">
               Copiar datos
             </UButton>
+            <UButton v-if="payment.bank?.beneficiary_name" size="xs" color="primary" variant="outline" icon="i-lucide-eye" @click="formularioAbierto = true">
+              Ver formulario
+            </UButton>
           </div>
         </div>
-        <div v-if="bankGroups.length" class="grid gap-x-8 gap-y-3 sm:grid-cols-2">
+        <!-- #2298: con banco intermediario, sus datos van en una tercera columna a la derecha. -->
+        <div v-if="bankGroups.length" class="grid gap-x-8 gap-y-3 sm:grid-cols-2" :class="bankGroups.length > 2 ? 'xl:grid-cols-3' : ''">
           <div v-for="group in bankGroups" :key="group.title">
             <p class="mb-1 text-[11px] font-bold uppercase tracking-wider text-muted">{{ group.title }}</p>
             <div
@@ -87,7 +96,10 @@
 
       <UCard>
         <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h4 class="text-[15px] font-bold">Registro del pago</h4>
+          <h4 class="flex items-center gap-3 text-[15px] font-bold text-highlighted">
+            <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-orange-500/10 text-orange-600"><UIcon name="i-lucide-receipt" class="size-5" /></span>
+            Registro del pago
+          </h4>
           <UBadge
             :color="payment.can_register ? 'warning' : 'success'"
             variant="soft"
@@ -145,11 +157,12 @@
                 </tfoot>
               </table>
             </div>
-            <p class="mt-2 text-xs text-muted">
+            <!-- #2285: aire entre el total, el texto y la franja de ganancia (más alta). -->
+            <p class="mt-4 text-xs text-muted">
               Ingresa la comisión bancaria real (lo que te cobró el banco) para calcular la ganancia.
             </p>
             <div
-              class="mt-2 flex items-center gap-2 rounded-lg border px-3 py-2"
+              class="mt-4 flex items-center gap-3 rounded-lg border px-4 py-3.5"
               :class="profitCard.class"
             >
               <UIcon name="i-heroicons-arrow-trending-up" class="size-5 shrink-0" />
@@ -202,7 +215,6 @@
               <!-- Maqueta: el título «Aviso al cliente» va fuera del cuadro, como el de la constancia. -->
               <div class="mb-2 mt-3 flex items-center justify-between gap-2">
                 <p class="text-xs font-bold uppercase tracking-wider text-muted">Aviso al cliente</p>
-                <UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-clipboard-document" :disabled="!receipt" title="Copiar aviso" @click="copy(notice, 'Aviso al cliente')" />
               </div>
               <div class="rounded-lg border border-default px-3 py-2">
                 <!-- eslint-disable-next-line vue/no-v-html -->
@@ -211,17 +223,19 @@
                   <UIcon name="i-heroicons-check-circle" class="size-4" /> Mensaje enviado al cliente
                 </p>
                 <p v-else-if="!receipt" class="mt-1 text-xs text-muted">Adjunta la constancia para habilitar el envío.</p>
-                <div v-if="!noticeSent" class="mt-2 flex justify-end">
+                <!-- #2296: «Copiar texto» y «Enviar por WhatsApp» como en el resto de mensajes. -->
+                <div class="mt-2 flex flex-wrap justify-end gap-2">
+                  <UButton size="sm" color="neutral" variant="outline" icon="i-lucide-copy" :disabled="!notice" @click="copy(notice, 'Aviso al cliente')">Copiar texto</UButton>
                   <UButton
-                    size="xs"
-                    color="warning"
-                    variant="soft"
-                    icon="i-mdi-whatsapp"
+                    v-if="!noticeSent"
+                    size="sm"
+                    color="success"
+                    icon="i-heroicons-paper-airplane"
                     :loading="saving"
                     :disabled="!receipt"
                     @click="sendNotice"
                   >
-                    Enviar mensaje por WhatsApp
+                    Enviar por WhatsApp
                   </UButton>
                 </div>
               </div>
@@ -249,6 +263,19 @@
 
   </SupplierPaymentWindow>
 
+  <!-- #2283: «Ver formulario» muestra los datos bancarios tal como los llenó el cliente (solo lectura). -->
+  <SupplierPaymentWindow
+    :open="formularioAbierto"
+    :title="`Datos bancarios del proveedor (T-T) — ${payment?.supplier_code || ''}`"
+    :subtitle="recibidoLabel"
+    @close="formularioAbierto = false"
+  >
+    <FormularioBancario :model-value="formularioDatos" bloqueado />
+    <template #footer>
+      <UButton color="neutral" variant="outline" @click="formularioAbierto = false">Cerrar</UButton>
+    </template>
+  </SupplierPaymentWindow>
+
   <VoucherViewerModal
     :open="!!previewOpen"
     :url="previewOpen?.url || null"
@@ -260,6 +287,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import FormularioBancario from '~/components/pago-proveedor/FormularioBancario.vue'
 import SupplierPaymentCard from '~/components/pago-proveedor/SupplierPaymentCard.vue'
 import SupplierPaymentFact from '~/components/pago-proveedor/SupplierPaymentFact.vue'
 import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
@@ -268,6 +296,7 @@ import { PagoProveedorService } from '~/services/pagoProveedorService'
 import type { SupplierPaymentExecution } from '~/types/pago-proveedor'
 import { useModal } from '~/composables/commons/useModal'
 import { whatsappHtml } from '~/utils/whatsappFormat'
+import { formatNombrePropio } from '~/utils/formatters'
 
 const props = defineProps<{ payment: SupplierPaymentExecution | null }>()
 const emit = defineEmits<{ close: []; saved: [] }>()
@@ -299,7 +328,7 @@ function soloConsolidado(value: string) {
 const subtitle = computed(() => {
   if (!props.payment) return ''
   const parts = [
-    props.payment.client_name || 'Cliente',
+    formatNombrePropio(props.payment.client_name) || 'Cliente',
     `Consolidado ${props.payment.consolidation ? soloConsolidado(props.payment.consolidation) : 'sin identificar'}`
   ]
   if (props.payment.installment_label) parts.push(props.payment.installment_label)
@@ -318,6 +347,40 @@ const executedOn = computed(() => {
 })
 
 /** Datos bancarios agrupados como la maqueta: beneficiario, banco de destino e intermediario. */
+const formularioAbierto = ref(false)
+const recibidoLabel = computed(() => {
+  const fecha = props.payment?.bank_received_at
+    ? new Date(props.payment.bank_received_at).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit' })
+    : ''
+  const fuente = props.payment?.bank_source_label || 'enviado por el cliente'
+  return fecha ? `✓ Recibido ${fecha} · ${fuente}` : `✓ Recibido · ${fuente}`
+})
+/** Datos de la ejecución con las claves del formulario bancario (las mismas que llena el cliente). */
+const formularioDatos = computed<Record<string, any>>(() => {
+  const bank = props.payment?.bank
+  if (!bank) return {}
+  return {
+    beneficiario_nombre: bank.beneficiary_name || '',
+    beneficiario_cuenta: bank.beneficiary_account || '',
+    beneficiario_direccion: bank.beneficiary_address || '',
+    beneficiario_pais: bank.beneficiary_country || '',
+    beneficiario_ciudad: bank.beneficiary_city || '',
+    banco_tipo_codigo: bank.bank_code_type || '',
+    banco_codigo: bank.bank_code || '',
+    banco_nombre: bank.bank_name || '',
+    banco_direccion: bank.bank_address || '',
+    banco_pais: bank.bank_country || '',
+    banco_ciudad: bank.bank_city || '',
+    usa_intermediario: !!bank.uses_intermediary,
+    inter_tipo_codigo: bank.intermediary_code_type || '',
+    inter_codigo: bank.intermediary_code || '',
+    inter_nombre: bank.intermediary_name || '',
+    inter_direccion: bank.intermediary_address || '',
+    inter_pais: bank.intermediary_country || '',
+    inter_ciudad: bank.intermediary_city || ''
+  }
+})
+
 const bankGroups = computed(() => {
   const bank = props.payment?.bank
   if (!bank) return []

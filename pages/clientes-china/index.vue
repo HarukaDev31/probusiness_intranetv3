@@ -1,5 +1,5 @@
 <template>
-  <SupplierPaymentPage title="Clientes" subtitle="Socios e importadores a los que Almacén China factura sus servicios.">
+  <SupplierPaymentPage wide-tables title="Clientes" subtitle="Socios e importadores a los que Almacén China factura sus servicios.">
     <template #actions>
       <UButton color="primary" icon="i-heroicons-plus" @click="openForm(null)">Nuevo cliente</UButton>
     </template>
@@ -80,9 +80,9 @@ const { showConfirmation, showError } = useModal()
 
 // Pestaña «China»: socios e importadores. Una pestaña por organización: los clientes que registró.
 const tab = ref('china')
+// #2344: solo queda la pestaña «China» (las de cada organización ya no se muestran).
 const tabs = computed(() => [
-  { label: 'China', value: 'china', count: counts.value.all ?? 0 },
-  ...groups.value.map((group) => ({ label: group.label, value: `org-${group.organization_id}`, count: group.count }))
+  { label: 'China', value: 'china', count: counts.value.all ?? 0 }
 ])
 const activeGroup = computed(() => groups.value.find((group) => `org-${group.organization_id}` === tab.value) || null)
 
@@ -105,17 +105,18 @@ function fullDate(date: string | null): string {
   return year ? `${day}/${month}/${year}` : '—'
 }
 
-const iconButton = (icon: string, label: string, onClick: () => void, tone = 'hover:bg-primary/10 hover:text-primary', disabled = false) => h('button', {
+const iconButton = (icon: string, label: string, onClick: () => void, tone = 'text-toned hover:bg-primary/10 hover:text-primary', disabled = false) => h('button', {
   type: 'button',
   title: label,
   'aria-label': label,
   disabled,
-  class: `grid size-8 place-items-center rounded-lg text-toned transition-colors ${tone} ${disabled ? 'cursor-not-allowed opacity-30' : ''}`,
+  class: `grid size-8 place-items-center rounded-lg transition-colors ${tone} ${disabled ? 'cursor-not-allowed opacity-30' : ''}`,
   onClick
 }, h(UIcon, { name: icon, class: 'size-4' }))
 
 const columns: TableColumn<ChinaClient>[] = [
-  { accessorKey: 'number', header: 'N°', cell: ({ row }) => h('span', { class: 'text-muted' }, String(row.original.number ?? '')) },
+  // #1979/#1981: numeración correlativa de la lista mostrada (Todos, Socios o Importadores), de 1 en adelante.
+  { id: 'number', header: 'N°', cell: ({ row }) => h('span', { class: 'text-muted' }, String((pagination.value.current_page - 1) * pagination.value.per_page + row.index + 1)) },
   { accessorKey: 'registered_on', header: 'Fecha', cell: ({ row }) => h('span', { class: 'whitespace-nowrap' }, fullDate(row.original.registered_on)) },
   { accessorKey: 'name', header: 'Cliente', cell: ({ row }) => h('div', { class: 'flex min-w-48 flex-col' }, [
     h('span', { class: 'font-semibold' }, row.original.name),
@@ -126,22 +127,24 @@ const columns: TableColumn<ChinaClient>[] = [
   { accessorKey: 'type', header: 'Tipo', cell: ({ row }) => h('span', {
     class: `inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${row.original.type === 'partner' ? 'bg-[#fff3ea] text-[#b4480c]' : 'bg-[#eef1f6] text-[#4a5a72]'}`
   }, row.original.type === 'partner' ? 'Socio' : 'Importador') },
-  { accessorKey: 'service_amount', header: 'Total servicio', meta: { class: right }, cell: ({ row }) => h('span', usd(row.original.service_amount)) },
+  { accessorKey: 'service_amount', header: 'Total servicio', meta: { class: right }, cell: ({ row }) => h('span', { class: 'font-semibold text-success' }, usd(row.original.service_amount)) },
   { accessorKey: 'total_billed', header: 'Total facturado', meta: { class: right }, cell: ({ row }) => h('span', usd(row.original.total_billed)) },
   { accessorKey: 'paid', header: 'Total pagado', meta: { class: right }, cell: ({ row }) => h('span', usd(row.original.paid)) },
   { accessorKey: 'receivable', header: 'Por cobrar', meta: { class: right }, cell: ({ row }) => h('span', { class: row.original.receivable > 0.005 ? 'font-semibold text-error' : '' }, usd(row.original.receivable)) },
   { id: 'operations', header: 'Operaciones', cell: ({ row }) => h('div', { class: 'flex flex-col text-xs text-toned' }, [
     h('span', [h('strong', { class: 'text-sm text-highlighted' }, String(row.original.open_count)), ' abiertas']),
-    h('span', [h('strong', { class: 'text-sm text-highlighted' }, String(row.original.closed_count)), ' cerradas'])
+    // #1990: cerradas en gris.
+    h('span', { class: 'text-muted' }, [h('strong', { class: 'text-sm text-muted' }, String(row.original.closed_count)), ' cerradas'])
   ]) },
   { id: 'actions', header: 'Acciones', cell: ({ row }) => h('div', { class: 'flex gap-1' }, [
-    iconButton('i-heroicons-eye', 'Ver cliente', () => openDetail(row.original)),
+    // #1990: el ojo va en naranja.
+    iconButton('i-heroicons-eye', 'Ver cliente', () => openDetail(row.original), 'text-primary hover:bg-primary/10'),
     iconButton('i-heroicons-pencil-square', 'Editar', () => openForm(row.original)),
     iconButton(
       'i-heroicons-trash',
-      row.original.can_delete ? 'Eliminar' : 'Los socios se administran desde su organización',
+      row.original.can_delete ? 'Eliminar' : (row.original.type === 'partner' ? 'Los socios se administran desde su organización' : 'Tiene operaciones: no se puede eliminar'),
       () => remove(row.original),
-      'hover:bg-error/10 hover:text-error',
+      'text-toned hover:bg-error/10 hover:text-error',
       !row.original.can_delete
     )
   ]) }

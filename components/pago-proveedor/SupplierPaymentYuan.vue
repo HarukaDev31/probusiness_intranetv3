@@ -8,13 +8,23 @@
         <p v-if="card.sub" class="text-xs text-muted">{{ card.sub }}</p>
       </UCard>
     </div>
-    <SupplierPaymentTabs
-      class="mb-4"
-      :model-value="bucket"
-      :items="tabs"
-      @update:model-value="changeBucket"
-    />
+    <!-- #2338/#2339: panel de estados como la maqueta del perfil de Armando; cada tarjeta filtra la lista. -->
+    <div class="mb-4 grid grid-cols-2 overflow-hidden rounded-xl border border-default bg-default sm:grid-cols-4">
+      <button
+        v-for="item in statusPanel"
+        :key="item.value"
+        type="button"
+        class="flex flex-col items-start gap-1 border-b-2 px-5 py-4 text-left transition-colors sm:border-l sm:border-l-default sm:first:border-l-0"
+        :class="bucket === item.value ? 'border-b-primary bg-primary/10' : 'border-b-transparent hover:bg-elevated'"
+        @click="changeBucket(item.value)"
+      >
+        <span class="flex items-center gap-2 text-sm text-highlighted"><span class="size-2 rounded-full" :class="item.dot" />{{ item.label }}</span>
+        <span class="text-2xl font-bold text-highlighted">{{ item.count }}</span>
+      </button>
+    </div>
     <DataTable
+      :fill-viewport="false"
+      class="pp-tabla"
       sticky-last-column
       keep-spanish-headers
       :data="rows"
@@ -79,7 +89,6 @@
 <script setup lang="ts">
 import { computed, h, onBeforeUnmount, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import SupplierPaymentTabs from '~/components/pago-proveedor/SupplierPaymentTabs.vue'
 import YuanRequestDrawer from '~/components/pago-proveedor/YuanRequestDrawer.vue'
 import YuanRequestForm from '~/components/pago-proveedor/YuanRequestForm.vue'
 import { useSupplierPaymentYuan } from '~/composables/pago-proveedor/useSupplierPaymentYuan'
@@ -89,7 +98,7 @@ import { UBadge, UButton } from '#components'
 
 const {
   bucket, search, country, dateFrom, dateTo, rows, countries, organizations, suggestions, pagination, loading,
-  selectedId, selected, cards, tabs, load, reload, changeBucket
+  selectedId, selected, cards, tabs, statusPanel, load, reload, changeBucket
 } = useSupplierPaymentYuan()
 
 const formOpen = ref(false)
@@ -115,6 +124,11 @@ function statusColor(status: string): 'primary' | 'error' | 'success' {
   return status === YUAN_STATUS.OBSERVED ? 'error' : 'primary'
 }
 
+/** Socio que envía los dólares: lo manda el back; si falta, la organización o Pro Business. */
+function partnerName(row: SupplierPaymentYuanRequest): string {
+  return row.partner_name || row.organization || (row.manual ? row.partner : 'Pro Business')
+}
+
 function differenceText(row: SupplierPaymentYuanRequest): string {
   if (!row.incomes.length) return ''
   if (row.difference_status === 'collect') return 'Por cobrar al socio'
@@ -128,23 +142,25 @@ function differenceColor(row: SupplierPaymentYuanRequest): string {
 }
 
 const stacked = (top: string, bottom: string, topClass = '') => h('div', { class: 'flex flex-col items-end text-right' }, [
-  h('span', { class: topClass }, top),
+  // #1820: el dato principal va en negro; la línea de abajo, gris.
+  h('span', { class: `text-highlighted ${topClass}` }, top),
   bottom ? h('span', { class: 'text-xs text-muted' }, bottom) : null
 ])
 
 const columns: TableColumn<SupplierPaymentYuanRequest>[] = [
   { accessorKey: 'number', header: 'N.', cell: ({ row }) => h('span', { class: 'text-muted' }, String(row.original.number ?? '')) },
   { accessorKey: 'date', header: 'Fecha', cell: ({ row }) => h('div', { class: 'flex flex-col' }, [
-    h('span', dayLabel(row.original.date)),
+    h('span', { class: 'text-highlighted' }, dayLabel(row.original.date)),
     h('span', { class: 'text-xs text-muted' }, monthLabel(row.original.date))
   ]) },
   { accessorKey: 'country', header: 'País', cell: ({ row }) => h('div', { class: 'flex flex-col' }, [
-    h('span', row.original.country || '—'),
+    h('span', { class: 'text-highlighted' }, row.original.country || '—'),
     row.original.organization ? h('span', { class: 'text-xs text-muted' }, row.original.organization) : null
   ]) },
-  { accessorKey: 'partner', header: 'Cliente', cell: ({ row }) => h('span', { class: 'block w-32 whitespace-normal font-semibold' }, row.original.client || row.original.partner) },
+  // #1753/#1754: para China el cliente es el socio (ej. Pro Business); no se muestran los nombres de las personas.
+  { accessorKey: 'partner', header: 'Cliente', cell: ({ row }) => h('span', { class: 'font-semibold text-highlighted whitespace-nowrap' }, partnerName(row.original)) },
   { accessorKey: 'code', header: 'N. orden', cell: ({ row }) => h('div', { class: 'flex flex-col' }, [
-    h('span', { class: 'text-sm font-bold' }, row.original.code),
+    h('span', { class: 'text-sm font-bold text-highlighted' }, row.original.code),
     h('span', { class: 'text-xs text-muted whitespace-nowrap' }, `${row.original.provider_count} ${row.original.provider_count === 1 ? 'proveedor' : 'proveedores'}`)
   ]) },
   { id: 'providers', header: 'Proveedores', cell: ({ row }) => h('div', { class: 'flex min-w-60 flex-col' }, row.original.providers.map((provider) => h('div', {
@@ -152,7 +168,7 @@ const columns: TableColumn<SupplierPaymentYuanRequest>[] = [
     class: 'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2.5 border-t border-dashed border-default py-1.5'
   }, [
     h('div', { class: 'flex min-w-0 flex-col' }, [
-      h('span', { class: 'font-bold' }, provider.supplier_code || 'Sin código'),
+      h('span', { class: 'font-bold text-highlighted' }, provider.supplier_code || 'Sin código'),
       h('span', { class: 'truncate text-xs text-muted' }, provider.supplier_name || '—')
     ]),
     h('div', { class: 'flex flex-col items-end gap-0.5' }, [

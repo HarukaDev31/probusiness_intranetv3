@@ -14,7 +14,7 @@
     <div v-if="muestraValidacion" class="grid gap-3 lg:grid-cols-3">
       <UCard :ui="bloque" :class="abonosPendientes ? 'bg-warning/10 ring-warning/30' : ''">
         <div class="mb-3 flex items-center gap-3">
-          <UAvatar icon="i-lucide-file-text" size="md" color="primary" variant="soft" />
+          <UAvatar icon="i-lucide-file-text" size="md" class="bg-primary/10" :ui="{ icon: 'text-primary' }" />
           <h3 class="text-[15px] font-bold text-highlighted">Abonos del cliente</h3>
         </div>
         <p class="text-xs text-muted">Importe cobrado · <strong class="text-highlighted">${{ money(proveedor.importe_requerido) }}</strong></p>
@@ -22,30 +22,37 @@
         <div v-for="deposit in progress.verification.deposits" :key="deposit.id" class="mt-2 text-sm">
           <div class="flex items-start justify-between gap-2">
             <div>
-              <strong class="text-highlighted">Abono {{ deposit.number ?? deposit.id }} · ${{ money(deposit.shared ? deposit.amount : deposit.applied_amount) }}</strong>
+              <strong class="text-highlighted">Abono #{{ deposit.number ?? deposit.id }} · ${{ money(deposit.shared ? deposit.amount : deposit.applied_amount) }}</strong>
               <p class="text-muted">{{ fechaCorta(deposit.paid_on) }} · {{ deposit.bank_label }}</p>
               <p class="text-muted">N.° de operación {{ deposit.operation_number || '—' }}<template v-if="deposit.shared"> · voucher compartido</template></p>
             </div>
             <div class="flex shrink-0 gap-1">
               <UButton v-if="deposit.voucher_url" size="xs" color="neutral" variant="outline" icon="i-lucide-receipt-text" title="Ver voucher" @click="emit('view-voucher', deposit.id)" />
-              <UButton v-if="!readonly && deposit.can_edit" size="xs" color="neutral" variant="outline" icon="i-lucide-pencil" title="Editar voucher" @click="emit('edit-deposit', deposit.id)" />
+              <template v-if="!readonly">
+                <UButton size="xs" color="neutral" variant="outline" icon="i-lucide-pencil" title="Editar voucher" :disabled="!deposit.can_edit" @click="emit('edit-deposit', deposit.id)" />
+                <UButton size="xs" color="neutral" variant="outline" icon="i-lucide-trash-2" title="Anular abono" :disabled="!canCancelDeposit(deposit.id)" @click="emit('cancel-deposit', deposit.id)" />
+              </template>
             </div>
           </div>
-          <p v-if="deposit.recorded_amount != null" class="text-xs text-muted">Registraste ${{ money(deposit.recorded_amount) }}: se ajustó al importe del banco.</p>
+          <p v-if="deposit.recorded_amount != null" class="mt-1 text-sm text-muted">Registraste ${{ money(deposit.recorded_amount) }}: se ajustó al importe del banco.</p>
         </div>
         <UButton v-if="!readonly && aprobacion.state === 'waiting_shared'" class="mt-3" size="sm" color="primary" @click="emit('choose-providers')">Elegir proveedores</UButton>
+        <!-- #2144: con el depósito observado, Ventas agrega el voucher nuevo desde aquí. -->
+        <UButton v-if="!readonly && proveedor.deposito_observado" class="mt-3" size="sm" color="neutral" variant="outline" icon="i-lucide-plus" @click="emit('add-voucher')">Agregar voucher</UButton>
       </UCard>
 
       <UCard :ui="bloque" :class="depositosObservados.length ? 'bg-warning/10 ring-warning/30' : ''">
         <div class="mb-3 flex items-center gap-3">
-          <UAvatar icon="i-lucide-shield-check" size="md" color="primary" variant="soft" />
+          <UAvatar icon="i-lucide-shield-check" size="md" class="bg-primary/10" :ui="{ icon: 'text-primary' }" />
           <h3 class="text-[15px] font-bold text-highlighted">Verificación del pago</h3>
         </div>
         <template v-if="depositosObservados.length">
           <UBadge color="error" variant="soft" :label="`Observado${depositosObservados[0].observation?.reason ? ` · ${depositosObservados[0].observation?.reason}` : ''}`" />
-          <p class="mt-2 text-sm text-muted">Administración no pudo confirmar el ingreso del dinero.</p>
+          <p v-if="depositosObservados[0].observation?.reason?.toLowerCase().includes('no ingres')" class="mt-2 text-sm text-muted"><strong class="text-highlighted">No ingresó:</strong> El dinero no aparece en el banco: confirma con el cliente que la transferencia se emitió y registra el voucher correcto.</p>
+          <p v-else class="mt-2 text-sm text-muted">Administración no pudo confirmar el ingreso del dinero.</p>
           <p v-if="depositosObservados[0].observation?.detail" class="mt-1 text-sm text-highlighted">{{ depositosObservados[0].observation?.detail }}</p>
           <p v-if="depositosObservados[0].observation?.deadline_text" class="mt-1 text-xs text-muted">Plazo: {{ depositosObservados[0].observation?.deadline_text }}</p>
+          <UButton v-if="!readonly && proveedor.deposito_observado" class="mt-3" size="sm" color="neutral" variant="outline" @click="emit('lift')">Levantar observación</UButton>
         </template>
         <template v-else-if="depositosPorValidar.length">
           <UBadge :color="depositosPorValidar[0].deadline_overdue ? 'error' : 'warning'" variant="soft" :label="`Por validar${depositosPorValidar[0].deadline_text ? ` · ${depositosPorValidar[0].deadline_text}` : ''}`" />
@@ -57,11 +64,12 @@
             <UBadge v-if="progress.verification.deposits.some(deposit => deposit.modified)" color="info" variant="soft" label="✎ Modificado" />
           </div>
           <div v-for="deposit in progress.verification.deposits" :key="`check-${deposit.id}`" class="mt-2 text-sm text-muted">
-            <strong v-if="progress.verification.deposits.length > 1" class="block text-highlighted">Abono {{ deposit.number ?? deposit.id }}</strong>
+            <strong v-if="progress.verification.deposits.length > 1" class="block text-highlighted">Abono #{{ deposit.number ?? deposit.id }}</strong>
             Importe ingresado (Banco): <strong class="text-highlighted">${{ money(deposit.amount) }}</strong>
-            <em v-if="deposit.recorded_amount != null" class="block">Importe: ${{ money(deposit.recorded_amount) }} → ${{ money(deposit.amount) }}</em>
-            <em v-for="change in deposit.corrections" :key="`${deposit.id}-${change.field}-${change.to}`" class="block">{{ change.field }}: {{ change.from }} → {{ change.to }}</em>
-            <span v-if="deposit.verified_at" class="block text-xs">{{ fechaHora(deposit.verified_at) }}<template v-if="deposit.verified_by"> · {{ deposit.verified_by }}</template></span>
+            <!-- Maqueta (#1803): lo modificado va en azul; quién validó, con su área (#1806): solo Administración verifica depósitos. -->
+            <span v-if="deposit.recorded_amount != null" class="block text-blue-600 dark:text-blue-400">Importe: ${{ money(deposit.recorded_amount) }} → ${{ money(deposit.amount) }}</span>
+            <span v-for="change in deposit.corrections" :key="`${deposit.id}-${change.field}-${change.to}`" class="block text-blue-600 dark:text-blue-400">{{ change.field }}: {{ change.from }} → {{ change.to }}</span>
+            <span v-if="deposit.verified_at" class="block text-xs">{{ fechaHora(deposit.verified_at) }}<template v-if="deposit.verified_by"> · {{ deposit.verified_by }} · Administración</template></span>
           </div>
         </template>
         <p v-else class="text-sm text-muted">Sin depósitos.</p>
@@ -69,7 +77,7 @@
 
       <UCard :ui="bloque" :class="aprobacion.state === 'to_collect' || aprobacion.state === 'registration_error' || aprobacion.state === 'waiting_shared' ? 'bg-warning/10 ring-warning/30' : ''">
         <div class="mb-3 flex items-center gap-3">
-          <UAvatar icon="i-lucide-circle-check" size="md" color="primary" variant="soft" />
+          <UAvatar icon="i-lucide-circle-check" size="md" class="bg-primary/10" :ui="{ icon: 'text-primary' }" />
           <h3 class="text-[15px] font-bold text-highlighted">Aprobación de pago</h3>
         </div>
         <UBadge :color="aprobacionVista.color" variant="soft" :label="aprobacionVista.label" />
@@ -111,7 +119,7 @@
     <div v-if="muestraEjecucion" class="grid gap-3 lg:grid-cols-3">
       <UCard :ui="bloque" :class="needsProviderData || proveedor.observacion_china ? 'bg-warning/10 ring-warning/30' : ''">
         <div class="mb-3 flex items-center gap-3">
-          <UAvatar icon="i-lucide-user" size="md" color="primary" variant="soft" />
+          <UAvatar icon="i-lucide-landmark" size="md" class="bg-primary/10" :ui="{ icon: 'text-primary' }" />
           <h3 class="text-[15px] font-bold text-highlighted">Datos del proveedor</h3>
         </div>
         <template v-if="proveedor.observacion_china">
@@ -124,9 +132,9 @@
           </div>
         </template>
         <UBadge v-else :color="needsProviderData ? 'warning' : 'success'" variant="soft" :label="needsProviderData ? '! Pendientes' : '✓ Completos'" />
-        <dl v-if="proveedor.moneda === 'RMB' && !needsProviderData" class="mt-2 space-y-1 text-sm">
-          <div class="flex justify-between gap-2"><dt class="text-muted">Nombre del vendedor</dt><dd class="font-semibold">{{ proveedor.datos?.vendedor_nombre || '—' }}</dd></div>
-          <div class="flex justify-between gap-2"><dt class="text-muted">N.° de WeChat</dt><dd class="font-semibold">{{ proveedor.datos?.wechat || '—' }}</dd></div>
+        <dl v-if="proveedor.moneda === 'RMB' && !needsProviderData" class="mt-2 space-y-2 text-sm">
+          <div><dt class="text-xs text-muted">Nombre del vendedor</dt><dd class="font-bold text-highlighted">{{ proveedor.datos?.vendedor_nombre || '—' }}</dd></div>
+          <div><dt class="text-xs text-muted">N.° de WeChat</dt><dd class="font-bold text-highlighted">{{ proveedor.datos?.wechat || '—' }}</dd></div>
         </dl>
         <div v-else-if="!needsProviderData" class="mt-2 flex items-center justify-between gap-2 text-sm">
           <span class="text-muted">Datos bancarios (T-T)</span>
@@ -134,12 +142,18 @@
         </div>
         <p v-else class="mt-2 text-sm text-muted">{{ proveedor.moneda === 'RMB' ? 'Faltan el nombre del vendedor y su N.° de WeChat' : 'Faltan los datos bancarios del proveedor' }}: {{ responsablePago }} los necesita para ejecutar el pago.</p>
         <UButton v-if="!readonly && needsProviderData" class="mt-2" size="sm" color="neutral" variant="outline" @click="emit('complete-data')">Completar datos</UButton>
-        <UButton v-if="proveedor.proforma_url" class="mt-2 px-0" size="sm" color="primary" variant="link" icon="i-lucide-external-link" :to="proveedor.proforma_url" target="_blank">Ver proforma</UButton>
+        <div v-if="proveedor.proforma_url" class="mt-3 flex items-center justify-between gap-2 text-sm">
+          <span class="text-muted">Proforma</span>
+          <div class="flex gap-1.5">
+            <UButton size="xs" color="primary" variant="outline" icon="i-lucide-eye" title="Ver proforma" :to="proveedor.proforma_url" target="_blank" />
+            <UButton size="xs" color="primary" variant="outline" icon="i-lucide-download" title="Descargar proforma" :to="proveedor.proforma_url" target="_blank" download />
+          </div>
+        </div>
       </UCard>
 
       <UCard :ui="bloque">
         <div class="mb-3 flex items-center gap-3">
-          <UAvatar icon="i-lucide-circle-dollar-sign" size="md" color="primary" variant="soft" />
+          <UAvatar icon="i-lucide-circle-dollar-sign" size="md" class="bg-primary/10" :ui="{ icon: 'text-primary' }" />
           <h3 class="text-[15px] font-bold text-highlighted">{{ hasPaidExecution ? 'Importe pagado' : 'Importe a pagar' }}</h3>
         </div>
         <p class="text-3xl font-bold text-highlighted">{{ importePagoTexto }}</p>
@@ -149,7 +163,7 @@
 
       <UCard :ui="bloque">
         <div class="mb-3 flex items-center gap-3">
-          <UAvatar icon="i-lucide-receipt-text" size="md" color="primary" variant="soft" />
+          <UAvatar icon="i-lucide-upload" size="md" class="bg-primary/10" :ui="{ icon: 'text-primary' }" />
           <h3 class="text-[15px] font-bold text-highlighted">Registro de pago</h3>
         </div>
         <template v-if="hasPaidExecution">
@@ -157,18 +171,18 @@
           <div v-for="execution in progress.executions" :key="execution.id" class="mt-2 text-sm">
             <UButton v-if="execution.receipt_url" class="px-0" size="xs" color="primary" variant="link" icon="i-lucide-receipt-text" :to="execution.receipt_url" target="_blank">Ver constancia</UButton>
             <p v-else class="text-muted">Constancia pendiente</p>
-            <p class="text-xs text-muted">{{ execution.registered_by || responsablePago }}<template v-if="execution.registered_at"> · {{ fechaHora(execution.registered_at) }}</template></p>
+            <p class="text-xs text-muted">{{ responsablePago }}<template v-if="execution.registered_at"> · {{ fechaHora(execution.registered_at) }}</template></p>
           </div>
           <p class="mt-1 text-sm text-muted">{{ proveedor.moneda === 'RMB' ? 'La constancia queda en el sistema; no se envía al cliente.' : 'Constancia enviada al cliente por WhatsApp.' }}</p>
         </template>
         <template v-else>
-          <div class="flex items-start justify-between gap-2 border-b border-default py-2 text-sm first:pt-0">
+          <div :class="filaPendiente">
             <strong class="text-highlighted">Comprobante de pago</strong>
-            <span class="text-right text-xs text-muted">{{ proveedor.observacion_china ? 'En espera hasta que se corrija el dato' : `Pendiente · lo sube ${responsablePago}` }}</span>
+            <p class="mt-0.5 flex items-start gap-1.5 text-xs text-muted"><UIcon name="i-lucide-clock" class="mt-px size-3.5 shrink-0" />{{ proveedor.observacion_china ? 'En espera hasta que se corrija el dato' : `Pendiente · lo sube ${responsablePago}` }}</p>
           </div>
-          <div v-if="proveedor.moneda === 'RMB'" class="flex items-start justify-between gap-2 py-2 text-sm">
+          <div v-if="proveedor.moneda === 'RMB'" :class="filaPendiente">
             <strong class="text-highlighted">Balance de cambio (PDF)</strong>
-            <span class="text-right text-xs text-muted">Se genera cuando Operaciones China registre el pago</span>
+            <p class="mt-0.5 flex items-start gap-1.5 text-xs text-muted"><UIcon name="i-lucide-clock" class="mt-px size-3.5 shrink-0" />Se genera cuando Operaciones China registre el pago</p>
           </div>
         </template>
       </UCard>
@@ -176,57 +190,76 @@
 
     <!-- Paso 4 · Confirmación (VW-14) -->
     <template v-if="muestraConfirmacion">
-      <div class="grid gap-3 lg:grid-cols-3">
+      <div class="grid gap-3 lg:grid-cols-[1.25fr_1fr_1fr]">
         <UCard :ui="bloque">
           <div class="mb-3 flex items-center gap-3">
-            <UAvatar icon="i-lucide-chart-no-axes-column" size="md" color="primary" variant="soft" />
+            <UAvatar icon="i-lucide-chart-no-axes-column" size="md" class="bg-primary/10" :ui="{ icon: 'text-primary' }" />
             <h3 class="text-[15px] font-bold text-highlighted">Resumen de la operación</h3>
           </div>
           <dl class="divide-y divide-default text-sm">
-            <div class="flex items-start justify-between gap-2 py-2">
-              <dt>{{ conCuotas ? `Monto de la cuota ${proveedor.cuota_actual || 1} de 2` : 'Monto total del proveedor' }}<small class="block text-xs text-muted">{{ conCuotas ? 'Cuota' : 'Carga' }} ${{ money(cargaResumen) }} + comisiones ${{ money(totalResumen - cargaResumen) }}</small></dt>
+            <div class="flex items-center justify-between gap-2 py-2">
+              <UAvatar icon="i-lucide-circle-dollar-sign" size="sm" class="shrink-0 bg-primary/10" :ui="{ icon: 'text-primary' }" />
+              <dt class="flex-1">{{ conCuotas ? `Monto de la cuota ${proveedor.cuota_actual || 1} de 2` : 'Monto total del proveedor' }}<small class="block text-xs text-muted">{{ conCuotas ? 'Cuota' : 'Carga' }} ${{ money(cargaResumen) }} + comisiones ${{ money(totalResumen - cargaResumen) }}</small></dt>
               <dd class="whitespace-nowrap"><span class="text-xs text-muted">USD</span> <strong class="text-base">${{ money(totalResumen) }}</strong></dd>
             </div>
-            <div class="flex items-start justify-between gap-2 py-2">
-              <dt>Abono del cliente<small v-if="excedenteAbono > 0" class="block text-xs text-muted">Incluye excedente de ${{ money(excedenteAbono) }}</small></dt>
+            <div class="flex items-center justify-between gap-2 py-2">
+              <UAvatar icon="i-lucide-send" size="sm" class="shrink-0 bg-primary/10" :ui="{ icon: 'text-primary' }" />
+              <dt class="flex-1">Abono del cliente<small v-if="excedenteAbono > 0" class="block text-xs text-muted">Incluye excedente de ${{ money(excedenteAbono) }}</small></dt>
               <dd class="whitespace-nowrap"><span class="text-xs text-muted">USD</span> <strong class="text-base">${{ money(proveedor.importe_abonado + excedenteAbono) }}</strong></dd>
             </div>
-            <div class="flex items-start justify-between gap-2 py-2">
-              <dt>Pago al proveedor<UBadge v-if="dosPagos" class="ml-1 align-middle" color="neutral" variant="soft" size="sm" :label="`${progress.executions.length} de 2 pagos`" /></dt>
+            <div class="flex items-center justify-between gap-2 py-2">
+              <UAvatar icon="i-lucide-circle-check" size="sm" class="shrink-0 bg-primary/10" :ui="{ icon: 'text-primary' }" />
+              <dt class="flex-1">Pago al proveedor<UBadge v-if="dosPagos" class="ml-1 align-middle" color="neutral" variant="soft" size="sm" :label="`${progress.executions.length} de 2 pagos`" /></dt>
               <dd class="whitespace-nowrap text-right"><span class="text-xs text-muted">USD</span> <strong class="text-base">${{ money(pagadoUsd) }}</strong><small v-if="pagadoYuan > 0" class="block text-xs text-muted">¥{{ money(pagadoYuan) }}</small></dd>
             </div>
           </dl>
-          <p class="mt-3 flex items-center gap-2 text-sm font-bold text-highlighted"><UIcon name="i-lucide-file-text" class="size-4 text-primary" />Documentos</p>
-          <div class="mt-2 flex flex-wrap gap-2">
-            <UButton v-if="proveedor.datos?.wechat || proveedor.datos?.beneficiario_nombre" size="sm" color="info" variant="soft" icon="i-lucide-eye" @click="emit('view-data')">Ver formulario</UButton>
-            <UButton v-if="proveedor.proforma_url" size="sm" color="info" variant="soft" icon="i-lucide-eye" :to="proveedor.proforma_url" target="_blank">Ver proforma</UButton>
-            <UButton
-              v-for="deposit in depositosValidados"
-              :key="`doc-${deposit.id}`"
-              size="sm"
-              color="info"
-              variant="soft"
-              icon="i-lucide-eye"
-              :to="deposit.voucher_url || undefined"
-              target="_blank"
-            >
-              Ver depósito validado por Administración{{ depositosValidados.length > 1 ? ` (#${deposit.id})` : '' }}
-            </UButton>
+          <!-- Documentos reorganizado según la referencia de Meliza: fila «Solicitud» (Formulario, Proforma) y fila «Depósitos validados» (Dep. 1, Dep. 2…). -->
+          <div class="mt-3 rounded-lg border border-default px-3 py-2.5">
+            <div class="flex items-center justify-between gap-2">
+              <p class="flex items-center gap-2 text-sm font-bold text-highlighted"><UIcon name="i-lucide-file-text" class="size-4 text-primary" />Documentos</p>
+              <UBadge color="neutral" variant="soft" size="sm" :label="String(totalDocumentos)" />
+            </div>
+            <div class="mt-2 grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 text-xs">
+              <span class="flex items-center gap-1.5 text-muted"><span class="size-1.5 shrink-0 rounded-full bg-primary" />Solicitud</span>
+              <div class="flex flex-wrap gap-1.5">
+                <UButton size="xs" color="primary" variant="outline" icon="i-lucide-eye" :class="botonDocumento" @click="emit('view-form')">Formulario</UButton>
+                <UButton v-if="proveedor.proforma_url" size="xs" color="primary" variant="outline" icon="i-lucide-download" :class="botonDocumento" title="Descargar proforma" :to="proveedor.proforma_url" target="_blank" download>Proforma</UButton>
+              </div>
+              <template v-if="depositosValidados.length">
+                <span class="flex items-center gap-1.5 leading-tight text-muted"><span class="size-1.5 shrink-0 rounded-full bg-info" />Depósitos<br>validados</span>
+                <div class="flex flex-wrap gap-1.5">
+                  <UButton
+                    v-for="(deposit, index) in depositosValidados"
+                    :key="`doc-${deposit.id}`"
+                    size="xs"
+                    color="info"
+                    variant="outline"
+                    icon="i-lucide-eye"
+                    :class="[botonDocumento, 'bg-info/5']"
+                    :title="`Ver depósito ${index + 1} validado por Administración`"
+                    @click="emit('view-deposit', deposit.id)"
+                  >
+                    Dep. {{ index + 1 }}
+                  </UButton>
+                </div>
+              </template>
+            </div>
           </div>
         </UCard>
 
         <UCard :ui="bloque" :class="infoPendiente ? 'bg-warning/10 ring-warning/30' : ''">
           <div class="mb-3 flex items-center gap-3">
-            <UAvatar icon="i-lucide-send" size="md" color="primary" variant="soft" />
+            <UAvatar icon="i-lucide-send" size="md" class="bg-primary/10" :ui="{ icon: 'text-primary' }" />
             <h3 class="text-[15px] font-bold text-highlighted">Información al cliente</h3>
           </div>
           <div v-for="(execution, index) in progress.executions" :key="`receipt-${execution.id}`" :class="fila">
-            <div>
-              <strong>{{ dosPagos ? `Constancia · pago ${index + 1}` : 'Constancia de pago' }}</strong>
-              <p class="text-xs text-muted">{{ execution.registered_by || responsablePago }}<template v-if="execution.registered_at"> · {{ fechaHora(execution.registered_at) }}</template></p>
+            <UAvatar icon="i-lucide-file-text" size="sm" class="shrink-0 bg-primary/10" :ui="{ icon: 'text-primary' }" />
+            <div class="min-w-0 flex-[1_1_auto]">
+              <strong :class="tituloFila">{{ dosPagos ? `Constancia · pago ${index + 1}` : 'Constancia de pago' }}</strong>
+              <p class="text-xs text-muted">{{ responsablePago }}<template v-if="execution.registered_at"> · {{ fechaHora(execution.registered_at) }}</template></p>
             </div>
-            <UButton v-if="execution.receipt_url" class="shrink-0 whitespace-nowrap" size="xs" color="success" variant="soft" :to="execution.receipt_url" target="_blank">{{ proveedor.moneda === 'RMB' ? '✓ Registrada' : '✓ Enviada' }}</UButton>
-            <UBadge v-else color="warning" variant="soft" :label="proveedor.moneda === 'RMB' ? 'Falta registrarla' : 'Falta enviarla'" />
+            <UButton v-if="execution.receipt_url" class="ml-auto shrink-0 whitespace-nowrap" size="xs" color="success" variant="soft" :to="execution.receipt_url" target="_blank">{{ proveedor.moneda === 'RMB' ? '✓ Registrada' : '✓ Enviada' }}</UButton>
+            <UBadge v-else class="ml-auto" color="warning" variant="soft" :label="proveedor.moneda === 'RMB' ? 'Falta registrarla' : 'Falta enviarla'" />
           </div>
           <template v-if="proveedor.moneda === 'RMB' && progress.executions.length">
             <template v-if="pago1Interino">
@@ -242,18 +275,21 @@
                 <UBadge color="warning" variant="soft" label="Pendiente" />
               </div>
             </template>
-            <div v-else :class="fila">
-              <div>
-                <strong>{{ dosPagos ? 'Balance de cambio general' : 'Balance de cambio' }}</strong>
-                <p class="text-xs text-muted">{{ textoBalance }}</p>
-                <UBadge v-if="!readonly && balanceDocumento" class="mt-1" :color="balanceDocumento.desactualizado ? 'warning' : 'neutral'" variant="soft" size="sm">
-                  {{ balanceDocumento.desactualizado ? 'Se regenerará' : `Paso ${balanceDocumento.paso} · al día` }}
-                </UBadge>
+            <div v-else :class="[filaDecision, infoPendiente ? 'border-warning/40 bg-warning/5' : '']">
+              <div class="flex flex-wrap items-start gap-2">
+                <UAvatar icon="i-lucide-chart-no-axes-column" size="sm" class="shrink-0 bg-primary/10" :ui="{ icon: 'text-primary' }" />
+                <div class="min-w-0 flex-[1_1_auto]">
+                  <strong :class="tituloFila">{{ dosPagos ? 'Balance de cambio general' : 'Balance de cambio' }}</strong>
+                  <p class="text-xs text-muted">{{ textoBalance }}</p>
+                  <UBadge v-if="!readonly && balanceDocumento" class="mt-1" :color="balanceDocumento.desactualizado ? 'warning' : 'neutral'" variant="soft" size="sm">
+                    {{ balanceDocumento.desactualizado ? 'Se regenerará' : `Paso ${balanceDocumento.paso} · al día` }}
+                  </UBadge>
+                </div>
+                <UBadge class="ml-auto" :color="progress.confirmation.balance_sent ? 'success' : (sinDiferencia ? 'success' : 'warning')" variant="soft" :label="progress.confirmation.balance_sent ? '✓ Enviado' : (sinDiferencia ? 'No aplica' : 'Por enviar')" />
               </div>
-              <div class="flex flex-wrap items-center justify-end gap-1.5">
-                <UBadge :color="progress.confirmation.balance_sent ? 'success' : (sinDiferencia ? 'success' : 'warning')" variant="soft" :label="progress.confirmation.balance_sent ? '✓ Enviado' : (sinDiferencia ? 'No aplica' : 'Por enviar')" />
-                <UButton v-if="!readonly && progress.confirmation.can_download_balance" size="xs" color="neutral" variant="outline" icon="i-lucide-download" title="Descargar balance" :loading="saving" @click="downloadBalance" />
-                <UButton v-if="!readonly && progress.confirmation.can_send_balance" size="xs" color="primary" icon="i-mdi-whatsapp" :loading="saving" @click="openBalancePreview">Enviar por WhatsApp</UButton>
+              <div v-if="!readonly && (progress.confirmation.can_download_balance || progress.confirmation.can_send_balance)" class="mt-2 flex flex-wrap items-center gap-1.5 pl-10">
+                <UButton v-if="progress.confirmation.can_download_balance" size="sm" color="primary" variant="outline" icon="i-lucide-download" title="Descargar balance" :loading="saving" @click="downloadBalance" />
+                <UButton v-if="progress.confirmation.can_send_balance" size="sm" color="primary" icon="i-mdi-whatsapp" :loading="saving" @click="openBalancePreview">Enviar por WhatsApp</UButton>
               </div>
             </div>
           </template>
@@ -262,7 +298,7 @@
 
         <UCard :ui="bloque" :class="pendingItems.length ? 'bg-warning/10 ring-warning/30' : ''">
           <div class="mb-3 flex items-center gap-3">
-            <UAvatar icon="i-lucide-circle-check" size="md" color="primary" variant="soft" />
+            <UAvatar icon="i-lucide-circle-check" size="md" class="bg-primary/10" :ui="{ icon: 'text-primary' }" />
             <h3 class="text-[15px] font-bold text-highlighted">Por resolver</h3>
           </div>
           <UBadge class="mb-1" :color="pendingItems.length ? 'warning' : 'success'" variant="soft" :label="pendingItems.length ? `${pendingItems.length} pendiente${pendingItems.length > 1 ? 's' : ''}` : '✓ Nada pendiente'" />
@@ -270,26 +306,19 @@
 
           <!-- Diferencia de cambio -->
           <div v-if="diferenciaVista" :class="filaDecision">
-            <div class="flex items-start justify-between gap-2">
-              <div><strong>Diferencia de cambio</strong><p class="text-xs text-muted">{{ diferenciaVista.text }}</p></div>
-              <UBadge :color="diferenciaVista.color" variant="soft" :label="diferenciaVista.label" />
+            <div class="flex flex-wrap items-start justify-between gap-2">
+              <UAvatar icon="i-lucide-circle-dollar-sign" size="sm" class="shrink-0 bg-primary/10" :ui="{ icon: 'text-primary' }" />
+              <div class="min-w-0 flex-[1_1_auto]"><strong :class="tituloFila">Diferencia de cambio</strong><p class="text-xs text-muted">{{ diferenciaVista.text }}</p></div>
+              <UBadge class="ml-auto" :color="diferenciaVista.color" variant="soft" :label="diferenciaVista.label" />
             </div>
-            <form v-if="!readonly && progress.confirmation.can_register_exchange" class="mt-2 space-y-2" @submit.prevent="saveDifference">
-              <UFormField label="Importe"><UInput v-model.number="difference.importe" type="number" min="0" step="0.01" class="w-full" /></UFormField>
-              <UFormField label="Fecha"><UInput v-model="difference.fecha" type="date" class="w-full" /></UFormField>
-              <UFormField label="Banco"><USelect v-model="difference.banco" :items="[{ label: 'BCP', value: 'bcp' }, { label: 'Interbank', value: 'interbank' }]" class="w-full" /></UFormField>
-              <UFormField label="N.° de operación"><UInput v-model="difference.operacion" class="w-full" /></UFormField>
-              <UFormField label="Comprobante">
-                <input type="file" accept=".pdf,.jpg,.jpeg,.png" class="block w-full text-sm text-highlighted" @change="onDifferenceFile" />
-              </UFormField>
-              <UButton type="submit" size="sm" color="primary" :loading="saving">Registrar voucher de la diferencia</UButton>
-            </form>
+            <UButton v-if="!readonly && progress.confirmation.can_register_exchange && !progress.confirmation.exchange_validating" class="mt-2" size="sm" color="primary" @click="differenceOpen = true">Registrar voucher de la diferencia</UButton>
           </div>
 
           <!-- Reembolso -->
           <div v-if="pendingRefund" :class="filaDecision">
             <div class="flex items-start justify-between gap-2">
-              <div>
+              <UAvatar icon="i-lucide-undo-2" size="sm" class="shrink-0 bg-primary/10" :ui="{ icon: 'text-primary' }" />
+              <div class="min-w-0 flex-1">
                 <strong>Reembolso</strong>
                 <p class="text-xs text-muted">{{ textoReembolso }}</p>
               </div>
@@ -360,7 +389,7 @@
       <UCard :ui="bloque">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="min-w-56 flex-1">
-            <UProgress :model-value="avanceConfirmacion" color="success" size="sm" class="max-w-sm" />
+            <UProgress :model-value="avanceConfirmacion" color="success" size="sm" class="w-full" />
             <p class="mt-1.5 text-sm font-semibold text-highlighted">
               {{ progress.confirmation.done_count }} de {{ progress.confirmation.total }} ·
               <template v-if="progress.confirmation.completed">✓ Completado: no queda nada pendiente.</template>
@@ -376,20 +405,41 @@
 
     <SupplierPaymentWindow
       :open="!!balancePreview"
-      title="Balance por WhatsApp"
+      title="Enviar balance de cambio"
       subtitle="Revisa el mensaje antes de enviarlo."
       @close="balancePreview = null"
     >
       <template v-if="balancePreview">
-        <UCard variant="subtle">
-          <!-- eslint-disable-next-line vue/no-v-html -->
-          <pre class="max-h-80 overflow-auto whitespace-pre-wrap font-sans text-sm text-highlighted" v-html="whatsappHtml(balancePreview.texto)" />
-        </UCard>
+        <MensajeWhatsapp :texto="balancePreview.texto" />
         <p class="text-sm text-muted">Adjunto: {{ balancePreview.archivo }}</p>
       </template>
       <template #footer>
         <UButton color="neutral" variant="soft" @click="balancePreview = null">Cancelar</UButton>
-        <UButton color="primary" :loading="saving" @click="sendBalance">Enviar balance</UButton>
+        <UButton color="success" icon="i-heroicons-paper-airplane" :loading="saving" @click="sendBalance">Enviar por WhatsApp</UButton>
+      </template>
+    </SupplierPaymentWindow>
+
+    <!-- #1861–#1863: el voucher de la diferencia se registra en una ventana, como la maqueta. -->
+    <SupplierPaymentWindow
+      :open="differenceOpen"
+      title="Voucher de la diferencia de cambio"
+      :subtitle="differenceSubtitle"
+      width-class="max-w-lg sm:max-w-lg"
+      @close="differenceOpen = false"
+    >
+      <form id="difference-form" class="grid gap-3 sm:grid-cols-2" @submit.prevent="saveDifference">
+        <UFormField label="Fecha de pago" required><UInput v-model="difference.fecha" type="date" class="w-full" /></UFormField>
+        <UFormField label="Banco" required><USelect v-model="difference.banco" :items="[{ label: 'BCP', value: 'bcp' }, { label: 'Interbank', value: 'interbank' }]" class="w-full" /></UFormField>
+        <UFormField label="N.° de operación" required><UInput v-model="difference.operacion" class="w-full" /></UFormField>
+        <UFormField label="Importe" required><UInput v-model.number="difference.importe" type="number" min="0" step="0.01" class="w-full" /></UFormField>
+        <UFormField label="Voucher" required class="sm:col-span-2">
+          <input type="file" accept=".pdf,.jpg,.jpeg,.png" class="block w-full text-sm text-highlighted" @change="onDifferenceFile" />
+          <p class="mt-1 text-xs text-muted">{{ differenceFile ? differenceFile.name : 'Ningún archivo seleccionado' }}</p>
+        </UFormField>
+      </form>
+      <template #footer>
+        <UButton color="neutral" variant="outline" @click="differenceOpen = false">Cancelar</UButton>
+        <UButton type="submit" form="difference-form" color="primary" :loading="saving" :disabled="!differenceComplete">Registrar voucher</UButton>
       </template>
     </SupplierPaymentWindow>
   </div>
@@ -399,6 +449,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { INSTALLMENT_CHOICE, PAYMENT_CHOICE, REFUND_STATUS, SURPLUS_DECISION } from '~/constants/supplierPayment'
 import type { PagoProveedorSolicitudProveedor } from '~/types/pago-proveedor'
+import MensajeWhatsapp from '~/components/pago-proveedor/MensajeWhatsapp.vue'
 import SupplierPaymentWindow from '~/components/pago-proveedor/SupplierPaymentWindow.vue'
 import { whatsappHtml } from '~/utils/whatsappFormat'
 import { useModal } from '~/composables/commons/useModal'
@@ -411,11 +462,17 @@ const props = withDefaults(defineProps<{
   readonly?: boolean
   viewing?: number | null
   tipoCambio?: number | null
-}>(), { readonly: false, viewing: null, tipoCambio: null })
+  /** Si el abono todavía se puede anular (lo decide la página con los abonos de la solicitud). */
+  canCancelDeposit?: (depositId: number) => boolean
+}>(), { readonly: false, viewing: null, tipoCambio: null, canCancelDeposit: () => false })
 const emit = defineEmits<{
+  'add-voucher': []
   saved: []
   'complete-data': []
   'view-data': []
+  'view-form': []
+  'view-deposit': [depositId: number]
+  'cancel-deposit': [depositId: number]
   lift: []
   'lift-china': []
   'edit-deposit': [depositId: number]
@@ -434,6 +491,13 @@ const rate = ref<number | null>(null)
 const paymentReason = ref('')
 const differenceFile = ref<File | null>(null)
 const difference = reactive({ importe: null as number | null, fecha: new Date().toLocaleDateString('en-CA'), banco: 'bcp', operacion: '' })
+const differenceOpen = ref(false)
+const differenceComplete = computed(() => !!(difference.importe && difference.fecha && difference.banco && difference.operacion.trim() && differenceFile.value))
+const differenceSubtitle = computed(() => {
+  const codes = [props.proveedor.code_supplier, props.proveedor.codigo_solicitud].filter(Boolean).join(' · ')
+  const confirmation = progress.value?.confirmation
+  return `${codes}: diferencia de cambio por cobrar $${money(confirmation?.exchange_due_usd || confirmation?.exchange_amount_usd)}.`
+})
 // The voucher form proposes the amount still owed (VW-16).
 watch(() => props.proveedor.progreso?.confirmation?.exchange_due_usd, (due) => {
   if (due && !difference.importe) difference.importe = due
@@ -563,9 +627,15 @@ const textoReembolso = computed(() => {
 
 // Tarjetas internas del seguimiento: mismo cuerpo compacto que la maqueta.
 const bloque = { body: 'p-4 sm:p-4' }
-const fila = 'mt-2 flex items-start justify-between gap-2 rounded-lg border border-default bg-default px-3 py-2.5 text-sm'
+const fila = 'mt-2 flex flex-wrap items-start justify-between gap-2 rounded-lg border border-default bg-default px-3 py-2.5 text-sm'
 // Las decisiones van a todo el ancho: en fila, sus botones se montan uno sobre otro.
 const filaDecision = 'mt-2 rounded-lg border border-default bg-default px-3 py-2.5 text-sm'
+// Registro de pago pendiente: recuadro punteado, como la maqueta.
+const filaPendiente = 'mt-2 rounded-lg border border-dashed border-accented bg-elevated/40 px-3 py-2 text-sm first:mt-0'
+// Título de cada fila de las tarjetas: más chico para que entre en una sola línea.
+const tituloFila = 'block whitespace-nowrap text-[13px] leading-snug'
+const botonDocumento = 'rounded-lg font-semibold'
+const totalDocumentos = computed(() => 1 + (props.proveedor.proforma_url ? 1 : 0) + depositosValidados.value.length)
 
 const deadlineText = computed(() => {
   const confirmation = progress.value?.confirmation
@@ -587,7 +657,8 @@ function importeEnMoneda(usd: number) {
 
 function fechaHora(fecha?: string | null) {
   if (!fecha) return ''
-  return new Date(fecha).toLocaleString('es-PE', { timeZone: 'America/Lima', day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  // Corta como la maqueta («16/11 06:05»), para que la fila no se haga de tres líneas.
+  return new Date(fecha).toLocaleString('es-PE', { timeZone: 'America/Lima', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', '')
 }
 
 function money(value: number) {
@@ -693,6 +764,9 @@ async function saveDifference() {
   saving.value = true
   try {
     await withSpinner(() => api.registerDifference(props.solicitudId, props.proveedor.id, form), 'Registrando…')
+    differenceOpen.value = false
+    differenceFile.value = null
+    difference.operacion = ''
     showSuccess('Diferencia de cambio', 'El voucher quedó para que Administración lo valide.')
     emit('saved')
   } catch (error: any) {

@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="china-cobros">
     <DataTable
       sticky-last-column
       keep-spanish-headers
@@ -91,23 +91,23 @@ const right = { th: 'text-right', td: 'text-right' }
 const ACTION: Record<string, string> = { [CHINA_STATUS.TO_CONFIRM]: 'Confirmar ingreso', [CHINA_STATUS.CONFIRMED]: 'Pasar a RMB' }
 
 const columns: TableColumn<ChinaPayment>[] = [
-  { accessorKey: 'code', header: 'N° pago', cell: ({ row }) => h('span', { class: 'font-semibold' }, row.original.code) },
+  { accessorKey: 'code', header: 'N° pago', cell: ({ row }) => h('span', { class: 'font-semibold text-highlighted' }, row.original.code) },
   { accessorKey: 'paid_on', header: 'Fecha', cell: ({ row }) => h('div', { class: 'flex flex-col whitespace-nowrap' }, [
-    h('span', dayLabel(row.original.paid_on)),
+    h('span', { class: 'text-highlighted' }, dayLabel(row.original.paid_on)),
     h('span', { class: 'text-xs text-muted' }, monthLabel(row.original.paid_on))
   ]) },
   { accessorKey: 'organization', header: 'Cliente', cell: ({ row }) => h('div', { class: 'flex min-w-36 flex-col' }, [
-    h('span', row.original.organization.name),
+    h('span', { class: 'text-highlighted' }, row.original.organization.name),
     h('span', { class: 'text-xs text-muted' }, row.original.organization.country || '—')
   ]) },
   { id: 'operations', header: 'Operaciones', cell: ({ row }) => h('div', { class: 'flex min-w-40 flex-wrap gap-1.5' }, (row.original.allocations.length ? row.original.allocations.map((a) => a.code) : ['Sin asignar'])
     .map((code) => h('span', { class: 'rounded-md bg-[#eef1f6] px-2 py-0.5 text-xs text-toned' }, code))) },
-  { accessorKey: 'amount_sent', header: 'Enviado', meta: { class: right }, cell: ({ row }) => h('span', { class: 'font-semibold' }, usd(row.original.amount_sent)) },
-  { accessorKey: 'amount_received', header: 'Recibido USD', meta: { class: right }, cell: ({ row }) => h('span', row.original.amount_received === null ? '—' : usd(row.original.amount_received)) },
+  { accessorKey: 'amount_sent', header: 'Enviado', meta: { class: right }, cell: ({ row }) => h('span', { class: 'font-semibold text-highlighted' }, usd(row.original.amount_sent)) },
+  { accessorKey: 'amount_received', header: 'Recibido USD', meta: { class: right }, cell: ({ row }) => h('span', { class: 'text-highlighted' }, row.original.amount_received === null ? '—' : usd(row.original.amount_received)) },
   { id: 'credit', header: 'Saldo a favor', meta: { class: right }, cell: ({ row }) => row.original.credit_generated > 0
     ? h('span', { class: 'font-medium text-success' }, usd(row.original.credit_generated))
     : h('span', { class: 'text-muted' }, '—') },
-  { accessorKey: 'yuan_amount', header: 'RMB', meta: { class: right }, cell: ({ row }) => h('span', row.original.yuan_amount ? rmb(row.original.yuan_amount) : '—') },
+  { accessorKey: 'yuan_amount', header: 'RMB', meta: { class: right }, cell: ({ row }) => h('span', { class: 'text-highlighted' }, row.original.yuan_amount ? rmb(row.original.yuan_amount) : '—') },
   { accessorKey: 'status', header: 'Estado', cell: ({ row }) => h('div', { class: 'flex min-w-36 flex-col items-start gap-1.5' }, [
     h('button', {
       type: 'button',
@@ -179,3 +179,14 @@ onMounted(() => {
   load()
 })
 </script>
+
+<style scoped>
+/* #1945: con zoom la tabla entraba completa y DataTable la centraba más angosta; que ocupe todo el ancho. */
+.china-cobros :deep(.table-scroll-container .utable-narrow) {
+  align-items: stretch;
+}
+.china-cobros :deep(.table-scroll-container .utable-narrow table) {
+  width: 100% !important;
+  min-width: 100% !important;
+}
+</style>

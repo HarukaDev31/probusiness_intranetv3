@@ -20,7 +20,7 @@
         Aprobados
       </button>
     </div>
-    <div class="overflow-x-auto rounded-lg border border-default bg-default">
+    <div class="pp-tabla-simple">
       <table class="w-full border-collapse text-sm">
         <thead>
           <tr class="text-left text-[11px] font-semibold uppercase tracking-wide text-muted">

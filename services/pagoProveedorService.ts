@@ -180,6 +180,17 @@ export class PagoProveedorService extends BaseService {
     )
   }
 
+  /** #1743: plazo por defecto (horas) de las tareas de Ventas sin plazo propio. */
+  static async guardarPlazoTareas(horas: number) {
+    return this.apiCall<Uno<{ plazo_tarea_ventas_horas: number }>>(
+      `${this.baseUrl}/configuracion/plazo-tareas`,
+      {
+        method: 'PUT',
+        body: { horas }
+      }
+    )
+  }
+
   static async candidatosPedirDatos(solicitudId: number) {
     return this.apiCall<Uno<Array<{ id: number; titulo: string; moneda: string; incompleto: boolean }>>>(
       `${this.baseUrl}/solicitudes/${solicitudId}/pedir-datos`
@@ -214,10 +225,23 @@ export class PagoProveedorService extends BaseService {
     })
   }
 
+  static async enviarCuentas(solicitudId: number) {
+    return this.apiCall<Uno<{ texto: string; enviado: boolean; nota: string; solicitud: PagoProveedorSolicitud }>>(
+      `${this.baseUrl}/solicitudes/${solicitudId}/cuentas/enviar`,
+      { method: 'POST' }
+    )
+  }
+
   static async guardarDatosRmb(solicitudId: number, proveedorId: number, vendedor: string, wechat: string) {
     return this.apiCall<Uno<PagoProveedorSolicitud>>(`${this.baseUrl}/solicitudes/${solicitudId}/proveedores/${proveedorId}/datos-rmb`, {
       method: 'POST',
       body: { vendedor_nombre: vendedor, wechat }
+    })
+  }
+
+  static async eliminarDatosRmb(solicitudId: number, proveedorId: number) {
+    return this.apiCall<Uno<PagoProveedorSolicitud>>(`${this.baseUrl}/solicitudes/${solicitudId}/proveedores/${proveedorId}/datos-rmb`, {
+      method: 'DELETE'
     })
   }
 
@@ -233,6 +257,14 @@ export class PagoProveedorService extends BaseService {
       method: 'POST',
       body
     })
+  }
+
+  /** Envía por WhatsApp el mensaje del formulario T-T (o el de autorización) que se ve en la vista previa. */
+  static async enviarMensajeFormulario(solicitudId: number, proveedorId: number) {
+    return this.apiCall<Uno<{ texto: string; enviado: boolean; nota: string; solicitud: PagoProveedorSolicitud }>>(
+      `${this.baseUrl}/solicitudes/${solicitudId}/proveedores/${proveedorId}/enviar-mensaje-formulario`,
+      { method: 'POST' }
+    )
   }
 
   static async solicitarValidacion(solicitudId: number, proveedorId: number) {
@@ -493,7 +525,7 @@ export class PagoProveedorService extends BaseService {
     return this.apiCall<Lista<SupplierPaymentYuanRequest> & {
       pending_count: number
       indicators: SupplierPaymentYuanIndicators
-      counts: { open?: number; completed?: number; all?: number; pending?: number; observed?: number; paid?: number }
+      counts: { open?: number; completed?: number; all?: number; pending?: number; pending_only?: number; observed?: number; paid?: number }
       countries: string[]
       organizations: SupplierPaymentYuanOrganization[]
       suggestions: SupplierPaymentYuanSuggestions

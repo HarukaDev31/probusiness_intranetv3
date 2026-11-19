@@ -101,6 +101,7 @@ export default defineNuxtRouteMiddleware((to) => {
   if (canAccessNumericDetailUnderAllowedParent(currentPath, allowedRoutes)) return
   if (canAccessPagoProveedorDetail(currentPath, allowedRoutes)) return
   if (canAccessPagoProveedorAdmin(currentPath, allowedRoutes)) return
+  if (currentPath === '/flujo-caja' && allowedRoutes.some((route) => route.startsWith('/operaciones-china'))) return
   if (canAccessEntregaFirmaCarga(currentPath, allowedRoutes)) return
   if (currentPath === '/admin/whatsapp' && canAccessWhatsappConfig(user)) return
 

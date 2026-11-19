@@ -79,14 +79,15 @@
       @items-per-page-change="onPaymentPageSize"
     />
 
-    <UCollapsible class="mt-4">
-      <button type="button" class="flex w-full items-center gap-3 rounded-2xl bg-default px-5 py-4 text-left ring ring-default">
+    <!-- #2032: mismo recuadro, con los datos en tres columnas como en la maqueta. -->
+    <UCollapsible v-model:open="bankOpen" class="mt-4 rounded-2xl bg-default ring ring-default">
+      <button type="button" class="flex w-full items-center gap-3 px-5 py-4 text-left">
         <UIcon name="i-heroicons-building-library" class="size-5 text-primary" />
         <span class="flex-1 font-semibold text-highlighted">Nuestra cuenta bancaria en China</span>
-        <span class="flex items-center gap-1 text-sm text-muted">Ver datos para transferir <UIcon name="i-heroicons-chevron-down" class="size-4" /></span>
+        <span class="flex items-center gap-1 text-sm text-muted"><template v-if="!bankOpen">Ver datos para transferir</template><UIcon :name="bankOpen ? 'i-heroicons-chevron-up' : 'i-heroicons-chevron-down'" class="size-4" /></span>
       </button>
       <template #content>
-        <ChinaBankAccountCard class="mt-2" />
+        <ChinaBankAccountCard class="px-5 pb-5" />
       </template>
     </UCollapsible>
 
@@ -99,6 +100,7 @@
       @saved="onPaymentSaved"
     />
     <ChinaDocumentsModal :target="documentTarget" @close="documentTarget = null" />
+    <ChinaInvoiceViewer :target="invoiceTarget" @close="invoiceTarget = null" />
     <VoucherViewerModal :open="!!viewer" :url="viewer?.url || null" :name="viewer?.name" @close="viewer = null" />
   </div>
 </template>
@@ -108,6 +110,7 @@ import { computed, h, onMounted, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import ChinaBankAccountCard from '~/components/china-billing/ChinaBankAccountCard.vue'
 import ChinaDocumentsModal from '~/components/china-billing/ChinaDocumentsModal.vue'
+import ChinaInvoiceViewer from '~/components/china-billing/ChinaInvoiceViewer.vue'
 import ChinaPaymentForm from '~/components/china-billing/ChinaPaymentForm.vue'
 import SupplierPaymentTabs from '~/components/pago-proveedor/SupplierPaymentTabs.vue'
 import VoucherViewerModal from '~/components/pago-proveedor/VoucherViewerModal.vue'
@@ -137,6 +140,8 @@ const paymentOpen = ref(false)
 const editingPayment = ref<ChinaPayment | null>(null)
 const paymentPreselect = ref<number[]>([])
 const documentTarget = ref<ChinaDocumentTarget | null>(null)
+const bankOpen = ref(false)
+const invoiceTarget = ref<ChinaDocumentTarget | null>(null)
 const viewer = ref<{ url: string; name?: string | null } | null>(null)
 
 /** Solo para mostrar «Pagar seleccionadas (N · $X)»: suma de los saldos que el backend ya calculó. */
@@ -193,7 +198,11 @@ const invoiceColumns: TableColumn<ChinaOperation>[] = [
     PARTNER_STATUS_PILL[row.original.partner_status || 'pending']
   ) },
   { id: 'actions', header: 'Acciones', cell: ({ row }) => h('div', { class: 'flex items-center gap-1' }, [
-    h(UButton, { size: 'sm', color: 'neutral', variant: 'ghost', icon: 'i-heroicons-eye', 'aria-label': 'Ver factura', title: 'Ver factura', onClick: () => { documentTarget.value = { kind: 'invoice', mode: 'partner', title: `Factura ${row.original.code}`, operationId: row.original.id! } } }),
+    h(UButton, { size: 'sm', color: 'neutral', variant: 'ghost', icon: 'i-heroicons-eye', 'aria-label': 'Ver factura', title: 'Ver factura', onClick: () => { invoiceTarget.value = { kind: 'invoice', mode: 'partner', title: `Factura ${row.original.code}`, operationId: row.original.id! } } }),
+    // #2039: editar el pago enviado (o ver sus pagos) desde la factura.
+    (row.original.payments || []).length
+      ? h(UButton, { size: 'sm', color: 'neutral', variant: 'ghost', icon: 'i-heroicons-pencil', 'aria-label': 'Editar pago', title: 'Editar pago', onClick: () => editInvoicePayment(row.original) })
+      : null,
     (row.original.pending || 0) > 0
       ? h(UButton, { size: 'sm', color: 'neutral', variant: 'outline', onClick: () => openPayment(row.original.id) }, () => 'Pagar')
       : null
@@ -220,7 +229,8 @@ const paymentColumns: TableColumn<ChinaPayment>[] = [
     const pending = row.original.status === CHINA_STATUS.TO_CONFIRM
     const key = pending ? CHINA_STATUS.TO_CONFIRM : CHINA_STATUS.CONFIRMED
     return h('div', { class: 'flex min-w-32 flex-col items-start gap-1.5' }, [
-      pill(CHINA_STATUS_LABEL[key], CHINA_STATUS_PILL[key]),
+      // #2044/#2050: «Confirmado» en verde y «Por confirmar» en azul.
+      pill(CHINA_STATUS_LABEL[key], pending ? 'bg-[#e7f0fd] text-[#1d4f91]' : 'bg-[#e8f6ee] text-[#1f7a45]'),
       pending ? h('div', { class: 'flex gap-3 text-xs font-medium' }, [
         h('button', { type: 'button', class: 'text-primary hover:underline', onClick: () => openPayment(null, false, row.original) }, 'Editar'),
         h('button', { type: 'button', class: 'text-error hover:underline', onClick: () => cancelPayment(row.original) }, 'Anular envío')
@@ -228,6 +238,17 @@ const paymentColumns: TableColumn<ChinaPayment>[] = [
     ])
   } }
 ]
+
+/** Edita el pago por confirmar de la factura; si todos están confirmados, abre «Mis pagos». */
+function editInvoicePayment(invoice: ChinaOperation) {
+  const pendingRef = (invoice.payments || []).find((ref) => ref.status === CHINA_STATUS.TO_CONFIRM)
+  const payment = pendingRef ? payments.value.find((item) => item.id === pendingRef.payment_id) : null
+  if (payment) {
+    openPayment(null, false, payment)
+    return
+  }
+  tab.value = PARTNER_TAB.PAYMENTS
+}
 
 /** Pagar una factura, las seleccionadas, o registrar un pago libre. */
 function openPayment(invoiceId: number | null, free = false, payment: ChinaPayment | null = null) {

@@ -6,7 +6,9 @@
     :dismissible="false"
     :ui="{
       content: contentClass,
-      header: 'border-t-[5px] border-t-primary-500',
+      // Aire arriba y abajo del título y su subtítulo (no pegados al borde ni a la línea).
+      header: 'border-t-[5px] border-t-primary-500 pt-6 pb-5 sm:pt-6 sm:pb-5',
+      wrapper: 'gap-1',
       title: 'text-lg font-bold text-highlighted',
       description: 'text-sm text-muted'
     }"

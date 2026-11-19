@@ -2,7 +2,7 @@
   <USlideover
     :open="!!request"
     :dismissible="false"
-    :title="request ? `Socio ${request.organization || request.country}` : ''"
+    :title="request ? `Socio ${request.partner_name || request.organization || request.country}` : ''"
     :description="request ? `${rmb(request.yuan_total)} · ${usd(request.usd_total)} · TC ${request.exchange_rate}` : ''"
     :ui="{ content: 'w-full max-w-[580px]', body: 'flex flex-col gap-4 bg-muted' }"
     @update:open="(value) => { if (!value) emit('close') }"
@@ -11,7 +11,7 @@
       <div v-if="request" class="flex w-full items-start justify-between gap-3">
         <div class="flex flex-col gap-0.5">
           <span class="text-sm text-muted">{{ request.code }} · {{ dayLabel(request.date) }}</span>
-          <span class="text-xl font-semibold text-highlighted">Socio {{ request.organization || request.country }}</span>
+          <span class="text-xl font-semibold text-highlighted">Socio {{ request.partner_name || request.organization || request.country }}</span>
           <span class="text-sm text-toned">{{ rmb(request.yuan_total) }} · {{ usd(request.usd_total) }} · TC {{ request.exchange_rate }}</span>
         </div>
         <UButton color="neutral" variant="ghost" icon="i-heroicons-x-mark" aria-label="Cerrar" @click="emit('close')" />
@@ -95,21 +95,20 @@
                 </UFormField>
               </div>
               <YuanFilePick
-                :label="provider.needs_receipt ? 'Adjuntar constancia del pago' : 'Adjuntar voucher del pago (opcional)'"
+                :label="'Adjuntar constancia del pago (opcional)'"
                 accept="image/*,.pdf"
                 @pick="(file) => receipt = file"
               />
-              <p v-if="provider.needs_notice && !request.incomes.length" class="rounded-lg bg-warning/10 px-3.5 py-3 text-sm text-highlighted">
-                Primero registra el dinero recibido: el tipo de cambio real sale de ese ingreso.
+              <!-- #2266: se puede pagar antes de recibir el dinero del socio; la diferencia se calcula al registrar el ingreso. -->
+              <p v-if="provider.needs_notice && !request.incomes.length" class="rounded-lg bg-info/10 px-3.5 py-3 text-sm text-highlighted">
+                Aún no se registra el dinero del socio: el pago queda con el tipo de cambio pendiente y la diferencia se calcula cuando registres el ingreso.
               </p>
               <div v-if="provider.needs_notice" class="flex flex-col gap-2 rounded-lg bg-muted px-3.5 py-3">
                 <span class="text-sm font-semibold text-highlighted">Aviso al cliente</span>
                 <!-- eslint-disable-next-line vue/no-v-html -->
                 <pre class="whitespace-pre-wrap font-sans text-sm" v-html="whatsappHtml(notice) || 'Cargando aviso…'" />
-                <span class="text-xs text-muted">Sin importe y sin código de solicitud. Si cambias los yuanes pagados, vuelve a enviarlo.</span>
-                <UButton class="self-start" color="neutral" variant="outline" :loading="saving" :disabled="!(yuanPaid > 0) || noticeReady" @click="sendNotice(provider.provider_id)">
-                  {{ noticeReady ? 'Aviso enviado' : 'Enviar aviso al cliente' }}
-                </UButton>
+                <!-- #2262/#2264: el aviso sale solo al confirmar el pago. -->
+                <span class="text-xs text-muted">Sin importe y sin código de solicitud. Se envía al cliente al confirmar el pago.</span>
               </div>
               <div class="flex justify-end gap-2">
                 <UButton color="neutral" variant="outline" @click="cancel">Cancelar</UButton>
@@ -146,8 +145,18 @@
               </span>
             </span>
             <span class="font-semibold text-highlighted">{{ rmb(income.yuan_amount) }}</span>
-            <UButton v-if="income.can_remove" size="xs" color="neutral" variant="ghost" icon="i-heroicons-x-mark" aria-label="Quitar ingreso" :loading="saving" @click="removeIncome(income.id)" />
-            <span v-else />
+            <!-- Maqueta: X para eliminar el registro; bloqueada si ese ingreso ya se usó para calcular un pago. -->
+            <UButton
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              icon="i-heroicons-x-mark"
+              aria-label="Eliminar ingreso"
+              :title="income.can_remove ? 'Eliminar ingreso' : 'Ya hay pagos calculados con este ingreso: deshaz primero el pago.'"
+              :disabled="!income.can_remove"
+              :loading="saving"
+              @click="confirmRemoveIncome(income.id)"
+            />
           </div>
           <span v-if="!request.incomes.length && !incomeOpen" class="text-sm text-muted">Aún no se registró el dinero del socio.</span>
           <div v-if="incomeOpen" class="flex flex-col gap-3 rounded-lg bg-muted p-3.5">
@@ -289,8 +298,8 @@ async function startPay(provider: SupplierPaymentYuan) {
 
 function canPay(provider: SupplierPaymentYuan) {
   if (!(yuanPaid.value > 0)) return false
-  if (!provider.needs_notice) return true
-  return !!props.request?.incomes.length && !!receipt.value && noticeReady.value
+  // Constancia opcional (#2257), aviso automático (#2262) y sin exigir el ingreso del socio (#2266).
+  return !!provider
 }
 
 async function run(title: string, spinner: string, action: () => Promise<unknown>) {
@@ -360,7 +369,7 @@ async function saveIncome() {
   incomeOpen.value = false
 }
 
-function removeIncome(incomeId: number) {
-  return run('Ingreso', 'Quitando ingreso…', () => PagoProveedorService.removeYuanIncome(incomeId))
+function confirmRemoveIncome(incomeId: number) {
+  showConfirmation('Eliminar ingreso', '¿Eliminar este registro del dinero recibido del socio?', () => run('Ingreso', 'Eliminando ingreso…', () => PagoProveedorService.removeYuanIncome(incomeId)))
 }
 </script>
