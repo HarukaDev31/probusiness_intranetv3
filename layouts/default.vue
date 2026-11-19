@@ -452,6 +452,12 @@ const sidebarCategories = computed(() => {
       })
     }
     modules.sort((a: { route?: string; name?: string }, b: { route?: string; name?: string }) => ordenChina(a) - ordenChina(b))
+    // #2388: íconos de la maqueta de Miguel, en el mismo orden que las reglas de arriba.
+    const iconosChina = ['i-lucide-house', 'i-lucide-users', 'i-lucide-archive', 'i-lucide-wallet', 'i-lucide-briefcase', 'i-lucide-arrow-left-right', 'i-lucide-package', 'i-lucide-user', 'i-lucide-settings']
+    modules.forEach((mod: { route?: string; name?: string; icon?: string | null }) => {
+      const icono = iconosChina[ordenChina(mod)]
+      if (icono) mod.icon = icono
+    })
   }
 
   // Una sola categoría que contiene todos los módulos padre (para que SidebarMenu los muestre como botones)
