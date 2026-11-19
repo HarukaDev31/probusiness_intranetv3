@@ -9,7 +9,7 @@
   >
     <template #body>
       <!-- #1957: plantilla de la maqueta (País · Cliente · Tipo de servicio, CBM × tarifa, FOB y flete, monto total abajo). -->
-      <div class="flex flex-col gap-5">
+      <div class="flex flex-col gap-5" @input="onMoneyTyping" @focusout="onMoneyBlur">
         <div class="grid gap-3 sm:grid-cols-3">
           <UFormField label="País">
             <!-- PRY-26-0003: autocompletado contra la tabla de países (5 por página; primero los países con clientes). -->
@@ -67,10 +67,10 @@
         <div v-if="form.billing_type === CHINA_BILLING_TYPE.CBM" class="flex flex-col gap-2">
           <div class="grid gap-3 sm:grid-cols-3">
             <UFormField :label="isDraft ? 'CBM China' : 'CBM'" required>
-              <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.cbm" :min="0" :step="0.01" placeholder="0.00" class="w-full" />
+              <div data-money="cbm"><UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.cbm" :min="0" :step="0.01" placeholder="0.00" class="w-full" /></div>
             </UFormField>
             <UFormField label="Tarifa (USD / CBM)" required>
-              <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.rate" :min="0" :step="0.01" class="w-full" />
+              <div data-money="rate"><UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.rate" :min="0" :step="0.01" class="w-full" /></div>
             </UFormField>
             <UFormField label="Monto servicio">
               <div class="flex h-9 items-center rounded-md bg-primary/10 px-3 font-semibold text-highlighted">{{ usd(serviceAmount) }}</div>
@@ -97,15 +97,15 @@
           </p>
         </div>
         <UFormField v-else label="Monto servicio (USD)" required>
-          <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.amount" :min="0" :step="0.01" class="w-full" />
+          <div data-money="amount"><UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.amount" :min="0" :step="0.01" class="w-full" /></div>
         </UFormField>
 
         <div class="grid gap-3 sm:grid-cols-2">
           <UFormField label="Costo FOB (USD)" required>
-            <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.fob" :min="0" :step="0.01" placeholder="0.00" class="w-full" />
+            <div data-money="fob"><UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.fob" :min="0" :step="0.01" placeholder="0.00" class="w-full" /></div>
           </UFormField>
           <UFormField label="Flete (USD)" required>
-            <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.freight" :min="0" :step="0.01" placeholder="0.00" class="w-full" />
+            <div data-money="freight"><UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.freight" :min="0" :step="0.01" placeholder="0.00" class="w-full" /></div>
           </UFormField>
         </div>
 
@@ -260,18 +260,48 @@ function servesCountry(org: ChinaOrganizationOption, countryId: number): boolean
 }
 
 const selectedOrganization = computed(() => props.organizations.find((org) => org.id === form.organization_id) || null)
-const serviceAmount = computed(() => Math.round(Number(form.cbm || 0) * Number(form.rate || 0) * 100) / 100)
+type MoneyKey = 'cbm' | 'rate' | 'amount' | 'fob' | 'freight'
+const typingKey = ref<MoneyKey | null>(null)
+const typingValue = ref<number | null>(null)
+
+function parseMoney(raw: string): number | null {
+  const text = raw.replace(/\s/g, '').replace(',', '.')
+  if (text === '' || text === '-' || text === '.' || text === '-.') return null
+  const value = Number(text)
+  return Number.isFinite(value) ? value : null
+}
+
+function liveMoney(key: MoneyKey): number | null {
+  return typingKey.value === key ? typingValue.value : form[key]
+}
+
+function onMoneyTyping(event: Event) {
+  const target = event.target
+  if (!(target instanceof HTMLInputElement)) return
+  const key = target.closest('[data-money]')?.getAttribute('data-money') as MoneyKey | null
+  if (!key) return
+  typingKey.value = key
+  typingValue.value = parseMoney(target.value)
+}
+
+function onMoneyBlur() {
+  if (typingKey.value) form[typingKey.value] = typingValue.value
+  typingKey.value = null
+  typingValue.value = null
+}
+
+const serviceAmount = computed(() => Math.round(Number(liveMoney('cbm') || 0) * Number(liveMoney('rate') || 0) * 100) / 100)
 const missing = computed(() => {
   const list: string[] = []
   if (!form.organization_id) list.push('cliente')
   if (!form.service_name.trim()) list.push('servicio')
   if (!form.description.trim()) list.push('descripción')
   if (form.billing_type === CHINA_BILLING_TYPE.CBM) {
-    if (!(Number(form.cbm) > 0)) list.push('CBM')
-    if (!(Number(form.rate) > 0)) list.push('tarifa')
-  } else if (!(Number(form.amount) > 0)) list.push('monto servicio')
-  if (form.fob === null || form.fob === undefined) list.push('costo FOB')
-  if (form.freight === null || form.freight === undefined) list.push('flete')
+    if (!(Number(liveMoney('cbm')) > 0)) list.push('CBM')
+    if (!(Number(liveMoney('rate')) > 0)) list.push('tarifa')
+  } else if (!(Number(liveMoney('amount')) > 0)) list.push('monto servicio')
+  if (liveMoney('fob') === null) list.push('costo FOB')
+  if (liveMoney('freight') === null) list.push('flete')
   return list
 })
 watch(country, (value) => {
@@ -289,7 +319,14 @@ function countryFromOrganization() {
 watch(() => form.organization_id, countryFromOrganization)
 
 /** Solo para mostrar: el backend recalcula con la misma fórmula al guardar. */
-const total = computed(() => chinaOperationTotal(form))
+const total = computed(() => chinaOperationTotal({
+  ...form,
+  cbm: liveMoney('cbm'),
+  rate: liveMoney('rate'),
+  amount: liveMoney('amount'),
+  fob: liveMoney('fob'),
+  freight: liveMoney('freight')
+}))
 const isDraft = computed(() => !!props.draft)
 /** #2396: los consolidados de Pro Business (org 1) se facturan al cliente que elija China; con el cliente salen sus tarifas. */
 const draftClienteLibre = computed(() => !!props.draft && Number(props.draft.organization?.id) === 1)
@@ -321,7 +358,7 @@ const clientRates = computed(() => {
 const selectedTier = ref<number | null>(null)
 const activeTier = computed(() => {
   const rate = clientRates.value.find((item) => item.tier === selectedTier.value)
-  return rate && Math.abs(Number(form.rate || 0) - rate.value) < 0.005 ? rate.tier : null
+  return rate && Math.abs(Number(liveMoney('rate') || 0) - rate.value) < 0.005 ? rate.tier : null
 })
 
 function pickRate(tier: number, value: number) {
@@ -383,6 +420,7 @@ function addCost() {
 }
 
 async function save() {
+  onMoneyBlur()
   errorMessage.value = ''
   if (!form.organization_id || !form.service_name.trim() || !form.description.trim()) {
     errorMessage.value = 'Completa cliente, servicio y descripción.'
