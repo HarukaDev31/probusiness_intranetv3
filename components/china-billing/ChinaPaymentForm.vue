@@ -20,7 +20,10 @@
           />
         </UFormField>
         <UFormField :label="isPartner ? 'Monto transferido (USD)' : 'Monto enviado (USD)'" required :class="isPartner ? 'sm:order-1' : 'sm:order-2'">
-          <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="amountSent" :min="0" :step="0.01" placeholder="0.00" class="w-full" />
+          <!-- El número solo confirma el valor al salir del campo; el input actualiza la barra al teclear. -->
+          <div @input="onSentTyping" @focusout="onSentBlur">
+            <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="amountSent" :min="0" :step="0.01" placeholder="0.00" class="w-full" />
+          </div>
         </UFormField>
 
         <UFormField :label="isPartner ? 'Fecha de transferencia' : 'Fecha del pago'" required :class="isPartner ? 'sm:order-2' : 'sm:order-1'">
@@ -136,7 +139,29 @@ const errorMessage = ref('')
 
 const organizationItems = computed(() => (props.organizations || []).map((org) => ({ value: org.id, label: `${formatNombreEmpresa(org.name)}${org.country ? ` · ${org.country}` : ''}` })))
 const clientLabel = computed(() => organizationItems.value.find((item) => item.value === organizationId.value)?.label || 'el cliente')
-const sentAmount = computed(() => Number(amountSent.value || 0))
+/** Mientras se escribe, la barra usa el texto del campo. Al salir, queda el valor confirmado. */
+const sentDraft = ref<number | null>(null)
+const sentTyping = ref(false)
+const sentAmount = computed(() => sentTyping.value ? Number(sentDraft.value || 0) : Number(amountSent.value || 0))
+
+function parseTypedAmount(raw: string): number | null {
+  const text = raw.replace(/\s/g, '').replace(',', '.')
+  if (text === '' || text === '-' || text === '.' || text === '-.') return null
+  const value = Number(text)
+  return Number.isFinite(value) ? value : null
+}
+
+function onSentTyping(event: Event) {
+  const target = event.target
+  if (!(target instanceof HTMLInputElement)) return
+  sentTyping.value = true
+  sentDraft.value = parseTypedAmount(target.value)
+}
+
+function onSentBlur() {
+  sentTyping.value = false
+  sentDraft.value = null
+}
 const assignedAmount = computed(() => roundTwo(pending.value.reduce((sum, operation) => sum + Number(amounts.value[operation.id!] || 0), 0)))
 const unassignedAmount = computed(() => roundTwo(Math.max(0, sentAmount.value - assignedAmount.value)))
 
@@ -156,6 +181,8 @@ watch(() => [props.open, props.payment, props.lockedOrganizationId], async () =>
   pending.value = []
   paidOn.value = props.payment?.paid_on || new Date().toISOString().slice(0, 10)
   amountSent.value = props.payment?.amount_sent ?? null
+  sentTyping.value = false
+  sentDraft.value = null
   organizationId.value = props.payment?.organization.id ?? props.lockedOrganizationId ?? null
   if (isPartner.value || organizationId.value) await loadPending()
 }, { immediate: true })
