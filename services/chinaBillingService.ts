@@ -177,6 +177,12 @@ export class ChinaBillingService extends BaseService {
     return this.apiCall<One<ChinaPayment>>(`${this.baseUrl}/payments/${id}/cash`, { method: 'POST', body: form })
   }
 
+  static async attachCashVoucher(id: number, voucher: File) {
+    const form = new FormData()
+    form.append('voucher', voucher)
+    return this.apiCall<One<ChinaPayment>>(`${this.baseUrl}/payments/${id}/cash-voucher`, { method: 'POST', body: form })
+  }
+
   static async uncashPayment(id: number) {
     return this.apiCall<One<ChinaPayment>>(`${this.baseUrl}/payments/${id}/uncash`, { method: 'POST' })
   }

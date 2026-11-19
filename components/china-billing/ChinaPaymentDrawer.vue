@@ -147,8 +147,11 @@
               <div class="rounded-lg bg-elevated/60 px-3 py-2"><p class="text-xs uppercase tracking-wider text-muted">En caja</p><p class="text-lg font-bold text-highlighted">{{ rmb(payment.yuan_amount || 0) }}</p></div>
             </div>
             <div class="mt-3 flex items-center gap-2 text-sm">
-              <UIcon name="i-heroicons-document-text" class="size-4 text-muted" />
-              <span class="flex-1 truncate">{{ payment.cash_voucher_name || 'Sin boucher adjunto' }}</span>
+              <label class="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
+                <UIcon name="i-heroicons-paper-clip" class="size-4 shrink-0 text-primary" />
+                <span class="truncate" :class="payment.cash_voucher_name ? 'text-highlighted' : 'text-muted'">{{ payment.cash_voucher_name || 'Sin boucher adjunto' }}</span>
+                <input type="file" class="hidden" :accept="RECEIPT_ACCEPT" @change="attachVoucher" />
+              </label>
               <UButton v-if="payment.cash_voucher_url" size="xs" color="primary" variant="link" icon="i-heroicons-eye" @click="viewer = { url: payment.cash_voucher_url, name: payment.cash_voucher_name }">Ver</UButton>
             </div>
             <UButton class="mt-3" size="sm" color="neutral" variant="outline" :loading="busy" @click="run(() => ChinaBillingService.uncashPayment(payment!.id))">Deshacer cambio</UButton>
@@ -322,6 +325,14 @@ async function confirm() {
     return
   }
   await run(() => ChinaBillingService.confirmPayment(props.payment!.id, received.value!, needsShortfall.value ? shortfallOperationId.value : null))
+}
+
+async function attachVoucher(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0] || null
+  input.value = ''
+  if (!file || !props.payment) return
+  await run(() => ChinaBillingService.attachCashVoucher(props.payment!.id, file))
 }
 
 async function cash() {
