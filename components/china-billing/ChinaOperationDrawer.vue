@@ -35,15 +35,17 @@
 
         <UCard :ui="{ body: 'p-4 sm:p-4' }">
           <p class="mb-2 text-sm font-semibold text-highlighted">Pagos aplicados</p>
-          <div v-for="item in operation.payments" :key="item.payment_id" class="flex items-center gap-3 border-b border-default py-2.5 text-sm">
-            <button type="button" class="flex flex-1 flex-col text-left hover:text-primary" @click="emit('open-payment', item.payment_id)">
-              <span class="font-semibold">{{ item.code }}</span>
-              <span class="text-xs text-muted">clic para gestionar</span>
-            </button>
-            <span class="font-semibold">{{ usd(item.amount) }}</span>
-            <span class="rounded-full px-2.5 py-0.5 text-xs font-medium" :class="CHINA_STATUS_PILL[item.status]">{{ CHINA_STATUS_LABEL[item.status] }}</span>
-            <UButton size="xs" color="error" variant="ghost" icon="i-heroicons-trash" aria-label="Eliminar pago" @click="removePayment(item)" />
-          </div>
+          <UCard v-for="item in operation.payments" :key="item.payment_id" class="mb-2" :ui="{ body: 'px-3 py-2.5 sm:px-3 sm:py-2.5' }">
+            <div class="flex items-center gap-3 text-sm">
+              <button type="button" class="flex min-w-0 flex-1 flex-col text-left hover:text-primary" @click="emit('open-payment', item.payment_id)">
+                <span class="font-semibold text-highlighted">{{ item.code }}</span>
+                <span class="text-xs text-muted">{{ paymentWhen(item) }}</span>
+              </button>
+              <span class="font-semibold text-highlighted">{{ usd(item.amount) }}</span>
+              <span class="rounded-full px-2.5 py-0.5 text-xs font-medium" :class="CHINA_STATUS_PILL[item.status]">{{ CHINA_STATUS_LABEL[item.status] }}</span>
+              <UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-x-mark" aria-label="Quitar pago" @click="removePayment(item)" />
+            </div>
+          </UCard>
           <div v-for="credit in operation.credits" :key="credit.id" class="flex items-center gap-3 border-b border-default py-2.5 text-sm">
             <span class="flex flex-1 flex-col"><span class="font-semibold">Saldo a favor</span><span class="text-xs text-muted">{{ creditOrigin(credit) }}</span></span>
             <span class="font-semibold">{{ usd(credit.amount) }}</span>
@@ -134,6 +136,14 @@ function onCreditTyping(event: Event) {
 function onCreditBlur() {
   creditTyping.value = false
   creditDraft.value = null
+}
+
+function paymentWhen(item: ChinaOperationPaymentRef) {
+  if (!item.paid_on) return 'clic para gestionar'
+  const [year, month, day] = item.paid_on.split('-')
+  const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+  const label = year ? `${Number(day)} ${months[Number(month) - 1] || ''}` : ''
+  return label ? `${label} · clic para gestionar` : 'clic para gestionar'
 }
 
 function creditOrigin(credit: { payment_code?: string | null; applied_on?: string | null }) {
