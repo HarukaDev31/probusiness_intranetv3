@@ -825,7 +825,7 @@
           </template>
           <template v-else-if="vistaPrevia?.enlace">
             <UButton color="neutral" variant="outline" @click="cerrarVistaPrevia">Cerrar</UButton>
-            <UButton color="primary" variant="outline" icon="i-lucide-external-link" :to="vistaPrevia.enlace" target="_blank" rel="noopener">Abrir como cliente</UButton>
+            <UButton color="primary" variant="outline" icon="i-lucide-external-link" :to="enlaceAsesor(vistaPrevia.enlace || '')" target="_blank" rel="noopener">Abrir como cliente</UButton>
             <!-- #2251/#2293: el mensaje del formulario (o de autorización) también se envía desde aquí. -->
             <UButton v-if="vistaPrevia.proveedorId" color="success" icon="i-heroicons-paper-airplane" :loading="enviandoFormulario" :disabled="!solicitud.cliente_whatsapp" @click="enviarMensajeFormulario">
               Enviar por WhatsApp
@@ -1454,6 +1454,11 @@ async function pedirValidacion(proveedor: PagoProveedorSolicitudProveedor) {
   } catch (error: any) {
     showError('Validación', error.message || 'No se pudo pedir la validación.')
   }
+}
+
+/** #2354: el asesor abre el formulario solo para verlo; no puede autorizar en nombre del cliente. */
+function enlaceAsesor(enlace: string) {
+  return `${enlace}${enlace.includes('?') ? '&' : '?'}vista=asesor`
 }
 
 async function enviarMensajeFormulario() {

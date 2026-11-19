@@ -258,8 +258,8 @@
               <strong :class="tituloFila">{{ dosPagos ? `Constancia · pago ${index + 1}` : 'Constancia de pago' }}</strong>
               <p class="text-xs text-muted">{{ responsablePago }}<template v-if="execution.registered_at"> · {{ fechaHora(execution.registered_at) }}</template></p>
             </div>
-            <UButton v-if="execution.receipt_url" class="shrink-0 whitespace-nowrap" size="xs" color="success" variant="soft" :to="execution.receipt_url" target="_blank">{{ proveedor.moneda === 'RMB' ? '✓ Registrada' : '✓ Enviada' }}</UButton>
-            <UBadge v-else color="warning" variant="soft" :label="proveedor.moneda === 'RMB' ? 'Falta registrarla' : 'Falta enviarla'" />
+            <UButton v-if="execution.receipt_url" class="ml-auto shrink-0 whitespace-nowrap" size="xs" color="success" variant="soft" :to="execution.receipt_url" target="_blank">{{ proveedor.moneda === 'RMB' ? '✓ Registrada' : '✓ Enviada' }}</UButton>
+            <UBadge v-else class="ml-auto" color="warning" variant="soft" :label="proveedor.moneda === 'RMB' ? 'Falta registrarla' : 'Falta enviarla'" />
           </div>
           <template v-if="proveedor.moneda === 'RMB' && progress.executions.length">
             <template v-if="pago1Interino">
@@ -285,7 +285,7 @@
                     {{ balanceDocumento.desactualizado ? 'Se regenerará' : `Paso ${balanceDocumento.paso} · al día` }}
                   </UBadge>
                 </div>
-                <UBadge :color="progress.confirmation.balance_sent ? 'success' : (sinDiferencia ? 'success' : 'warning')" variant="soft" :label="progress.confirmation.balance_sent ? '✓ Enviado' : (sinDiferencia ? 'No aplica' : 'Por enviar')" />
+                <UBadge class="ml-auto" :color="progress.confirmation.balance_sent ? 'success' : (sinDiferencia ? 'success' : 'warning')" variant="soft" :label="progress.confirmation.balance_sent ? '✓ Enviado' : (sinDiferencia ? 'No aplica' : 'Por enviar')" />
               </div>
               <div v-if="!readonly && (progress.confirmation.can_download_balance || progress.confirmation.can_send_balance)" class="mt-2 flex flex-wrap items-center gap-1.5 pl-10">
                 <UButton v-if="progress.confirmation.can_download_balance" size="sm" color="primary" variant="outline" icon="i-lucide-download" title="Descargar balance" :loading="saving" @click="downloadBalance" />
@@ -309,7 +309,7 @@
             <div class="flex flex-wrap items-start justify-between gap-2">
               <UAvatar icon="i-lucide-circle-dollar-sign" size="sm" class="shrink-0 bg-primary/10" :ui="{ icon: 'text-primary' }" />
               <div class="min-w-0 flex-[1_1_auto]"><strong :class="tituloFila">Diferencia de cambio</strong><p class="text-xs text-muted">{{ diferenciaVista.text }}</p></div>
-              <UBadge :color="diferenciaVista.color" variant="soft" :label="diferenciaVista.label" />
+              <UBadge class="ml-auto" :color="diferenciaVista.color" variant="soft" :label="diferenciaVista.label" />
             </div>
             <UButton v-if="!readonly && progress.confirmation.can_register_exchange && !progress.confirmation.exchange_validating" class="mt-2" size="sm" color="primary" @click="differenceOpen = true">Registrar voucher de la diferencia</UButton>
           </div>
