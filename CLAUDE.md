@@ -43,10 +43,16 @@ https://qaintranet.probusiness.pe, despliega solo ~2 min después del push a `qa
 ## Estado PRY-26-0003 (Pago a Proveedor + Almacén China)
 - Rama `soporte/PRY-26-0003-2` en front y back, mergeada a `qa`. PRs abiertos sin merge: front #166, back intranet_back#41 (van juntos; el back trae migraciones, elimina `china_clients`, crea el rol y reordena menús).
 - Ticket en la intranet: id 121 (chat de Meliza Valle). Al atender: responder con "[Soporte Bot] …" (POST `/soporte-ti/solicitudes/121/mensajes`) y marcar revisados
-  (`PATCH /api/soporte-ti/chats/{uuid}/mensajes/{id}/revisado` con `{"revisado":true}`). Atendido y marcado hasta ~2239; después de eso revisar mensajes nuevos.
+  (`PATCH /api/soporte-ti/chats/{uuid}/mensajes/{id}/revisado` con `{"revisado":true}`). Atendido y marcado hasta ~2350; después de eso revisar mensajes nuevos.
 - Ronda 18/11 (msgs 2194–2239): ícono en «Anular abono» (`useModal` acepta `icon`/`iconTone`), cabecera común `SupplierPaymentHeader.vue`
   (Cotizaciones/Solicitudes con ícono naranja), Documentos en filas Solicitud / Depósitos validados, constancia con el área, y
   «Pago a Proveedor» con un solo hijo = ítem único (Supplier Payment de Encargado China).
+- Ronda 18-19/11 (msgs 2241–2350): `MensajeWhatsapp.vue` (Copiar texto) en todas las ventanas de mensajes; envío real del mensaje T-T/autorización
+  (`POST …/enviar-mensaje-formulario`); «N°» = posición en la lista y «N. orden» = código; cabecera de solicitud con cliente + C.C/P.P/fecha;
+  saldo incluye diferencia por cobrar (`diferencia_por_cobrar`), «Total abonado (validado)» + `por_validar`; yuanes: constancia opcional, aviso automático,
+  pago sin ingreso del socio (`pago_proveedor_ejecuciones.rate_pending`, se recalcula en `addIncome`); panel de estados en Pagos en yuanes (bucket `pendiente`);
+  PDF de balance con el formato aprobado (3 casos). Clientes-front: el form T-T se trajo a `soporte/PRY-26-0003-2` (antes solo en `qa`).
+  Menú de Armando: no existen «Seguimiento», «Estado de contenedores» ni «Configuración» (pendiente de definir).
 - En `qa` el orden del sidebar viene del back (`panel-acceso/orden-menus`, commit e571ec7): **no** agregar reorders en `layouts/default.vue`.
   Verificación antes de Pago a Proveedor (Patricia) se configura ahí para el cargo Administración.
 - El texto «Si abona total a Pro Business, se paga total al proveedor…» (msg 2195) no existe en ninguna rama; se pidió a Meliza recargar.

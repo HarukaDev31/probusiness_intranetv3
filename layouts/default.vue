@@ -418,12 +418,16 @@ const sidebarCategories = computed(() => {
       const route = String(mod.route || '')
       const name = String(mod.name || '').toLowerCase()
       const reglas = [
+        // Orden final de la maqueta de Miguel (#2349).
         (r: string, n: string) => r === '/' || n === 'inicio',
+        (r: string, n: string) => r.startsWith('/seguimiento-china') || n === 'seguimiento',
         (r: string, n: string) => r.startsWith('/cargaconsolidada') || n.includes('carga consolidada'),
         (r: string, n: string) => r.startsWith('/flujo-caja') || n.includes('flujo de caja'),
         (r: string, n: string) => r.startsWith('/operaciones-china') || n === 'operaciones',
         (r: string, n: string) => r.includes('pago-proveedor') || n.includes('pago a proveedor'),
-        (r: string, n: string) => r.startsWith('/clientes-china') || n === 'clientes'
+        (r: string, n: string) => r.startsWith('/estado-contenedores-china') || n === 'estado de contenedores',
+        (r: string, n: string) => r.startsWith('/clientes-china') || n === 'clientes',
+        (r: string, n: string) => r.startsWith('/configuracion-china') || n === 'configuración'
       ]
       const index = reglas.findIndex((regla) => regla(route, name))
       return index === -1 ? 50 : index
