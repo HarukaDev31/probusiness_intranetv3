@@ -22,7 +22,7 @@
               ignore-filter
               :loading="countryLoading"
               placeholder="Buscar país"
-              :disabled="isDraft || isEdit"
+              :disabled="(isDraft && !draftClienteLibre) || isEdit"
               class="w-full"
               @update:open="(value: boolean) => value && !countryOptions.length && loadCountries(true)"
             >
@@ -40,7 +40,7 @@
               :items="organizationItems"
               value-key="value"
               placeholder="Selecciona un cliente"
-              :disabled="isDraft || isEdit"
+              :disabled="(isDraft && !draftClienteLibre) || isEdit"
               class="w-full"
             />
           </UFormField>
@@ -174,7 +174,7 @@ const blank = () => ({
   service_name: 'Consolidado',
   billing_type: CHINA_BILLING_TYPE.CBM as string,
   variant_name: '',
-  issued_on: new Date().toISOString().slice(0, 10),
+  issued_on: hoyLocal(),
   description: '',
   cbm: null as number | null,
   rate: null as number | null,
@@ -273,7 +273,7 @@ const missing = computed(() => {
   return list
 })
 watch(country, (value) => {
-  if (isEdit.value || isDraft.value) return
+  if (isEdit.value || (isDraft.value && !draftClienteLibre.value)) return
   if (value && selectedOrganization.value && !servesCountry(selectedOrganization.value, value.value)) form.organization_id = null
 })
 /** Sin país elegido, el país pasa a ser el de origen del cliente. */
@@ -289,6 +289,13 @@ watch(() => form.organization_id, countryFromOrganization)
 /** Solo para mostrar: el backend recalcula con la misma fórmula al guardar. */
 const total = computed(() => chinaOperationTotal(form))
 const isDraft = computed(() => !!props.draft)
+/** #2396: los consolidados de Pro Business (org 1) se facturan al cliente que elija China; con el cliente salen sus tarifas. */
+const draftClienteLibre = computed(() => !!props.draft && Number(props.draft.organization?.id) === 1)
+/** Fecha local de hoy (YYYY-MM-DD), no la de UTC. */
+function hoyLocal() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 const isEdit = computed(() => !!props.operation)
 const title = computed(() => {
   if (props.draft) return `Aprobar operación · ${props.draft.organization.name}`
@@ -322,7 +329,7 @@ function pickRate(tier: number, value: number) {
 
 // Al crear una operación por CBM se precarga la tarifa 1 del cliente (se puede cambiar).
 watch(() => [form.organization_id, form.billing_type], () => {
-  if (isEdit.value || isDraft.value || form.billing_type !== CHINA_BILLING_TYPE.CBM) return
+  if (isEdit.value || (isDraft.value && !draftClienteLibre.value) || form.billing_type !== CHINA_BILLING_TYPE.CBM) return
   if (form.rate && !activeTier.value && selectedTier.value === null) return
   const first = clientRates.value[0]
   if (first) pickRate(first.tier, first.value)
@@ -354,7 +361,8 @@ watch(() => [props.open, props.operation, props.draft], () => {
     service_name: source.service_name,
     billing_type: source.billing_type,
     variant_name: source.variant_name || '',
-    issued_on: source.issued_on,
+    // #2391: al aprobar un consolidado cerrado, la fecha de la operación es la de hoy (día de aprobación).
+    issued_on: props.draft ? hoyLocal() : source.issued_on,
     description: source.description,
     cbm: source.cbm,
     rate: source.rate ?? null,
