@@ -312,6 +312,9 @@ function openBalance() {
 function onPaymentSaved() {
   paymentOpen.value = false
   selectedIds.value = []
+  editingPayment.value = null
+  tab.value = PARTNER_TAB.PAYMENTS
+  paymentPagination.value.current_page = 1
   loadAll()
 }
 
