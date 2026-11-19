@@ -245,7 +245,8 @@ const columns: TableColumn<ChinaOperation>[] = [
     'onUpdate:modelValue': (value: boolean | 'indeterminate') => toggle(row.original, value === true)
   }) },
   // «N.» es solo la posición en la lista (la más antigua es 1), no el número de la operación (ese va en «OP-…»).
-  { id: 'number', header: 'N.', cell: ({ row }) => row.original.is_draft ? null : h('span', { class: 'text-muted' }, String(Math.max(1, (pagination.value.total || rows.value.length) - ((pagination.value.current_page - 1) * pagination.value.per_page + row.index)))) },
+  // #2423: el número lo calcula el back (solo cuenta operaciones; las «Por aprobar» no llevan número).
+  { id: 'number', header: 'N.', cell: ({ row }) => row.original.is_draft ? null : h('span', { class: 'text-muted' }, String(row.original.number ?? '')) },
   { accessorKey: 'issued_on', header: 'Fecha', cell: ({ row }) => h('div', { class: 'flex flex-col whitespace-nowrap' }, [
     h('span', dayLabel(row.original.issued_on)),
     h('span', { class: 'text-xs text-muted' }, monthLabel(row.original.issued_on))

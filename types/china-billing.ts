@@ -28,6 +28,8 @@ export interface ChinaCreditApplication {
 export interface ChinaOperation {
   id: number | null
   is_draft: boolean
+  /** Conteo de la lista (solo operaciones aprobadas). */
+  number?: number | null
   code: string | null
   organization: ChinaOrganizationRef
   issued_on: string
