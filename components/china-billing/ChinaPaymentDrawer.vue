@@ -78,7 +78,9 @@
               </div>
             </div>
             <UFormField label="Monto real recibido en el banco (USD)">
-              <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="received" :min="0" :step="0.01" class="w-full" />
+              <div @input="onReceivedTyping" @focusout="onReceivedBlur">
+                <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="received" :min="0" :step="0.01" class="w-full" />
+              </div>
             </UFormField>
             <div v-if="needsShortfall" class="mt-3 rounded-lg border border-error/30 bg-error/5 p-3">
               <p class="mb-2 text-sm text-error">Llegaron <strong>{{ usd(shortfallAmount) }}</strong> menos. ¿A qué operación cargas la diferencia?</p>
@@ -96,7 +98,7 @@
               </button>
             </div>
             <p v-if="liveExcess > 0" class="mt-3 rounded-lg bg-[#eef8f2] px-3 py-2 text-sm text-success">{{ usd(liveExcess) }} quedará como saldo a favor de {{ formatNombreEmpresa(payment.organization.name) }}.</p>
-            <UButton class="mt-3" block color="primary" :loading="busy" :disabled="!received || (needsShortfall && !shortfallOperationId)" @click="confirm">Confirmar ingreso</UButton>
+            <UButton class="mt-3" block color="primary" :loading="busy" :disabled="!liveReceived || (needsShortfall && !shortfallOperationId)" @click="confirm">Confirmar ingreso</UButton>
           </template>
 
           <template v-else>
@@ -125,14 +127,18 @@
           <template v-else-if="payment.status === CHINA_STATUS.CONFIRMED">
             <div class="grid grid-cols-2 items-end gap-3">
               <div class="rounded-lg bg-elevated/60 px-3 py-2"><p class="text-xs text-muted">Monto confirmado (USD)</p><p class="text-lg font-bold text-highlighted">{{ usd(payment.amount_received || 0) }}</p></div>
-              <UFormField label="Tipo de cambio del banco"><UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="exchangeRate" :min="0" :step="0.0001" class="w-full" /></UFormField>
+              <UFormField label="Tipo de cambio del banco">
+                <div @input="onRateTyping" @focusout="onRateBlur">
+                  <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="exchangeRate" :min="0" :step="0.0001" class="w-full" />
+                </div>
+              </UFormField>
             </div>
             <div class="mt-3 flex items-center justify-between rounded-lg bg-primary/10 px-3 py-3 text-sm">
               <span class="text-highlighted">Ingresa a caja</span>
               <span class="text-xl font-bold text-highlighted">{{ yuanPreview }}</span>
             </div>
             <div class="mt-3"><YuanFilePick label="Adjuntar boucher del cambio (opcional)" :accept="RECEIPT_ACCEPT" @pick="voucher = $event" /></div>
-            <UButton class="mt-3" block color="primary" :loading="busy" :disabled="!exchangeRate" @click="cash">Pasar a caja</UButton>
+            <UButton class="mt-3" block color="primary" :loading="busy" :disabled="!liveRate" @click="cash">Pasar a caja</UButton>
           </template>
 
           <template v-else>
@@ -192,13 +198,53 @@ const receiptExtension = computed(() => (props.payment?.receipt_name?.split('.')
 /** Vista previa mientras se escribe; el backend vuelve a calcular y valida al confirmar. */
 // Igual que el back (ChinaBillingCalculator::expectedShortfall): la diferencia es lo enviado menos lo recibido,
 // con tope en lo asignado; se carga a una operación y lo no asignado sigue como saldo a favor.
+const receivedTyping = ref(false)
+const receivedDraft = ref<number | null>(null)
+const rateTyping = ref(false)
+const rateDraft = ref<number | null>(null)
+const liveReceived = computed(() => receivedTyping.value ? receivedDraft.value : received.value)
+const liveRate = computed(() => rateTyping.value ? rateDraft.value : exchangeRate.value)
+
+function parseTyped(raw: string): number | null {
+  const text = raw.replace(/\s/g, '').replace(',', '.')
+  if (text === '' || text === '-' || text === '.' || text === '-.') return null
+  const value = Number(text)
+  return Number.isFinite(value) ? value : null
+}
+
+function onTyped(event: Event, assign: (value: number | null) => void) {
+  const target = event.target
+  if (!(target instanceof HTMLInputElement)) return
+  assign(parseTyped(target.value))
+}
+
+function onReceivedTyping(event: Event) {
+  receivedTyping.value = true
+  onTyped(event, (value) => { receivedDraft.value = value })
+}
+
+function onReceivedBlur() {
+  receivedTyping.value = false
+  receivedDraft.value = null
+}
+
+function onRateTyping(event: Event) {
+  rateTyping.value = true
+  onTyped(event, (value) => { rateDraft.value = value })
+}
+
+function onRateBlur() {
+  rateTyping.value = false
+  rateDraft.value = null
+}
+
 const shortfallAmount = computed(() => {
   const p = props.payment
-  if (!p || received.value === null || p.allocated <= 0) return 0
-  return round2(Math.min(p.allocated, Math.max(0, Math.max(p.amount_sent, p.allocated) - received.value)))
+  if (!p || liveReceived.value === null || p.allocated <= 0) return 0
+  return round2(Math.min(p.allocated, Math.max(0, Math.max(p.amount_sent, p.allocated) - liveReceived.value)))
 })
 const needsShortfall = computed(() => shortfallAmount.value > 0 && !!props.payment?.allocations.length)
-const liveExcess = computed(() => (props.payment && received.value !== null ? round2(Math.max(0, received.value + shortfallAmount.value - props.payment.allocated)) : 0))
+const liveExcess = computed(() => (props.payment && liveReceived.value !== null ? round2(Math.max(0, liveReceived.value + shortfallAmount.value - props.payment.allocated)) : 0))
 const receiptIsImage = computed(() => !!props.payment?.receipt_url && /\.(png|jpe?g|webp|gif)$/i.test(props.payment.receipt_name || props.payment.receipt_url || ''))
 const receiptInput = ref<HTMLInputElement | null>(null)
 
@@ -234,7 +280,7 @@ const shortfallItems = computed(() => (props.payment?.allocations || [])
   .filter((allocation) => allocation.amount >= shortfallAmount.value)
   .map((allocation) => ({ value: allocation.operation_id, code: allocation.code, label: allocation.label || '', amount: allocation.amount })))
 const shortfallCode = computed(() => props.payment?.allocations.find((a) => a.operation_id === props.payment?.shortfall_operation_id)?.code || '')
-const yuanPreview = computed(() => (props.payment && exchangeRate.value ? rmb((props.payment.amount_received || 0) * exchangeRate.value) : '—'))
+const yuanPreview = computed(() => (props.payment && liveRate.value ? rmb((props.payment.amount_received || 0) * liveRate.value) : '—'))
 
 const deleteText = computed(() => {
   const codes = props.payment?.allocations.map((a) => a.code).join(', ') || 'las operaciones'
@@ -248,8 +294,12 @@ function shortfallNote(allocation: ChinaPaymentAllocation): string {
 
 watch(() => props.payment?.id, () => {
   received.value = props.payment?.amount_received ?? props.payment?.amount_sent ?? null
+  receivedTyping.value = false
+  receivedDraft.value = null
   shortfallOperationId.value = props.payment?.allocations[0]?.operation_id ?? null
   exchangeRate.value = props.payment?.exchange_rate ?? null
+  rateTyping.value = false
+  rateDraft.value = null
   voucher.value = null
 }, { immediate: true })
 
@@ -266,6 +316,7 @@ async function run(action: () => Promise<unknown>) {
 }
 
 async function confirm() {
+  if (receivedTyping.value && receivedDraft.value !== null) received.value = receivedDraft.value
   if (!received.value) {
     showError('Cobros', 'Indica el monto recibido.')
     return
@@ -274,6 +325,7 @@ async function confirm() {
 }
 
 async function cash() {
+  if (rateTyping.value && rateDraft.value !== null) exchangeRate.value = rateDraft.value
   if (!exchangeRate.value) {
     showError('Cobros', 'Indica el tipo de cambio.')
     return
