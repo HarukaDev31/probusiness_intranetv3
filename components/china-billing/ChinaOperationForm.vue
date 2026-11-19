@@ -58,8 +58,9 @@
           <UFormField label="Descripción" required>
             <UInput v-model="form.description" placeholder="ej. Consolidado #49 · menaje de cocina" class="w-full" />
           </UFormField>
-          <UFormField label="Fecha">
-            <UInput v-model="form.issued_on" type="date" class="w-full" />
+          <!-- Por aprobar: lleva la fecha de cierre; al aprobar, la operación queda con la fecha de hoy (la fija el back). -->
+          <UFormField :label="isDraft ? 'Fecha de aprobación' : 'Fecha'">
+            <UInput v-model="form.issued_on" type="date" :disabled="isDraft" class="w-full" />
           </UFormField>
         </div>
 
