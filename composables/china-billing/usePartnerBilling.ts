@@ -26,7 +26,7 @@ export function usePartnerBilling() {
   const cards = computed(() => [
     { label: 'Total facturado', value: usd(summary.value.total_billed), sub: plural(counts.value.all ?? 0, 'consolidado cerrado', 'consolidados cerrados'), tone: 'text-highlighted' },
     { label: 'Pagado', value: usd(summary.value.paid), sub: 'Confirmado por Pro Business', tone: 'text-success' },
-    { label: 'En confirmación', value: usd(summary.value.in_confirmation), sub: 'Pagos enviados por confirmar', tone: 'text-[#1d4f91]' },
+    { label: 'En confirmación', value: usd(summary.value.in_confirmation), sub: 'Pagos enviados por confirmar', tone: 'text-info' },
     { label: 'Saldo por pagar', value: usd(summary.value.balance_due), sub: plural(counts.value.due ?? 0, 'factura pendiente', 'facturas pendientes'), tone: 'text-primary' },
     {
       label: 'Saldo a favor',

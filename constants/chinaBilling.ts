@@ -24,23 +24,23 @@ export const CHINA_STATUS_COLOR: Record<string, 'warning' | 'neutral' | 'primary
   [CHINA_STATUS.IN_CASH]: 'success'
 }
 
-/** Colores de la píldora de estado (fondo y texto), como en la maqueta. */
+/** Píldora de estado con tokens del tema, para que se lea en claro y en oscuro. */
 export const CHINA_STATUS_PILL: Record<string, string> = {
-  [CHINA_STATUS.DRAFT]: 'bg-[#fef6e0] text-[#8a5a00]',
-  [CHINA_STATUS.PENDING]: 'bg-[#eef1f6] text-[#4a5a72]',
-  [CHINA_STATUS.TO_CONFIRM]: 'bg-[#fff3ea] text-[#b4480c]',
-  [CHINA_STATUS.CONFIRMED]: 'bg-[#e7f0fd] text-[#1d4f91]',
-  [CHINA_STATUS.IN_CASH]: 'bg-[#e8f6ee] text-[#1f7a45]'
+  [CHINA_STATUS.DRAFT]: 'bg-warning/15 text-warning',
+  [CHINA_STATUS.PENDING]: 'bg-elevated text-toned',
+  [CHINA_STATUS.TO_CONFIRM]: 'bg-primary/15 text-primary',
+  [CHINA_STATUS.CONFIRMED]: 'bg-info/15 text-info',
+  [CHINA_STATUS.IN_CASH]: 'bg-success/15 text-success'
 }
 
 /** Punto de color de la barra de estados. */
 export const CHINA_STATUS_DOT: Record<string, string> = {
-  [CHINA_STATUS.ALL]: 'bg-[#1e2a3b]',
-  [CHINA_STATUS.DRAFT]: 'bg-[#8a5a00]',
-  [CHINA_STATUS.PENDING]: 'bg-[#4a5a72]',
-  [CHINA_STATUS.TO_CONFIRM]: 'bg-[#b4480c]',
-  [CHINA_STATUS.CONFIRMED]: 'bg-[#1d4f91]',
-  [CHINA_STATUS.IN_CASH]: 'bg-[#1f7a45]'
+  [CHINA_STATUS.ALL]: 'bg-inverted',
+  [CHINA_STATUS.DRAFT]: 'bg-warning',
+  [CHINA_STATUS.PENDING]: 'bg-neutral',
+  [CHINA_STATUS.TO_CONFIRM]: 'bg-primary',
+  [CHINA_STATUS.CONFIRMED]: 'bg-info',
+  [CHINA_STATUS.IN_CASH]: 'bg-success'
 }
 
 export const CHINA_BILLING_TAB = {
@@ -73,12 +73,12 @@ export const PARTNER_STATUS_COLOR: Record<string, 'neutral' | 'warning' | 'prima
   paid: 'success'
 }
 
-/** Colores de la píldora de estado del socio, como en la maqueta. */
+/** Píldora de estado del socio, con tokens del tema. */
 export const PARTNER_STATUS_PILL: Record<string, string> = {
-  pending: 'bg-[#fff3ea] text-[#b4480c]',
-  partial: 'bg-[#fef6e0] text-[#8a5a00]',
-  to_confirm: 'bg-[#e7f0fd] text-[#1d4f91]',
-  paid: 'bg-[#e8f6ee] text-[#1f7a45]'
+  pending: 'bg-primary/15 text-primary',
+  partial: 'bg-warning/15 text-warning',
+  to_confirm: 'bg-info/15 text-info',
+  paid: 'bg-success/15 text-success'
 }
 
 export const PARTNER_INVOICE_FILTER = {

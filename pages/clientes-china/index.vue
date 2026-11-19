@@ -39,7 +39,7 @@
       @items-per-page-change="onPageSize"
     >
       <template #actions>
-        <div class="order-first inline-flex rounded-xl bg-[#eef1f6] p-1">
+        <div class="order-first inline-flex rounded-xl bg-elevated p-1">
           <button
             v-for="item in types"
             :key="item.key"
@@ -126,7 +126,7 @@ const columns: TableColumn<ChinaClient>[] = [
   ]) },
   { accessorKey: 'country', header: 'País', cell: ({ row }) => h('span', row.original.country || '—') },
   { accessorKey: 'type', header: 'Tipo', cell: ({ row }) => h('span', {
-    class: `inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${row.original.type === 'partner' ? 'bg-[#fff3ea] text-[#b4480c]' : 'bg-[#eef1f6] text-[#4a5a72]'}`
+    class: `inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${row.original.type === 'partner' ? 'bg-primary/15 text-primary' : 'bg-elevated text-toned'}`
   }, row.original.type === 'partner' ? 'Socio' : 'Importador') },
   { accessorKey: 'service_amount', header: 'Total servicio', meta: { class: right }, cell: ({ row }) => h('span', { class: 'font-semibold text-success' }, usd(row.original.service_amount)) },
   { accessorKey: 'total_billed', header: 'Total facturado', meta: { class: right }, cell: ({ row }) => h('span', usd(row.original.total_billed)) },

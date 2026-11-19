@@ -18,9 +18,18 @@
           <UButton color="neutral" variant="ghost" icon="i-heroicons-x-mark" aria-label="Cerrar" @click="emit('close')" />
         </div>
         <div class="grid grid-cols-3 gap-3 border-b border-default bg-default px-6 py-4">
-          <div><p class="text-xs uppercase tracking-wider text-muted">Total facturado</p><p class="text-xl font-bold text-highlighted">{{ usd(client.total_billed) }}</p></div>
-          <div><p class="text-xs uppercase tracking-wider text-muted">Pagado</p><p class="text-xl font-bold text-success">{{ usd(client.paid) }}</p></div>
-          <div><p class="text-xs uppercase tracking-wider text-muted">Saldo por cobrar</p><p class="text-xl font-bold" :class="client.receivable > 0.005 ? 'text-error' : 'text-highlighted'">{{ usd(client.receivable) }}</p></div>
+          <UCard variant="subtle" :ui="{ body: 'px-3 py-2 sm:px-3 sm:py-2' }">
+            <p class="text-xs uppercase tracking-wider text-muted">Total facturado</p>
+            <p class="text-xl font-bold text-highlighted">{{ usd(client.total_billed) }}</p>
+          </UCard>
+          <UCard variant="subtle" :ui="{ body: 'px-3 py-2 sm:px-3 sm:py-2' }">
+            <p class="text-xs uppercase tracking-wider text-muted">Pagado</p>
+            <p class="text-xl font-bold text-success">{{ usd(client.paid) }}</p>
+          </UCard>
+          <UCard variant="subtle" :ui="{ body: 'px-3 py-2 sm:px-3 sm:py-2' }">
+            <p class="text-xs uppercase tracking-wider text-muted">Saldo por cobrar</p>
+            <p class="text-xl font-bold" :class="client.receivable > 0.005 ? 'text-error' : 'text-highlighted'">{{ usd(client.receivable) }}</p>
+          </UCard>
         </div>
 
         <div class="px-6 py-5">
