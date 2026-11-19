@@ -244,7 +244,8 @@ const columns: TableColumn<ChinaOperation>[] = [
     disabled: !selectedIds.value.includes(row.original.id!) && !canSelect(row.original),
     'onUpdate:modelValue': (value: boolean | 'indeterminate') => toggle(row.original, value === true)
   }) },
-  { id: 'number', header: 'N.', cell: ({ row }) => h('span', { class: 'text-muted' }, row.original.code ? String(Number(row.original.code.replace(/\D/g, ''))) : '') },
+  // «N.» es solo la posición en la lista (la más antigua es 1), no el número de la operación (ese va en «OP-…»).
+  { id: 'number', header: 'N.', cell: ({ row }) => h('span', { class: 'text-muted' }, String(Math.max(1, (pagination.value.total || rows.value.length) - ((pagination.value.current_page - 1) * pagination.value.per_page + row.index)))) },
   { accessorKey: 'issued_on', header: 'Fecha', cell: ({ row }) => h('div', { class: 'flex flex-col whitespace-nowrap' }, [
     h('span', dayLabel(row.original.issued_on)),
     h('span', { class: 'text-xs text-muted' }, monthLabel(row.original.issued_on))
