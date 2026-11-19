@@ -121,7 +121,7 @@ import { useModal } from '~/composables/commons/useModal'
 import { ChinaBillingService } from '~/services/chinaBillingService'
 import type { ChinaDocumentTarget, ChinaOperation, ChinaPayment } from '~/types/china-billing'
 import { formatNombreEmpresa } from '~/utils/formatters'
-import { UButton, UCheckbox, UIcon } from '#components'
+import { UButton, UCheckbox, UIcon, UTooltip } from '#components'
 
 const props = defineProps<{ range: { from: string; to: string } }>()
 const emit = defineEmits<{ changed: []; 'range-change': [range: { from: string; to: string }] }>()
@@ -239,6 +239,27 @@ const iconButton = (icon: string, label: string, onClick: () => void, tone = 'ho
   onClick
 }, h(UIcon, { name: icon, class: 'size-4' }))
 
+function totalWithDetail(operation: ChinaOperation) {
+  const service = operation.billing_type === 'cbm'
+    ? Number(operation.cbm || 0) * Number(operation.rate || 0)
+    : Number(operation.amount || 0)
+  const lines: [string, string][] = [[
+    operation.billing_type === 'cbm'
+      ? `Servicio (${Number(operation.cbm || 0)} CBM × ${usd(operation.rate || 0)})`
+      : (operation.service_name || 'Servicio'),
+    usd(service)
+  ], ['Costo FOB', usd(operation.fob || 0)], ['Flete', usd(operation.freight || 0)]]
+  for (const cost of operation.costs || []) lines.push([cost.name || 'Otro', usd(cost.amount)])
+  lines.push(['Total', usd(operation.total)])
+
+  return h(UTooltip, null, {
+    default: () => h('span', { class: 'cursor-help font-semibold underline decoration-dotted underline-offset-2' }, usd(operation.total)),
+    content: () => h('div', { class: 'min-w-56 space-y-1 text-xs' }, lines.map(([label, value], index) => h('div', {
+      class: `flex items-center justify-between gap-6 ${index === lines.length - 1 ? 'mt-1 border-t border-white/25 pt-1 font-semibold' : ''}`
+    }, [h('span', label), h('span', value)])))
+  })
+}
+
 const columns: TableColumn<ChinaOperation>[] = [
   { id: 'select', header: '', cell: ({ row }) => row.original.is_draft ? null : h(UCheckbox, {
     modelValue: selectedIds.value.includes(row.original.id!),
@@ -264,7 +285,7 @@ const columns: TableColumn<ChinaOperation>[] = [
       onClick: () => { documentTarget.value = { kind: 'invoice', mode: 'china', title: `Factura ${row.original.code}`, operationId: row.original.id! } }
     }, () => 'Descargar factura')
   ]) },
-  { accessorKey: 'total', header: 'Monto total', meta: { class: right }, cell: ({ row }) => row.original.is_draft ? muted('') : h('span', { class: 'font-semibold' }, usd(row.original.total)) },
+  { accessorKey: 'total', header: 'Monto total', meta: { class: right }, cell: ({ row }) => row.original.is_draft ? muted('') : totalWithDetail(row.original) },
   { accessorKey: 'received', header: 'Recibido USD', meta: { class: right }, cell: ({ row }) => row.original.is_draft ? muted('') : h('span', row.original.received ? usd(row.original.received) : '—') },
   { id: 'difference', header: 'Diferencia USD', meta: { class: right }, cell: ({ row }) => row.original.is_draft ? muted('') : differenceCell(row.original) },
   { accessorKey: 'received_rmb', header: 'Recibido RMB', meta: { class: right }, cell: ({ row }) => row.original.is_draft ? muted('') : h('span', row.original.received_rmb ? rmb(row.original.received_rmb) : '—') },

@@ -64,7 +64,7 @@
             <div class="min-w-0">
               <!-- #1909: como la maqueta, «OP-0004 · Consolidado» y debajo «02 oct · Consolidado #46 · producto». -->
               <p class="truncate text-sm font-semibold text-highlighted">{{ operation.code }} · {{ operation.service_name }}</p>
-              <p class="truncate text-xs text-muted">{{ [dayLabel(operation.issued_on), operation.consolidado_label, operation.description].filter(Boolean).join(' · ') }}</p>
+              <p class="truncate text-xs text-muted">{{ operationSubtitle(operation) }}</p>
             </div>
             <span class="text-right text-xs font-semibold uppercase tracking-wide text-muted">
               {{ isPartner ? 'Saldo' : 'Pendiente' }}<br>
@@ -142,7 +142,24 @@ const receipt = ref<File | null>(null)
 const saving = ref(false)
 const errorMessage = ref('')
 
-const organizationItems = computed(() => (props.organizations || []).map((org) => ({ value: org.id, label: `${formatNombreEmpresa(org.name)}${org.country ? ` · ${org.country}` : ''}` })))
+const organizationItems = computed(() => {
+  const items = (props.organizations || []).map((org) => ({ value: org.id, label: `${formatNombreEmpresa(org.name)}${org.country ? ` · ${org.country}` : ''}` }))
+  const current = props.payment?.organization
+  if (current && !items.some((item) => item.value === current.id)) {
+    items.unshift({ value: current.id, label: `${formatNombreEmpresa(current.name)}${current.country ? ` · ${current.country}` : ''}` })
+  }
+  return items
+})
+
+function operationSubtitle(operation: ChinaOperation) {
+  const consolidado = operation.consolidado_label || ''
+  let detail = operation.description || ''
+  for (const known of [operation.service_name, consolidado]) {
+    if (known) detail = detail.replace(new RegExp(known.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '')
+  }
+  detail = detail.replace(/(?:\s*[·-]\s*)+/g, ' · ').replace(/^(?:\s*·\s*)+|(?:\s*·\s*)+$/g, '').trim()
+  return [dayLabel(operation.issued_on), consolidado, detail].filter(Boolean).join(' · ')
+}
 const clientLabel = computed(() => organizationItems.value.find((item) => item.value === organizationId.value)?.label || 'el cliente')
 const sentAmount = computed(() => Number(amountSent.value || 0))
 const assignedAmount = computed(() => roundTwo(pending.value.reduce((sum, operation) => sum + Number(amounts.value[operation.id!] || 0), 0)))
@@ -198,7 +215,7 @@ async function loadPending() {
   try {
     const response = isPartner.value
       ? await ChinaBillingService.partnerPayableInvoices()
-      : await ChinaBillingService.pendingOperations(organizationId.value!)
+      : await ChinaBillingService.pendingOperations(organizationId.value!, (props.payment?.allocations || []).map((allocation) => allocation.operation_id))
     pending.value = response.data || []
     // Al editar, lo ya asignado a este pago vuelve a estar disponible para repartir.
     props.payment?.allocations.forEach((allocation) => {

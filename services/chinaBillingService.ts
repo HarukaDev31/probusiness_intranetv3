@@ -136,8 +136,10 @@ export class ChinaBillingService extends BaseService {
     return this.apiCall<Done>(`${this.baseUrl}/credit-applications/${applicationId}`, { method: 'DELETE' })
   }
 
-  static async pendingOperations(organizationId: number) {
-    return this.apiCall<{ success: boolean; data: ChinaOperation[] }>(`${this.baseUrl}/organizations/${organizationId}/pending-operations`)
+  static async pendingOperations(organizationId: number, includeIds: number[] = []) {
+    const include = includeIds.filter(Boolean).join(',')
+    const query = include ? `?include=${include}` : ''
+    return this.apiCall<{ success: boolean; data: ChinaOperation[] }>(`${this.baseUrl}/organizations/${organizationId}/pending-operations${query}`)
   }
 
   // --- Almacén China: cobros ---
