@@ -19,12 +19,21 @@
     <template #body>
       <div v-if="operation" class="flex flex-col gap-5">
         <div class="grid grid-cols-3 gap-3">
-          <div class="rounded-xl bg-elevated/60 px-4 py-3"><p class="text-xs uppercase tracking-wider text-muted">Total</p><p class="text-xl font-bold text-highlighted">{{ usd(operation.total) }}</p></div>
-          <div class="rounded-xl bg-elevated/60 px-4 py-3"><p class="text-xs uppercase tracking-wider text-muted">Recibido</p><p class="text-xl font-bold text-success">{{ usd(operation.received || 0) }}</p></div>
-          <div class="rounded-xl bg-elevated/60 px-4 py-3"><p class="text-xs uppercase tracking-wider text-muted">Pendiente</p><p class="text-xl font-bold text-primary">{{ usd(operation.pending || 0) }}</p></div>
+          <UCard variant="subtle" :ui="{ body: 'px-4 py-3 sm:px-4 sm:py-3' }">
+            <p class="text-xs uppercase tracking-wider text-muted">Total</p>
+            <p class="text-xl font-bold text-highlighted">{{ usd(operation.total) }}</p>
+          </UCard>
+          <UCard variant="subtle" :ui="{ body: 'px-4 py-3 sm:px-4 sm:py-3' }">
+            <p class="text-xs uppercase tracking-wider text-muted">Recibido</p>
+            <p class="text-xl font-bold text-success">{{ usd(operation.received || 0) }}</p>
+          </UCard>
+          <UCard variant="subtle" :ui="{ body: 'px-4 py-3 sm:px-4 sm:py-3' }">
+            <p class="text-xs uppercase tracking-wider text-muted">Pendiente</p>
+            <p class="text-xl font-bold text-primary">{{ usd(operation.pending || 0) }}</p>
+          </UCard>
         </div>
 
-        <div>
+        <UCard :ui="{ body: 'p-4 sm:p-4' }">
           <p class="mb-2 text-sm font-semibold text-highlighted">Pagos aplicados</p>
           <div v-for="item in operation.payments" :key="item.payment_id" class="flex items-center gap-3 border-b border-default py-2.5 text-sm">
             <button type="button" class="flex flex-1 flex-col text-left hover:text-primary" @click="emit('open-payment', item.payment_id)">
@@ -43,9 +52,9 @@
           </div>
           <p v-if="!operation.payments?.length && !operation.credits?.length" class="text-sm text-muted">Aún no hay pagos aplicados a esta operación.</p>
           <UButton v-if="(operation.pending || 0) > 0" class="mt-3 w-full justify-center" color="primary" @click="emit('register-payment', operation)">Registrar pago</UButton>
-        </div>
+        </UCard>
 
-        <div v-if="creditBalance > 0 && (operation.pending || 0) > 0" class="rounded-xl border border-[#c9e6d4] bg-[#eef8f2] p-4">
+        <UCard v-if="creditBalance > 0 && (operation.pending || 0) > 0" variant="subtle" :ui="{ body: 'p-4 sm:p-4' }">
           <div class="mb-2 flex items-center justify-between text-sm">
             <span class="font-semibold text-success">Aplicar saldo a favor</span>
             <span class="text-muted">{{ usd(creditBalance) }} disponible</span>
@@ -55,7 +64,7 @@
             <UButton color="primary" :loading="busy" :disabled="!creditAmount || creditAmount > creditMax" @click="applyCredit">Aplicar</UButton>
           </div>
           <p class="mt-1 text-xs text-muted">Máximo {{ usd(creditMax) }} para esta operación.</p>
-        </div>
+        </UCard>
       </div>
     </template>
   </USlideover>
