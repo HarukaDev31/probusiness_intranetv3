@@ -22,8 +22,8 @@
         <div class="flex items-start px-1">
           <div v-for="(step, index) in steps" :key="step.label" class="flex flex-1 flex-col last:flex-none">
             <div class="flex items-center">
-              <span class="size-3.5 flex-none rounded-full" :class="index + 1 <= stepIndex ? 'bg-primary' : 'bg-[#d5dbe6]'" />
-              <span v-if="index < steps.length - 1" class="mx-2 h-0.5 flex-1 rounded" :class="index + 1 < stepIndex ? 'bg-primary' : 'bg-[#e6e9f0]'" />
+              <span class="size-3.5 flex-none rounded-full" :class="index + 1 <= stepIndex ? 'bg-primary' : 'bg-accented'" />
+              <span v-if="index < steps.length - 1" class="mx-2 h-0.5 flex-1 rounded" :class="index + 1 < stepIndex ? 'bg-primary' : 'bg-accented'" />
             </div>
             <span class="mt-2 text-sm font-medium" :class="index + 1 <= stepIndex ? 'text-highlighted' : 'text-muted'">{{ step.label }}</span>
           </div>
@@ -92,12 +92,12 @@
                 :class="shortfallOperationId === item.value ? 'border-primary bg-primary/5' : 'border-default bg-default'"
                 @click="shortfallOperationId = item.value"
               >
-                <span class="size-3.5 flex-none rounded-full border" :class="shortfallOperationId === item.value ? 'border-primary bg-primary' : 'border-[#d5dbe6]'" />
+                <span class="size-3.5 flex-none rounded-full border" :class="shortfallOperationId === item.value ? 'border-primary bg-primary' : 'border-accented'" />
                 <span class="flex flex-1 flex-col"><span class="font-semibold text-highlighted">{{ item.code }}</span><span class="text-xs text-muted">{{ item.label }}</span></span>
                 <span class="font-semibold text-highlighted">{{ usd(item.amount) }}</span>
               </button>
             </div>
-            <p v-if="liveExcess > 0" class="mt-3 rounded-lg bg-[#eef8f2] px-3 py-2 text-sm text-success">{{ usd(liveExcess) }} quedará como saldo a favor de {{ formatNombreEmpresa(payment.organization.name) }}.</p>
+            <p v-if="liveExcess > 0" class="mt-3 rounded-lg bg-success/10 px-3 py-2 text-sm text-success">{{ usd(liveExcess) }} quedará como saldo a favor de {{ formatNombreEmpresa(payment.organization.name) }}.</p>
             <UButton class="mt-3" block color="primary" :loading="busy" :disabled="!liveReceived || (needsShortfall && !shortfallOperationId)" @click="confirm">Confirmar ingreso</UButton>
           </template>
 
@@ -159,13 +159,15 @@
         </section>
 
         <!-- Eliminar -->
-        <section class="flex items-start justify-between gap-3 rounded-xl border border-[#f3c9c5] bg-[#fdf1f0] p-4">
-          <div class="min-w-0 flex-1 text-sm">
-            <p class="font-semibold text-highlighted">¿Registraste este pago por error?</p>
-            <p class="mt-2 text-xs leading-5 text-muted">{{ deleteText }}</p>
+        <UCard class="ring-1 ring-error/40" :ui="{ root: 'bg-error/5', body: 'p-4 sm:p-4' }">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0 flex-1 text-sm">
+              <p class="font-semibold text-highlighted">¿Registraste este pago por error?</p>
+              <p class="mt-2 text-xs leading-5 text-muted">{{ deleteText }}</p>
+            </div>
+            <UButton class="shrink-0" color="error" variant="outline" icon="i-heroicons-trash" @click="remove">Eliminar pago</UButton>
           </div>
-          <UButton class="shrink-0" color="error" variant="outline" icon="i-heroicons-trash" @click="remove">Eliminar pago</UButton>
-        </section>
+        </UCard>
       </div>
     </template>
   </USlideover>

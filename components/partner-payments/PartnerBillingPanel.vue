@@ -36,7 +36,7 @@
       @items-per-page-change="onInvoicePageSize"
     >
       <template #actions>
-        <div class="inline-flex rounded-xl bg-[#eef1f6] p-1">
+        <div class="inline-flex rounded-xl bg-elevated p-1">
           <button
             v-for="item in filters"
             :key="item.key"
@@ -49,7 +49,7 @@
           </button>
         </div>
         <span class="flex items-center gap-1.5 text-xs text-muted"><span class="size-2 rounded-full bg-success" />Pago confirmado</span>
-        <span class="flex items-center gap-1.5 text-xs text-muted"><span class="size-2 rounded-full bg-[#1d4f91]" />Enviado, por confirmar</span>
+        <span class="flex items-center gap-1.5 text-xs text-muted"><span class="size-2 rounded-full bg-info" />Enviado, por confirmar</span>
         <span class="flex-1" />
         <template v-if="selectedIds.length">
           <span class="text-sm font-semibold text-highlighted">{{ selectedIds.length }} {{ selectedIds.length === 1 ? 'factura' : 'facturas' }} · {{ usd(selectedTotal) }}</span>
@@ -102,6 +102,37 @@
     <ChinaDocumentsModal :target="documentTarget" @close="documentTarget = null" />
     <ChinaInvoiceViewer :target="invoiceTarget" @close="invoiceTarget = null" />
     <VoucherViewerModal :open="!!viewer" :url="viewer?.url || null" :name="viewer?.name" @close="viewer = null" />
+
+    <UModal
+      :open="!!uploaded"
+      :title="uploaded ? `Pagos subidos · ${uploaded.code}` : ''"
+      :description="uploadedSubtitle"
+      :ui="{ content: 'w-full max-w-lg sm:max-w-lg', title: 'text-lg font-bold text-highlighted', description: 'text-sm text-muted' }"
+      @update:open="(value: boolean) => !value && (uploaded = null)"
+    >
+      <template #body>
+        <div v-if="uploaded" class="flex flex-col gap-3">
+          <UCard v-for="item in uploaded.payments || []" :key="item.payment_id" :ui="{ body: 'p-4 sm:p-4' }">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="font-semibold text-highlighted">{{ item.code }} <span class="ml-1 font-normal text-muted">{{ shortDate(item.paid_on) }}</span></p>
+                <p class="truncate text-sm text-toned">{{ item.receipt_name || 'Sin comprobante' }}</p>
+                <p class="mt-1 text-sm text-muted">{{ usd(item.amount) }} aplicado a esta factura<span v-if="item.amount_sent"> · enviado {{ usd(item.amount_sent) }}</span></p>
+              </div>
+              <div class="flex flex-col items-end gap-1">
+                <span class="text-lg font-bold text-success">{{ usd(item.amount) }}</span>
+                <span class="rounded-full px-2.5 py-0.5 text-xs font-medium" :class="item.status === CHINA_STATUS.TO_CONFIRM ? 'bg-info/15 text-info' : 'bg-success/15 text-success'">
+                  {{ item.status === CHINA_STATUS.TO_CONFIRM ? 'Por confirmar' : 'Confirmado' }}
+                </span>
+              </div>
+            </div>
+            <p class="mt-2 text-xs text-muted">{{ item.status === CHINA_STATUS.TO_CONFIRM ? 'Enviado · todavía puedes editarlo' : 'Confirmado por China · no se puede modificar' }}</p>
+            <UButton v-if="item.status === CHINA_STATUS.TO_CONFIRM" class="mt-1 px-0" size="sm" color="primary" variant="link" @click="editPending(item)">Editar</UButton>
+          </UCard>
+          <p v-if="!(uploaded.payments || []).length" class="text-sm text-muted">Esta factura todavía no tiene pagos subidos.</p>
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>
 
@@ -120,7 +151,7 @@ import {
 import { usePartnerBilling } from '~/composables/china-billing/usePartnerBilling'
 import { useModal } from '~/composables/commons/useModal'
 import { ChinaBillingService } from '~/services/chinaBillingService'
-import type { ChinaDocumentTarget, ChinaOperation, ChinaPayment } from '~/types/china-billing'
+import type { ChinaDocumentTarget, ChinaOperation, ChinaOperationPaymentRef, ChinaPayment } from '~/types/china-billing'
 import { UButton, UCheckbox, UIcon } from '#components'
 
 const {
@@ -143,6 +174,12 @@ const documentTarget = ref<ChinaDocumentTarget | null>(null)
 const bankOpen = ref(false)
 const invoiceTarget = ref<ChinaDocumentTarget | null>(null)
 const viewer = ref<{ url: string; name?: string | null } | null>(null)
+const uploaded = ref<ChinaOperation | null>(null)
+const uploadedSubtitle = computed(() => {
+  if (!uploaded.value) return ''
+  const label = uploaded.value.consolidado_label || uploaded.value.description
+  return `${label} · total ${usd(uploaded.value.total)}`
+})
 
 /** Solo para mostrar «Pagar seleccionadas (N · $X)»: suma de los saldos que el backend ya calculó. */
 const selectedTotal = computed(() => invoices.value
@@ -187,7 +224,7 @@ const invoiceColumns: TableColumn<ChinaOperation>[] = [
   { accessorKey: 'confirmed', header: 'Pagado', meta: { class: right }, cell: ({ row }) => row.original.confirmed
     ? h('span', { class: 'font-semibold text-success', title: 'Confirmado por Pro Business China' }, usd(row.original.confirmed))
     : row.original.in_confirmation
-      ? h('span', { class: 'font-semibold text-[#1d4f91]', title: 'Enviado · por confirmar' }, usd(row.original.in_confirmation))
+      ? h('span', { class: 'font-semibold text-info', title: 'Enviado · por confirmar' }, usd(row.original.in_confirmation))
       : h('span', { class: 'text-muted' }, '—') },
   { id: 'difference', header: 'Diferencia USD', meta: { class: right }, cell: ({ row }) => differenceCell(row.original) },
   { accessorKey: 'balance_due', header: 'Saldo', meta: { class: right }, cell: ({ row }) => (row.original.balance_due || 0) > 0
@@ -213,7 +250,7 @@ const paymentColumns: TableColumn<ChinaPayment>[] = [
   { accessorKey: 'code', header: 'N° pago', cell: ({ row }) => h('span', { class: 'font-semibold' }, row.original.code) },
   { accessorKey: 'paid_on', header: 'Fecha', cell: ({ row }) => h('span', { class: 'whitespace-nowrap' }, shortDate(row.original.paid_on)) },
   { id: 'invoices', header: 'Aplicado a', cell: ({ row }) => h('div', { class: 'flex min-w-32 flex-wrap gap-1.5' }, (row.original.allocations.length ? row.original.allocations.map((a) => a.code) : ['Sin asignar'])
-    .map((code) => h('span', { class: 'rounded-md bg-[#eef1f6] px-2 py-0.5 text-xs text-toned' }, code))) },
+    .map((code) => h('span', { class: 'rounded-md bg-elevated px-2 py-0.5 text-xs text-toned' }, code))) },
   { accessorKey: 'amount_sent', header: 'Enviado', meta: { class: right }, cell: ({ row }) => h('span', { class: 'font-semibold' }, usd(row.original.amount_sent)) },
   { accessorKey: 'amount_received', header: 'Recibido', meta: { class: right }, cell: ({ row }) => h('div', { class: 'flex flex-col items-end' }, [
     h('span', row.original.amount_received === null ? '—' : usd(row.original.amount_received)),
@@ -230,7 +267,7 @@ const paymentColumns: TableColumn<ChinaPayment>[] = [
     const key = pending ? CHINA_STATUS.TO_CONFIRM : CHINA_STATUS.CONFIRMED
     return h('div', { class: 'flex min-w-32 flex-col items-start gap-1.5' }, [
       // #2044/#2050: «Confirmado» en verde y «Por confirmar» en azul.
-      pill(CHINA_STATUS_LABEL[key], pending ? 'bg-[#e7f0fd] text-[#1d4f91]' : 'bg-[#e8f6ee] text-[#1f7a45]'),
+      pill(CHINA_STATUS_LABEL[key], pending ? 'bg-info/15 text-info' : 'bg-success/15 text-success'),
       pending ? h('div', { class: 'flex gap-3 text-xs font-medium' }, [
         h('button', { type: 'button', class: 'text-primary hover:underline', onClick: () => openPayment(null, false, row.original) }, 'Editar'),
         h('button', { type: 'button', class: 'text-error hover:underline', onClick: () => cancelPayment(row.original) }, 'Anular envío')
@@ -239,15 +276,15 @@ const paymentColumns: TableColumn<ChinaPayment>[] = [
   } }
 ]
 
-/** Edita el pago por confirmar de la factura; si todos están confirmados, abre «Mis pagos». */
+/** El lápiz abre los pagos subidos de esa factura. Si China ya confirmó, no se edita. */
 function editInvoicePayment(invoice: ChinaOperation) {
-  const pendingRef = (invoice.payments || []).find((ref) => ref.status === CHINA_STATUS.TO_CONFIRM)
-  const payment = pendingRef ? payments.value.find((item) => item.id === pendingRef.payment_id) : null
-  if (payment) {
-    openPayment(null, false, payment)
-    return
-  }
-  tab.value = PARTNER_TAB.PAYMENTS
+  uploaded.value = invoice
+}
+
+function editPending(item: ChinaOperationPaymentRef) {
+  const payment = payments.value.find((entry) => entry.id === item.payment_id) || null
+  uploaded.value = null
+  if (payment) openPayment(null, false, payment)
 }
 
 /** Pagar una factura, las seleccionadas, o registrar un pago libre. */

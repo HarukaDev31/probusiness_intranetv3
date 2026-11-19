@@ -5,8 +5,8 @@
         v-for="state in states"
         :key="state.key"
         type="button"
-        class="flex flex-col gap-1.5 border-b-[3px] border-r border-r-[#eef1f6] px-5 py-4 text-left transition-colors hover:bg-[#fff8f2]"
-        :class="status === state.key ? 'border-b-primary bg-[#fff3ea]' : 'border-b-transparent'"
+        class="flex flex-col gap-1.5 border-b-[3px] border-r border-default px-5 py-4 text-left transition-colors hover:bg-elevated"
+        :class="status === state.key ? 'border-b-primary bg-primary/10' : 'border-b-transparent'"
         @click="changeStatus(state.key)"
       >
         <span class="flex items-center gap-2 text-[13px] text-toned"><span class="size-2.5 flex-none rounded-full" :class="state.dot" />{{ state.label }}</span>
@@ -44,7 +44,7 @@
       @items-per-page-change="onPageSize"
     >
       <template #inline-extra>
-        <div v-if="selectedIds.length" class="flex flex-wrap items-center gap-4 border-b border-[#f9c6a5] bg-[#fff3ea] px-4 py-3 text-sm">
+        <div v-if="selectedIds.length" class="flex flex-wrap items-center gap-4 border-b border-primary/30 bg-primary/10 px-4 py-3 text-sm">
           <span class="font-semibold text-highlighted">{{ selectedIds.length }} {{ selectedIds.length === 1 ? 'operación seleccionada' : 'operaciones seleccionadas' }}</span>
           <span class="text-toned">{{ selectedOrganizationName }} · Pendiente {{ usd(selectedPending) }}</span>
           <span class="flex-1" />
@@ -172,7 +172,7 @@ const filterConfig = computed(() => [
 
 // Los borradores por aprobar se pintan en amarillo, como en la maqueta.
 const tableMeta = {
-  class: { td: ({ original }: { original: ChinaOperation }) => (original?.is_draft ? '!bg-[#fffcf3]' : '') }
+  class: { td: ({ original }: { original: ChinaOperation }) => (original?.is_draft ? '!bg-warning/10' : '') }
 }
 
 // La barra de estados y el filtro «Estado» siempre muestran lo mismo.
@@ -256,11 +256,13 @@ function totalWithDetail(operation: ChinaOperation) {
   for (const cost of operation.costs || []) lines.push([cost.name || 'Otro', usd(cost.amount)])
   lines.push(['Total', usd(operation.total)])
 
-  return h(UTooltip, null, {
+  return h(UTooltip, {
+    ui: { content: 'h-auto max-w-sm bg-inverted px-3 py-2.5 text-inverted' }
+  }, {
     default: () => h('span', { class: 'cursor-help font-semibold underline decoration-dotted underline-offset-2' }, usd(operation.total)),
-    content: () => h('div', { class: 'min-w-56 space-y-1 text-xs' }, lines.map(([label, value], index) => h('div', {
-      class: `flex items-center justify-between gap-6 ${index === lines.length - 1 ? 'mt-1 border-t border-white/25 pt-1 font-semibold' : ''}`
-    }, [h('span', label), h('span', value)])))
+    content: () => h('div', { class: 'min-w-56 space-y-1 text-xs text-inverted' }, lines.map(([label, value], index) => h('div', {
+      class: `flex items-center justify-between gap-6 text-inverted ${index === lines.length - 1 ? 'mt-1 border-t border-current/30 pt-1 font-semibold' : ''}`
+    }, [h('span', label), h('span', { class: 'font-medium' }, value)])))
   })
 }
 
@@ -281,7 +283,7 @@ const columns: TableColumn<ChinaOperation>[] = [
   { accessorKey: 'description', header: 'Servicio', cell: ({ row }) => h('div', { class: 'flex min-w-48 flex-col gap-0.5' }, [
     h('div', { class: 'flex items-center gap-2' }, [
       h('span', { class: 'font-semibold' }, row.original.service_name),
-      row.original.code ? h('span', { class: 'rounded-md bg-[#eef1f6] px-1.5 py-0.5 text-xs text-toned' }, row.original.code) : null
+      row.original.code ? h('span', { class: 'rounded-md bg-elevated px-1.5 py-0.5 text-xs text-toned' }, row.original.code) : null
     ]),
     h('span', { class: 'text-xs text-muted' }, row.original.is_draft ? `${row.original.description} · ${row.original.cbm} CBM` : row.original.description),
     row.original.is_draft ? null : h(UButton, {

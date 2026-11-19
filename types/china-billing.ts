@@ -16,6 +16,9 @@ export interface ChinaOperationPaymentRef {
   code: string
   amount: number
   status: string
+  paid_on?: string | null
+  receipt_name?: string | null
+  amount_sent?: number | null
 }
 
 export interface ChinaCreditApplication {
