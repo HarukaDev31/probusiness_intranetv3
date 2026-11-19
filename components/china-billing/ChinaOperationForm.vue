@@ -91,7 +91,7 @@
           </div>
           <p v-if="clientRates.length && selectedOrganization" class="mt-1 flex items-center gap-1 text-xs" :class="activeTier ? 'text-success' : 'text-muted'">
             <UIcon :name="activeTier ? 'i-heroicons-check' : 'i-heroicons-pencil'" class="size-3.5" />
-            <template v-if="activeTier">Tarifa {{ activeTier }} del socio {{ selectedOrganization.name }} · puedes modificarla</template>
+            <template v-if="activeTier">Precio del socio {{ selectedOrganization.name }}: {{ usd(Number(form.rate || 0)) }} por CBM · puedes modificarlo</template>
             <template v-else>Tarifa escrita a mano para esta operación</template>
           </p>
         </div>
