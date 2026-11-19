@@ -65,7 +65,7 @@
 
         <div v-if="form.billing_type === CHINA_BILLING_TYPE.CBM" class="flex flex-col gap-2">
           <div class="grid gap-3 sm:grid-cols-3">
-            <UFormField label="CBM" required :hint="isDraft ? 'CBM China del consolidado' : undefined">
+            <UFormField :label="isDraft ? 'CBM China' : 'CBM'" required>
               <UInputNumber :ui="{ increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' }" v-model="form.cbm" :min="0" :step="0.01" placeholder="0.00" class="w-full" />
             </UFormField>
             <UFormField label="Tarifa (USD / CBM)" required>
