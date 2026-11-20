@@ -14,6 +14,17 @@
       </button>
     </div>
 
+    <UCollapsible v-model:open="bankCardOpen" class="mb-4 rounded-2xl bg-default ring ring-default">
+      <button type="button" class="flex w-full items-center gap-3 px-5 py-4 text-left">
+        <UIcon name="i-heroicons-building-library" class="size-5 text-primary" />
+        <span class="flex-1 font-semibold text-highlighted">Nuestra cuenta bancaria en China</span>
+        <UIcon :name="bankCardOpen ? 'i-heroicons-chevron-up' : 'i-heroicons-chevron-down'" class="size-4 text-muted" />
+      </button>
+      <template #content>
+        <ChinaBankAccountCard class="px-5 pb-5" />
+      </template>
+    </UCollapsible>
+
     <DataTable
       sticky-last-column
       keep-spanish-headers
@@ -109,6 +120,7 @@
 <script setup lang="ts">
 import { computed, h, onMounted, ref, watch } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
+import ChinaBankAccountCard from '~/components/china-billing/ChinaBankAccountCard.vue'
 import ChinaBankAccountForm from '~/components/china-billing/ChinaBankAccountForm.vue'
 import ChinaDocumentsModal from '~/components/china-billing/ChinaDocumentsModal.vue'
 import ChinaOperationDrawer from '~/components/china-billing/ChinaOperationDrawer.vue'
@@ -142,6 +154,7 @@ const editing = ref<ChinaOperation | null>(null)
 const draft = ref<ChinaOperation | null>(null)
 const paymentOpen = ref(false)
 const bankOpen = ref(false)
+const bankCardOpen = ref(false)
 const documentTarget = ref<ChinaDocumentTarget | null>(null)
 const paymentDetail = ref<ChinaPayment | null>(null)
 const editingPayment = ref<ChinaPayment | null>(null)

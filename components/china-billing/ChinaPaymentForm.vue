@@ -100,6 +100,7 @@
           </div>
         </div>
         <p v-if="sentAmount > 0 && unassignedAmount <= 0.004" class="text-xs text-muted">Todo el monto está asignado.</p>
+        <p v-if="partnerNeedsReceipt" class="text-xs text-muted">Adjunta el comprobante para poder enviar el pago.</p>
         <p v-else-if="unassignedAmount > 0.004" class="text-xs font-medium text-success">
           {{ usd(unassignedAmount) }} sin asignar quedará como saldo a favor de {{ clientLabel }} al confirmar el ingreso.
         </p>
@@ -198,7 +199,7 @@ function toggleOperation(operation: ChinaOperation, on: boolean) {
   amounts.value = { ...amounts.value, [operation.id!]: on ? roundTwo(operation.pending || 0) : null }
 }
 
-watch(() => [props.open, props.payment, props.lockedOrganizationId], async () => {
+watch(() => [props.open, props.payment, props.lockedOrganizationId, isPartner.value], async () => {
   if (!props.open) return
   errorMessage.value = ''
   receipt.value = null

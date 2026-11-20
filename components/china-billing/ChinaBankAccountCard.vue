@@ -1,7 +1,7 @@
 <template>
   <div>
     <USkeleton v-if="loading" class="h-16 w-full" />
-    <p v-else-if="!account || !account.company" class="text-sm text-muted">Aún no hay datos bancarios cargados.</p>
+    <p v-else-if="!account || !account.account_number" class="text-sm text-muted">Aún no hay datos bancarios cargados.</p>
     <div v-else class="grid gap-x-8 gap-y-5 text-sm md:grid-cols-3">
       <div v-for="section in sections" :key="section.title">
         <p class="mb-2 border-b border-default pb-1.5 text-xs font-semibold uppercase tracking-wider text-highlighted">{{ section.title }}</p>
