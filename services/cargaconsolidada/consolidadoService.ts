@@ -346,6 +346,17 @@ export class ConsolidadoService extends BaseService {
             throw error
         }
     }
+    static async uploadPackingReal(data: FormData): Promise<any> {
+        try {
+            return await this.apiCall<any>(`${this.baseUrl}/packing-real`, {
+                method: 'POST',
+                body: data
+            })
+        } catch (error) {
+            console.error('Error en ConsolidadoService.uploadPackingReal:', error)
+            throw error
+        }
+    }
     static async deletePackingList(id: number): Promise<any> {
         try {
             const response = await this.apiCall<any>(`${this.baseUrl}/packing-list/${id}`, {

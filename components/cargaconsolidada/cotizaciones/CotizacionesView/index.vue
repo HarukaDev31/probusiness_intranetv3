@@ -865,30 +865,64 @@ const getFilterProspectosPerRole = () => {
     return getFilterPerRole()
 }
 
-const uploadPackingList = () => {
-    showUploadPanel.value = false
+const abrirCargaPacking = (titulo: string, onSave: (file: File) => Promise<void>) => {
     simpleUploadFileModal.open({
-        title: 'Subir Packing List',
-        // PL China puede superar 300MB; el tope del servidor PHP es 400M
+        title: titulo,
         maxFileSize: 400 * 1024 * 1024,
         onClose: () => simpleUploadFileModal.close(),
         onSave: async (data: { file: File }) => {
-            const formData = new FormData()
-            formData.append('file', data.file)
-            formData.append('idContenedor', id)
-            await withSpinner(async () => {
-                const result = await ConsolidadoService.uploadPackingList(formData)
-
-                if (result.success) {
-                    showSuccess('Packing List subido correctamente', 'success')
-                } else {
-                    showError('Error', result.error || 'Error al subir el packing list')
-                }
-            })
-            await getHeaders(Number(id))
-
+            await onSave(data.file)
         }
     })
+}
+
+const subirPackingChina = async (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('idContenedor', id)
+    await withSpinner(async () => {
+        const result = await ConsolidadoService.uploadPackingList(formData)
+        if (result.success) {
+            showSuccess('Packing China subido', 'El contenedor queda cerrado en China.')
+        } else {
+            showError('Error', result.error || 'No se pudo subir Packing China')
+        }
+    })
+    await getHeaders(Number(id))
+}
+
+const subirPackingReal = async (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('idContenedor', id)
+    await withSpinner(async () => {
+        const result = await ConsolidadoService.uploadPackingReal(formData)
+        if (result.success) {
+            showSuccess('Packing Real subido', 'Quedó en la documentación del socio.')
+        } else {
+            showError('Error', result.error || 'No se pudo subir Packing Real')
+        }
+    })
+    await getHeaders(Number(id))
+}
+
+const uploadPackingList = () => {
+    showUploadPanel.value = false
+    const uno = () => abrirCargaPacking('Packing China', subirPackingChina)
+    if (currentRole.value !== ROLES.CONTENEDOR_ALMACEN) {
+        uno()
+        return
+    }
+    showConfirmation(
+        '¿Tiene dos packing list?',
+        'Si tiene dos, sube Packing China y Packing Real. Si tiene uno, sube solo Packing China.',
+        () => abrirCargaPacking('Packing China', async (file) => {
+            await subirPackingChina(file)
+            abrirCargaPacking('Packing Real', subirPackingReal)
+        }),
+        uno,
+        { confirmLabel: 'Sí, dos', cancelLabel: 'Solo uno' }
+    )
 }
 
 const downloadPackingList = () => {
