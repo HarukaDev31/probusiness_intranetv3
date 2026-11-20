@@ -23,7 +23,7 @@
 
    
 
-    <div v-if="isDesktop || role === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(role) || role === ROLES.FINANZAS">
+    <div v-if="isDesktop || role === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(role) || role === ROLES.FINANZAS || isAlmacen">
       <DataTable
         title="Carga Consolidada Completada"
         :show-pagination="true"
@@ -665,7 +665,12 @@ const getColumns = () => {
       result = documentacionColumns
       break
     case ROLES.CONTENEDOR_ALMACEN:
-      result = almacenColumns
+      // Cerrados se ve como Abiertos (y como Coordinación), con el estado en Finish.
+      result = columns.map((col) => {
+        const key = (col as { accessorKey?: string }).accessorKey
+        if (key === 'cbm_total_peru') return { ...col, header: 'LATAM CBM' }
+        return col
+      })
       break
     case ROLES.FINANZAS:
       result = finanzasColumns
