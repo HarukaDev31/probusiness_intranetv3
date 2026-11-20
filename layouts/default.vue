@@ -242,7 +242,7 @@ const pageTitle = computed(() => {
 })
 
 const { user, logout, initializeAuth, menu } = useAuth()
-const { currentRole } = useUserRole()
+const { currentRole, displayRole } = useUserRole()
 const { schedulePrefetchFromStorage } = useMenuPrefetch()
 
 // Notificaciones modales vía evento window (ligero; no abre sockets extra)
@@ -474,6 +474,14 @@ const sidebarCategories = computed(() => {
       })
     }
     modules.sort((a: { route?: string; name?: string }, b: { route?: string; name?: string }) => ordenChina(a) - ordenChina(b))
+    // Armando (Encargado China) no lleva la sección Clientes. Younusi (almacén) sí.
+    if (String(displayRole.value || '').trim().toLowerCase() === ROLES.ENCARGADO_CHINA.toLowerCase()) {
+      for (let i = modules.length - 1; i >= 0; i--) {
+        const route = String(modules[i].route || '')
+        const name = String(modules[i].name || '').trim().toLowerCase()
+        if (route.startsWith('/clientes-china') || name === 'clientes') modules.splice(i, 1)
+      }
+    }
     // #2388: íconos de la maqueta de Miguel, en el mismo orden que las reglas de arriba.
     const iconosChina = ['i-lucide-house', 'i-lucide-users', 'i-lucide-archive', 'i-lucide-wallet', 'i-lucide-briefcase', 'i-lucide-arrow-left-right', 'i-lucide-package', 'i-lucide-user', 'i-lucide-settings']
     modules.forEach((mod: { route?: string; name?: string; icon?: string | null }) => {
@@ -528,6 +536,9 @@ const convertIconToHeroicons = (faIcon: string): string => {
     'fa fa-chart-line': 'i-heroicons-chart-bar-square',
     'fa fa-newspaper': 'i-heroicons-newspaper',
     'fa fa-calculator': 'i-heroicons-calculator',
+    'fa fa-money': 'i-heroicons-banknotes',
+    'fa fa-credit-card': 'i-heroicons-credit-card',
+    'fas fa-money-bill': 'i-heroicons-banknotes',
     'fa fa-book': 'i-heroicons-book-open',
     'fa fa-sitemap': 'i-heroicons-squares-2x2',
   }
