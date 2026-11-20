@@ -55,6 +55,7 @@
             :columns="getEmbarqueColumns()" :loading="tabSwitching || loading || loadingHeaders" :current-page="currentPage" :total-pages="totalPages"
             :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
             :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()" :show-export="showEmbarqueExport"
+            :primary-search-placeholder="currentRole === ROLES.CONTENEDOR_ALMACEN ? 'Customer or supplier code' : 'Cliente o código de proveedor'"
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
             @filter-change="handleFilterChange" :show-body-top="true"
