@@ -93,12 +93,18 @@
         -->
 
         <!-- Search and Actions -->
-        <div class="flex lg:flex-row items-center lg:items-center gap-1 md:gap-3 w-full lg:w-auto">
-          <div v-if="showPrimarySearch" class="flex items-center gap-2 h-10 w-full lg:w-auto">
+        <div
+          class="flex flex-wrap items-center w-full lg:w-auto"
+          :class="prominentToolbar
+            ? 'gap-2 rounded-xl border-2 border-primary bg-white p-2 shadow-md dark:bg-gray-800'
+            : 'lg:flex-row gap-1 md:gap-3'"
+        >
+          <div v-if="showPrimarySearch" class="flex items-center gap-2 w-full lg:w-auto" :class="prominentToolbar ? 'h-12' : 'h-10'">
             <label v-if="showPrimarySearchLabel"
               class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ translations.primarySearchLabel }}:</label>
             <UInput :model-value="primarySearchInternal" :placeholder="primarySearchPlaceholder || translations.primarySearchPlaceholder"
-              class="flex-1 h-5 min-w-0 md:h-10 lg:h-10" :ui="{ base: 'h-7 md:h-10 lg:h-10' }"
+              :class="prominentToolbar ? 'w-full min-w-[18rem] md:w-96' : 'flex-1 h-5 min-w-0 md:h-10 lg:h-10'"
+              :ui="prominentToolbar ? { base: 'h-12 text-base bg-orange-50 dark:bg-gray-900' } : { base: 'h-7 md:h-10 lg:h-10' }"
               @update:model-value="onPrimarySearchChange">
               <template #leading>
                 <UIcon name="i-heroicons-magnifying-glass" class="text-gray-400" />
@@ -116,9 +122,9 @@
                   :aria-label="translations.filters"
                   :title="translations.filters"
                   icon="i-heroicons-funnel"
-
-                  class="h-8 md:h-11 font-normal bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100"
-                  :class="isMobile ? 'w-10 p-0 ml-0 justify-center gap-0' : 'w-full lg:w-auto'"
+                  :class="prominentToolbar
+                    ? 'h-12 px-4 text-base font-semibold border border-primary bg-white text-gray-900 hover:bg-orange-50 dark:bg-gray-900 dark:text-gray-100'
+                    : ['h-8 md:h-11 font-normal bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100', isMobile ? 'w-10 p-0 ml-0 justify-center gap-0' : 'w-full lg:w-auto']"
                   @click="showFiltersPanel = !showFiltersPanel" />
               </div>
 
