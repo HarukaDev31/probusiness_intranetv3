@@ -25,6 +25,7 @@ export const useCotizacion = (options: { scope?: Ref<'abiertos' | 'completados' 
         to: 0
     })
     const packingList = ref<any>(null)
+    const packingReal = ref<any>(null)
     const headersCotizaciones = ref<Header[]>([])
     const headersByKey = ref<Record<string, Header>>({})
     const headersPagos = ref<Header[]>([])
@@ -216,6 +217,7 @@ export const useCotizacion = (options: { scope?: Ref<'abiertos' | 'completados' 
 
             carga.value = response.carga
             packingList.value = response.lista_embarque_url
+            packingReal.value = response.lista_embarque_real_url ?? null
             fCierre.value = response.f_cierre ?? null
             urlClientes.value = response.url_clientes ?? null
             return response
@@ -359,6 +361,7 @@ export const useCotizacion = (options: { scope?: Ref<'abiertos' | 'completados' 
         loadingHeaders,
         resetFiltersCotizacion,
         packingList,
+        packingReal,
         exportData,
         fCierre,
         urlClientes
