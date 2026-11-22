@@ -1882,11 +1882,11 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
             const div = h('div', {
-                class: 'flex flex-col gap-2'
+                class: 'flex flex-col gap-2 min-w-28'
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: cbmTotalConImo(proveedor),
-                    class: 'w-full w-12',
+                    class: 'w-28 min-w-28',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total = value
@@ -2337,11 +2337,11 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
             const div = h('div', {
-                class: 'flex flex-col gap-2'
+                class: 'flex flex-col gap-2 min-w-28'
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: cbmTotalConImo(proveedor),
-                    class: 'w-full w-12',
+                    class: 'w-28 min-w-28',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total = value
@@ -2698,11 +2698,11 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
             const div = h('div', {
-                class: 'flex flex-col gap-2'
+                class: 'flex flex-col gap-2 min-w-28'
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: cbmTotalConImo(proveedor),
-                    class: 'w-full',
+                    class: 'w-28 min-w-28',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total = value
