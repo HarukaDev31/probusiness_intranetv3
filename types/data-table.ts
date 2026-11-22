@@ -86,6 +86,8 @@ export interface DataTableProps {
   searchPlaceholder?: string
   showPrimarySearch?: boolean
   showPrimarySearchLabel?: boolean
+  /** Buscador, filtros y acciones más grandes, dentro de un marco. */
+  prominentToolbar?: boolean
   primarySearchLabel?: string
   primarySearchPlaceholder?: string
 

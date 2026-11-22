@@ -56,6 +56,7 @@
             :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
             :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()" :show-export="showEmbarqueExport"
             :primary-search-placeholder="currentRole === ROLES.CONTENEDOR_ALMACEN ? 'Customer or supplier code' : 'Cliente o código de proveedor'"
+            :prominent-toolbar="currentRole === ROLES.CONTENEDOR_ALMACEN"
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
             @filter-change="handleFilterChange" :show-body-top="true"
@@ -92,7 +93,8 @@
 
                     <div ref="filtersButtonRef" class="w-full lg:w-auto">
                         <UButton label="Upload" icon="i-heroicons-arrow-up-tray" v-if="currentRole === ROLES.CONTENEDOR_ALMACEN"
-                            class="h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto hidden md:flex"
+                            color="primary"
+                            class="h-12 px-4 text-base font-semibold w-full lg:w-auto hidden md:flex"
                             @click="showUploadPanel = !showUploadPanel" />
                     </div>
                     <div ref="filtersPanelRef" v-if="showUploadPanel && currentRole === ROLES.CONTENEDOR_ALMACEN"
@@ -1880,11 +1882,11 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
             const div = h('div', {
-                class: 'flex flex-col gap-2'
+                class: 'flex flex-col gap-2 min-w-28'
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: cbmTotalConImo(proveedor),
-                    class: 'w-full w-12',
+                    class: 'w-28 min-w-28',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total = value
@@ -2335,11 +2337,11 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
             const div = h('div', {
-                class: 'flex flex-col gap-2'
+                class: 'flex flex-col gap-2 min-w-28'
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: cbmTotalConImo(proveedor),
-                    class: 'w-full w-12',
+                    class: 'w-28 min-w-28',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total = value
@@ -2696,11 +2698,11 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
             const div = h('div', {
-                class: 'flex flex-col gap-2'
+                class: 'flex flex-col gap-2 min-w-28'
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: cbmTotalConImo(proveedor),
-                    class: 'w-full',
+                    class: 'w-28 min-w-28',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total = value
