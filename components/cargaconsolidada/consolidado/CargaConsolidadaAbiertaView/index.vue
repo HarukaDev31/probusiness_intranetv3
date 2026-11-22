@@ -21,17 +21,6 @@
       </UButton>
     </div>
 
-    <UCollapsible v-if="isAlmacen" v-model:open="bankCardOpen" class="mb-4 rounded-2xl bg-default ring ring-default">
-      <button type="button" class="flex w-full items-center gap-3 px-5 py-4 text-left">
-        <UIcon name="i-heroicons-building-library" class="size-5 text-primary" />
-        <span class="flex-1 font-semibold text-highlighted">Nuestra cuenta bancaria en China</span>
-        <UIcon :name="bankCardOpen ? 'i-heroicons-chevron-up' : 'i-heroicons-chevron-down'" class="size-4 text-muted" />
-      </button>
-      <template #content>
-        <ChinaBankAccountCard class="px-5 pb-5" />
-      </template>
-    </UCollapsible>
-
     <div v-if="isDesktop || role === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(role) || role === ROLES.FINANZAS || isAlmacen">
       <DataTable
         title="Carga Consolidada Abierta"
@@ -176,7 +165,6 @@ const { showSuccess, showConfirmation, showError } = useModal()
 
 const isCoordinacion = computed(() => props.role === ROLES.COORDINACION)
 const isAlmacen = computed(() => props.role === ROLES.CONTENEDOR_ALMACEN)
-const bankCardOpen = ref(false)
 const isFinanzas = computed(() => props.role === ROLES.FINANZAS)
 // Socio (org ≠ 1) gestiona sus consolidados igual que Coordinación: crear, editar, partir y eliminar.
 const puedeGestionarConsolidado = computed(() => isCoordinacion.value || esRolSocio(props.role))
