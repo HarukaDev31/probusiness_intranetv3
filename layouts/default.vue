@@ -452,6 +452,14 @@ const sidebarCategories = computed(() => {
       })
     }
     modules.sort((a: { route?: string; name?: string }, b: { route?: string; name?: string }) => ordenChina(a) - ordenChina(b))
+    // Younusi (almacén consolidado) no lleva el manual de usuario.
+    if (String(displayRole.value || '').trim().toLowerCase() === ROLES.CONTENEDOR_ALMACEN.toLowerCase()) {
+      for (let i = modules.length - 1; i >= 0; i--) {
+        const route = String(modules[i].route || '')
+        const name = String(modules[i].name || '').trim().toLowerCase()
+        if (route.startsWith('/manual-usuario') || name.includes('manual')) modules.splice(i, 1)
+      }
+    }
     // Armando (Encargado China) no lleva la sección Clientes. Younusi (almacén) sí.
     if (String(displayRole.value || '').trim().toLowerCase() === ROLES.ENCARGADO_CHINA.toLowerCase()) {
       for (let i = modules.length - 1; i >= 0; i--) {
