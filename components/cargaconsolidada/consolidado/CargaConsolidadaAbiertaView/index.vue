@@ -171,7 +171,7 @@ const props = withDefaults(
 )
 
 const { withSpinner } = useSpinner()
-const { hasRole, currentId, getUserData } = useUserRole()
+const { hasRole, currentId, getUserData, displayRole } = useUserRole()
 const { showSuccess, showConfirmation, showError } = useModal()
 
 const isCoordinacion = computed(() => props.role === ROLES.COORDINACION)
@@ -693,6 +693,10 @@ const getColorByEstado = (estado: string) => {
 
 const handleViewSteps = (id: number) => {
   const base = props.basePath ?? DEFAULT_BASE_PATH
+  if (String(displayRole.value || '').trim().toLowerCase() === ROLES.ENCARGADO_CHINA.toLowerCase()) {
+    navigateTo(`${base}/pasos/${id}`)
+    return
+  }
   if (hasRole('ContenedorAlmacen')) {
     navigateTo(`${base}/cotizaciones/${id}?tab=embarque`)
   } else if (currentId.value !== GINO_USER_ID && props.role === ROLES.COTIZADOR) {
