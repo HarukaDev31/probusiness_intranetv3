@@ -355,6 +355,16 @@ export class ConsolidadoService extends BaseService {
             throw error
         }
     }
+    static async deletePackingReal(id: number): Promise<any> {
+        try {
+            return await this.apiCall<any>(`${this.baseUrl}/packing-real/${id}`, {
+                method: 'DELETE'
+            })
+        } catch (error) {
+            console.error('Error en ConsolidadoService.deletePackingReal:', error)
+            throw error
+        }
+    }
     static async deletePackingList(id: number): Promise<any> {
         try {
             const response = await this.apiCall<any>(`${this.baseUrl}/packing-list/${id}`, {
