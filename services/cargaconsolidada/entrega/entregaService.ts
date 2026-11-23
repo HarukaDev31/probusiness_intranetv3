@@ -34,6 +34,11 @@ export class  EntregaService extends BaseService {
       throw error
     }
   }
+  /** Link de un solo uso para abrir el portal como el cliente de la cotización (solo Coordinación). */
+  static async verComoCliente(idCotizacion: number): Promise<{ success: boolean; message?: string; data?: { url: string } }> {
+    return await this.apiCall(`${this.baseUrl}/clientes/${idCotizacion}/ver-como-cliente`, { method: 'POST' })
+  }
+
   static async getEntregasDetalle(id_cotizacion: number): Promise<EntregaResponse> {
     try {
       const response = await this.apiCall<EntregaResponse>(`${this.baseUrl}/entregas/detalle/${id_cotizacion}`)
