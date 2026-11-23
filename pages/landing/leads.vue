@@ -39,7 +39,7 @@
     >
       <template #body-top>
         <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <UTabs v-model="activeTab" :items="tabs" variant="pill" class="w-72" />
+          <UTabs v-model="activeTab" :items="tabs" variant="pill" class="w-[19.25rem]" />
           <UButton
             v-if="activeTab === 'curso'"
             icon="i-heroicons-clock"
