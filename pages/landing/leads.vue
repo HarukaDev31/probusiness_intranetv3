@@ -1,9 +1,22 @@
 <template>
-  <div class="p-6">
+  <div class="landing-leads-wide-table p-6">
+    <div class="md:px-4">
+      <div
+        class="inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md bg-gray-100 px-2.5 py-1 font-mono text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+        data-testid="leads-codigo-documento"
+      >
+        <UIcon name="i-heroicons-document-text" class="h-3.5 w-3.5" />
+        <span class="font-semibold text-gray-800 dark:text-gray-100">PB-SGC-MKT-PRO-01-F01</span>
+        <span class="text-gray-300 dark:text-gray-600">|</span>
+        <span>Versión: 01</span>
+        <span class="text-gray-300 dark:text-gray-600">|</span>
+        <span>27/10/2026</span>
+      </div>
+    </div>
     <DataTable
       :title="tableTitle"
       subtitle="Leads privados captados en landings"
-      icon="i-heroicons-inbox-stack"
+      icon="i-heroicons-user-group"
       :show-title="true"
       :data="tableData"
       :columns="tableColumns"
@@ -276,9 +289,7 @@ const cursoColumns: TableColumn<LandingCursoLead>[] = [
   }
 ]
 
-const tableTitle = computed(() =>
-  activeTab.value === 'consolidado' ? 'Leads Landing Consolidado' : 'Leads Landing Curso'
-)
+const tableTitle = 'Leads Landing CC y CI'
 
 const tableData = computed(() =>
   activeTab.value === 'consolidado' ? consolidadoLeads.value : cursoLeads.value
@@ -370,3 +381,15 @@ onMounted(async () => {
   await loadConsolidado()
 })
 </script>
+
+<style>
+/* DataTable deja la tabla a su ancho natural y centrada (`utable-narrow`); aquí se estira
+   a todo el ancho para que empiece alineada con el título y las pestañas. */
+.landing-leads-wide-table .table-scroll-container .utable-narrow {
+  align-items: stretch;
+}
+.landing-leads-wide-table .table-scroll-container .utable-narrow table {
+  width: 100% !important;
+  min-width: 100% !important;
+}
+</style>
