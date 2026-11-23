@@ -83,3 +83,25 @@ export function mergeMessageLists(...sources: WaInboxMessage[][]): WaInboxMessag
   }
   return sortMessagesChronologically(Array.from(byId.values()))
 }
+
+/**
+ * Historial completo del servidor para un chat.
+ * No reincorpora mensajes de otro hilo que hayan quedado en la lista local:
+ * solo conserva envíos de esta pantalla que el servidor todavía no devolvió.
+ */
+export function replaceWithServerHistory(
+  serverRows: WaInboxMessage[],
+  localOwned: WaInboxMessage[]
+): WaInboxMessage[] {
+  const serverIds = new Set(
+    serverRows
+      .map((m) => waMessageNumericId(m.id))
+      .filter((id) => id > 0)
+  )
+  const optimistic = localOwned.filter((m) => {
+    const id = waMessageNumericId(m.id)
+    if (!id || serverIds.has(id)) return false
+    return m.delivery_status === 'pending' || m.delivery_status == null
+  })
+  return mergeMessageLists(serverRows, optimistic)
+}
