@@ -18,7 +18,7 @@ export const SOPORTE_TI_CHAT_EMOJIS = [
 
 /** Tipos de archivo admitidos en mensajes de chat (mismo endpoint que imágenes). */
 export const SOPORTE_TI_CHAT_ACCEPT_DOCUMENTOS =
-  '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.7z,.webp,.png,.jpg,.jpeg,.gif'
+  '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.html,.htm,.zip,.rar,.7z,.webp,.png,.jpg,.jpeg,.gif'
 
 /** Audio / notas de voz. */
 export const SOPORTE_TI_CHAT_ACCEPT_AUDIO =

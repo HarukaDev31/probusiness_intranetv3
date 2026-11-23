@@ -106,6 +106,25 @@
                         </template>
                     </div>
 
+                    <!-- HTML: iframe sandbox (origen aislado, sin acceso a la sesión de la intranet) -->
+                    <div v-else-if="isHtmlFile" class="w-full">
+                        <div v-if="isLoadingHtml" class="flex items-center justify-center p-8">
+                            <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary" />
+                        </div>
+                        <iframe v-else-if="htmlContent !== null" :srcdoc="htmlContent" sandbox="allow-scripts"
+                            referrerpolicy="no-referrer" title="Vista previa HTML"
+                            class="w-full h-[60vh] rounded-lg border border-gray-200 bg-white dark:border-gray-700"></iframe>
+                        <div v-else class="flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                            <UIcon name="vscode-icons:file-type-html" class="w-24 h-24 mb-4" />
+                            <p class="text-lg font-medium text-gray-700 dark:text-gray-300">
+                                {{ file?.file_name || 'Archivo HTML' }}
+                            </p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                No se pudo cargar la vista previa; usa «Descargar».
+                            </p>
+                        </div>
+                    </div>
+
                     <!-- Documento -->
                     <div v-else-if="isDocument" class="w-full">
                         <!-- Vista previa de Excel -->
@@ -241,7 +260,7 @@
             <div class="flex justify-end space-x-2">
                 <UButton v-if="file?.file_url" icon="i-heroicons-arrow-down-tray" label="Descargar" color="primary"
                     @click="downloadFile" />
-                <UButton v-if="file?.file_url" icon="i-heroicons-arrow-top-right-on-square"
+                <UButton v-if="file?.file_url && !isHtmlFile" icon="i-heroicons-arrow-top-right-on-square"
                     label="Abrir en nueva pestaña" variant="outline" @click="openInNewTab" />
                 <UButton label="Cerrar" variant="ghost" @click="close" />
             </div>
@@ -316,6 +335,32 @@ const isPdfFile = computed(() => {
     const extension = props.file.file_name.split('.').pop()?.toLowerCase()
     return ['pdf'].includes(extension || '')
 })
+const isHtmlFile = computed(() => {
+    if (!props.file?.file_name) return false
+    const extension = props.file.file_name.split('.').pop()?.toLowerCase()
+    return ['html', 'htm'].includes(extension || '')
+})
+
+// HTML preview state (se lee como texto; nunca se navega a la URL del archivo)
+const htmlContent = ref<string | null>(null)
+const isLoadingHtml = ref(false)
+
+const loadHtmlFile = async () => {
+    htmlContent.value = null
+    if (!props.file?.file_url || !isHtmlFile.value) return
+    try {
+        isLoadingHtml.value = true
+        const response = await fetch(props.file.file_url)
+        if (!response.ok) throw new Error(`Error al cargar HTML: ${response.status}`)
+        htmlContent.value = await response.text()
+    } catch (error) {
+        console.error('Error cargando HTML:', error)
+        htmlContent.value = null
+    } finally {
+        isLoadingHtml.value = false
+    }
+}
+
 const getFileExtension = computed(() => {
     if (!props.file?.file_name) return 'Archivo'
     const extension = props.file.file_name.split('.').pop()?.toUpperCase()
@@ -364,6 +409,19 @@ const downloadFile = async () => {
 
     const fileUrl = props.file.file_url
     const fileName = props.file.file_name || 'archivo'
+
+    // HTML: se guarda como texto en el almacenamiento; se descarga con su nombre y tipo reales.
+    if (isHtmlFile.value && htmlContent.value !== null) {
+        const objectUrl = window.URL.createObjectURL(new Blob([htmlContent.value], { type: 'text/html' }))
+        const a = document.createElement('a')
+        a.href = objectUrl
+        a.download = fileName
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        window.URL.revokeObjectURL(objectUrl)
+        return
+    }
 
     // S3 presigned / CDN: fetch exige CORS en el bucket; enlace directo no.
     if (isCrossOriginFileUrl(fileUrl)) {
@@ -637,4 +695,9 @@ watch([() => props.isOpen, () => props.file], () => {
         videoPlaybackError.value = false
     }
 })
+
+// HTML: también al montar ya abierto (overlay.create abre con las props iniciales).
+watch([() => props.isOpen, () => props.file?.file_url], () => {
+    if (props.isOpen && isHtmlFile.value) loadHtmlFile()
+}, { immediate: true })
 </script>
