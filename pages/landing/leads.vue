@@ -39,7 +39,7 @@
     >
       <template #body-top>
         <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <UTabs v-model="activeTab" :items="tabs" variant="pill" class="w-80" />
+          <UTabs v-model="activeTab" :items="tabs" variant="pill" class="w-72" />
           <UButton
             v-if="activeTab === 'curso'"
             icon="i-heroicons-clock"
@@ -391,5 +391,17 @@ onMounted(async () => {
 .landing-leads-wide-table .table-scroll-container .utable-narrow table {
   width: 100% !important;
   min-width: 100% !important;
+}
+
+/* PageHeader reserva una columna vacía (botón Regresar oculto) con margen. Sin eso,
+   el título queda corrido respecto al código de documento y a las pestañas. */
+.landing-leads-wide-table [data-manual-capture="data-table-toolbar"] .mb-2 > .flex > div:first-child:not(:has(button)) {
+  display: none;
+}
+
+/* El ícono del título usa el color secundario del PageHeader; en esta vista va en naranja. */
+.landing-leads-wide-table [data-manual-capture="data-table-toolbar"] h1 > :first-child,
+.landing-leads-wide-table [data-manual-capture="data-table-toolbar"] h1 svg {
+  color: var(--ui-primary);
 }
 </style>
