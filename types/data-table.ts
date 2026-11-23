@@ -86,6 +86,8 @@ export interface DataTableProps {
   searchPlaceholder?: string
   showPrimarySearch?: boolean
   showPrimarySearchLabel?: boolean
+  /** Buscador, filtros y acciones más grandes, dentro de un marco. */
+  prominentToolbar?: boolean
   primarySearchLabel?: string
   primarySearchPlaceholder?: string
 
@@ -183,6 +185,7 @@ export interface HeaderResponse {
   success: boolean,
   carga?: string,
   lista_embarque_url?: string
+  lista_embarque_real_url?: string | null
   /** Fecha límite de pago (contenedor) - usado en cotización final */
   f_puerto?: string
   /** Fecha máxima de pago definida por Coordinación (YYYY-MM-DD) */

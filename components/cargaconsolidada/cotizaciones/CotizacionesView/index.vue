@@ -56,6 +56,7 @@
             :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
             :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()" :show-export="showEmbarqueExport"
             :primary-search-placeholder="currentRole === ROLES.CONTENEDOR_ALMACEN ? 'Customer or supplier code' : 'Cliente o código de proveedor'"
+            :prominent-toolbar="currentRole === ROLES.CONTENEDOR_ALMACEN"
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
             @filter-change="handleFilterChange" :show-body-top="true"
@@ -92,23 +93,34 @@
 
                     <div ref="filtersButtonRef" class="w-full lg:w-auto">
                         <UButton label="Upload" icon="i-heroicons-arrow-up-tray" v-if="currentRole === ROLES.CONTENEDOR_ALMACEN"
-                            class="h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto hidden md:flex"
+                            color="primary"
+                            class="h-12 px-4 text-base font-semibold w-full lg:w-auto hidden md:flex"
                             @click="showUploadPanel = !showUploadPanel" />
                     </div>
                     <div ref="filtersPanelRef" v-if="showUploadPanel && currentRole === ROLES.CONTENEDOR_ALMACEN"
                         class="absolute top-full right-0 mt-2 w-full lg:w-80 max-w-[90vw] lg:max-w-none bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4 max-h-[80vh] overflow-y-auto"
                         @click.stop>
-                        <div class="flex flex-row gap-2 w-full">
-                            <UButton label="Packing List" variant="ghost" class="w-full" v-if="!packingList"
-                                icon="i-heroicons-arrow-up-tray" color="secondary" @click="uploadPackingList" />
-                            <div v-else class="flex flex-row gap-2 w-full">
-                                <!--buttton download and button delete  -->
-                                <label @click="downloadPackingList" class="w-full">Packing List</label>
-                                <UButton label="" variant="ghost" icon="i-heroicons-trash" color="error"
-                                    @click="deletePackingList" />
+                        <div class="flex flex-col gap-1 w-full">
+                            <div class="flex items-center gap-2 w-full">
+                                <UButton v-if="!packingList" label="Packing China" variant="ghost" class="w-full justify-start"
+                                    icon="i-heroicons-arrow-up-tray" color="secondary" @click="uploadPackingChina" />
+                                <template v-else>
+                                    <UButton label="Packing China" variant="ghost" class="flex-1 justify-start"
+                                        icon="i-heroicons-arrow-down-tray" color="secondary" @click="downloadPackingList" />
+                                    <UButton label="" variant="ghost" icon="i-heroicons-trash" color="error"
+                                        @click="deletePackingList" />
+                                </template>
                             </div>
-
-
+                            <div class="flex items-center gap-2 w-full">
+                                <UButton v-if="!packingReal" label="Packing Real" variant="ghost" class="w-full justify-start"
+                                    icon="i-heroicons-arrow-up-tray" color="secondary" @click="uploadPackingReal" />
+                                <template v-else>
+                                    <UButton label="Packing Real" variant="ghost" class="flex-1 justify-start"
+                                        icon="i-heroicons-arrow-down-tray" color="secondary" @click="downloadPackingReal" />
+                                    <UButton label="" variant="ghost" icon="i-heroicons-trash" color="error"
+                                        @click="deletePackingReal" />
+                                </template>
+                            </div>
                         </div>
 
                     </div>
@@ -309,6 +321,7 @@ const { cotizaciones,
     loadingHeaders,
     resetFiltersCotizacion,
     packingList,
+    packingReal,
     exportData: exportProspectosData,
     fCierre,
     urlClientes,
@@ -907,38 +920,46 @@ const subirPackingReal = async (file: File) => {
     await getHeaders(Number(id))
 }
 
-const uploadPackingList = () => {
+const uploadPackingChina = () => {
     showUploadPanel.value = false
-    const uno = () => abrirCargaPacking('Packing China', subirPackingChina)
-    if (currentRole.value !== ROLES.CONTENEDOR_ALMACEN) {
-        uno()
-        return
-    }
-    showConfirmation(
-        '¿Tiene dos packing list?',
-        'Si tiene dos, sube Packing China y Packing Real. Si tiene uno, sube solo Packing China.',
-        () => abrirCargaPacking('Packing China', async (file) => {
-            await subirPackingChina(file)
-            abrirCargaPacking('Packing Real', subirPackingReal)
-        }),
-        uno,
-        { confirmLabel: 'Sí, dos', cancelLabel: 'Solo uno' }
-    )
+    abrirCargaPacking('Packing China', subirPackingChina)
+}
+
+const uploadPackingReal = () => {
+    showUploadPanel.value = false
+    abrirCargaPacking('Packing Real', subirPackingReal)
 }
 
 const downloadPackingList = () => {
-    window.open(packingList.value, '_blank')
+    if (packingList.value) window.open(packingList.value, '_blank')
+}
+
+const downloadPackingReal = () => {
+    if (packingReal.value) window.open(packingReal.value, '_blank')
 }
 
 const deletePackingList = () => {
     showUploadPanel.value = false
-    showConfirmation('Confirmar eliminación', '¿Está seguro de que desea eliminar este archivo? Esta acción no se puede deshacer.', async () => {
+    showConfirmation('Eliminar Packing China', '¿Eliminar el Packing China? Esta acción no se puede deshacer.', async () => {
         await withSpinner(async () => {
             const result = await ConsolidadoService.deletePackingList(Number(id))
             if (result.success) {
-                showSuccess('Packing List eliminado correctamente', 'success')
+                showSuccess('Packing China eliminado', 'Se quitó el packing de China.')
             }
-        }, 'Eliminando packing list...')
+        }, 'Eliminando Packing China...')
+        await getHeaders(Number(id))
+    })
+}
+
+const deletePackingReal = () => {
+    showUploadPanel.value = false
+    showConfirmation('Eliminar Packing Real', '¿Eliminar el Packing Real? Esta acción no se puede deshacer.', async () => {
+        await withSpinner(async () => {
+            const result = await ConsolidadoService.deletePackingReal(Number(id))
+            if (result.success) {
+                showSuccess('Packing Real eliminado', 'Se quitó el packing real.')
+            }
+        }, 'Eliminando Packing Real...')
         await getHeaders(Number(id))
     })
 }
@@ -1861,11 +1882,11 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
             const div = h('div', {
-                class: 'flex flex-col gap-2'
+                class: 'flex flex-col gap-2 min-w-28'
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: cbmTotalConImo(proveedor),
-                    class: 'w-full w-12',
+                    class: 'w-28 min-w-28',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total = value
@@ -2316,11 +2337,11 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
             const div = h('div', {
-                class: 'flex flex-col gap-2'
+                class: 'flex flex-col gap-2 min-w-28'
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: cbmTotalConImo(proveedor),
-                    class: 'w-full w-12',
+                    class: 'w-28 min-w-28',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total = value
@@ -2677,11 +2698,11 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
             const div = h('div', {
-                class: 'flex flex-col gap-2'
+                class: 'flex flex-col gap-2 min-w-28'
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: cbmTotalConImo(proveedor),
-                    class: 'w-full',
+                    class: 'w-28 min-w-28',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total = value

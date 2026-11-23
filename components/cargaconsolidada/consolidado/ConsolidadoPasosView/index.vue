@@ -59,7 +59,7 @@ const props = withDefaults(
   {}
 )
 
-const { currentId, currentRole } = useUserRole()
+const { currentId, currentRole, displayRole } = useUserRole()
 const { getConsolidadoPasos, pasos, loading } = useConsolidado(toRef(props, 'role'))
 
 const route = useRoute()
@@ -69,6 +69,7 @@ const skeletonCount = computed(() => {
   if (currentRole.value === ROLES.JEFE_MARKETING) return 4
   if (props.role === ROLES.COORDINACION) return 6
   if (props.role === ROLES.DOCUMENTACION) return 3
+  if (String(displayRole.value || '').trim().toLowerCase() === ROLES.ENCARGADO_CHINA.toLowerCase()) return 2
   if (props.role === ROLES.CONTENEDOR_ALMACEN) return 3
   if (currentId.value === ID_JEFEVENTAS || currentRole.value === ROLES.RRHH) return 2
   if (props.role === ROLES.COTIZADOR) return 1
