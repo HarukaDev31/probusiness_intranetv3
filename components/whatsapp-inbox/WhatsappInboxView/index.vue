@@ -295,7 +295,7 @@
             :body-class="isDesktop ? '' : 'pb-40'"
             @scroll="onChatScroll"
           >
-            <p v-if="loadingMessages && !messages.length" class="py-8 text-center text-sm text-muted">Cargando mensajes…</p>
+            <p v-if="!messagesMatchSelection || (loadingMessages && !messages.length)" class="py-8 text-center text-sm text-muted">Cargando mensajes…</p>
             <template v-else>
               <template v-for="item in timelineItems" :key="item.kind === 'divider' ? `d-${item.dayKey}` : `m-${item.msg.id}`">
                 <WhatsappInboxDayDivider
@@ -527,6 +527,7 @@ const {
   loadMoreConversations,
   conversationsHasMore,
   loadingMessages,
+  messagesMatchSelection,
   loadingTemplates,
   refreshing,
   unreadTotal,

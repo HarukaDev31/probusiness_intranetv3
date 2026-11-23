@@ -27,6 +27,7 @@ import {
 import {
   mergeWaInboxMessage,
   mergeMessageLists,
+  replaceWithServerHistory,
   waMessageNumericId,
   isFailedOutboundTemplate,
   normalizeWaInboxTemplateParams
@@ -191,6 +192,10 @@ export function useWhatsappInbox() {
   }
 
   const selectedConversation = computed(() => findConversationById(selectedConversationId.value))
+  const messagesMatchSelection = computed(() =>
+    selectedConversationId.value != null
+    && messagesConversationId.value === selectedConversationId.value
+  )
 
   const unreadTotal = computed(() =>
     allConversations.value.reduce((sum, c) => sum + (c.unread_count || 0), 0)
@@ -317,45 +322,48 @@ export function useWhatsappInbox() {
   }
 
   function syncMessagesCacheForConversation(convId: number) {
+    if (messagesConversationId.value !== convId) return
     const cached = cache.getMessagesEntry(convId)
     cache.setMessages(convId, messages.value, cached?.conversationPatch, {
       fullHistory: cached?.fullHistory !== false
     })
   }
 
+  function upsertIntoList(list: WaInboxMessage[], msg: WaInboxMessage, msgId: number) {
+    const next = [...list]
+    const idx = findMessageIndex(next, msgId)
+    if (idx >= 0) {
+      next[idx] = mergeWaInboxMessage(next[idx], { ...msg, id: msgId })
+    } else {
+      next.push({ ...msg, id: msgId })
+    }
+    return next
+  }
+
   function upsertMessageInConversation(convId: number, msg: WaInboxMessage) {
     const msgId = waMessageNumericId(msg.id)
     if (!msgId) return
 
-    if (selectedConversationId.value === convId) {
-      const idx = findMessageIndex(messages.value, msgId)
-      const next = [...messages.value]
-      if (idx >= 0) {
-        next[idx] = mergeWaInboxMessage(next[idx], { ...msg, id: msgId })
-      } else {
-        next.push({ ...msg, id: msgId })
-      }
-      messages.value = next
+    const openListBelongsToConv = messagesConversationId.value === convId
+    if (selectedConversationId.value === convId && openListBelongsToConv) {
+      messages.value = upsertIntoList(messages.value, msg, msgId)
       messagesConversationId.value = convId
       syncMessagesCacheForConversation(convId)
-    } else {
-      const cached = cache.getMessages(convId)
-      if (cached) {
-        const mi = findMessageIndex(cached.messages, msgId)
-        const list = [...cached.messages]
-        if (mi >= 0) {
-          list[mi] = mergeWaInboxMessage(list[mi], { ...msg, id: msgId })
-        } else {
-          list.push({ ...msg, id: msgId })
-        }
-        cache.setMessages(convId, list, cached.conversationPatch, {
-          fullHistory: cached?.fullHistory !== false
-        })
-      } else {
-        cache.setMessages(convId, [{ ...msg, id: msgId }], undefined, {
-          fullHistory: false
-        })
-      }
+      return
+    }
+
+    // El hilo abierto puede ser de otro cliente. No copiarlo a este chat.
+    const cached = cache.getMessagesEntry(convId)
+    const list = cached
+      ? upsertIntoList(cached.messages, msg, msgId)
+      : [{ ...msg, id: msgId }]
+    cache.setMessages(convId, list, cached?.conversationPatch, {
+      fullHistory: cached ? cached.fullHistory !== false : false
+    })
+
+    if (selectedConversationId.value === convId) {
+      messages.value = list
+      messagesConversationId.value = convId
     }
   }
 
@@ -614,6 +622,14 @@ export function useWhatsappInbox() {
       && cachedMsgs.length > 0
     ) {
       applyMessagesForConversation(conversationId, cachedMsgs)
+      return
+    }
+    if (
+      selectedConversationId.value === conversationId
+      && messagesConversationId.value !== conversationId
+    ) {
+      messages.value = []
+      messagesConversationId.value = null
     }
   }
 
@@ -1067,7 +1083,9 @@ export function useWhatsappInbox() {
           && messagesConversationId.value === conversationId
             ? messages.value
             : []
-        const merged = mergeMessageLists(rows, cachedList, localList)
+        const merged = fullHistory
+          ? replaceWithServerHistory(rows, localList)
+          : mergeMessageLists(rows, cachedList, localList)
         cache.setMessages(conversationId, merged, convPatch, {
           fullHistory,
           messageTotal: total
@@ -1769,6 +1787,7 @@ export function useWhatsappInbox() {
     conversationsHasMore,
     loadMoreConversations,
     loadingMessages,
+    messagesMatchSelection,
     loadingTemplates,
     sendingTemplate,
     refreshing,
