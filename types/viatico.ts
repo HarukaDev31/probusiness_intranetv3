@@ -54,11 +54,20 @@ export interface Viatico {
   usuario?: {
     ID_Usuario: number
     No_Nombres_Apellidos: string
+    /** Celular de la cuenta que creó el viático (se usa como Yape para el reintegro) */
+    Nu_Celular?: string | null
   }
   /** Evidencias por concepto (múltiples items de pago) */
   pagos?: ViaticoPago[]
   /** Comprobantes de retribución (múltiples) */
   retribuciones?: ViaticoRetribucion[]
+  /** CFG-26-0056: a dónde reintegrarle al solicitante (perfil › Método de pago preferido) */
+  metodo_pago_solicitante?: {
+    metodo: string
+    metodo_label: string
+    numero: string | null
+    configurado: boolean
+  } | null
 }
 
 /** Un item de pago: concepto, monto y comprobante. id solo para pagos existentes (edición). */

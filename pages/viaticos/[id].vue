@@ -155,6 +155,20 @@
                   </div>
                 </div>
 
+                <!-- Yape para el reintegro = celular de la cuenta que creó el viático (CFG-26-0056) -->
+                <div class="md:col-span-2" data-testid="viatico-yape-reintegro">
+                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">Pagar reintegro a</label>
+                  <div class="flex items-center gap-2">
+                    <UIcon name="i-heroicons-device-phone-mobile" class="w-4 h-4 text-gray-400" />
+                    <template v-if="celularSolicitante">
+                      <UBadge color="primary" variant="soft" size="sm">{{ metodoPagoLabel }}</UBadge>
+                      <p class="text-sm text-gray-900 dark:text-white font-medium">{{ celularSolicitante }}</p>
+                      <UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-clipboard-document" aria-label="Copiar número" @click="copiarCelular" />
+                    </template>
+                    <p v-else class="text-sm text-gray-500 dark:text-gray-400">No registrado</p>
+                  </div>
+                </div>
+
                 <!-- Código de confirmación (solo para administración) -->
                 <div v-if="isAdmin" class="md:col-span-2">
                   <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">Código de confirmación</label>
@@ -429,6 +443,20 @@ const createPagoModal = overlay.create(CreatePagoModal)
 
 const viatico = computed(() => currentViatico.value)
 const isAdmin = computed(() => hasRole(ROLES.ADMINISTRACION))
+/** CFG-26-0056: método preferido del solicitante (perfil); por defecto Yape con el celular de su cuenta */
+const metodoPagoLabel = computed(() => viatico.value?.metodo_pago_solicitante?.metodo_label || 'Yape')
+const celularSolicitante = computed(() =>
+  String(viatico.value?.metodo_pago_solicitante?.numero ?? viatico.value?.usuario?.Nu_Celular ?? '').trim()
+)
+const toast = useToast()
+const copiarCelular = async () => {
+  try {
+    await navigator.clipboard.writeText(celularSolicitante.value)
+    toast.add({ title: 'Número copiado', color: 'success' })
+  } catch {
+    toast.add({ title: 'No se pudo copiar', color: 'error' })
+  }
+}
 const selectedStatus = ref<string>('')
 const uploadingFile = ref(false)
 const deletingFile = ref(false)
