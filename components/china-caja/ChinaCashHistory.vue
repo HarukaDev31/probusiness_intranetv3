@@ -6,7 +6,7 @@
     </div>
     <UAlert v-if="error" color="error" variant="soft" :title="error" />
     <ChinaSummaryCards :cards="cards" />
-    <DataTable keep-spanish-headers :fill-viewport="false" :data="periods" :columns="columns" :loading="loading" :show-pagination="false" :show-filters="false" :show-primary-search="false" :show-export="false" empty-state-message="Sin movimientos en el año." />
+    <DataTable keep-spanish-headers :fill-viewport="false" :data="periods" :columns="columns" :loading="loading" :current-page="1" :total-pages="1" :total-records="periods.length" :items-per-page="Math.max(1, periods.length)" :show-pagination="false" :show-filters="false" :show-primary-search="false" :show-export="false" empty-state-message="Sin movimientos en el año." />
     <UCard v-if="periods.length > 1">
       <div class="mb-3 flex flex-wrap items-center gap-2">
         <p class="font-semibold text-highlighted">Comparar</p>

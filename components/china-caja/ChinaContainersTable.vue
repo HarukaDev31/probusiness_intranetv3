@@ -6,7 +6,7 @@
     :data="rows"
     :columns="columns"
     :loading="loading"
-    :show-pagination="false"
+    :current-page="1" :total-pages="1" :total-records="rows.length" :items-per-page="Math.max(1, rows.length)" :show-pagination="false"
     :primary-search-value="search"
     :show-primary-search="true"
     :show-primary-search-label="false"
