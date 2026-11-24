@@ -54,6 +54,8 @@ export interface Viatico {
   usuario?: {
     ID_Usuario: number
     No_Nombres_Apellidos: string
+    /** Celular de la cuenta que creó el viático (se usa como Yape para el reintegro) */
+    Nu_Celular?: string | null
   }
   /** Evidencias por concepto (múltiples items de pago) */
   pagos?: ViaticoPago[]
