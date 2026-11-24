@@ -471,6 +471,24 @@ function onPageSize(size: number) {
 }
 
 /** Acciones del encabezado de la página (Registrar pago, Nueva operación, Datos bancarios). */
+/** Abre la ficha desde otra sección aunque no esté en la página visible. */
+async function openOperation(match: (row: ChinaOperation) => boolean) {
+  try {
+    let found: ChinaOperation | undefined
+    for (let page = 1, last = 1; page <= last && !found; page++) {
+      const response = await ChinaBillingService.listOperations({ page, per_page: 100 })
+      last = response.pagination.last_page
+      found = response.data.find(match)
+    }
+    if (!found) return showWarning('Operaciones', 'Esa operación ya no está disponible.')
+    if (found.is_draft) return openForm(null, found)
+    if (!rows.value.some((row) => row.id === found.id)) rows.value = [found, ...rows.value]
+    selectedId.value = found.id
+  } catch (error: any) {
+    showError('Operaciones', error?.message || 'No se pudo abrir la operación.')
+  }
+}
+
 defineExpose({
   refresh: load,
   openNew: () => openForm(null, null),
@@ -480,5 +498,12 @@ defineExpose({
   operationsCount: computed(() => counts.value.operations_total ?? ((counts.value.all ?? 0) - (counts.value.draft ?? 0)))
 })
 
-onMounted(load)
+const route = useRoute()
+onMounted(async () => {
+  await load()
+  const { operacion, borrador, cobro } = route.query
+  if (operacion) openOperation((row) => row.id === Number(operacion))
+  else if (borrador) openOperation((row) => !!row.is_draft && row.container_id === Number(borrador))
+  else if (cobro) openPaymentDetail(Number(cobro))
+})
 </script>

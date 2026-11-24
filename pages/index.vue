@@ -1,10 +1,8 @@
 <template>
-  <HomeOperativa
-    v-if="isOperativa"
-    :cards="statsOperativa"
-    :loading="loadingOperativa"
-    :variant="varianteOperativa"
-  />
+  <div v-if="isOperativa">
+    <HomeOperativa :cards="statsOperativa" :loading="loadingOperativa" :variant="varianteOperativa" />
+    <ChinaHomePending v-if="isEncargadoChina" />
+  </div>
   <section v-else-if="isAdministracion" class="content-header px-4 xl:px-4 sm:px-2 pb-6">
     <div class="mb-5">
       <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Pendientes de hoy</h1>
@@ -100,11 +98,14 @@ import { computed, onMounted, ref } from 'vue'
 import { esOrganizacionSocio, esRolSocio, ROLES } from '~/constants/roles'
 import { useHomeStats } from '~/composables/cargaconsolidada/home-stats'
 import { useUserRole } from '~/composables/auth/useUserRole'
+import ChinaHomePending from '~/components/china-caja/ChinaHomePending.vue'
+import { useEncargadoChina } from '~/composables/china-caja/useEncargadoChina'
 import { useVerificationCounts } from '~/composables/verificacion/useVerificationCounts'
 
 definePageMeta({ middleware: 'auth' })
 
 const { fetchCurrentUser, currentRole, userData, isContenedorAlmacen, hasRole } = useUserRole()
+const { isEncargadoChina } = useEncargadoChina()
 const { stats: homeStats, loading: loadingOperativa, loadStats } = useHomeStats()
 const { counts: verificationCounts, refresh: refreshVerificationCounts } = useVerificationCounts()
 if (import.meta.client) {

@@ -110,6 +110,7 @@
         </template>
       </div>
     </div>
+    <ChinaStagesDrawer v-if="isEncargadoChina" :container="etapasSelected" :options="etapasOptions" :stage="etapaAbierta" @close="etapasId = null" @saved="onEtapasSaved" />
   </div>
 </template>
 
@@ -123,6 +124,8 @@ import { ID_ORGANIZACION_ADMIN, ROLES, esOrganizacionSocio, roleEsComoJefeImport
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
+import { useChinaStages } from '~/composables/china-caja/useChinaStages'
+import ChinaStagesDrawer from '~/components/china-caja/ChinaStagesDrawer.vue'
 import CreateConsolidadoModal from '~/components/cargaconsolidada/consolidado/CreateConsolidadoModal/index.vue'
 import TextModal from '~/components/commons/TextModal.vue'
 import { USelect } from '#components'
@@ -656,6 +659,24 @@ const cbmImoColumn: TableColumn<any> = {
   cell: ({ row }) => formatNumber(row.original.cbm_total_imo ?? 0, 2),
 }
 
+// Encargado China: avance de las 3 etapas; abre el panel.
+const { isEncargadoChina, selected: etapasSelected, selectedId: etapasId, openStage: etapaAbierta, options: etapasOptions, loadStages, open: openEtapas, onSaved: onEtapasSaved, stageOf } = useChinaStages()
+const etapasColumn: TableColumn<any> = {
+  id: 'etapas',
+  header: 'Etapas',
+  cell: ({ row }) => {
+    const progress = stageOf(row.original.id)
+    if (!progress) return '—'
+    const stage = progress.current ? progress.stages[progress.current - 1] : null
+    const detail = progress.complete ? 'Completado' : stage ? `${stage.number} · ${stage.title}` : 'Sin etapa activa'
+    return h('button', { type: 'button', class: 'text-left', onClick: () => openEtapas(row.original.id) }, [
+      h('span', { class: 'block font-semibold text-primary' }, `${progress.percent}%`),
+      h('span', { class: 'block text-xs text-muted' }, detail),
+    ])
+  },
+}
+onMounted(loadStages)
+
 const getColumns = () => {
   let result: TableColumn<any>[]
   switch (props.role) {
@@ -682,6 +703,11 @@ const getColumns = () => {
   result = result.map((col) => (
     (col as { accessorKey?: string }).accessorKey === 'limite_cbm_imo' ? cbmImoColumn : col
   ))
+  if (isEncargadoChina.value) {
+    const index = result.findIndex((col) => (col as { accessorKey?: string }).accessorKey === 'estado_china')
+    const at = index === -1 ? result.length : index
+    result = [...result.slice(0, at), etapasColumn, ...result.slice(at)]
+  }
   return result
 }
 
