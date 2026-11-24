@@ -155,6 +155,19 @@
                   </div>
                 </div>
 
+                <!-- Yape para el reintegro = celular de la cuenta que creó el viático (CFG-26-0056) -->
+                <div class="md:col-span-2" data-testid="viatico-yape-reintegro">
+                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">Yape / celular para el reintegro</label>
+                  <div class="flex items-center gap-2">
+                    <UIcon name="i-heroicons-device-phone-mobile" class="w-4 h-4 text-gray-400" />
+                    <template v-if="celularSolicitante">
+                      <p class="text-sm text-gray-900 dark:text-white font-medium">{{ celularSolicitante }}</p>
+                      <UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-clipboard-document" aria-label="Copiar número" @click="copiarCelular" />
+                    </template>
+                    <p v-else class="text-sm text-gray-500 dark:text-gray-400">No registrado</p>
+                  </div>
+                </div>
+
                 <!-- Código de confirmación (solo para administración) -->
                 <div v-if="isAdmin" class="md:col-span-2">
                   <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">Código de confirmación</label>
@@ -429,6 +442,17 @@ const createPagoModal = overlay.create(CreatePagoModal)
 
 const viatico = computed(() => currentViatico.value)
 const isAdmin = computed(() => hasRole(ROLES.ADMINISTRACION))
+/** CFG-26-0056: el reintegro se hace al Yape del celular de la cuenta que creó el viático */
+const celularSolicitante = computed(() => String(viatico.value?.usuario?.Nu_Celular ?? '').trim())
+const toast = useToast()
+const copiarCelular = async () => {
+  try {
+    await navigator.clipboard.writeText(celularSolicitante.value)
+    toast.add({ title: 'Número copiado', color: 'success' })
+  } catch {
+    toast.add({ title: 'No se pudo copiar', color: 'error' })
+  }
+}
 const selectedStatus = ref<string>('')
 const uploadingFile = ref(false)
 const deletingFile = ref(false)
