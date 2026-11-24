@@ -1,38 +1,33 @@
 <template>
-  <UModal :open="open" title="Pagar fletes" :ui="MODAL_UI" @update:open="(value: boolean) => !value && emit('close')">
-    <template #body>
-      <div class="flex flex-col gap-3">
-        <div class="max-h-60 overflow-y-auto rounded-lg border border-default">
-          <label v-for="row in rows" :key="row.id" class="flex cursor-pointer items-center gap-3 border-b border-default p-3 text-sm last:border-0">
-            <UCheckbox :model-value="ids.includes(row.id)" @update:model-value="(on: boolean | 'indeterminate') => toggle(row.id, on === true)" />
-            <span class="flex-1">{{ row.label }} · {{ row.country }} <span class="text-muted">{{ row.data.shipping_line || '' }}</span></span>
-            <strong>{{ usd(row.data.freight_usd) }}</strong>
-          </label>
-        </div>
-        <UFormField label="Fecha de pago"><UInput v-model="paidOn" type="date" class="w-full" /></UFormField>
-        <YuanFilePick label="Adjuntar voucher del pago (PDF o imagen)" :accept="CHINA_FILE_ACCEPT" @pick="(file) => { voucher = file }" />
-        <p class="text-right font-semibold">Total {{ usd(total) }}</p>
-      </div>
-    </template>
+  <ChinaWindow :open="open" title="Pago de flete" subtitle="Elige los contenedores que cubre este pago y adjunta un solo voucher." width="w-full max-w-[600px]" @close="emit('close')">
+    <div class="flex flex-col overflow-hidden rounded-[10px] border border-(--cc-line2)">
+      <button v-for="row in rows" :key="row.id" type="button" class="flex items-center justify-between gap-3 border-b border-(--cc-line) px-3.5 py-[11px] text-left text-sm" :class="ids.includes(row.id) ? 'bg-(--cc-orange-soft)' : ''" @click="toggle(row.id)">
+        <span class="cc-check cc-check--orange !size-5" :class="{ on: ids.includes(row.id) }">{{ ids.includes(row.id) ? '✓' : '' }}</span>
+        <span class="cc-stack flex-1"><span class="font-semibold">{{ row.label }} · {{ row.country }}</span><span class="cc-sub">{{ row.data.shipping_line || '—' }} · BL {{ row.data.bl_number || 'pendiente' }}</span></span>
+        <span class="font-semibold">{{ usd(row.data.freight_usd) }}</span>
+      </button>
+      <div v-if="!rows.length" class="p-3.5 text-sm text-(--cc-muted)">No hay contenedores con flete por pagar.</div>
+      <div class="flex justify-between bg-(--cc-softer) px-3.5 py-3 text-[15px] font-bold"><span>{{ ids.length }} seleccionados</span><span>{{ usd(total) }}</span></div>
+    </div>
+    <label class="cc-field">Fecha de pago<UInput v-model="paidOn" type="date" variant="none" :ui="{ base: 'cc-input !text-[15px]' }" /></label>
+    <ChinaFileDrop :file="voucher" label="Adjuntar voucher del pago (PDF o imagen)" hint="Opcional" hint-tone="text-(--cc-muted)" icon @pick="(file) => { voucher = file }" />
     <template #footer>
-      <div class="flex w-full justify-end gap-2">
-        <UButton color="neutral" variant="ghost" @click="emit('close')">Cancelar</UButton>
-        <UButton color="primary" :disabled="!ids.length || !voucher || !paidOn" @click="voucher && emit('pay', ids, paidOn, voucher)">Registrar pago</UButton>
-      </div>
+      <button type="button" class="cc-btn cc-btn--plain cc-btn--lg" @click="emit('close')">Cancelar</button>
+      <button type="button" class="cc-btn cc-btn--lg" :disabled="!ids.length || !paidOn" @click="emit('pay', ids, paidOn, voucher)">Guardar pago</button>
     </template>
-  </UModal>
+  </ChinaWindow>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import YuanFilePick from '~/components/pago-proveedor/YuanFilePick.vue'
-import { CHINA_FILE_ACCEPT, MODAL_UI } from '~/constants/chinaCaja'
+import ChinaFileDrop from '~/components/china-caja/ChinaFileDrop.vue'
+import ChinaWindow from '~/components/china-caja/ChinaWindow.vue'
 import type { ChinaContainer } from '~/types/china-caja'
 import { chinaToday } from '~/utils/chinaCaja'
 import { usd } from '~/utils/yuanFormat'
 
 const props = defineProps<{ open: boolean; rows: ChinaContainer[]; preselected: number[] }>()
-const emit = defineEmits<{ close: []; pay: [ids: number[], paidOn: string, voucher: File] }>()
+const emit = defineEmits<{ close: []; pay: [ids: number[], paidOn: string, voucher: File | null] }>()
 
 const ids = ref<number[]>([])
 const paidOn = ref('')
@@ -46,7 +41,7 @@ watch(() => props.open, (open) => {
   voucher.value = null
 })
 
-function toggle(id: number, on: boolean) {
-  ids.value = on ? [...ids.value, id] : ids.value.filter((value) => value !== id)
+function toggle(id: number) {
+  ids.value = ids.value.includes(id) ? ids.value.filter((value) => value !== id) : [...ids.value, id]
 }
 </script>

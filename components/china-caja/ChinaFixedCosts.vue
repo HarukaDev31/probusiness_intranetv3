@@ -1,29 +1,33 @@
 <template>
-  <UCard>
-    <h2 class="text-lg font-bold text-highlighted">Costos fijos mensuales</h2>
-    <p class="mb-2 text-sm text-muted">Se descuentan solos el último día del mes · {{ rmb(total) }}</p>
-    <div v-for="cost in costs" :key="cost.id" class="flex items-center gap-3 border-t border-default py-2 text-sm">
-      <USwitch :model-value="cost.active" @update:model-value="(on: boolean) => emit('toggle', cost.id, on)" />
-      <span class="flex-1" :class="cost.active ? '' : 'text-muted line-through'">{{ cost.name }}</span>
-      <strong>{{ rmb(cost.amount) }}</strong>
-      <UButton size="xs" color="error" variant="ghost" icon="i-heroicons-x-mark" aria-label="Eliminar" @click="remove(cost)" />
+  <section class="cc-card flex flex-col">
+    <div class="flex flex-col gap-0.5 border-b border-(--cc-line) px-[18px] py-4">
+      <span class="cc-title-row"><span class="cc-title">Costos fijos mensuales</span><ChinaInfo topic="fijos" /></span>
+      <span class="text-[13px] text-(--cc-muted)">{{ costs.length }} {{ costs.length === 1 ? 'costo' : 'costos' }} · se descuentan el último día del mes · {{ money(total) }} al mes</span>
     </div>
-    <form class="mt-3 flex gap-2" @submit.prevent="add">
-      <UInput v-model="name" placeholder="Nombre" class="flex-1" />
-      <UInputNumber v-model="amount" :min="0" :step="0.01" :ui="AMOUNT_UI" placeholder="RMB" class="w-28" />
-      <UButton type="submit" :disabled="!name.trim() || !amount">Agregar</UButton>
+    <div class="max-h-[232px] overflow-y-auto">
+      <div v-for="cost in costs" :key="cost.id" class="flex items-center gap-2.5 border-b border-(--cc-line) px-[18px] py-2.5" :class="cost.active ? '' : 'opacity-50'">
+        <button type="button" class="cc-switch" :class="{ on: cost.active }" :title="cost.active ? 'Pausar' : 'Activar'" role="switch" :aria-checked="cost.active" @click="emit('toggle', cost.id, !cost.active)"><span /></button>
+        <span class="cc-grow cc-cut text-sm">{{ cost.name }}</span>
+        <span class="text-sm font-semibold">{{ money(cost.amount) }}</span>
+        <button type="button" class="cc-x" title="Eliminar" @click="remove(cost)">×</button>
+      </div>
+    </div>
+    <form class="flex gap-1.5 px-[18px] py-3" @submit.prevent="add">
+      <UInput v-model="name" variant="none" placeholder="Nuevo costo" class="min-w-0 flex-1" :ui="{ base: 'cc-input cc-input--small' }" />
+      <UInputNumber v-model="amount" :min="0" :step="0.01" variant="none" placeholder="¥ monto" class="w-[90px]" :ui="{ ...AMOUNT_UI, base: 'cc-input cc-input--small' }" />
+      <button type="submit" class="cc-btn !rounded-lg !px-3 !py-0 !text-[13px]">Agregar</button>
     </form>
-  </UCard>
+  </section>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import ChinaInfo from '~/components/china-caja/ChinaInfo.vue'
 import { useModal } from '~/composables/commons/useModal'
 import { AMOUNT_UI } from '~/constants/chinaCaja'
 import type { ChinaFixedCost } from '~/types/china-caja'
-import { rmb } from '~/utils/yuanFormat'
 
-const props = defineProps<{ costs: ChinaFixedCost[] }>()
+const props = defineProps<{ costs: ChinaFixedCost[]; money: (value: number) => string }>()
 const emit = defineEmits<{ add: [body: { name: string; amount: number }]; toggle: [id: number, active: boolean]; remove: [id: number] }>()
 const { showConfirmation } = useModal()
 const name = ref('')
@@ -38,6 +42,6 @@ function add() {
 }
 
 function remove(cost: ChinaFixedCost) {
-  showConfirmation('¿Eliminar el costo fijo?', `${cost.name}: ya no se descontará desde este mes.`, () => emit('remove', cost.id))
+  showConfirmation(`¿Eliminar el costo fijo "${cost.name}"?`, 'Dejará de descontarse cada fin de mes.', () => emit('remove', cost.id))
 }
 </script>

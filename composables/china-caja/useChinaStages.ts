@@ -38,12 +38,12 @@ export function useChinaStages() {
     return run(async () => {
       await ChinaCajaService.updateContainer(id, values)
       await fetchRows()
-    }, 'Datos guardados.')
+    })
   }
 
-  function stageOf(id: number) {
-    return rows.value.find((row) => row.id === id)?.progress ?? null
+  function containerOf(id: number) {
+    return rows.value.find((row) => row.id === id) ?? null
   }
 
-  return { isEncargadoChina, selected, selectedId, openStage, options, loadStages, open, save, stageOf }
+  return { isEncargadoChina, selected, selectedId, openStage, options, loadStages, open, save, containerOf }
 }

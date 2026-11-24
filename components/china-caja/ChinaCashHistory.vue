@@ -1,53 +1,113 @@
 <template>
-  <div class="flex flex-col gap-4">
-    <div class="flex flex-wrap items-center gap-2">
-      <USelect v-model="year" :items="years" class="w-28" />
-      <USelect v-model="grain" :items="CHINA_CASH_GRAINS" class="w-36" />
-    </div>
+  <div class="flex flex-col gap-5">
     <UAlert v-if="error" color="error" variant="soft" :title="error" />
-    <ChinaSummaryCards :cards="cards" />
-    <DataTable keep-spanish-headers :fill-viewport="false" :data="periods" :columns="columns" :loading="loading" :current-page="1" :total-pages="1" :total-records="periods.length" :items-per-page="Math.max(1, periods.length)" :show-pagination="false" :show-filters="false" :show-primary-search="false" :show-export="false" empty-state-message="Sin movimientos en el año." />
-    <UCard v-if="periods.length > 1">
-      <div class="mb-3 flex flex-wrap items-center gap-2">
-        <p class="font-semibold text-highlighted">Comparar</p>
-        <USelect v-model="first" :items="labels" class="w-44" />
-        <span class="text-muted">con</span>
-        <USelect v-model="second" :items="labels" class="w-44" />
+    <div class="flex flex-col gap-1.5">
+      <span class="text-[13px] text-(--cc-muted)">{{ heading }}</span>
+      <div class="cc-kpis-auto"><ChinaKpi v-for="card in cards" :key="card.label" :card="card" /></div>
+    </div>
+    <div class="cc-row">
+      <div class="cc-seg"><button v-for="item in CHINA_CASH_GRAINS" :key="item.value" type="button" :class="{ on: grain === item.value }" @click="grain = item.value">{{ item.label }}</button></div>
+      <label class="cc-inline !pr-1">Año<USelect v-model="year" :items="years" variant="none" :ui="{ base: 'cc-input cc-input--bar min-w-24' }" /></label>
+      <ChinaInfo topic="gran" />
+    </div>
+
+    <section class="cc-card overflow-hidden">
+      <div class="cc-between border-b border-(--cc-line) px-5 py-4">
+        <span class="cc-title-row"><span class="cc-title">{{ title }}</span><ChinaInfo topic="chT" /></span>
+        <span class="cc-sub">% contra el {{ unit }} anterior · ▲▼ verde mejora, rojo empeora</span>
       </div>
-      <div class="grid gap-3 sm:grid-cols-3">
-        <div v-for="row in comparison" :key="row.label">
-          <p class="text-xs uppercase text-muted">{{ row.label }}</p>
-          <p class="font-bold" :class="row.good ? 'text-success' : 'text-error'">{{ rmbSigned(row.difference) }} <span v-if="row.percent !== null">({{ row.percent }}%)</span></p>
+      <div ref="scroller" class="overflow-x-auto">
+        <div class="cc-matrix" :style="{ minWidth: `${310 + periods.length * 112}px` }">
+          <div class="cc-matrix-row cc-matrix-head" :style="columns">
+            <div>CONCEPTO</div>
+            <div v-for="period in periods" :key="period.label" class="flex flex-col items-end gap-[3px] !py-2" :class="{ open: !period.closed }">
+              <span :class="period.closed ? 'font-medium' : 'font-bold text-(--cc-orange-ink)'">{{ period.label.toUpperCase() }}</span>
+              <button v-if="period.month" type="button" class="cc-see" @click="emit('view', period.month)">Ver mes</button>
+            </div>
+            <div class="!text-(--cc-ink)">TOTAL {{ year }}</div>
+          </div>
+          <div v-for="(row, index) in matrix" :key="index" class="cc-matrix-row" :class="[row.strong ? 'cc-matrix-total' : '', row.small ? '!border-t-0' : '', row.weight]" :style="columns">
+            <div :class="row.small ? 'text-xs text-(--cc-muted)' : ''">{{ row.label }}</div>
+            <div v-for="(cell, at) in row.cells" :key="at" :class="[cell.tone, row.small ? 'text-xs' : '', cell.open ? 'open' : '']">{{ cell.text }}</div>
+            <div :class="row.totalTone">{{ row.total }}</div>
+          </div>
+          <div class="border-t border-(--cc-line)" />
+          <div v-if="!loading && !periods.length" class="px-5 py-7 text-(--cc-muted)">Sin movimientos en {{ year }}.</div>
+          <div class="cc-sub sticky left-0 w-fit px-5 py-2.5">Columna naranja = periodo abierto · ✓ cuadra con el banco · % contra el {{ unit }} anterior</div>
         </div>
       </div>
-    </UCard>
+    </section>
+
+    <div class="flex flex-wrap items-stretch gap-5">
+      <section class="cc-card flex flex-[1_1_480px] flex-col gap-3 px-5 py-[18px]">
+        <div class="cc-between">
+          <span class="cc-title-row"><span class="cc-title">Ingresos y egresos por {{ unit }}</span><ChinaInfo topic="chIn" /></span>
+          <span class="cc-legend"><span><i class="bg-(--cc-green)" />Ingresos</span><span><i class="bg-(--cc-orange)" />Egresos</span><span><i class="cc-hatch-gray" />Proyectado</span></span>
+        </div>
+        <div class="cc-cols h-[220px] items-end border-b border-(--cc-line2)">
+          <div v-for="bar in bars" :key="bar.label" class="flex h-full flex-col items-center justify-end">
+            <span class="flex w-full max-w-14 items-end gap-[3px]">
+              <span class="flex flex-1 flex-col justify-end"><span class="cc-hatch-gray" :style="{ height: bar.incomeProjected }" /><span class="bg-(--cc-green)" :style="{ height: bar.incomeReal }" /></span>
+              <span class="flex flex-1 flex-col justify-end"><span class="cc-hatch-out" :style="{ height: bar.expenseProjected }" /><span class="bg-(--cc-orange)" :style="{ height: bar.expenseReal }" /></span>
+            </span>
+          </div>
+        </div>
+        <div class="cc-cols"><span v-for="bar in bars" :key="bar.label" class="flex flex-col items-center gap-px whitespace-nowrap text-[11px]"><strong>{{ bar.label }}</strong><span>+{{ thousands(bar.income) }}</span><span class="cc-t-orange">−{{ thousands(bar.expense) }}</span></span></div>
+      </section>
+      <section class="cc-card flex flex-[1_1_480px] flex-col gap-3 px-5 py-[18px]">
+        <div class="cc-between">
+          <span class="cc-title-row"><span class="cc-title">Histórico de utilidad operativa</span><ChinaInfo topic="uHist" /></span>
+          <span class="whitespace-nowrap text-[13px] text-(--cc-muted)">Acumulado {{ year }} <strong :class="totals.profit < 0 ? 'cc-t-red' : 'cc-t-green'">{{ signed(totals.profit) }}</strong> · promedio {{ signed(totals.average) }} por {{ unit }}</span>
+        </div>
+        <div class="cc-cols h-[200px]">
+          <div v-for="bar in bars" :key="bar.label" class="flex h-full flex-col items-center">
+            <span class="flex w-full flex-1 flex-col items-center justify-end gap-[3px]"><span class="cc-t-green whitespace-nowrap text-[10px] font-bold">{{ bar.profit >= 0 ? `+${thousands(bar.profit)}` : '' }}</span><span class="w-[70%] max-w-10" :class="bar.projected ? 'cc-hatch-in' : 'bg-(--cc-green)'" :style="{ height: bar.up }" /></span>
+            <span class="h-0.5 w-full bg-(--cc-ink)" />
+            <span class="flex w-full flex-1 flex-col items-center gap-[3px]"><span class="w-[70%] max-w-10 bg-(--cc-red)" :class="bar.projected ? 'opacity-50' : ''" :style="{ height: bar.down }" /><span class="cc-t-red whitespace-nowrap text-[10px] font-bold">{{ bar.profit < 0 ? `−${thousands(-bar.profit)}` : '' }}</span></span>
+          </div>
+        </div>
+        <div class="cc-cols"><span v-for="bar in bars" :key="bar.label" class="flex flex-col items-center gap-px whitespace-nowrap text-[11px]"><strong>{{ bar.label }}</strong><span class="text-(--cc-muted)">acum.</span><span class="text-(--cc-muted)">{{ bar.accumulated < 0 ? '−' : '' }}{{ thousands(Math.abs(bar.accumulated)) }}</span></span></div>
+      </section>
+    </div>
+
+    <div class="flex flex-wrap items-start gap-5">
+      <div class="grid min-w-0 flex-[1_1_480px] content-start gap-5">
+        <ChinaCashClients title="Principales ingresos" :subtitle="`Lo que va de ${year}`" type="in" :rows="incomeClients" :money="money" />
+        <ChinaCashClients title="Principales egresos" :subtitle="`Lo que va de ${year}`" type="out" :rows="expenseClients" :money="money" />
+      </div>
+      <div class="flex min-w-0 max-w-[460px] flex-[1_1_320px] flex-col gap-5"><slot /></div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { h } from 'vue'
-import type { TableColumn } from '@nuxt/ui'
-import ChinaSummaryCards from '~/components/china-caja/ChinaSummaryCards.vue'
+import { computed, nextTick, ref, watch } from 'vue'
+import ChinaCashClients from '~/components/china-caja/ChinaCashClients.vue'
+import ChinaInfo from '~/components/china-caja/ChinaInfo.vue'
+import ChinaKpi from '~/components/china-caja/ChinaKpi.vue'
 import { useChinaCashHistory } from '~/composables/china-caja/useChinaCashHistory'
 import { CHINA_CASH_GRAINS } from '~/constants/chinaCaja'
-import { rmbSigned } from '~/utils/chinaCaja'
-import { UBadge, UButton } from '#components'
 
+const props = defineProps<{ money: (value: number) => string; signed: (value: number) => string }>()
 const emit = defineEmits<{ view: [month: string] }>()
-const { years, year, grain, loading, error, periods, labels, cards, first, second, comparison } = useChinaCashHistory()
+const { years, year, grain, unit, title, heading, loading, error, periods, matrix, bars, totals, cards, incomeClients, expenseClients, load } = useChinaCashHistory(
+  (value) => props.money(value), (value) => props.signed(value)
+)
+const scroller = ref<HTMLElement | null>(null)
+const columns = computed(() => ({ gridTemplateColumns: `150px repeat(${Math.max(1, periods.value.length)}, minmax(104px, 1fr)) 120px` }))
 
-type Period = (typeof periods.value)[number]
-const money = (value: number | null) => (value === null ? '—' : rmbSigned(value))
-const columns: TableColumn<Period>[] = [
-  { accessorKey: 'label', header: 'Periodo' },
-  { id: 'closed', header: 'Estado', cell: ({ row }) => h(UBadge, { color: row.original.closed ? 'neutral' : 'primary', variant: 'soft' }, () => (row.original.closed ? 'Cerrado' : 'Abierto')) },
-  { id: 'opening', header: 'Inicial', cell: ({ row }) => money(row.original.opening) },
-  { id: 'income', header: 'Ingresos', cell: ({ row }) => money(row.original.income) },
-  { id: 'expense', header: 'Egresos', cell: ({ row }) => money(row.original.expense) },
-  { id: 'profit', header: 'Utilidad', cell: ({ row }) => h('span', { class: row.original.profit < 0 ? 'text-error' : 'text-success' }, money(row.original.profit)) },
-  { id: 'calculated', header: 'Sistema', cell: ({ row }) => money(row.original.calculated) },
-  { id: 'bank', header: 'Banco', cell: ({ row }) => money(row.original.bank) },
-  { id: 'difference', header: 'Diferencia', cell: ({ row }) => (row.original.difference === 0 ? 'Cuadra' : money(row.original.difference)) },
-  { id: 'actions', header: 'Acciones', cell: ({ row }) => (row.original.month ? h(UButton, { size: 'xs', variant: 'link', onClick: () => emit('view', row.original.month) }, () => 'Ver mes') : null) }
-]
+/** «¥87k» para que entre debajo de cada barra. */
+function thousands(value: number) {
+  const text = props.money(value)
+  const amount = Math.round(Number(text.replace(/[^\d]/g, '')) / 1000)
+  return `${text.charAt(0)}${amount}k`
+}
+
+// La tabla arranca en el periodo más reciente.
+watch(periods, async () => {
+  await nextTick()
+  if (scroller.value) scroller.value.scrollLeft = scroller.value.scrollWidth
+})
+
+defineExpose({ reload: load })
 </script>

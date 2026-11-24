@@ -32,7 +32,6 @@ export class ChinaCajaService extends BaseService {
     ids.forEach((id) => form.append('container_ids[]', String(id)))
     form.append('paid_on', paidOn)
     if (voucher) form.append('voucher', voucher)
-    else form.append('manual', '1')
     return this.apiCall<One<{ id: number }>>(`${this.baseUrl}/fletes`, { method: 'POST', body: form })
   }
 
@@ -45,7 +44,7 @@ export class ChinaCajaService extends BaseService {
   }
 
   static history(year: number) {
-    return this.apiCall<One<ChinaCashHistory[]>>(`${this.baseUrl}/cierres/${year}`)
+    return this.apiCall<One<ChinaCashHistory>>(`${this.baseUrl}/cierres/${year}`)
   }
 
   static settings(month: string, body: { exchange_rate?: number; opening_balance?: number }) {
@@ -76,12 +75,12 @@ export class ChinaCajaService extends BaseService {
     return this.apiCall<Done>(`${this.baseUrl}/costos-fijos/${id}`, { method: 'DELETE' })
   }
 
-  static addInvestment(body: { name: string; amount: number; due_on: string }) {
+  static addInvestment(body: { name: string; amount: number; due_on: string; previous_id?: number }) {
     return this.apiCall<Done>(`${this.baseUrl}/inversiones`, { method: 'POST', body })
   }
 
-  static payInvestment(id: number, body: { paid_on: string; again_on?: string; again_amount?: number }) {
-    return this.apiCall<Done>(`${this.baseUrl}/inversiones/${id}/pagar`, { method: 'POST', body })
+  static payInvestment(id: number) {
+    return this.apiCall<Done>(`${this.baseUrl}/inversiones/${id}/pagar`, { method: 'POST' })
   }
 
   static removeInvestment(id: number) {

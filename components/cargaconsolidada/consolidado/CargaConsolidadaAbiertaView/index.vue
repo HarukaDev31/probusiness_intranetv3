@@ -141,6 +141,7 @@ import { useUserRole } from '~/composables/auth/useUserRole'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
 import { useChinaStages } from '~/composables/china-caja/useChinaStages'
+import ChinaStageCell from '~/components/china-caja/ChinaStageCell.vue'
 import ChinaStagesDrawer from '~/components/china-caja/ChinaStagesDrawer.vue'
 import CreateConsolidadoModal from '~/components/cargaconsolidada/consolidado/CreateConsolidadoModal/index.vue'
 import PartirConsolidadoModal from '~/components/cargaconsolidada/consolidado/PartirConsolidadoModal/index.vue'
@@ -641,19 +642,13 @@ const cbmImoColumn: TableColumn<any> = {
 }
 
 // Encargado China: avance de las 3 etapas; abre el panel.
-const { isEncargadoChina, selected: etapasSelected, selectedId: etapasId, openStage: etapaAbierta, options: etapasOptions, loadStages, open: openEtapas, save: saveEtapas, stageOf } = useChinaStages()
+const { isEncargadoChina, selected: etapasSelected, selectedId: etapasId, openStage: etapaAbierta, options: etapasOptions, loadStages, open: openEtapas, save: saveEtapas, containerOf } = useChinaStages()
 const etapasColumn: TableColumn<any> = {
   id: 'etapas',
   header: 'Etapas',
   cell: ({ row }) => {
-    const progress = stageOf(row.original.id)
-    if (!progress) return '—'
-    const stage = progress.current ? progress.stages[progress.current - 1] : null
-    const detail = progress.complete ? 'Completado' : stage ? `${stage.number} · ${stage.title}` : 'Sin etapa activa'
-    return h('button', { type: 'button', class: 'text-left', onClick: () => openEtapas(row.original.id) }, [
-      h('span', { class: 'block font-semibold text-primary' }, `${progress.percent}%`),
-      h('span', { class: 'block text-xs text-muted' }, detail),
-    ])
+    const container = containerOf(row.original.id)
+    return container ? h(ChinaStageCell, { container, onOpen: () => openEtapas(row.original.id) }) : '—'
   },
 }
 onMounted(loadStages)

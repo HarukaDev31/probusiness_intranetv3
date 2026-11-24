@@ -1,7 +1,5 @@
 import type { ChinaContainer, ChinaContainerData, ChinaContainerGroup } from '~/types/china-caja'
 
-export type ChinaColor = 'error' | 'primary' | 'neutral' | 'info' | 'success' | 'warning'
-
 /** Montos: sin +/− y con centavos. */
 export const AMOUNT_UI = { increment: 'hidden', decrement: 'hidden', base: 'px-3 text-left' } as const
 
@@ -9,52 +7,69 @@ export const CHINA_FILE_ACCEPT = '.pdf,.jpg,.jpeg,.png,.webp'
 
 export const CHINA_FILTER_ALL = 'todos'
 
-/** Estados del contenedor. Deben coincidir con ChinaContainerRules (backend) y van en orden de urgencia. */
-export const CHINA_CONTAINER_GROUP: Record<ChinaContainerGroup, { label: string; color: ChinaColor }> = {
-  arrived: { label: 'Arribó con pendientes', color: 'error' },
-  this_week: { label: 'Llega esta semana', color: 'primary' },
-  no_date: { label: 'Sin fecha de arribo', color: 'neutral' },
-  in_transit: { label: 'En tránsito', color: 'neutral' },
-  to_sail: { label: 'Por embarcar', color: 'info' },
-  completed: { label: 'Completado', color: 'success' }
+export const CHINA_ALL_ORIGINS = 'Todos'
+
+export const CHINA_ORIGIN_TONE: Record<string, string> = {
+  'Operación': 'cc-c-blue', 'Pago proveedor': 'cc-c-violet', 'Flete': 'cc-c-flete', 'Costo fijo': 'cc-c-gray', 'Inversión': 'cc-c-amber'
 }
 
-export const CHINA_COLLECTION: Record<ChinaContainer['collection'], { label: string; color: ChinaColor }> = {
-  none: { label: 'Sin cobro', color: 'neutral' },
-  pending: { label: 'Por cobrar', color: 'error' },
-  partial: { label: 'Parcial', color: 'warning' },
-  paid: { label: 'Pagado', color: 'success' }
+export const CHINA_ORIGIN_GO: Record<string, string> = {
+  'Operación': 'Ir a operación', 'Pago proveedor': 'Ir a pago proveedor', 'Flete': 'Ir a contenedor', 'Costo fijo': 'Ver costos fijos', 'Inversión': 'Ver inversiones'
+}
+
+export const CHINA_SECTION_TONE: Record<string, string> = {
+  'Seguimiento': 'cc-c-green', 'Carga consolidada': 'cc-c-olive', 'Flujo de caja': 'cc-c-gray', 'Operaciones': 'cc-c-blue', 'Pago proveedores': 'cc-c-violet', 'Contenedores': 'cc-c-flete'
+}
+
+/** Estados del contenedor. Deben coincidir con ChinaContainerRules (backend) y van en orden de urgencia. */
+export const CHINA_CONTAINER_GROUP: Record<ChinaContainerGroup, { label: string; color: string }> = {
+  arrived: { label: 'Arribó con pendientes', color: '#d93025' },
+  this_week: { label: 'Llega esta semana', color: '#f26b1d' },
+  no_date: { label: 'Sin fecha de arribo', color: '#c5cdd9' },
+  in_transit: { label: 'En tránsito', color: '#9aa6b8' },
+  to_sail: { label: 'Por embarcar', color: '#2f6fd8' },
+  completed: { label: 'Completados', color: '#1f9d55' }
+}
+
+export const CHINA_COLLECTION: Record<ChinaContainer['collection'], { label: string; tone: string }> = {
+  none: { label: 'Sin cobro', tone: 'bg-(--cc-empty) text-(--cc-muted)' },
+  pending: { label: 'Por cobrar', tone: 'cc-c-red' },
+  partial: { label: 'Parcial', tone: 'cc-c-amber' },
+  paid: { label: 'Pagado', tone: 'cc-c-green' }
 }
 
 export const CHINA_CONTAINER_TAB = { OPEN: 'abiertos', COMPLETED: 'completados' } as const
 
-export const CHINA_CONTAINER_PENDING: Record<string, { label: string; match: (row: ChinaContainer) => boolean }> = {
-  bl: { label: 'Sin BL oficial', match: (row) => !row.data.bl_official_name },
-  telex: { label: 'Sin telex', match: (row) => !row.data.telex },
-  cobro: { label: 'Cobro pendiente', match: (row) => row.collection !== 'paid' },
-  flete: { label: 'Flete por pagar', match: (row) => !row.freight.paid && !!row.data.freight_usd }
-}
+export const CHINA_CONTAINER_CHIPS: Array<{ key: string; label: string; match: (row: ChinaContainer) => boolean }> = [
+  { key: '', label: 'Todos', match: () => true },
+  { key: 'bl', label: 'sin BL oficial', match: (row) => !row.data.bl_official_name },
+  { key: 'telex', label: 'sin Telex', match: (row) => !row.data.telex },
+  { key: 'cobro', label: 'cobro pendiente', match: (row) => row.collection !== 'paid' },
+  { key: 'flete', label: 'flete por pagar', match: (row) => !row.freight.paid && !!row.data.freight_usd }
+]
 
-export interface ChinaContainerField { key: keyof ChinaContainerData; label: string; type: 'text' | 'date' | 'amount' | 'list' }
+export interface ChinaContainerField { key: keyof ChinaContainerData; label: string; type: 'text' | 'date' | 'amount'; placeholder?: string; wide?: boolean }
 
 /** Panel lateral de Estado de contenedores (cliente, servicio y país no se editan). */
 export const CHINA_CONTAINER_FIELDS: ChinaContainerField[] = [
-  { key: 'bl_number', label: 'Cód. BL', type: 'text' },
-  { key: 'bl_consignee', label: 'Consignatario (CNE)', type: 'text' },
-  { key: 'shipper', label: 'Cód. shipper', type: 'text' },
-  { key: 'shipping_line', label: 'Naviera', type: 'text' },
-  { key: 'container_type', label: 'T. contenedor', type: 'list' },
-  { key: 'free_days', label: 'Free days', type: 'text' },
-  { key: 'sailing_on', label: 'Zarpe', type: 'date' },
-  { key: 'arrival_on', label: 'Arribo', type: 'date' },
-  { key: 'freight_usd', label: 'Flete (USD)', type: 'amount' }
+  { key: 'bl_number', label: 'COD. BL', type: 'text', placeholder: 'Pendiente' },
+  { key: 'bl_consignee', label: 'CONSIGNATARIO (CNE)', type: 'text', wide: true },
+  { key: 'shipper', label: 'COD. SHIPPER', type: 'text', placeholder: 'SHI-XUA' },
+  { key: 'shipping_line', label: 'NAVIERA', type: 'text' },
+  { key: 'container_type', label: 'T. CONTENEDOR', type: 'text', placeholder: '40 HQ' },
+  { key: 'free_days', label: 'FREE BOX', type: 'text', placeholder: '14 días libres' },
+  { key: 'sailing_on', label: 'ZARPE', type: 'date' },
+  { key: 'arrival_on', label: 'ARRIBO', type: 'date' },
+  { key: 'freight_usd', label: 'FLETE (USD)', type: 'amount', placeholder: '0.00' }
 ]
 
 export const CHINA_CASH_TAB = { FLOW: 'flujo', HISTORY: 'cierres' } as const
 
 export const CHINA_CASH_PERIOD_MONTH = 'mes'
 
-export const CHINA_CASH_ORIGINS: string[] = ['Todos', 'Operación', 'Pago proveedor', 'Flete', 'Costo fijo', 'Inversión']
+export const CHINA_CURRENCY = { RMB: 'RMB', USD: 'USD' } as const
+
+export const CHINA_CASH_ORIGINS: string[] = [CHINA_ALL_ORIGINS, 'Operación', 'Pago proveedor', 'Flete', 'Costo fijo', 'Inversión']
 
 export const CHINA_CASH_GRAINS: Array<{ label: string; value: number }> = [{ label: 'Mensual', value: 1 }, { label: 'Trimestral', value: 3 }, { label: 'Semestral', value: 6 }]
 
@@ -62,4 +77,8 @@ export const CHINA_PENDING_URGENT = 'urgentes'
 
 export const CHINA_PENDING_SECTIONS = ['Seguimiento', 'Carga consolidada', 'Flujo de caja', 'Operaciones', 'Pago proveedores', 'Contenedores'] as const
 
-export const MODAL_UI = { content: 'w-full max-w-lg sm:max-w-lg', header: 'border-t-[5px] border-t-primary-500', title: 'text-lg font-bold text-highlighted' } as const
+export const CHINA_STAGE_SHORT: Record<number, string> = { 1: '1 · Reserva contenedor', 2: '2 · Antes del llenado', 3: '3 · Después del llenado' }
+
+export const CHINA_STAGE_SEGMENT: Record<number, string> = { 1: 'Reserva', 2: 'Antes del llenado', 3: 'Después del llenado' }
+
+export const CHINA_STAGE_CBM = 60

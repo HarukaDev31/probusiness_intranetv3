@@ -71,7 +71,8 @@ export default defineNuxtConfig({
   // Configuración de CSS
   css: [
     '../assets/css/tailwind.css',
-    '../assets/css/pago-proveedor-tablas.css'
+    '../assets/css/pago-proveedor-tablas.css',
+    '../assets/css/china-caja.css'
   ],
   app: {
     head: {

@@ -13,13 +13,13 @@ export type ChinaContainerValues = Record<string, string | number | boolean | Fi
 export type ChinaContainerGroup = 'arrived' | 'this_week' | 'no_date' | 'in_transit' | 'to_sail' | 'completed'
 
 export interface ChinaContainer {
-  id: number; label: string; country: string; client: string; closed: boolean; closed_on: string | null; cbm: number
+  id: number; label: string; country: string; client: string; closed: boolean; closed_on: string | null; closing_on: string | null; cbm: number
   data: ChinaContainerData
   bl_draft_url: string | null; bl_official_url: string | null
   operation: { id: number; code: string; status: string; pending: number } | null
   operation_to_approve: boolean
   collection: 'none' | 'pending' | 'partial' | 'paid'
-  freight: { paid: boolean; payment_id: number | null; paid_on: string | null; manual: boolean; voucher_name: string | null; voucher_url: string | null }
+  freight: { paid: boolean; payment_id: number | null; code: string | null; usd_amount: number | null; paid_on: string | null; manual: boolean; voucher_name: string | null; voucher_url: string | null }
   progress: { stages: ChinaStage[]; percent: number; current: number | null; complete: boolean; missing_reservation: string[] }
   status: { group: ChinaContainerGroup; completed: boolean; days_to_arrival: number | null; bl_due: boolean; arrival_due: boolean; bl_from: string | null; arrival_from: string | null }
 }
@@ -30,16 +30,16 @@ export interface ChinaCashTotals { income: number; income_projected: number; exp
 
 export interface ChinaCashMovement {
   date: string; type: 'in' | 'out'; origin: string; title: string; detail: string; amount: number; real: boolean
-  link: 'operation' | 'payment' | 'container' | 'request' | 'investment' | null; link_id: number | null
-  due_on?: string | null; days?: number | null; late?: boolean
+  link: 'operation' | 'payment' | 'container' | 'request' | 'investment' | null; link_id: number | null; client: string | null
+  arrival_on?: string | null; due_on?: string | null; days?: number | null; late?: boolean
 }
 
-export interface ChinaUsdToExchange { id: number; code: string; client: string; operations: string[]; confirmed_on: string; usd: number }
+export interface ChinaUsdToExchange { id: number; code: string; client: string; operations: string[]; confirmed_on: string; from_week: number | null; usd: number }
 
 export interface ChinaCashWeek {
   index: number; starts_on: string; ends_on: string; due_on: string; totals: ChinaCashTotals
   closing: { balance: number; usd_pending: number; screenshot_name: string; screenshot_url: string | null } | null
-  can_close: boolean; overdue: boolean; usd_to_exchange: ChinaUsdToExchange[]
+  system_balance: number | null; can_close: boolean; overdue: boolean; usd_to_exchange: ChinaUsdToExchange[]
 }
 
 export interface ChinaFixedCost { id: number; name: string; amount: number; active: boolean }
@@ -49,16 +49,32 @@ export interface ChinaInvestment { id: number; name: string; amount: number; due
 export interface ChinaCashMonth {
   month: string; today: string; current: boolean; closed: boolean; exchange_rate: number | null
   opening_balance: number | null; opening_editable: boolean; balance: number | null; projected_closing: number | null
-  totals: ChinaCashTotals; previous_totals: ChinaCashTotals; weeks: ChinaCashWeek[]
+  totals: ChinaCashTotals; previous_totals: ChinaCashTotals; previous_weeks: ChinaCashTotals[]; weeks: ChinaCashWeek[]
   real: ChinaCashMovement[]; pending: ChinaCashMovement[]; late: ChinaCashMovement[]
   fixed_costs: ChinaFixedCost[]
   investments: ChinaInvestment[]
   can_close_month: boolean; close_month_blocker: string | null
 }
 
+export interface ChinaCashHistoryRow {
+  month: string; closed: boolean; opening: number; income: number; income_projected: number
+  expense: number; expense_projected: number; profit: number; final: number; bank: number | null
+}
+
+export interface ChinaCashClient { client: string | null; amount: number; movements: number }
+
 export interface ChinaCashHistory {
-  month: string; closed: boolean; opening: number | null; income: number; expense: number; profit: number
-  calculated: number | null; bank: number | null; difference: number | null
+  rows: ChinaCashHistoryRow[]
+  clients: { in: ChinaCashClient[]; out: ChinaCashClient[] }
+  movements: { in: number; out: number }
 }
 
 export interface ChinaPending { section: string; kind: string; urgent: boolean; tag: string; title: string; detail: string; to: string; count: number }
+
+export interface ChinaKpiCard {
+  label: string; value: string; sub: string; icon: string; iconBg: string; accent: string; tone: string; info: string
+  compare?: string; compareTone?: string
+}
+
+/** Total de un cliente (null = sin cliente: fletes y gastos generales). */
+export interface ChinaClientTotal { client: string | null; amount: number; detail: string }

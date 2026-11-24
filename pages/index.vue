@@ -1,7 +1,7 @@
 <template>
   <div v-if="isOperativa">
-    <HomeOperativa :cards="statsOperativa" :loading="loadingOperativa" :variant="varianteOperativa" />
-    <ChinaHomePending v-if="isEncargadoChina" />
+    <HomeOperativa :cards="statsOperativa" :loading="loadingOperativa" :variant="varianteOperativa" :spanish="isEncargadoChina" :message="isEncargadoChina ? chinaPending.summary.value : ''" />
+    <ChinaHomePending v-if="isEncargadoChina" :pending="chinaPending" />
   </div>
   <section v-else-if="isAdministracion" class="content-header px-4 xl:px-4 sm:px-2 pb-6">
     <div class="mb-5">
@@ -99,6 +99,7 @@ import { esOrganizacionSocio, esRolSocio, ROLES } from '~/constants/roles'
 import { useHomeStats } from '~/composables/cargaconsolidada/home-stats'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import ChinaHomePending from '~/components/china-caja/ChinaHomePending.vue'
+import { useChinaPending } from '~/composables/china-caja/useChinaPending'
 import { useEncargadoChina } from '~/composables/china-caja/useEncargadoChina'
 import { useVerificationCounts } from '~/composables/verificacion/useVerificationCounts'
 
@@ -106,6 +107,7 @@ definePageMeta({ middleware: 'auth' })
 
 const { fetchCurrentUser, currentRole, userData, isContenedorAlmacen, hasRole } = useUserRole()
 const { isEncargadoChina } = useEncargadoChina()
+const chinaPending = useChinaPending()
 const { stats: homeStats, loading: loadingOperativa, loadStats } = useHomeStats()
 const { counts: verificationCounts, refresh: refreshVerificationCounts } = useVerificationCounts()
 if (import.meta.client) {
@@ -191,6 +193,7 @@ const heroRef = ref<HTMLElement | null>(null)
 const heroVisible = ref(false)
 onMounted(async () => {
   if (isOperativa.value) {
+    if (isEncargadoChina.value) chinaPending.load()
     await loadStats()
     return
   }

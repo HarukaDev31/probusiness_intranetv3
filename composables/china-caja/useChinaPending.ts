@@ -25,7 +25,7 @@ export function useChinaPending() {
       name,
       total: items.reduce((sum, row) => sum + row.count, 0),
       urgent: items.some((row) => row.urgent),
-      breakdown: [...kinds].map(([kind, count]) => `${kind}: ${count}`).join(' · ')
+      items: items.length ? [...kinds].map(([kind, count]) => (kind === 'en NC' ? `${count} en NC` : `${kind}: ${count}`)) : ['Sin pendientes']
     }
   }))
 
