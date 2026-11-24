@@ -110,7 +110,7 @@
         </template>
       </div>
     </div>
-    <ChinaStagesDrawer v-if="isEncargadoChina" :container="etapasSelected" :options="etapasOptions" :stage="etapaAbierta" @close="etapasId = null" @saved="onEtapasSaved" />
+    <ChinaStagesDrawer v-if="isEncargadoChina" :container="etapasSelected" :options="etapasOptions" :stage="etapaAbierta" @close="etapasId = null" @save="saveEtapas" />
   </div>
 </template>
 
@@ -660,7 +660,7 @@ const cbmImoColumn: TableColumn<any> = {
 }
 
 // Encargado China: avance de las 3 etapas; abre el panel.
-const { isEncargadoChina, selected: etapasSelected, selectedId: etapasId, openStage: etapaAbierta, options: etapasOptions, loadStages, open: openEtapas, onSaved: onEtapasSaved, stageOf } = useChinaStages()
+const { isEncargadoChina, selected: etapasSelected, selectedId: etapasId, openStage: etapaAbierta, options: etapasOptions, loadStages, open: openEtapas, save: saveEtapas, stageOf } = useChinaStages()
 const etapasColumn: TableColumn<any> = {
   id: 'etapas',
   header: 'Etapas',

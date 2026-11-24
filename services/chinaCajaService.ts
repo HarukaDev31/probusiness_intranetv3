@@ -1,7 +1,9 @@
 import { BaseService } from './base/BaseService'
-import type { ChinaCashHistory, ChinaCashMonth, ChinaContainer, ChinaContainerOptions, ChinaPending } from '~/types/china-caja'
+import type { ChinaCashHistory, ChinaCashMonth, ChinaContainer, ChinaContainerOptions, ChinaContainerValues, ChinaPending } from '~/types/china-caja'
 
 interface One<T> { success: boolean; data: T }
+
+interface Done { success: boolean; message: string }
 
 /** Etapas, Estado de contenedores, Flujo de caja e Inicio del Encargado China. */
 export class ChinaCajaService extends BaseService {
@@ -15,7 +17,7 @@ export class ChinaCajaService extends BaseService {
     return this.apiCall<One<ChinaContainer[]> & { options: ChinaContainerOptions }>(`${this.baseUrl}/contenedores?scope=${scope}`)
   }
 
-  static updateContainer(id: number, values: Record<string, string | number | boolean | File | null>) {
+  static updateContainer(id: number, values: ChinaContainerValues) {
     const form = new FormData()
     Object.entries(values).forEach(([key, value]) => {
       if (value instanceof File) form.append(key, value)
@@ -35,7 +37,7 @@ export class ChinaCajaService extends BaseService {
   }
 
   static cancelFreight(id: number) {
-    return this.apiCall(`${this.baseUrl}/fletes/${id}`, { method: 'DELETE' })
+    return this.apiCall<Done>(`${this.baseUrl}/fletes/${id}`, { method: 'DELETE' })
   }
 
   static month(month: string) {
@@ -47,7 +49,7 @@ export class ChinaCajaService extends BaseService {
   }
 
   static settings(month: string, body: { exchange_rate?: number; opening_balance?: number }) {
-    return this.apiCall(`${this.baseUrl}/meses/${month}`, { method: 'PUT', body })
+    return this.apiCall<Done>(`${this.baseUrl}/meses/${month}`, { method: 'PUT', body })
   }
 
   static closeWeek(month: string, startsOn: string, balance: number, screenshot: File) {
@@ -55,34 +57,34 @@ export class ChinaCajaService extends BaseService {
     form.append('starts_on', startsOn)
     form.append('balance', String(balance))
     form.append('screenshot', screenshot)
-    return this.apiCall(`${this.baseUrl}/meses/${month}/semanas`, { method: 'POST', body: form })
+    return this.apiCall<Done>(`${this.baseUrl}/meses/${month}/semanas`, { method: 'POST', body: form })
   }
 
   static closeMonth(month: string, balance: number) {
-    return this.apiCall(`${this.baseUrl}/meses/${month}/cerrar`, { method: 'POST', body: { balance } })
+    return this.apiCall<Done>(`${this.baseUrl}/meses/${month}/cerrar`, { method: 'POST', body: { balance } })
   }
 
   static addFixedCost(body: { name: string; amount: number }) {
-    return this.apiCall(`${this.baseUrl}/costos-fijos`, { method: 'POST', body })
+    return this.apiCall<Done>(`${this.baseUrl}/costos-fijos`, { method: 'POST', body })
   }
 
   static toggleFixedCost(id: number, active: boolean) {
-    return this.apiCall(`${this.baseUrl}/costos-fijos/${id}`, { method: 'PUT', body: { active } })
+    return this.apiCall<Done>(`${this.baseUrl}/costos-fijos/${id}`, { method: 'PUT', body: { active } })
   }
 
   static removeFixedCost(id: number) {
-    return this.apiCall(`${this.baseUrl}/costos-fijos/${id}`, { method: 'DELETE' })
+    return this.apiCall<Done>(`${this.baseUrl}/costos-fijos/${id}`, { method: 'DELETE' })
   }
 
   static addInvestment(body: { name: string; amount: number; due_on: string }) {
-    return this.apiCall(`${this.baseUrl}/inversiones`, { method: 'POST', body })
+    return this.apiCall<Done>(`${this.baseUrl}/inversiones`, { method: 'POST', body })
   }
 
   static payInvestment(id: number, body: { paid_on: string; again_on?: string; again_amount?: number }) {
-    return this.apiCall(`${this.baseUrl}/inversiones/${id}/pagar`, { method: 'POST', body })
+    return this.apiCall<Done>(`${this.baseUrl}/inversiones/${id}/pagar`, { method: 'POST', body })
   }
 
   static removeInvestment(id: number) {
-    return this.apiCall(`${this.baseUrl}/inversiones/${id}`, { method: 'DELETE' })
+    return this.apiCall<Done>(`${this.baseUrl}/inversiones/${id}`, { method: 'DELETE' })
   }
 }

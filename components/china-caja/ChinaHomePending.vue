@@ -6,9 +6,9 @@
         <p class="text-sm text-muted">{{ summary }}</p>
       </div>
       <div class="flex flex-wrap gap-2">
-        <UButton size="sm" :color="filter === '' ? 'primary' : 'neutral'" :variant="filter === '' ? 'solid' : 'outline'" @click="filter = ''">Todos {{ rows.length }}</UButton>
-        <UButton size="sm" :color="filter === URGENT ? 'error' : 'neutral'" :variant="filter === URGENT ? 'solid' : 'outline'" @click="filter = URGENT">Urgentes {{ urgent }}</UButton>
-        <UButton v-if="filter && filter !== URGENT" size="sm" color="neutral" variant="solid" trailing-icon="i-heroicons-x-mark" @click="filter = ''">{{ filter }}</UButton>
+        <UButton size="sm" :color="filter === '' ? 'primary' : 'neutral'" :variant="filter === '' ? 'solid' : 'outline'" @click="() => { filter = '' }">Todos {{ rows.length }}</UButton>
+        <UButton size="sm" :color="filter === CHINA_PENDING_URGENT ? 'error' : 'neutral'" :variant="filter === CHINA_PENDING_URGENT ? 'solid' : 'outline'" @click="() => { filter = CHINA_PENDING_URGENT }">Urgentes {{ urgent }}</UButton>
+        <UButton v-if="filter && filter !== CHINA_PENDING_URGENT" size="sm" color="neutral" variant="solid" trailing-icon="i-heroicons-x-mark" @click="() => { filter = '' }">{{ filter }}</UButton>
       </div>
     </div>
 
@@ -25,7 +25,7 @@
               <p class="font-semibold text-highlighted">{{ row.title }}</p>
               <p class="text-sm text-muted">{{ row.detail }}</p>
             </div>
-            <UButton size="sm" color="primary" variant="link" @click="navigateTo(row.to)">Ir →</UButton>
+            <UButton size="sm" color="primary" variant="link" @click="() => { navigateTo(row.to) }">Ir →</UButton>
           </div>
         </div>
       </div>
@@ -44,43 +44,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { ChinaCajaService } from '~/services/chinaCajaService'
-import type { ChinaPending } from '~/types/china-caja'
+import { onMounted } from 'vue'
+import { useChinaPending } from '~/composables/china-caja/useChinaPending'
+import { CHINA_PENDING_URGENT } from '~/constants/chinaCaja'
 
-const URGENT = 'urgentes'
-const ORDER = ['Seguimiento', 'Carga consolidada', 'Flujo de caja', 'Operaciones', 'Pago proveedores', 'Contenedores']
-const rows = ref<ChinaPending[]>([])
-const loading = ref(true)
-const error = ref('')
-const filter = ref('')
+const { rows, loading, error, filter, urgent, shown, summary, sections, load } = useChinaPending()
 
-const urgent = computed(() => rows.value.filter((row) => row.urgent).length)
-const shown = computed(() => rows.value.filter((row) => !filter.value || (filter.value === URGENT ? row.urgent : row.section === filter.value)))
-const summary = computed(() => {
-  if (loading.value) return 'Cargando…'
-  if (!rows.value.length) return 'No tienes pendientes'
-  return `Tienes ${rows.value.length} pendientes${urgent.value ? `, ${urgent.value} urgentes` : ''}`
-})
-const sections = computed(() => ORDER.map((name) => {
-  const items = rows.value.filter((row) => row.section === name)
-  const kinds = new Map<string, number>()
-  items.forEach((row) => kinds.set(row.kind, (kinds.get(row.kind) || 0) + row.count))
-  return {
-    name,
-    total: items.reduce((sum, row) => sum + row.count, 0),
-    urgent: items.some((row) => row.urgent),
-    breakdown: [...kinds].map(([kind, count]) => `${kind}: ${count}`).join(' · ')
-  }
-}))
-
-onMounted(async () => {
-  try {
-    rows.value = (await ChinaCajaService.pending()).data
-  } catch (e: any) {
-    error.value = e?.message || 'No se pudieron cargar los pendientes.'
-  } finally {
-    loading.value = false
-  }
-})
+onMounted(load)
 </script>

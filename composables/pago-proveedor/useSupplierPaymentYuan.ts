@@ -147,8 +147,8 @@ export function useSupplierPaymentYuan() {
         selectedId.value = id
         return
       }
-    } catch (error: any) {
-      showError('Pago a proveedores', error?.message || 'No se pudo abrir la solicitud.')
+    } catch (error: unknown) {
+      showError('Pago a proveedores', error instanceof Error ? error.message : 'No se pudo abrir la solicitud.')
     }
   }
 

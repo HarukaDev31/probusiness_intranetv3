@@ -7,6 +7,9 @@ export interface ChinaContainerData {
   bl_draft_name: string | null; bl_official_name: string | null; telex: boolean
 }
 
+/** Valores que se guardan de un contenedor. */
+export type ChinaContainerValues = Record<string, string | number | boolean | File | null>
+
 export type ChinaContainerGroup = 'arrived' | 'this_week' | 'no_date' | 'in_transit' | 'to_sail' | 'completed'
 
 export interface ChinaContainer {
@@ -39,13 +42,17 @@ export interface ChinaCashWeek {
   can_close: boolean; overdue: boolean; usd_to_exchange: ChinaUsdToExchange[]
 }
 
+export interface ChinaFixedCost { id: number; name: string; amount: number; active: boolean }
+
+export interface ChinaInvestment { id: number; name: string; amount: number; due_on: string; paid_on: string | null }
+
 export interface ChinaCashMonth {
   month: string; today: string; current: boolean; closed: boolean; exchange_rate: number | null
   opening_balance: number | null; opening_editable: boolean; balance: number | null; projected_closing: number | null
   totals: ChinaCashTotals; previous_totals: ChinaCashTotals; weeks: ChinaCashWeek[]
   real: ChinaCashMovement[]; pending: ChinaCashMovement[]; late: ChinaCashMovement[]
-  fixed_costs: Array<{ id: number; name: string; amount: number; active: boolean }>
-  investments: Array<{ id: number; name: string; amount: number; due_on: string; paid_on: string | null }>
+  fixed_costs: ChinaFixedCost[]
+  investments: ChinaInvestment[]
   can_close_month: boolean; close_month_blocker: string | null
 }
 

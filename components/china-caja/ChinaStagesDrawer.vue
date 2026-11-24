@@ -33,7 +33,8 @@
             <div v-else-if="stage.number === 1" class="grid gap-3 sm:grid-cols-2">
               <UFormField v-for="field in reservation" :key="field.key" :label="field.label">
                 <UInputMenu v-if="field.items" v-model="form[field.key]" :items="field.items" :create-item="field.create" class="w-full" @create="(value: string) => create(field.key, value)" />
-                <UInput v-else v-model="form[field.key]" :type="field.type" :step="field.type === 'number' ? '0.01' : undefined" :min="field.type === 'number' ? 0 : undefined" class="w-full" />
+                <UInputNumber v-else-if="field.type === 'amount'" v-model="freight" :min="0" :step="0.01" :ui="AMOUNT_UI" class="w-full" />
+                <UInput v-else v-model="form[field.key]" :type="field.type" class="w-full" />
               </UFormField>
             </div>
 
@@ -52,18 +53,18 @@
                 </span>
                 <UButton v-if="!container.operation" size="xs" color="primary" variant="link" :to="`/operaciones-china${container.operation_to_approve ? `?borrador=${container.id}` : ''}`">Ir a Operaciones</UButton>
               </div>
-              <YuanFilePick label="Sube el BL draft (PDF o imagen)" accept=".pdf,image/*" :current-name="container.data.bl_draft_name" @pick="(file) => { draft = file }" />
+              <YuanFilePick label="Sube el BL draft (PDF o imagen)" :accept="CHINA_FILE_ACCEPT" :current-name="container.data.bl_draft_name" @pick="(file) => { draft = file }" />
               <a v-if="container.bl_draft_url" :href="container.bl_draft_url" target="_blank" rel="noopener" class="text-sm text-primary hover:underline">Ver BL draft</a>
               <UFormField label="N. BL"><UInput v-model="form.bl_number" class="w-full" /></UFormField>
               <div v-if="container.progress.missing_reservation.length" class="rounded-lg bg-warning/10 p-3 text-sm">
                 <p class="text-warning">Faltan datos de la reserva: {{ container.progress.missing_reservation.join(', ') }}</p>
-                <UButton class="px-0" size="xs" color="primary" variant="link" @click="current = 1">Completar en Etapa 1</UButton>
+                <UButton class="px-0" size="xs" color="primary" variant="link" @click="() => { current = 1 }">Completar en Etapa 1</UButton>
               </div>
               <p v-else class="text-sm text-success">Reserva completa</p>
             </div>
 
             <div v-if="!stage.locked" class="mt-4 flex justify-end">
-              <UButton color="primary" :loading="saving" @click="save(stage.number)">Guardar</UButton>
+              <UButton color="primary" @click="save(stage.number)">Guardar</UButton>
             </div>
           </div>
         </section>
@@ -75,26 +76,24 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import YuanFilePick from '~/components/pago-proveedor/YuanFilePick.vue'
-import { useModal } from '~/composables/commons/useModal'
-import { ChinaCajaService } from '~/services/chinaCajaService'
-import type { ChinaContainer, ChinaContainerData, ChinaContainerOptions, ChinaStage } from '~/types/china-caja'
+import { AMOUNT_UI, CHINA_FILE_ACCEPT } from '~/constants/chinaCaja'
+import type { ChinaContainer, ChinaContainerData, ChinaContainerOptions, ChinaContainerValues, ChinaStage } from '~/types/china-caja'
 
 const props = defineProps<{ container: ChinaContainer | null; options: ChinaContainerOptions; stage?: number | null }>()
-const emit = defineEmits<{ close: []; saved: [container: ChinaContainer] }>()
-const { showError, showSuccess } = useModal()
+const emit = defineEmits<{ close: []; save: [id: number, values: ChinaContainerValues] }>()
 
 const current = ref<number | null>(null)
 const form = reactive<Record<string, string>>({})
 const listUpdated = ref(false)
 const draft = ref<File | null>(null)
-const saving = ref(false)
+const freight = ref<number | null>(null)
 const extra = reactive<Record<string, string[]>>({ shipping_line: [], shipper: [] })
 
 const RESERVATION_KEYS = ['freight_usd', 'filling_on', 'sailing_on', 'arrival_on', 'shipping_line', 'destination_port', 'free_days', 'container_type', 'shipper'] as const
 const TEXT_KEYS = [...RESERVATION_KEYS, 'bl_consignee', 'bl_description', 'bl_number'] as const
 
 const reservation = computed(() => [
-  { key: 'freight_usd', label: 'Precio flete (USD)', type: 'number' },
+  { key: 'freight_usd', label: 'Precio flete (USD)', type: 'amount' },
   { key: 'filling_on', label: 'Fecha de llenado', type: 'date' },
   { key: 'sailing_on', label: 'Fecha de zarpe', type: 'date' },
   { key: 'arrival_on', label: 'Fecha de llegada', type: 'date' },
@@ -114,6 +113,7 @@ const operationText = computed(() => {
 watch(() => props.container, (container) => {
   if (!container) return
   TEXT_KEYS.forEach((key) => { form[key] = String(container.data[key as keyof ChinaContainerData] ?? '') })
+  freight.value = container.data.freight_usd
   listUpdated.value = container.data.list_updated
   draft.value = null
 }, { immediate: true })
@@ -132,21 +132,14 @@ function create(key: string, value: string) {
   form[key] = name
 }
 
-async function save(stage: number) {
+function save(stage: number) {
   if (!props.container) return
-  const values: Record<string, string | boolean | File | null> = {}
+  const values: ChinaContainerValues = {}
   const keys = stage === 1 ? RESERVATION_KEYS : stage === 2 ? ['bl_consignee', 'bl_description'] : ['bl_number']
   keys.forEach((key) => { values[key] = String(form[key] ?? '').trim() })
+  if (stage === 1) values.freight_usd = freight.value
   if (stage === 2) values.list_updated = listUpdated.value
   if (stage === 3 && draft.value) values.bl_draft = draft.value
-  saving.value = true
-  try {
-    emit('saved', (await ChinaCajaService.updateContainer(props.container.id, values)).data)
-    showSuccess('Etapas', 'Datos guardados.')
-  } catch (error: any) {
-    showError('Etapas', error?.message || 'No se pudo guardar.')
-  } finally {
-    saving.value = false
-  }
+  emit('save', props.container.id, values)
 }
 </script>

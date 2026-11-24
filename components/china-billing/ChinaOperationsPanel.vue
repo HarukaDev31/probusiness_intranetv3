@@ -141,7 +141,7 @@ const emit = defineEmits<{ changed: []; 'range-change': [range: { from: string; 
 
 const {
   status, search, from, to, rows, counts, credits, organizations, pagination, loading,
-  states, load, reload, changeStatus
+  states, load, reload, changeStatus, findOperation
 } = useChinaOperations()
 const { showConfirmation, showError, showWarning } = useModal()
 
@@ -474,18 +474,13 @@ function onPageSize(size: number) {
 /** Abre la ficha desde otra sección aunque no esté en la página visible. */
 async function openOperation(match: (row: ChinaOperation) => boolean) {
   try {
-    let found: ChinaOperation | undefined
-    for (let page = 1, last = 1; page <= last && !found; page++) {
-      const response = await ChinaBillingService.listOperations({ page, per_page: 100 })
-      last = response.pagination.last_page
-      found = response.data.find(match)
-    }
+    const found = await findOperation(match)
     if (!found) return showWarning('Operaciones', 'Esa operación ya no está disponible.')
     if (found.is_draft) return openForm(null, found)
     if (!rows.value.some((row) => row.id === found.id)) rows.value = [found, ...rows.value]
     selectedId.value = found.id
-  } catch (error: any) {
-    showError('Operaciones', error?.message || 'No se pudo abrir la operación.')
+  } catch (error: unknown) {
+    showError('Operaciones', error instanceof Error ? error.message : 'No se pudo abrir la operación.')
   }
 }
 
