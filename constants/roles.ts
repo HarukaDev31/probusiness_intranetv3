@@ -24,7 +24,8 @@ export const ROLES = {
     GERENTE_GENERAL: 'GERENTE GENERAL',
 } as const
 export const ID_JEFEVENTAS = 28791
-export const COTIZADORES_WITH_PRIVILEGES = [28911]
+// 28911 Milagros Paico, 29409 Kimberly Lizarbe (cotizaciones6), 29151 Jazmín Ocampo (jocampo) — INC-26-0062
+export const COTIZADORES_WITH_PRIVILEGES = [28911, 29409, 29151]
 export const ID_ORGANIZACION_ADMIN = 1
 
 export function esRolSocio(role: string | null | undefined): boolean {
