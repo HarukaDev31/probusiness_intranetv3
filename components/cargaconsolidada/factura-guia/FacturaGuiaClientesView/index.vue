@@ -167,7 +167,7 @@
                     color="warning"
                     variant="subtle"
                     size="xs"
-                    label="Desde historial (sin formulario)"
+                    :label="esPerfilEmpresa ? 'Desde perfil de empresa (sin formulario)' : 'Desde historial (sin formulario)'"
                   />
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -613,7 +613,11 @@ const formatDate = (dateStr: string | null) => {
 }
 
 const registeredBy = computed(() => comprobanteForm.value?.registered_by || null)
+const esPerfilEmpresa = computed(() => comprobanteForm.value?.prefill_source === 'perfil_empresa')
 const registeredByNombre = computed(() => {
+  if (esPerfilEmpresa.value) {
+    return 'Perfil del cliente (Mi cuenta › Empresa / RUC)'
+  }
   if (comprobanteForm.value?.prefill_from_usuario_datos_facturacion) {
     return 'Tabla usuario_datos_facturación (vinculado por documento o correo)'
   }
