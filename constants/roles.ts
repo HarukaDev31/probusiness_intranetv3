@@ -25,7 +25,8 @@ export const ROLES = {
 } as const
 export const ID_JEFEVENTAS = 28791
 // 28911 Milagros Paico, 29409 Kimberly Lizarbe (cotizaciones6), 29151 Jazmín Ocampo (jocampo) — INC-26-0062
-export const COTIZADORES_WITH_PRIVILEGES = [28911, 29409, 29151]
+// 29170 cuenta curso, mismo perfil que cotizaciones6 — CFG-26-0058
+export const COTIZADORES_WITH_PRIVILEGES = [28911, 29409, 29151, 29170]
 export const ID_ORGANIZACION_ADMIN = 1
 
 export function esRolSocio(role: string | null | undefined): boolean {
