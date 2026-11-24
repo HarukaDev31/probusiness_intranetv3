@@ -140,6 +140,9 @@
                     Guardar
                 </UButton>
             </UCard>
+
+            <!-- Método de pago preferido (CFG-26-0056) -->
+            <MetodoPagoPreferido style="grid-area: profile-pago;" />
         </div>
     </div>
 </template>
@@ -147,6 +150,7 @@
 <script setup lang="ts">
 import type { UserProfile } from '@/types/userprofile'
 import SimpleUploadFile from '~/components/commons/SimpleUploadFile.vue'
+import MetodoPagoPreferido from '~/components/profile/MetodoPagoPreferido.vue'
 import { useOverlay } from '#imports'
 import { useProfile } from '~/composables/commons/perfil/useProfile'
 import { useSpinner } from '~/composables/commons/useSpinner'
@@ -703,7 +707,8 @@ watch(() => props.userProfile, (newUserProfile) => {
 .user-profile {
     display: grid;
     grid-template-areas:
-        "profile-header profile-goals";
+        "profile-header profile-goals"
+        "profile-pago profile-pago";
     grid-template-columns: 1fr 1fr;
     grid-template-rows: auto auto;
     gap: 1.5rem;
@@ -734,7 +739,8 @@ watch(() => props.userProfile, (newUserProfile) => {
     .user-profile {
         grid-template-areas:
             "profile-header"
-            "profile-goals";
+            "profile-goals"
+            "profile-pago";
         grid-template-columns: 1fr;
         grid-template-rows: repeat(3, auto);
         gap: 1rem;
@@ -747,7 +753,8 @@ watch(() => props.userProfile, (newUserProfile) => {
     .user-profile {
         grid-template-areas:
             "profile-header"
-            "profile-goals";
+            "profile-goals"
+            "profile-pago";
         grid-template-columns: 1fr;
         grid-template-rows: repeat(3, auto);
         gap: 1rem;
