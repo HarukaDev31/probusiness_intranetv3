@@ -274,4 +274,17 @@ export class ChinaBillingService extends BaseService {
   static async issueDocument(target: ChinaDocumentTarget) {
     return this.apiCall<One<ChinaDocument>>(this.documentsUrl(target), { method: 'POST' })
   }
+
+  static async downloadDocument(doc: ChinaDocument, mode: 'china' | 'partner') {
+    const base = mode === 'partner' ? `${this.baseUrl}/partner` : this.baseUrl
+    const blob = await this.apiCall<Blob>(`${base}/documents/${doc.id}/download`, { responseType: 'blob' })
+    const objectUrl = window.URL.createObjectURL(blob)
+    const link = window.document.createElement('a')
+    link.href = objectUrl
+    link.download = doc.file_name || `documento-${doc.id}.pdf`
+    window.document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1000)
+  }
 }
