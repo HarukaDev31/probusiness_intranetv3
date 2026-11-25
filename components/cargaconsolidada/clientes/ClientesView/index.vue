@@ -1105,6 +1105,9 @@ const openClienteAcciones = (row: any) => {
     })
 }
 
+// OPLOGISTICS no usa ISD: el back no manda ese KPI.
+const sinIsd = computed(() => headers.value.length > 0 && !headers.value.some((item: any) => item?.label === 'Total ISD'))
+
 const getColumnsDocumentacionSocio = (): TableColumn<any>[] => [
     {
         accessorKey: 'index',
@@ -1239,7 +1242,7 @@ const getColumnsDocumentacionSocio = (): TableColumn<any>[] => [
 ]
 
 const getColumnsGeneral = () => {
-    if (isOrgNoAdmin.value) return getColumnsDocumentacionSocio()
+    if (isOrgNoAdmin.value) return getColumnsDocumentacionSocio().filter((column: any) => !sinIsd.value || column.accessorKey !== 'isd')
     if (currentRole.value === ROLES.JEFE_MARKETING) return columnsDocumentacion
     switch (currentRole.value) {
         case ROLES.DOCUMENTACION:

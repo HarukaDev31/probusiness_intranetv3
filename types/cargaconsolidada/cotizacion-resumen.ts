@@ -191,6 +191,8 @@ export interface CotizacionResumenRow {
 
 export interface CotizacionResumenListResponse {
   success: boolean
+  /** El socio no usa ISD (OPLOGISTICS). */
+  sin_isd?: boolean
   formato?: 'default' | 'bolivia'
   data: CotizacionResumenRow[]
   message?: string

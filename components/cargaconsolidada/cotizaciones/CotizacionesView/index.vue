@@ -3355,6 +3355,10 @@ const toProspectosSocioColumns = (columns: TableColumn<any>[]) => {
         return sinMontos
     }
 
+    // OPLOGISTICS no usa ISD: el back no manda ese KPI.
+    const kpis: any[] = headersCotizaciones.value || []
+    if (kpis.length > 0 && !kpis.some(item => item?.label === 'Total ISD')) return mapped
+
     const isdColumn: TableColumn<any> = {
         accessorKey: 'isd',
         header: PROSPECTOS_SOCIO_HEADERS.isd,

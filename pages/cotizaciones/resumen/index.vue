@@ -185,6 +185,7 @@ async function loadCotizaciones(page = pagination.value.current_page) {
   if (res.success) {
     cotizaciones.value = res.data
     formato.value = res.formato === 'bolivia' ? 'bolivia' : 'default'
+    sinIsd.value = res.sin_isd === true
     headers.value = res.headers ?? {}
     if (res.pagination) {
       pagination.value = {
@@ -346,6 +347,8 @@ function handleDelete(row: CotizacionResumenRow) {
 
 // Bolivia: sin ISD ni tarifa; columnas de la proforma (USD y Bs). El resto de países no cambia.
 const formato = ref<'default' | 'bolivia'>('default')
+/** OPLOGISTICS no usa ISD. */
+const sinIsd = ref(false)
 
 const formatBs = (amount: number | null | undefined) =>
   'Bs ' + new Intl.NumberFormat('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(amount) || 0)
@@ -412,7 +415,8 @@ const columnasMontosBolivia: TableColumn<CotizacionResumenRow>[] = [
 ]
 
 const columns = computed<TableColumn<CotizacionResumenRow>[]>(() => {
-  const montos = formato.value === 'bolivia' ? columnasMontosBolivia : columnasMontosDefault
+  const montos = formato.value === 'bolivia' ? columnasMontosBolivia
+    : columnasMontosDefault.filter(col => !sinIsd.value || (col as { accessorKey?: string }).accessorKey !== 'isd')
   return columnasBase.flatMap((col) => ((col as { accessorKey?: string }).accessorKey === 'fob' ? montos : [col]))
 })
 
