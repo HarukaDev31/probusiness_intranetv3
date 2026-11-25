@@ -41,6 +41,7 @@
         :search-query-value="search"
         :show-secondary-search="false"
         :show-filters="true"
+        :prominent-toolbar="isAlmacen"
         :filter-config="filterConfig"
         :filters-value="filters"
         :show-export="true"
@@ -173,6 +174,7 @@ const {
   anioOptions,
   organizacionOptions,
   empresaOptions,
+  paisOptions,
   getConsolidadoData,
   exportConsolidadoList,
   handleSearch,
@@ -289,6 +291,15 @@ const filterConfig = computed<FilterConfig[]>(() => {
       placeholder: 'Selecciona un año',
     },
   ]
+  if (isAlmacen.value || paisOptions.value.length > 2) {
+    baseConfig.push({
+      label: 'País',
+      key: 'id_pais',
+      type: 'select',
+      options: paisOptions.value,
+      placeholder: 'Selecciona un país',
+    })
+  }
   if (isAlmacen.value) {
     baseConfig.push({
       label: 'Empresa',
