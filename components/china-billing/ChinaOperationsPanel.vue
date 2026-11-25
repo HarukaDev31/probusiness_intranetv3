@@ -400,7 +400,7 @@ async function downloadCurrentInvoice() {
     const target = invoiceTargetFor(invoiceDownloadTarget.value)
     const history = (await ChinaBillingService.documentHistory(target)).data || []
     const latest = history[0] || (await ChinaBillingService.issueDocument(target)).data
-    window.open(latest.url, '_blank', 'noopener')
+    await ChinaBillingService.downloadDocument(latest, target.mode)
     closeInvoiceDownload()
   } catch (error: any) {
     invoiceActionError.value = error?.message || 'No se pudo descargar la factura.'
@@ -416,7 +416,7 @@ async function regenerateAndDownloadInvoice() {
   try {
     const target = invoiceTargetFor(invoiceDownloadTarget.value)
     const document = (await ChinaBillingService.issueDocument(target)).data
-    window.open(document.url, '_blank', 'noopener')
+    await ChinaBillingService.downloadDocument(document, target.mode)
     closeInvoiceDownload()
   } catch (error: any) {
     invoiceActionError.value = error?.message || 'No se pudo generar la nueva factura.'

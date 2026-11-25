@@ -43,7 +43,16 @@
               {{ document.generated_by || 'Sistema' }}<span v-if="document.total !== null"> · {{ usd(document.total) }}</span>
             </p>
           </div>
-          <UButton :to="document.url" target="_blank" rel="noopener" size="sm" color="neutral" variant="outline" icon="i-heroicons-arrow-down-tray">Descargar PDF</UButton>
+          <UButton
+            size="sm"
+            color="neutral"
+            variant="outline"
+            icon="i-heroicons-arrow-down-tray"
+            :loading="downloadingId === document.id"
+            @click="download(document)"
+          >
+            Descargar PDF
+          </UButton>
         </div>
       </div>
       <UAlert v-if="errorMessage" class="mt-3" color="error" variant="subtle" icon="i-heroicons-exclamation-triangle" :description="errorMessage" />
@@ -68,6 +77,7 @@ const emit = defineEmits<{ close: [] }>()
 const history = ref<ChinaDocument[]>([])
 const loading = ref(false)
 const issuing = ref(false)
+const downloadingId = ref<number | null>(null)
 const errorMessage = ref('')
 const justIssued = ref(false)
 
@@ -93,6 +103,19 @@ watch(() => props.target, async (target) => {
   }
 })
 
+async function download(doc: ChinaDocument) {
+  if (!props.target) return
+  downloadingId.value = doc.id
+  errorMessage.value = ''
+  try {
+    await ChinaBillingService.downloadDocument(doc, props.target.mode)
+  } catch (error: any) {
+    errorMessage.value = error?.message || 'No se pudo descargar el documento.'
+  } finally {
+    downloadingId.value = null
+  }
+}
+
 async function issue() {
   if (!props.target) return
   issuing.value = true
@@ -101,7 +124,7 @@ async function issue() {
     const document = (await ChinaBillingService.issueDocument(props.target)).data
     history.value = [document, ...history.value]
     justIssued.value = true
-    window.open(document.url, '_blank', 'noopener')
+    await ChinaBillingService.downloadDocument(document, props.target.mode)
   } catch (error: any) {
     errorMessage.value = error?.message || 'No se pudo generar el documento.'
   } finally {
