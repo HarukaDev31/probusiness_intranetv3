@@ -8,7 +8,7 @@
       >
       <div class="home-op__hero-shade" />
       <h1 class="home-op__hello">
-        {{ copy.hello }}<br>{{ copy.welcome }}
+        <span>{{ copy.hello }}<br>{{ copy.welcome }}<span v-if="message" class="home-op__message">{{ message }}</span></span>
       </h1>
     </section>
 
@@ -67,12 +67,16 @@ import { computed } from 'vue'
 import type { HomeStatsCard, HomeStatsCardKey } from '~/types/cargaconsolidada/home-stats'
 
 const props = defineProps<{
+  /** Aviso bajo el saludo (pendientes del Encargado China). */
+  message?: string
+  /** El Encargado China usa los indicadores de almacén con textos en español. */
+  spanish?: boolean
   cards: HomeStatsCard[]
   loading?: boolean
   variant: 'almacen' | 'socio'
 }>()
 
-const copy = computed(() => props.variant === 'almacen'
+const copy = computed(() => props.variant === 'almacen' && !props.spanish
   ? { hello: 'Hello,', welcome: 'welcome!' }
   : { hello: '¡Hola,', welcome: 'bienvenido!' }
 )
@@ -94,6 +98,11 @@ const labels: Record<'almacen' | 'socio', Record<HomeStatsCardKey, string>> = {
   },
 }
 
+const SPANISH_LABELS: Record<HomeStatsCardKey, string> = {
+  ...labels.socio,
+  containers: 'Cantidad de contenedores',
+}
+
 const icons: Record<HomeStatsCardKey, string> = {
   cbm: 'fluent:box-32-filled',
   customers: 'flowbite:users-group-solid',
@@ -111,6 +120,7 @@ const visibleCards = computed(() => {
 const cardCount = computed(() => props.variant === 'socio' ? 5 : 4)
 
 function labelFor(key: HomeStatsCardKey) {
+  if (props.spanish) return SPANISH_LABELS[key]
   return labels[props.variant][key]
 }
 
@@ -177,6 +187,15 @@ function formatBreakdown(key: HomeStatsCardKey, value: number) {
   line-height: 1.1;
   letter-spacing: -1px;
   color: #fff;
+}
+
+.home-op__message {
+  display: block;
+  margin-top: 14px;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.4;
+  opacity: 0.92;
 }
 
 .home-op__grid {

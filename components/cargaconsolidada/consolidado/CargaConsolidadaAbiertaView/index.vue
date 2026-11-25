@@ -126,6 +126,7 @@
         />
       </div>
     </div>
+    <ChinaStagesDrawer v-if="isEncargadoChina" :container="etapasSelected" :options="etapasOptions" :stage="etapaAbierta" @close="etapasId = null" @save="saveEtapas" />
   </div>
 </template>
 
@@ -139,6 +140,9 @@ import { ID_ORGANIZACION_ADMIN, ROLES, esRolSocio, roleEsComoJefeImportacion } f
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
+import { useChinaStages } from '~/composables/china-caja/useChinaStages'
+import ChinaStageCell from '~/components/china-caja/ChinaStageCell.vue'
+import ChinaStagesDrawer from '~/components/china-caja/ChinaStagesDrawer.vue'
 import CreateConsolidadoModal from '~/components/cargaconsolidada/consolidado/CreateConsolidadoModal/index.vue'
 import PartirConsolidadoModal from '~/components/cargaconsolidada/consolidado/PartirConsolidadoModal/index.vue'
 import { USelect } from '#components'
@@ -638,6 +642,18 @@ const cbmImoColumn: TableColumn<any> = {
   cell: ({ row }) => formatNumber(row.original.cbm_total_imo ?? 0, 2),
 }
 
+// Encargado China: avance de las 3 etapas; abre el panel.
+const { isEncargadoChina, selected: etapasSelected, selectedId: etapasId, openStage: etapaAbierta, options: etapasOptions, loadStages, open: openEtapas, save: saveEtapas, containerOf } = useChinaStages()
+const etapasColumn: TableColumn<any> = {
+  id: 'etapas',
+  header: 'Etapas',
+  cell: ({ row }) => {
+    const container = containerOf(row.original.id)
+    return container ? h(ChinaStageCell, { container, onOpen: () => openEtapas(row.original.id) }) : '—'
+  },
+}
+onMounted(loadStages)
+
 const getColumns = () => {
   let result: TableColumn<any>[]
   switch (props.role) {
@@ -668,6 +684,11 @@ const getColumns = () => {
     result = result.map((col) => (
       (col as { accessorKey?: string }).accessorKey === 'limite_cbm_imo' ? cbmImoColumn : col
     ))
+  }
+  if (isEncargadoChina.value) {
+    const index = result.findIndex((col) => (col as { accessorKey?: string }).accessorKey === 'estado_china')
+    const at = index === -1 ? result.length : index
+    result = [...result.slice(0, at), etapasColumn, ...result.slice(at)]
   }
   return result
 }

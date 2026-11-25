@@ -135,7 +135,28 @@ export function useSupplierPaymentYuan() {
     reload()
   }
 
-  onMounted(load)
+  /** Abre una solicitud exacta (Inicio y Flujo de caja), aunque no esté en la página visible. */
+  async function openRequest(id: number) {
+    try {
+      for (let page = 1, last = 1; page <= last; page++) {
+        const response = await PagoProveedorService.listYuan({ bucket: 'all', page, per_page: 50 })
+        last = response.pagination?.last_page ?? 1
+        const found = (response.data || []).find((row) => row.request_id === id)
+        if (!found) continue
+        selectedSnapshot.value = found
+        selectedId.value = id
+        return
+      }
+    } catch (error: unknown) {
+      showError('Pago a proveedores', error instanceof Error ? error.message : 'No se pudo abrir la solicitud.')
+    }
+  }
+
+  const route = useRoute()
+  onMounted(async () => {
+    await load()
+    if (route.query.solicitud) await openRequest(Number(route.query.solicitud))
+  })
 
   return {
     bucket,

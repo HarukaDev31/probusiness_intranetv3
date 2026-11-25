@@ -42,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, onMounted } from 'vue'
+import { computed, h, onMounted, watch } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { UBadge, UButton, UIcon, UInput, USelect } from '#components'
 import { useCustomers, CUSTOMERS_PAGINATION_OPTIONS } from '~/composables/cargaconsolidada/customers'
@@ -351,8 +351,12 @@ const columns: TableColumn<CustomerRow>[] = [
   },
 ]
 
+const route = useRoute()
+// La página queda en caché (keepalive): se escucha la URL y no solo el montaje.
+watch(() => route.query.estado, (estado) => { if (estado === 'NC') filterByNc() })
 onMounted(async () => {
-  await getCustomers()
+  if (route.query.estado === 'NC') await filterByNc()
+  else await getCustomers()
 })
 </script>
 

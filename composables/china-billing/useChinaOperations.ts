@@ -82,7 +82,19 @@ export function useChinaOperations() {
     return reload()
   }
 
+  /** Busca una operación o borrador aunque no esté en la página visible. */
+  async function findOperation(match: (row: ChinaOperation) => boolean): Promise<ChinaOperation | null> {
+    for (let page = 1, last = 1; page <= last; page++) {
+      const response = await ChinaBillingService.listOperations({ page, per_page: 100 })
+      last = response.pagination.last_page
+      const found = response.data.find(match)
+      if (found) return found
+    }
+    return null
+  }
+
   return {
+    findOperation,
     status, search, countryId, from, to, rows, counts, summary, credits, organizations, countries,
     pagination, loading, states, load, reload, changeStatus
   }
