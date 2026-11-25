@@ -114,6 +114,53 @@
     <ChinaTransferModal :operation="transferring" :mode="transferMode" :siblings="rows" @close="transferring = null" @done="onTransferred" />
     <ChinaBankAccountForm :open="bankOpen" @close="bankOpen = false" @saved="bankOpen = false" />
     <ChinaDocumentsModal :target="documentTarget" @close="documentTarget = null" />
+
+    <UModal
+      :open="!!invoiceDownloadTarget"
+      :title="invoiceDownloadTarget ? `Factura ${invoiceDownloadTarget.code}` : ''"
+      description="¿Realizaste alguna modificación en los datos bancarios, montos o información de la operación?"
+      :dismissible="!invoiceAction"
+      :ui="{ content: 'w-full max-w-lg sm:max-w-lg', header: 'border-t-[5px] border-t-primary-500', title: 'text-lg font-bold text-highlighted', description: 'text-sm text-toned' }"
+      @update:open="(value: boolean) => !value && !invoiceAction && closeInvoiceDownload()"
+    >
+      <template #body>
+        <div class="flex flex-col gap-3 text-sm">
+          <p class="text-toned">
+            Si hiciste cambios, genera una factura nueva con los datos actualizados. Si no hubo modificaciones, descarga la última factura emitida.
+          </p>
+          <UAlert
+            v-if="invoiceActionError"
+            color="error"
+            variant="subtle"
+            icon="i-heroicons-exclamation-triangle"
+            :description="invoiceActionError"
+          />
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex w-full flex-wrap justify-end gap-2">
+          <UButton
+            color="neutral"
+            variant="outline"
+            icon="i-heroicons-arrow-down-tray"
+            :loading="invoiceAction === 'current'"
+            :disabled="!!invoiceAction"
+            @click="downloadCurrentInvoice"
+          >
+            No, descargar actual
+          </UButton>
+          <UButton
+            color="primary"
+            icon="i-heroicons-document-plus"
+            :loading="invoiceAction === 'new'"
+            :disabled="!!invoiceAction"
+            @click="regenerateAndDownloadInvoice"
+          >
+            Sí, generar nueva
+          </UButton>
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>
 
@@ -156,6 +203,9 @@ const paymentOpen = ref(false)
 const bankOpen = ref(false)
 const bankCardOpen = ref(false)
 const documentTarget = ref<ChinaDocumentTarget | null>(null)
+const invoiceDownloadTarget = ref<ChinaOperation | null>(null)
+const invoiceAction = ref<'current' | 'new' | null>(null)
+const invoiceActionError = ref('')
 const paymentDetail = ref<ChinaPayment | null>(null)
 const editingPayment = ref<ChinaPayment | null>(null)
 const transferring = ref<ChinaOperation | null>(null)
@@ -301,7 +351,7 @@ const columns: TableColumn<ChinaOperation>[] = [
     h('span', { class: 'text-xs text-muted' }, row.original.is_draft ? `${row.original.description} · ${row.original.cbm} CBM` : row.original.description),
     row.original.is_draft ? null : h(UButton, {
       size: 'xs', color: 'primary', variant: 'link', icon: 'i-heroicons-arrow-down-tray', class: 'self-start px-0',
-      onClick: () => { documentTarget.value = { kind: 'invoice', mode: 'china', title: `Factura ${row.original.code}`, operationId: row.original.id! } }
+      onClick: () => openInvoiceDownload(row.original)
     }, () => 'Descargar factura')
   ]) },
   { accessorKey: 'total', header: 'Monto total', meta: { class: right }, cell: ({ row }) => row.original.is_draft ? muted('') : totalWithDetail(row.original) },
@@ -318,10 +368,62 @@ const columns: TableColumn<ChinaOperation>[] = [
     h('span', { class: 'max-w-44 text-xs text-muted' }, row.original.is_draft ? 'Cerrado por Almacén China' : paymentsText(row.original))
   ]) },
   { id: 'actions', header: '', cell: ({ row }) => h('div', { class: 'flex gap-1' }, [
+    row.original.is_draft ? null : iconButton('i-heroicons-document-text', 'Ver facturas', () => openInvoiceHistory(row.original)),
     iconButton('i-heroicons-pencil-square', 'Editar', () => openForm(row.original.is_draft ? null : row.original, row.original.is_draft ? row.original : null)),
     iconButton('i-heroicons-trash', 'Eliminar', () => (row.original.is_draft ? dismissDraft(row.original) : removeOperation(row.original)), 'hover:bg-error/10 hover:text-error')
   ]) }
 ]
+
+function invoiceTargetFor(operation: ChinaOperation): ChinaDocumentTarget {
+  return { kind: 'invoice', mode: 'china', title: `Factura ${operation.code}`, operationId: operation.id! }
+}
+
+function openInvoiceHistory(operation: ChinaOperation) {
+  documentTarget.value = invoiceTargetFor(operation)
+}
+
+function openInvoiceDownload(operation: ChinaOperation) {
+  invoiceActionError.value = ''
+  invoiceDownloadTarget.value = operation
+}
+
+function closeInvoiceDownload() {
+  invoiceDownloadTarget.value = null
+  invoiceActionError.value = ''
+}
+
+async function downloadCurrentInvoice() {
+  if (!invoiceDownloadTarget.value) return
+  invoiceAction.value = 'current'
+  invoiceActionError.value = ''
+  try {
+    const target = invoiceTargetFor(invoiceDownloadTarget.value)
+    const history = (await ChinaBillingService.documentHistory(target)).data || []
+    const latest = history[0] || (await ChinaBillingService.issueDocument(target)).data
+    await ChinaBillingService.downloadDocument(latest, target.mode)
+    closeInvoiceDownload()
+  } catch (error: any) {
+    invoiceActionError.value = error?.message || 'No se pudo descargar la factura.'
+  } finally {
+    invoiceAction.value = null
+  }
+}
+
+async function regenerateAndDownloadInvoice() {
+  if (!invoiceDownloadTarget.value) return
+  invoiceAction.value = 'new'
+  invoiceActionError.value = ''
+  try {
+    const target = invoiceTargetFor(invoiceDownloadTarget.value)
+    const document = (await ChinaBillingService.issueDocument(target)).data
+    await ChinaBillingService.downloadDocument(document, target.mode)
+    closeInvoiceDownload()
+  } catch (error: any) {
+    invoiceActionError.value = error?.message || 'No se pudo generar la nueva factura.'
+  } finally {
+    invoiceAction.value = null
+  }
+}
 
 function openForm(operation: ChinaOperation | null, draftRow: ChinaOperation | null) {
   editing.value = operation

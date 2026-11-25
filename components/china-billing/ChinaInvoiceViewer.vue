@@ -9,7 +9,7 @@
     <template #body>
       <div class="flex flex-col gap-3">
         <div class="flex items-center justify-end gap-2">
-          <UButton v-if="document" :to="document.url" target="_blank" rel="noopener" color="primary" icon="i-heroicons-arrow-down-tray">Descargar factura</UButton>
+          <UButton v-if="document" color="primary" icon="i-heroicons-arrow-down-tray" :loading="downloading" @click="download">Descargar factura</UButton>
           <UButton color="neutral" variant="solid" icon="i-heroicons-x-mark" aria-label="Cerrar" @click="emit('close')" />
         </div>
         <div class="h-[75vh] overflow-hidden rounded-xl bg-default shadow-lg">
@@ -32,7 +32,20 @@ const emit = defineEmits<{ close: [] }>()
 
 const document = ref<ChinaDocument | null>(null)
 const loading = ref(false)
+const downloading = ref(false)
 const errorMessage = ref('')
+
+async function download() {
+  if (!document.value || !props.target) return
+  downloading.value = true
+  try {
+    await ChinaBillingService.downloadDocument(document.value, props.target.mode)
+  } catch (error: any) {
+    errorMessage.value = error?.message || 'No se pudo descargar la factura.'
+  } finally {
+    downloading.value = false
+  }
+}
 
 // Muestra la última factura emitida; si aún no hay ninguna, se emite la primera.
 watch(() => props.target, async (target) => {

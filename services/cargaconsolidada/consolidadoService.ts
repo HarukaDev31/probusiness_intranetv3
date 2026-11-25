@@ -18,6 +18,8 @@ export interface ConsolidadoParams {
     organizacion_id?: string
     /** Almacén: filtrar por empresa del consolidado. */
     empresa?: string
+    /** Filtrar por país del consolidado. */
+    id_pais?: string
 }
 
 export class ConsolidadoService extends BaseService {
@@ -119,6 +121,10 @@ export class ConsolidadoService extends BaseService {
 
             if (params.empresa && params.empresa.trim() && params.empresa !== 'todos') {
                 cleanParams.empresa = params.empresa.trim()
+            }
+
+            if (params.id_pais && params.id_pais.trim() && params.id_pais !== 'todos') {
+                cleanParams.id_pais = params.id_pais.trim()
             }
 
             const response = await this.apiCall<ContenedorResponse>(`${this.baseUrl}`, {

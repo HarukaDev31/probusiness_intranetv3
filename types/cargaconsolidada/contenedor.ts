@@ -58,6 +58,7 @@ export interface ContenedorResponse {
         anios?: number[]
         organizaciones?: Array<{ id: number; nombre: string }>
         empresas?: string[]
+        paises?: Array<{ label: string; value: string }>
     }
 }
 
@@ -83,6 +84,8 @@ export interface ContenedorFilters {
    organizacion_id?: string
    /** Almacén: filtrar por empresa del consolidado (`todos` = sin filtro). */
    empresa?: string
+   /** Filtrar por país del consolidado (`todos` = sin filtro). */
+   id_pais?: string
    search?: string
    completado?: boolean|false
 }
