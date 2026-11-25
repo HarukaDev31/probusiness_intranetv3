@@ -37,7 +37,7 @@
 
       <div class="cc-kpis">
         <div><span class="cc-kpis-label">CAJA · CIERRES SEMANALES</span><ChinaKpi :card="cards.cash" /></div>
-        <div><span class="cc-kpis-label">OPERACIÓN DEL {{ period === CHINA_CASH_PERIOD_MONTH ? 'MES' : periodLabel.split(' · ')[0]?.toUpperCase() }}</span><div class="cc-kpis-ops"><ChinaKpi v-for="card in cards.operation" :key="card.label" :card="card" /></div></div>
+        <div><span class="cc-kpis-label">OPERACIÓN {{ period === CHINA_CASH_PERIOD_MONTH ? 'DEL MES' : 'DE LA ' + periodLabel.split(' · ')[0]?.toUpperCase() }}</span><div class="cc-kpis-ops"><ChinaKpi v-for="card in cards.operation" :key="card.label" :card="card" /></div></div>
         <div><span class="cc-kpis-label">REGISTRO</span><ChinaKpi :card="cards.movements" /></div>
       </div>
 

@@ -130,7 +130,7 @@ export function useChinaCashHistory(money: (value: number) => string, signed: (v
       { ...icon, label: 'TOTAL OPERACIONES', value: past ? '—' : String(incomes + expenses), sub: past ? `Cierre de ${year.value}` : `${incomes} ingresos · ${expenses} egresos · ${chinaMonthName(currentMonth).toLowerCase()}`, accent: '#1d4f91', tone: 'cc-t-ink', info: 'movs' }
     ]
   })
-  const clients = (type: 'in' | 'out') => computed(() => data.value.clients[type].map((row) => ({ client: row.client, amount: row.amount, detail: `${row.movements} movimientos en el periodo` })))
+  const clients = (type: 'in' | 'out') => computed(() => data.value.clients[type].map((row) => ({ client: row.client, amount: row.amount, detail: `${row.movements} ${row.movements === 1 ? 'movimiento' : 'movimientos'} en el periodo` })))
 
   async function load() {
     loading.value = true
