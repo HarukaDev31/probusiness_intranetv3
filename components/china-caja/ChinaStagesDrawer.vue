@@ -140,7 +140,7 @@ watch(() => props.container, (container) => {
   TEXT_KEYS.forEach((key) => { form[key] = String(container.data[key] ?? '') })
   freight.value = container.data.freight_usd
 }, { immediate: true })
-watch(() => [props.container?.id, props.stage], () => {
+watch([() => props.container?.id, () => props.stage], () => {
   current.value = props.stage ?? 1
   creating.value = ''
 }, { immediate: true })
