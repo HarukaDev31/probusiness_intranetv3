@@ -64,6 +64,7 @@ export const TABLE_HEADERS_EN: Record<string, string> = {
   Todos: 'All',
   Todas: 'All',
   'Selecciona un año': 'Select a year',
+  'Selecciona un país': 'Select a country',
   'Selecciona un estado': 'Select a status',
   'Selecciona una empresa': 'Select a company',
   'Selecciona una organización': 'Select an organization',
