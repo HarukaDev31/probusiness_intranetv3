@@ -2,7 +2,7 @@
   <div class="landing-leads-wide-table p-6">
     <div>
       <div
-        class="inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md bg-gray-100 px-2.5 py-1 font-mono text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+        class="inline-flex flex-wrap items-center gap-x-2 gap-y-1 py-1 font-mono text-xs text-gray-600 dark:text-gray-300"
         data-testid="leads-codigo-documento"
       >
         <UIcon name="i-heroicons-document-text" class="h-3.5 w-3.5" />
