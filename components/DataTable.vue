@@ -67,7 +67,7 @@
     <slot name="inline-extra" />
   </template>
   <template v-else-if="!$slots.filters">
-    <div class="flex flex-col md:flex-row flex-wrap gap-4 p-0 md:p-4 " data-manual-capture="data-table-toolbar">
+    <div class="flex flex-col md:flex-row flex-wrap gap-4" :class="isV3 ? 'px-0 py-4' : 'p-0 md:p-4'" data-manual-capture="data-table-toolbar">
       <div class="w-full lg:w-full flex flex-col md:flex-row items-start md:items-center md:justify-between gap-1 md:gap-3 items-center">
         <PageHeader :title="displayedTitle" :subtitle="subtitle" :icon="icon" :align-subtitle="alignSubtitle" :hide-back-button="hideBackButton" @back="goBack">
           <template v-if="$slots['back-extra']" #back-extra>
@@ -99,12 +99,12 @@
             ? 'gap-2 rounded-xl border-2 border-primary bg-white p-2 shadow-md dark:bg-gray-800'
             : 'lg:flex-row gap-1 md:gap-3'"
         >
-          <div v-if="showPrimarySearch" class="flex items-center gap-2 w-full lg:w-auto" :class="prominentToolbar ? 'h-12' : 'h-10'">
+          <div v-if="showPrimarySearch" class="flex items-center gap-2 w-full lg:w-auto" :class="prominentToolbar ? 'h-12' : isV3 ? 'h-11' : 'h-10'">
             <label v-if="showPrimarySearchLabel"
               class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ translations.primarySearchLabel }}:</label>
             <UInput :model-value="primarySearchInternal" :placeholder="primarySearchPlaceholder || translations.primarySearchPlaceholder"
-              :class="prominentToolbar ? 'w-full min-w-[18rem] md:w-96' : 'flex-1 h-5 min-w-0 md:h-10 lg:h-10'"
-              :ui="prominentToolbar ? { base: 'h-12 text-base bg-orange-50 dark:bg-gray-900' } : { base: 'h-7 md:h-10 lg:h-10' }"
+              :class="prominentToolbar ? 'w-full min-w-[18rem] md:w-96' : isV3 ? 'w-full min-w-[16rem] md:w-80' : 'flex-1 h-5 min-w-0 md:h-10 lg:h-10'"
+              :ui="prominentToolbar ? { base: 'h-12 text-base bg-orange-50 dark:bg-gray-900' } : isV3 ? { base: 'h-11 rounded-xl bg-default text-sm' } : { base: 'h-7 md:h-10 lg:h-10' }"
               @update:model-value="onPrimarySearchChange">
               <template #leading>
                 <UIcon name="i-heroicons-magnifying-glass" class="text-gray-400" />
@@ -113,7 +113,12 @@
           </div>
 
           <UButton v-if="showExport" :label="translations.export" icon="i-heroicons-arrow-up-tray"
-            class="h-8 md:h-11 font-normal bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto hidden md:flex"
+            :color="isV3 ? 'neutral' : undefined"
+            :variant="isV3 ? 'outline' : undefined"
+            :ui="isV3 ? { leadingIcon: 'text-primary' } : undefined"
+            :class="isV3
+              ? 'h-11 rounded-xl bg-default px-4 font-medium w-full lg:w-auto hidden md:flex'
+              : 'h-8 md:h-11 font-normal bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto hidden md:flex'"
             @click="handleExport" />
             <div class="flex items-center md:gap-2 relative md:w-full lg:w-auto">
               <div ref="filtersButtonRef" class="w-auto lg:w-auto">
@@ -349,9 +354,15 @@
       -->
 
       <!-- Body Top Slot (compact on mobile) -->
-      <div class="flex flex-col w-full min-w-0 overflow-visible px-0 py-0 md:px-4 sm:py-4 text-xs sm:text-sm gap-2" v-if="showBodyTop">
+      <div class="flex flex-col w-full min-w-0 overflow-visible px-0 py-0 md:px-4 sm:py-4 text-xs sm:text-sm gap-2" v-if="showBodyTop && !isV3">
         <slot name="body-top" />
       </div>
+    </div>
+
+    <!-- Variante v3: una sola tarjeta (pestañas + tabla + paginación). En el resto de variantes el wrapper no genera caja. -->
+    <div :class="isV3 ? 'overflow-hidden rounded-2xl bg-default shadow-[0_6px_20px_rgba(30,42,59,.06)]' : 'contents'">
+    <div v-if="showBodyTop && isV3" class="w-full min-w-0 border-b border-default px-4 pt-1" data-manual-capture="data-table-tabs">
+      <slot name="body-top" />
     </div>
 
     <!-- Toolbar: Tabla / Kanban (solo módulos que activen `showKanban`) -->
@@ -509,7 +520,7 @@
         data-manual-capture="data-table-grid"
         ref="tableContainerRef"
         class="table-scroll-container"
-        :class="{ 'is-h-scroll': !isTableNarrow, 'sticky-last-column': stickyLastColumn, 'flat-table': filtersLayout === 'inline' }"
+        :class="{ 'is-h-scroll': !isTableNarrow, 'sticky-last-column': stickyLastColumn, 'flat-table': filtersLayout === 'inline' || isV3 }"
         :style="tableScrollStyle"
         @mousemove="onTableMouseMove"
         @mouseleave="onTableMouseLeave"
@@ -517,7 +528,7 @@
       >
         <UTable ref="utableRef" :data="filteredData" sticky :columns="displayedColumns" :loading="isTableLoading"
           :class="['', isTableNarrow ? 'utable-narrow' : 'min-w-full']"   :meta="tableMeta"
-          :ui="filtersLayout === 'inline' ? flatTableUi : Object.keys(tableMeta).length>0?{
+          :ui="isV3 ? flatTableV3Ui : filtersLayout === 'inline' ? flatTableUi : Object.keys(tableMeta).length>0?{
             // Importante: quitar overflow del root interno de UTable.
             // Si el root tiene overflow-* pero el scroll real ocurre en .table-scroll-container, sticky no se activa.
             root: 'relative overflow-visible',
@@ -578,7 +589,7 @@
     <div
       v-if="showBottomSection && (!showKanban || listViewMode === 'table')"
       class="md:sticky bottom-0 z-39"
-      :class="filtersLayout === 'inline' ? 'border-t border-default bg-default' : 'bg-[#f0f4f9] dark:bg-gray-900'"
+      :class="filtersLayout === 'inline' || isV3 ? 'border-t border-default bg-default' : 'bg-[#f0f4f9] dark:bg-gray-900'"
     >
       <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between p-4 gap-4">
         <div class="text-xs lg:text-sm text-gray-700 dark:text-gray-300 text-center lg:text-left w-full lg:w-auto">
@@ -599,6 +610,7 @@
             />
         </div>
       </div>
+    </div>
     </div>
   </div>
 </template>
@@ -649,6 +661,15 @@ const flatTableUi = {
   tbody: '[&>tr]:border-t [&>tr]:border-default [&>tr]:transition-colors [&>tr:hover]:bg-elevated/40',
   tr: 'border-default',
   td: 'bg-transparent px-3 py-3.5 text-sm text-default'
+}
+
+const isV3 = computed(() => props.variant === 'v3')
+
+/** Variante v3: igual que la plana, pero con encabezados en minúscula normal (sin mayúsculas ni espaciado). */
+const flatTableV3Ui = {
+  ...flatTableUi,
+  th: 'bg-default px-4 py-3 text-xs font-normal text-muted',
+  td: 'bg-transparent px-4 py-3.5 text-sm text-default'
 }
 
 /** Evita ambigüedad con otros `loading` en plantilla; fuerza booleano para UTable */
