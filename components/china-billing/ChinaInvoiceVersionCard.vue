@@ -1,11 +1,12 @@
 <template>
   <!-- Mismo formato que las filas del historial de documentos (ChinaDocumentsModal). -->
   <div
-    class="flex items-center gap-3 rounded-xl border px-3 py-2.5"
-    :class="isCurrent ? 'border-primary/30 bg-primary/10' : 'border-default'"
+    class="flex items-center gap-3 rounded-xl border px-3.5 py-3"
+    :class="isCurrent
+      ? 'border-primary bg-white dark:bg-gray-900'
+      : 'border-gray-200 bg-gray-50/80 dark:border-gray-700 dark:bg-gray-800/50'"
     :title="`Generada por ${document.generated_by || 'Sistema'}`"
   >
-    <UIcon name="i-heroicons-document-text" class="size-7 shrink-0" :class="isCurrent ? 'text-primary' : 'text-muted'" />
     <div class="min-w-0 flex-1">
       <p class="flex flex-wrap items-center gap-2 text-sm font-semibold text-highlighted">
         V{{ document.version }} · Factura N° {{ operation.code }}
@@ -13,19 +14,20 @@
           {{ CHINA_INVOICE_STATUS_LABEL[document.status || 'reemplazada'] }}
         </span>
       </p>
-      <p class="text-xs text-muted">
-        {{ shortDate(document.issued_on) }} ·
-        <span :class="differs ? 'font-semibold text-warning' : ''">{{ usd(document.total) }}</span>
+      <p class="mt-0.5 text-xs text-muted">
+        Fecha <span class="font-semibold text-highlighted">{{ shortDate(document.issued_on) }}</span> · Importe
+        <span :class="differs ? 'font-semibold text-warning' : 'font-semibold text-highlighted'">{{ usd(document.total) }}</span>
         <span v-if="differs" class="text-warning"> (actual {{ usd(operation.total) }})</span>
       </p>
-      <p class="truncate text-xs text-muted">{{ reasonText }}</p>
+      <p class="mt-0.5 truncate text-xs text-muted">{{ reasonText }}</p>
     </div>
-    <div class="flex shrink-0 items-center gap-1">
+    <div class="flex shrink-0 items-center gap-1.5">
       <UButton
         size="sm"
         color="neutral"
         variant="outline"
         icon="i-heroicons-arrow-down-tray"
+        class="bg-white dark:bg-gray-900"
         :aria-label="`Descargar ${number} en PDF`"
         title="Descargar PDF"
         @click="emit('download', document)"
@@ -33,9 +35,10 @@
       <UButton
         v-if="isCurrent"
         size="sm"
-        color="error"
+        color="neutral"
         variant="outline"
         icon="i-heroicons-no-symbol"
+        class="bg-white text-error hover:bg-error/10 dark:bg-gray-900"
         :aria-label="`Anular ${number}`"
         title="Anular"
         :disabled="busy"
@@ -44,9 +47,10 @@
       <UButton
         v-else-if="document.status === 'reemplazada' && !locked"
         size="sm"
-        color="success"
+        color="neutral"
         variant="outline"
         icon="i-heroicons-check"
+        class="bg-white text-gray-700 dark:bg-gray-900 dark:text-gray-200"
         :aria-label="`Marcar ${number} como vigente`"
         :disabled="busy"
         @click="emit('mark-current', document)"
