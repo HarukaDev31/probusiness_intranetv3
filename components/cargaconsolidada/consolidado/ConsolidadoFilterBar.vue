@@ -4,12 +4,12 @@
     <div class="flex w-full flex-col items-start gap-1 md:gap-3">
       <PageHeader :title="title" :hide-back-button="hideBackButton" @back="emit('back')" />
 
-      <div class="flex w-full flex-wrap items-center gap-2 rounded-xl border-2 border-primary bg-white p-2 shadow-md dark:bg-gray-800">
+      <div class="flex w-full flex-wrap items-center gap-2 rounded-2xl border border-gray-200/80 bg-white p-2.5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
         <UInput
           :model-value="searchText"
           :placeholder="t.search"
           class="min-w-[18rem] flex-1"
-          :ui="{ base: 'h-12 text-base bg-orange-50 dark:bg-gray-900' }"
+          :ui="{ base: 'h-10 text-sm bg-white dark:bg-gray-900' }"
           @update:model-value="onSearch"
         >
           <template #leading>
@@ -17,9 +17,14 @@
           </template>
         </UInput>
 
-        <span class="inline-flex h-12 items-center gap-2 rounded-md border border-primary bg-white px-4 text-base font-semibold text-gray-900 dark:bg-gray-900 dark:text-gray-100">
-          <UIcon name="i-heroicons-funnel" class="size-5" />{{ t.filters }}
-          <UBadge v-if="activeCount" color="primary" size="sm" :label="String(activeCount)" />
+        <span class="inline-flex h-10 items-center gap-2 rounded-lg bg-orange-50 px-3.5 text-sm font-semibold text-primary dark:bg-primary/15">
+          <UIcon name="i-heroicons-funnel" class="size-4" />{{ t.filters }}
+          <span
+            v-if="activeCount"
+            class="inline-flex size-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-white"
+          >
+            {{ activeCount }}
+          </span>
         </span>
 
         <USelectMenu
@@ -32,8 +37,16 @@
           multiple
           :search-input="false"
           :aria-label="filter.label"
-          class="min-w-40"
-          :ui="{ base: ['h-12 text-base', selected(filter.key).length ? 'ring-primary bg-orange-50 dark:bg-gray-900' : ''].join(' '), content: 'min-w-60' }"
+          class="min-w-36"
+          :ui="{
+            base: [
+              'h-10 text-sm rounded-lg',
+              selected(filter.key).length
+                ? 'ring-1 ring-primary bg-orange-50/70 dark:bg-primary/10'
+                : 'ring-1 ring-gray-200 bg-white dark:ring-gray-700 dark:bg-gray-900'
+            ].join(' '),
+            content: 'min-w-60'
+          }"
           @update:model-value="(value: string[]) => onSelect(filter.key, value)"
         >
           <template #default>

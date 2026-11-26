@@ -16,9 +16,9 @@ export const CHINA_INVOICE_STATUS_LABEL: Record<string, string> = {
 }
 
 export const CHINA_INVOICE_STATUS_PILL: Record<string, string> = {
-  vigente: 'bg-success/15 text-success',
-  reemplazada: 'bg-elevated text-toned',
-  anulada: 'bg-error/10 text-error'
+  vigente: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
+  reemplazada: 'bg-gray-200/70 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+  anulada: 'bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-300'
 }
 
 export function invoiceTargetFor(operation: ChinaOperation): ChinaDocumentTarget {

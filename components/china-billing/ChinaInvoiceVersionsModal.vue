@@ -9,29 +9,35 @@
   >
     <template #body>
       <div v-if="operation" class="flex flex-col gap-2">
-        <!-- Avisos con UAlert compacto, como el de «Documento generado» del historial. -->
-        <UAlert
+        <div
           v-if="current && changes.length"
-          color="warning"
-          variant="subtle"
-          icon="i-heroicons-exclamation-triangle"
-          :ui="alertUi"
+          class="flex items-center justify-between gap-3 rounded-xl border border-amber-200/80 bg-amber-50 px-3.5 py-2.5 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-200"
         >
-          <template #title>
-            La V{{ current.version }} está desactualizada
-            (<UTooltip :ui="tooltipUi">
-              <span class="cursor-help underline decoration-dotted underline-offset-2">{{ changes.length }} {{ changes.length === 1 ? 'cambio' : 'cambios' }}</span>
-              <template #content>
-                <ChinaInvoiceChangesTip :operation="operation" :version="current.version ?? 0" />
-              </template>
-            </UTooltip>)
-          </template>
-          <template v-if="canIssue" #actions>
-            <UButton size="xs" color="warning" variant="outline" icon="i-heroicons-arrow-path" :disabled="busy" @click="update">
-              Actualizar a V{{ nextVersion }}
-            </UButton>
-          </template>
-        </UAlert>
+          <div class="flex min-w-0 items-center gap-2 text-xs font-medium">
+            <UIcon name="i-heroicons-exclamation-triangle" class="size-4 shrink-0 text-amber-700 dark:text-amber-300" />
+            <span>
+              La V{{ current.version }} está desactualizada
+              (<UTooltip :ui="tooltipUi">
+                <span class="cursor-help font-semibold underline decoration-dotted underline-offset-2">{{ changes.length }} {{ changes.length === 1 ? 'cambio' : 'cambios' }}</span>
+                <template #content>
+                  <ChinaInvoiceChangesTip :operation="operation" :version="current.version ?? 0" />
+                </template>
+              </UTooltip>)
+            </span>
+          </div>
+          <UButton
+            v-if="canIssue"
+            size="xs"
+            color="neutral"
+            variant="outline"
+            icon="i-heroicons-arrow-path"
+            class="shrink-0 bg-white text-gray-800 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-100"
+            :disabled="busy"
+            @click="update"
+          >
+            Actualizar a V{{ nextVersion }}
+          </UButton>
+        </div>
         <UAlert
           v-if="locked && current"
           color="info"
