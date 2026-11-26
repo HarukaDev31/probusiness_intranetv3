@@ -46,7 +46,7 @@
     <div class="col-start-1 text-xs text-muted">
       Fecha <b class="font-semibold text-highlighted">{{ shortDate(document.issued_on) }}</b> ·
       Importe <b class="font-semibold" :class="differs ? 'text-amber-700 dark:text-amber-300' : 'text-highlighted'">{{ usd(document.total) }}</b>
-      <span v-if="differs" class="text-amber-700 dark:text-amber-300">(actual {{ usd(operation.total) }})</span>
+      <span v-if="differs" class="text-amber-700 dark:text-amber-300">&nbsp;(actual {{ usd(operation.total) }})</span>
     </div>
     <div class="col-start-1 truncate text-xs text-muted">{{ reasonText }}</div>
   </div>

@@ -63,7 +63,7 @@
 
         <span class="ml-auto inline-flex items-center gap-2">
           <template v-if="activeCount">
-            <span class="h-6 w-px bg-default" />
+            <span class="h-6 w-px bg-gray-200 dark:bg-gray-700" />
             <button
               type="button"
               class="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-semibold text-primary-700 hover:bg-primary/10 dark:text-primary-300"
