@@ -41,7 +41,7 @@
     >
       <template #body-top>
         <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <UTabs v-model="activeTab" :items="tabs" :content="false" variant="link" :ui="{ root: 'flex-1 min-w-0' }" />
+          <UTabs v-model="activeTab" :items="tabs" :content="false" variant="link" :ui="DATA_TABLE_V3_TABS_UI" />
           <UButton
             v-if="activeTab === 'curso'"
             icon="i-heroicons-clock"
@@ -131,6 +131,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { useLandingLeads } from '~/composables/useLandingLeads'
 import type { LandingConsolidadoLead, LandingCursoLead, LandingLeadPagination } from '~/types/landing-leads'
 import { formatDate } from '~/utils/formatters'
+import { DATA_TABLE_V3_TABS_UI } from '~/constants/data-table-v3'
 import { LandingLeadsService } from '~/services/landing/landingLeadsService'
 import { LandingCountdownService } from '~/services/landing/landingCountdownService'
 
