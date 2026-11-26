@@ -73,6 +73,29 @@ export interface ChinaOperation {
   balance_due?: number
   difference?: number | null
   transferred?: boolean
+  /** Estado de la factura (solo en el listado de Almacén China). */
+  invoice?: ChinaInvoiceState | null
+}
+
+export type ChinaInvoiceStatus = 'vigente' | 'reemplazada' | 'anulada'
+
+/** Campo contable que cambió desde la factura vigente. */
+export interface ChinaInvoiceChange {
+  field: string
+  label: string
+  from: string
+  to: string
+}
+
+export interface ChinaInvoiceState {
+  count: number
+  last_version: number
+  /** Operación en caja: la vigente queda cerrada (solo se anula). */
+  locked: boolean
+  current: { id: number; version: number; number: string; total: number | null; issued_on: string | null } | null
+  changes: ChinaInvoiceChange[]
+  changed_at: string | null
+  changed_by: string | null
 }
 
 export interface ChinaPaymentAllocation {
@@ -219,6 +242,14 @@ export interface ChinaDocument {
   url: string
   generated_by: string | null
   total: number | null
+  /** Solo facturas: versión, N° (OP-0007-v2) y estado. */
+  version?: number | null
+  number?: string | null
+  status?: ChinaInvoiceStatus | null
+  reason?: string | null
+  status_reason?: string | null
+  status_changed_at?: string | null
+  status_changed_by?: string | null
 }
 
 /** Qué documento se quiere ver o emitir. */

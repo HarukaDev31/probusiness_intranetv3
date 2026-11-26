@@ -60,7 +60,21 @@ export interface ContenedorResponse {
         empresas?: string[]
         paises?: Array<{ label: string; value: string }>
     }
+    /** Opciones de año, país, empresa y estado con su conteo (con los demás filtros aplicados). */
+    facets?: ContenedorFacets
+    /** Total antes de los filtros de la barra (el «X de Y»). */
+    facets_total?: number
 }
+
+export interface ContenedorFacetOption {
+    value: string
+    label: string
+    count: number
+}
+
+export type ContenedorFacetKey = 'anio' | 'id_pais' | 'empresa' | 'estado_china'
+
+export type ContenedorFacets = Record<ContenedorFacetKey, ContenedorFacetOption[]>
 
 /** Item del endpoint valid-containers-documentacion (dropdown permisos). */
 export interface ValidContainersDocumentacionItem {
@@ -75,17 +89,18 @@ export interface ValidContainersDocumentacionResponse {
 }
 
 export interface ContenedorFilters {
-   estado_china?: string
+   /** Uno o varios estados (barra de filtros de Almacén China: selección múltiple). */
+   estado_china?: string | string[]
    /** Año de f_inicio del consolidado (`todos` = sin filtro). */
-   anio?: string
+   anio?: string | string[]
    /** Estado finanzas (`todos` = sin filtro). */
    estado_finanzas?: string
    /** Org 1: filtrar consolidados por organización (`todos` = sin filtro). */
    organizacion_id?: string
    /** Almacén: filtrar por empresa del consolidado (`todos` = sin filtro). */
-   empresa?: string
+   empresa?: string | string[]
    /** Filtrar por país del consolidado (`todos` = sin filtro). */
-   id_pais?: string
+   id_pais?: string | string[]
    search?: string
    completado?: boolean|false
 }

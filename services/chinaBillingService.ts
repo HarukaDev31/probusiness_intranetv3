@@ -271,8 +271,18 @@ export class ChinaBillingService extends BaseService {
     return this.apiCall<{ success: boolean; data: ChinaDocument[] }>(this.documentsUrl(target))
   }
 
-  static async issueDocument(target: ChinaDocumentTarget) {
-    return this.apiCall<One<ChinaDocument>>(this.documentsUrl(target), { method: 'POST' })
+  static async issueDocument(target: ChinaDocumentTarget, reason?: string) {
+    return this.apiCall<One<ChinaDocument>>(this.documentsUrl(target), { method: 'POST', body: reason ? { reason } : undefined })
+  }
+
+  /** Marca una versión anterior de la factura como vigente. */
+  static async markCurrentInvoice(documentId: number, reason?: string) {
+    return this.apiCall<One<ChinaDocument>>(`${this.baseUrl}/documents/${documentId}/current`, { method: 'POST', body: { reason: reason || null } })
+  }
+
+  /** Anula la factura vigente (motivo obligatorio). */
+  static async annulInvoice(documentId: number, reason: string) {
+    return this.apiCall<One<ChinaDocument>>(`${this.baseUrl}/documents/${documentId}/annul`, { method: 'POST', body: { reason } })
   }
 
   static async downloadDocument(doc: ChinaDocument, mode: 'china' | 'partner') {

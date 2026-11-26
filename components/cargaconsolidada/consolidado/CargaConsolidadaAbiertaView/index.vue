@@ -53,6 +53,25 @@
         @export="exportClientes"
         @filter-change="handleFilterChange"
       >
+        <!-- Almacén / Encargado China: barra de filtros de la maqueta (multi-selección con conteo). -->
+        <template v-if="isAlmacen" #filters>
+          <ConsolidadoFilterBar
+            :title="translateTableText('Carga Consolidada Abierta', currentRole)"
+            :search="search"
+            :filters="filters"
+            :facets="facets"
+            :total="totalRecords"
+            :overall="facetsTotal"
+            :english="usesEnglishTableHeaders(currentRole)"
+            :status-labels="ESTADO_LABEL_MAP_ALMACEN"
+            :hidden-statuses="['COMPLETADO']"
+            :hide-back-button="!backRoute"
+            @back="backRoute && navigateTo(backRoute)"
+            @search="handleSearch"
+            @change="handleFilterChange"
+            @clear="clearBarFilters"
+          />
+        </template>
         <template #actions>
           <template v-if="puedeGestionarConsolidado">
             <CreateConsolidadoModal @submit="handleCreateConsolidado" :id="currentConsolidado" />
@@ -135,6 +154,9 @@ import { ref, h, resolveComponent, onMounted, onUnmounted, computed, toRef } fro
 import type { TableColumn, TableRow } from '@nuxt/ui'
 import type { FilterConfig } from '~/types/data-table'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
+import { ESTADO_LABEL_MAP_ALMACEN } from '~/components/cargaconsolidada/consolidado/CargaConsolidadaCompletadosView/constants'
+import ConsolidadoFilterBar from '~/components/cargaconsolidada/consolidado/ConsolidadoFilterBar.vue'
+import { translateTableText, usesEnglishTableHeaders } from '~/constants/table-headers-i18n'
 import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
 import { ID_ORGANIZACION_ADMIN, ROLES, esRolSocio, roleEsComoJefeImportacion } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
@@ -161,7 +183,7 @@ const props = withDefaults(
 )
 
 const { withSpinner } = useSpinner()
-const { hasRole, currentId, getUserData, displayRole } = useUserRole()
+const { hasRole, currentId, getUserData, displayRole, currentRole } = useUserRole()
 const { showSuccess, showConfirmation, showError } = useModal()
 
 const isCoordinacion = computed(() => props.role === ROLES.COORDINACION)
@@ -192,12 +214,21 @@ const {
   handlePageChange,
   handleItemsPerPageChange,
   handleFilterChange,
+  facets,
+  facetsTotal,
+  clearFilters,
   createConsolidado,
   deleteConsolidado,
   partirConsolidado,
   updateEstadoDocumentacion,
   updateEstadoFinanzas,
 } = useConsolidado(toRef(props, 'role'))
+
+/** «Clear» de la barra: quita búsqueda y filtros. */
+function clearBarFilters() {
+  search.value = ''
+  clearFilters()
+}
 
 const flagUrlFromPais = (pais?: { Nu_Codigo_Sunat_ISO?: string, No_Pais?: string } | null) => {
   const iso = String(pais?.Nu_Codigo_Sunat_ISO || '').trim().toLowerCase()
