@@ -342,14 +342,15 @@ const hasInvoices = (operation: ChinaOperation) => (operation.invoice?.count ?? 
 function invoiceButton(operation: ChinaOperation) {
   const state = operation.invoice
   const busy = invoiceBusyId.value === operation.id
-  const link = (icon: string, label: string, onClick: () => void, extra = '') => h(UButton, {
-    size: 'xs', color: 'primary', variant: 'link', icon, loading: busy, disabled: busy, class: `mt-1 self-start px-0 text-xs font-semibold ${extra}`, onClick
+  // Mismo enlace que tenía «Descargar factura»; en amarillo (warning) cuando hay que actualizarla.
+  const link = (icon: string, label: string, onClick: () => void, color: 'primary' | 'warning' = 'primary') => h(UButton, {
+    size: 'xs', color, variant: 'link', icon, loading: busy, disabled: busy, class: 'self-start px-0', onClick
   }, () => label)
 
   if (!state?.current) return link('i-heroicons-plus', 'Generar factura', () => generateInvoice(operation))
   if (state.changes.length) {
-    return h(UTooltip, { ui: { content: 'h-auto w-[300px] max-w-[300px] rounded-[10px] bg-slate-900 px-3 py-2.5 ring-0' } }, {
-      default: () => link('i-heroicons-arrow-path', 'Actualizar factura', () => updateInvoice(operation), '!px-2 rounded-md bg-amber-50 !text-amber-800 dark:bg-amber-500/15 dark:!text-amber-300'),
+    return h(UTooltip, { ui: { content: 'h-auto max-w-sm bg-inverted px-3 py-2.5 text-inverted' } }, {
+      default: () => link('i-heroicons-arrow-path', 'Actualizar factura', () => updateInvoice(operation), 'warning'),
       content: () => h(ChinaInvoiceChangesTip, { operation, version: state.current?.version ?? 0 })
     })
   }
@@ -366,7 +367,7 @@ function historyButton(operation: ChinaOperation) {
     onClick: () => (invoiceOperationId.value = operation.id)
   }, [
     h(UIcon, { name: 'i-heroicons-document-text', class: 'size-4' }),
-    count ? h('span', { class: 'absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-primary-700 px-1 text-[10px] font-bold leading-none text-white' }, String(count)) : null
+    count ? h('span', { class: 'absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-inverted' }, String(count)) : null
   ])
 }
 
@@ -393,12 +394,8 @@ function generateInvoice(operation: ChinaOperation) {
   })
 }
 
-/** Nueva versión con los cambios como motivo. En caja la vigente está cerrada: se abre el historial para anularla. */
+/** Nueva versión con los cambios como motivo (el back no marca cambios en operaciones en caja). */
 function updateInvoice(operation: ChinaOperation) {
-  if (operation.invoice?.locked) {
-    invoiceOperationId.value = operation.id
-    return
-  }
   withInvoiceBusy(operation, async () => {
     await issueInvoice(invoiceTargetFor(operation), `Actualización: ${invoiceChangesText(operation)}`)
     refresh()

@@ -4,70 +4,82 @@
     :title="operation ? `Facturas · ${operation.code}` : ''"
     :description="operation ? `${formatNombreEmpresa(operation.organization.name)} · Monto actual ${usd(operation.total)}` : ''"
     :dismissible="!busy"
-    :ui="{ content: 'w-full max-w-[480px] sm:max-w-[480px]', header: 'border-t-4 border-t-primary-500', title: 'text-lg font-bold text-highlighted', description: 'text-[13px] text-muted' }"
+    :ui="{ content: 'w-full max-w-xl sm:max-w-xl', header: 'border-t-[5px] border-t-primary-500', title: 'text-lg font-bold text-highlighted' }"
     @update:open="(value: boolean) => !value && close()"
   >
     <template #body>
       <div v-if="operation" class="flex flex-col gap-2">
-        <!-- Aviso de cambios desde la vigente -->
-        <div v-if="current && changes.length" :class="[alertClass, tone.wait, 'items-center']">
-          <UIcon name="i-heroicons-exclamation-triangle" class="size-4 flex-none" />
-          <span class="flex-1">
+        <!-- Avisos con UAlert compacto, como el de «Documento generado» del historial. -->
+        <UAlert
+          v-if="current && changes.length"
+          color="warning"
+          variant="subtle"
+          icon="i-heroicons-exclamation-triangle"
+          :ui="alertUi"
+        >
+          <template #title>
             La V{{ current.version }} está desactualizada
             (<UTooltip :ui="tooltipUi">
-              <button type="button" class="cursor-help font-bold underline decoration-dotted underline-offset-[3px]">{{ changes.length }} {{ changes.length === 1 ? 'cambio' : 'cambios' }}</button>
+              <span class="cursor-help underline decoration-dotted underline-offset-2">{{ changes.length }} {{ changes.length === 1 ? 'cambio' : 'cambios' }}</span>
               <template #content>
                 <ChinaInvoiceChangesTip :operation="operation" :version="current.version ?? 0" />
               </template>
             </UTooltip>)
-          </span>
-          <UButton
-            v-if="canIssue"
-            size="xs"
-            color="warning"
-            variant="outline"
-            icon="i-heroicons-arrow-path"
-            class="flex-none bg-default"
-            :disabled="busy"
-            @click="update"
-          >
-            Actualizar a V{{ nextVersion }}
-          </UButton>
-        </div>
-        <div v-if="locked && current" :class="[alertClass, tone.info]">
-          <UIcon name="i-heroicons-information-circle" class="size-4 flex-none" />
-          <div><b class="block">Operación en caja:</b> la factura vigente queda cerrada. Para corregirla, anúlala con motivo y genera otra.</div>
-        </div>
-        <div v-if="history.length && !current && mode !== 'new'" :class="[alertClass, tone.bad]">
-          <UIcon name="i-heroicons-no-symbol" class="size-4 flex-none" />
-          <div><b class="block">Sin factura vigente.</b> Genera una nueva o marca una anterior como vigente.</div>
-        </div>
-        <div v-if="!loading && !history.length && mode !== 'new'" :class="[alertClass, tone.info]">
-          <UIcon name="i-heroicons-information-circle" class="size-4 flex-none" />
-          <div>Aún no hay factura. La primera quedará como vigente.</div>
-        </div>
+          </template>
+          <template v-if="canIssue" #actions>
+            <UButton size="xs" color="warning" variant="outline" icon="i-heroicons-arrow-path" :disabled="busy" @click="update">
+              Actualizar a V{{ nextVersion }}
+            </UButton>
+          </template>
+        </UAlert>
+        <UAlert
+          v-if="locked && current"
+          color="info"
+          variant="subtle"
+          icon="i-heroicons-information-circle"
+          title="Operación en caja"
+          description="La factura vigente queda cerrada. Para corregirla, anúlala con motivo y genera otra."
+          :ui="alertUi"
+        />
+        <UAlert
+          v-if="history.length && !current && mode !== 'new'"
+          color="error"
+          variant="subtle"
+          icon="i-heroicons-no-symbol"
+          title="Sin factura vigente"
+          description="Genera una nueva o marca una anterior como vigente."
+          :ui="alertUi"
+        />
+        <p v-if="!loading && !history.length && mode !== 'new'" class="py-2 text-sm text-muted">Aún no hay factura. La primera quedará como vigente.</p>
 
         <!-- Motivo de la acción -->
-        <div v-if="mode" class="flex flex-col gap-2.5 rounded-xl border border-default bg-elevated/60 p-3.5">
+        <div v-if="mode" class="flex flex-col gap-2 rounded-xl border border-default p-3">
           <label for="china-invoice-reason" class="text-sm font-semibold text-highlighted">{{ reasonTitle }}</label>
-          <div v-if="mode === 'new' && history.length && !changes.length" :class="[alertClass, tone.wait]">
-            <UIcon name="i-heroicons-exclamation-triangle" class="size-4 flex-none" />
-            <div><b class="block">No hay cambios desde la factura vigente.</b>La versión nueva saldría idéntica. Genérala solo si el cliente pidió un cambio que aún no registraste.</div>
-          </div>
+          <UAlert
+            v-if="mode === 'new' && history.length && !changes.length"
+            color="warning"
+            variant="subtle"
+            icon="i-heroicons-exclamation-triangle"
+            title="No hay cambios desde la factura vigente"
+            description="La versión nueva saldría idéntica. Genérala solo si el cliente pidió un cambio que aún no registraste."
+            :ui="alertUi"
+          />
           <p v-if="mode === 'current'" class="text-xs text-muted">La vigente actual pasará a No vigente.</p>
           <p v-if="mode === 'annul'" class="text-xs text-muted">La operación quedará sin factura vigente hasta que generes otra o marques una anterior.</p>
           <template v-if="needsReasonBox">
             <div class="flex flex-wrap gap-1.5">
-              <button
+              <UButton
                 v-for="quick in quickReasons"
                 :key="quick"
-                type="button"
-                class="h-[30px] rounded-full border border-default bg-default px-2.5 text-xs font-semibold transition-colors hover:border-primary disabled:opacity-50"
+                size="xs"
+                color="neutral"
+                variant="outline"
+                class="rounded-full"
                 :disabled="busy"
                 @click="reason = quick; confirm()"
               >
                 {{ quick }}
-              </button>
+              </UButton>
             </div>
             <UTextarea
               id="china-invoice-reason"
@@ -78,16 +90,20 @@
               :color="reasonError ? 'error' : undefined"
               class="w-full"
             />
-            <span v-if="reasonError" class="text-xs font-semibold text-error">Escribe un motivo para continuar.</span>
+            <span v-if="reasonError" class="text-xs text-error">Escribe un motivo para continuar.</span>
           </template>
           <div class="flex justify-end gap-2">
-            <UButton color="neutral" variant="outline" size="sm" :disabled="busy" @click="cancelMode">Cancelar</UButton>
-            <UButton :color="mode === 'annul' ? 'error' : 'primary'" :variant="mode === 'annul' ? 'outline' : 'solid'" size="sm" :loading="busy" @click="confirm">
+            <UButton color="neutral" variant="soft" size="sm" :disabled="busy" @click="cancelMode">Cancelar</UButton>
+            <UButton :color="mode === 'annul' ? 'error' : 'primary'" size="sm" :loading="busy" @click="confirm">
               {{ confirmLabel }}
             </UButton>
           </div>
         </div>
 
+        <div class="flex items-center gap-2 border-b border-default pb-2">
+          <UIcon name="i-heroicons-document-text" class="size-5 text-highlighted" />
+          <p class="text-sm font-semibold text-highlighted">Versiones de la factura</p>
+        </div>
         <USkeleton v-if="loading" class="h-20 w-full" />
         <template v-else>
           <ChinaInvoiceVersionCard
@@ -99,11 +115,15 @@
             @download="download"
             @annul="startMode('annul', $event)"
           />
-          <UCollapsible v-if="others.length" v-model:open="othersOpen" class="border-t border-default pt-1.5">
-            <button type="button" class="flex h-9 w-full items-center gap-1.5 rounded-lg px-1 text-[13px] font-semibold text-muted hover:text-highlighted">
-              <UIcon name="i-heroicons-chevron-right" class="size-3.5 transition-transform" :class="othersOpen ? 'rotate-90' : ''" />
+          <UCollapsible v-if="others.length" v-model:open="othersOpen" class="border-t border-default pt-1">
+            <UButton
+              color="neutral"
+              variant="link"
+              :icon="othersOpen ? 'i-heroicons-chevron-down' : 'i-heroicons-chevron-right'"
+              class="px-0"
+            >
               Otras versiones ({{ others.length }})
-            </button>
+            </UButton>
             <template #content>
               <div class="flex flex-col gap-2 pt-1">
                 <ChinaInvoiceVersionCard
@@ -124,12 +144,11 @@
     </template>
     <template #footer>
       <div class="flex w-full justify-end gap-2">
-        <UButton color="neutral" variant="outline" :disabled="busy" @click="close">Cerrar</UButton>
+        <UButton color="neutral" variant="soft" :disabled="busy" @click="close">Cerrar</UButton>
         <UButton
           v-if="canIssue && !loading"
-          :color="current ? 'neutral' : 'primary'"
-          :variant="current ? 'outline' : 'solid'"
-          icon="i-heroicons-plus"
+          color="primary"
+          icon="i-heroicons-document-plus"
           :disabled="busy"
           @click="startMode('new', null)"
         >
@@ -167,13 +186,9 @@ const reasonError = ref(false)
 const busy = ref(false)
 const othersOpen = ref(false)
 
-const alertClass = 'flex items-start gap-2 rounded-lg px-2.5 py-2 text-xs leading-[17px]'
-const tone = {
-  wait: 'bg-amber-50 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300',
-  info: 'bg-info/10 text-info',
-  bad: 'bg-error/10 text-error'
-}
-const tooltipUi = { content: 'h-auto w-[300px] max-w-[300px] rounded-[10px] bg-slate-900 px-3 py-2.5 text-xs ring-0' }
+/** Mismo UAlert compacto que el historial de documentos. */
+const alertUi = { root: '!p-2.5', title: 'text-xs font-semibold', description: 'text-xs', icon: 'size-4' }
+const tooltipUi = { content: 'h-auto max-w-sm bg-inverted px-3 py-2.5 text-inverted' }
 
 const changes = computed(() => props.operation?.invoice?.changes || [])
 const locked = computed(() => !!props.operation?.invoice?.locked)

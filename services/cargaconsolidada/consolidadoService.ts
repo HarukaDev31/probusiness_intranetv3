@@ -51,6 +51,10 @@ export class ConsolidadoService extends BaseService {
             Object.entries(params).forEach(([key, value]) => {
                 if (key === 'page' || key === 'limit') return
                 if (value === undefined || value === null) return
+                if (Array.isArray(value)) {
+                    value.map((item) => String(item).trim()).filter((item) => item && item !== 'todos').forEach((item) => query.append(`${key}[]`, item))
+                    return
+                }
                 const text = String(value).trim()
                 if (text === '' || text === 'todos') return
                 query.append(key, text)

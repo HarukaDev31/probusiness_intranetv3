@@ -1,15 +1,14 @@
 <template>
-  <div class="flex flex-col gap-1.5 text-xs leading-4 text-slate-200">
-    <span class="font-bold text-white">Cambios desde la V{{ version }}</span>
-    <span v-for="change in operation.invoice?.changes || []" :key="change.field" class="grid grid-cols-[96px_auto_12px_auto] items-baseline gap-1.5">
-      <span class="text-slate-400">{{ change.label }}</span>
-      <span class="text-slate-400 line-through">{{ change.from }}</span>
-      <span class="text-slate-400">→</span>
-      <span class="font-bold text-amber-200">{{ change.to }}</span>
-    </span>
-    <span v-if="operation.invoice?.changed_at" class="border-t border-slate-700 pt-1.5 text-slate-400">
+  <!-- Mismo formato que el desglose del monto total en Operaciones (tooltip bg-inverted). -->
+  <div class="min-w-56 space-y-1 text-xs text-inverted">
+    <p class="font-semibold">Cambios desde la V{{ version }}</p>
+    <div v-for="change in operation.invoice?.changes || []" :key="change.field" class="flex items-center justify-between gap-4">
+      <span>{{ change.label }}</span>
+      <span class="font-medium"><span class="line-through opacity-70">{{ change.from }}</span> → {{ change.to }}</span>
+    </div>
+    <p v-if="operation.invoice?.changed_at" class="mt-1 border-t border-current/30 pt-1 opacity-80">
       Modificado el {{ shortDate(operation.invoice.changed_at) }}<template v-if="operation.invoice.changed_by"> por {{ operation.invoice.changed_by }}</template>.
-    </span>
+    </p>
   </div>
 </template>
 

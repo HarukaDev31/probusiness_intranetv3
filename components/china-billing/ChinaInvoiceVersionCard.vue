@@ -1,54 +1,59 @@
 <template>
+  <!-- Mismo formato que las filas del historial de documentos (ChinaDocumentsModal). -->
   <div
-    class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1 rounded-[10px] px-3 py-2.5"
-    :class="isCurrent ? 'border-[1.5px] border-success bg-default' : 'border border-default bg-elevated/60'"
+    class="flex items-center gap-3 rounded-xl border px-3 py-2.5"
+    :class="isCurrent ? 'border-primary/30 bg-primary/10' : 'border-default'"
     :title="`Generada por ${document.generated_by || 'Sistema'}`"
   >
-    <div class="flex min-w-0 flex-wrap items-center gap-1.5">
-      <span class="text-sm font-bold text-highlighted">V{{ document.version }}</span>
-      <span class="text-[13px] font-semibold text-highlighted">Factura N° {{ operation.code }}</span>
-      <span class="inline-flex h-5 items-center rounded-full px-[7px] text-[11px] font-semibold" :class="CHINA_INVOICE_STATUS_PILL[document.status || 'reemplazada']">
-        {{ CHINA_INVOICE_STATUS_LABEL[document.status || 'reemplazada'] }}
-      </span>
+    <UIcon name="i-heroicons-document-text" class="size-7 shrink-0" :class="isCurrent ? 'text-primary' : 'text-muted'" />
+    <div class="min-w-0 flex-1">
+      <p class="flex flex-wrap items-center gap-2 text-sm font-semibold text-highlighted">
+        V{{ document.version }} · Factura N° {{ operation.code }}
+        <span class="rounded-full px-2.5 py-0.5 text-xs font-medium" :class="CHINA_INVOICE_STATUS_PILL[document.status || 'reemplazada']">
+          {{ CHINA_INVOICE_STATUS_LABEL[document.status || 'reemplazada'] }}
+        </span>
+      </p>
+      <p class="text-xs text-muted">
+        {{ shortDate(document.issued_on) }} ·
+        <span :class="differs ? 'font-semibold text-warning' : ''">{{ usd(document.total) }}</span>
+        <span v-if="differs" class="text-warning"> (actual {{ usd(operation.total) }})</span>
+      </p>
+      <p class="truncate text-xs text-muted">{{ reasonText }}</p>
     </div>
-    <div class="col-start-2 row-span-3 row-start-1 flex items-center gap-1">
-      <button
-        type="button"
-        class="grid size-8 place-items-center rounded-lg border border-default bg-default text-highlighted hover:bg-elevated"
+    <div class="flex shrink-0 items-center gap-1">
+      <UButton
+        size="sm"
+        color="neutral"
+        variant="outline"
+        icon="i-heroicons-arrow-down-tray"
         :aria-label="`Descargar ${number} en PDF`"
         title="Descargar PDF"
         @click="emit('download', document)"
-      >
-        <UIcon name="i-heroicons-arrow-down-tray" class="size-[15px]" />
-      </button>
-      <button
+      />
+      <UButton
         v-if="isCurrent"
-        type="button"
-        class="grid size-8 place-items-center rounded-lg border border-default bg-default text-error hover:bg-elevated disabled:opacity-50"
+        size="sm"
+        color="error"
+        variant="outline"
+        icon="i-heroicons-no-symbol"
         :aria-label="`Anular ${number}`"
         title="Anular"
         :disabled="busy"
         @click="emit('annul', document)"
-      >
-        <UIcon name="i-heroicons-no-symbol" class="size-[15px]" />
-      </button>
-      <button
+      />
+      <UButton
         v-else-if="document.status === 'reemplazada' && !locked"
-        type="button"
-        class="inline-flex h-8 items-center gap-1 rounded-lg border border-default bg-default px-2.5 text-xs font-semibold hover:border-success hover:text-success disabled:opacity-50"
+        size="sm"
+        color="success"
+        variant="outline"
+        icon="i-heroicons-check"
         :aria-label="`Marcar ${number} como vigente`"
         :disabled="busy"
         @click="emit('mark-current', document)"
       >
-        <UIcon name="i-heroicons-check" class="size-[15px]" />Vigente
-      </button>
+        Vigente
+      </UButton>
     </div>
-    <div class="col-start-1 text-xs text-muted">
-      Fecha <b class="font-semibold text-highlighted">{{ shortDate(document.issued_on) }}</b> ·
-      Importe <b class="font-semibold" :class="differs ? 'text-amber-700 dark:text-amber-300' : 'text-highlighted'">{{ usd(document.total) }}</b>
-      <span v-if="differs" class="text-amber-700 dark:text-amber-300">&nbsp;(actual {{ usd(operation.total) }})</span>
-    </div>
-    <div class="col-start-1 truncate text-xs text-muted">{{ reasonText }}</div>
   </div>
 </template>
 
@@ -70,7 +75,6 @@ const reasonText = computed(() => {
   return props.document.reason || 'Emisión inicial'
 })
 
-/** «22/11/26», como en la maqueta. */
 function shortDate(date: string | null): string {
   const [year, month, day] = (date || '').slice(0, 10).split('-')
   return year ? `${day}/${month}/${year.slice(2)}` : '—'
