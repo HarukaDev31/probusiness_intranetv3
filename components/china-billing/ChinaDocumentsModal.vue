@@ -37,7 +37,8 @@
           <div class="min-w-0 flex-1">
             <p class="text-sm font-semibold text-highlighted">
               {{ longDate(document.issued_on) }}
-              <span v-if="index === 0" class="ml-2 rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-medium text-primary">Más reciente</span>
+              <span v-if="document.status" class="ml-2 rounded-full px-2.5 py-0.5 text-xs font-medium" :class="CHINA_INVOICE_STATUS_PILL[document.status]">V{{ document.version }} · {{ CHINA_INVOICE_STATUS_LABEL[document.status] }}</span>
+              <span v-else-if="index === 0" class="ml-2 rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-medium text-primary">Más reciente</span>
             </p>
             <p class="truncate text-xs text-muted">
               {{ document.generated_by || 'Sistema' }}<span v-if="document.total !== null"> · {{ usd(document.total) }}</span>
@@ -68,6 +69,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { CHINA_INVOICE_STATUS_LABEL, CHINA_INVOICE_STATUS_PILL } from '~/composables/china-billing/useChinaInvoices'
 import { ChinaBillingService } from '~/services/chinaBillingService'
 import type { ChinaDocument, ChinaDocumentTarget } from '~/types/china-billing'
 
@@ -122,7 +124,7 @@ async function issue() {
   errorMessage.value = ''
   try {
     const document = (await ChinaBillingService.issueDocument(props.target)).data
-    history.value = [document, ...history.value]
+    history.value = [document, ...history.value.filter((item) => item.id !== document.id)]
     justIssued.value = true
     await ChinaBillingService.downloadDocument(document, props.target.mode)
   } catch (error: any) {

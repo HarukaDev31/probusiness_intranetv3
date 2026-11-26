@@ -47,15 +47,15 @@ async function download() {
   }
 }
 
-// Muestra la última factura emitida; si aún no hay ninguna, se emite la primera.
+// Muestra la factura vigente; si aún no hay ninguna, se emite la primera.
 watch(() => props.target, async (target) => {
   document.value = null
   errorMessage.value = ''
   if (!target) return
   loading.value = true
   try {
-    const history = (await ChinaBillingService.documentHistory(target)).data || []
-    document.value = history[0] || (await ChinaBillingService.issueDocument(target)).data
+    // El backend devuelve la factura vigente del socio (o emite la primera si aún no hay).
+    document.value = (await ChinaBillingService.issueDocument(target)).data
   } catch (error: any) {
     errorMessage.value = error?.message || 'No se pudo cargar la factura.'
   } finally {

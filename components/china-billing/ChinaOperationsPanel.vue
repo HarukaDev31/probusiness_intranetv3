@@ -113,54 +113,7 @@
     />
     <ChinaTransferModal :operation="transferring" :mode="transferMode" :siblings="rows" @close="transferring = null" @done="onTransferred" />
     <ChinaBankAccountForm :open="bankOpen" @close="bankOpen = false" @saved="bankOpen = false" />
-    <ChinaDocumentsModal :target="documentTarget" @close="documentTarget = null" />
-
-    <UModal
-      :open="!!invoiceDownloadTarget"
-      :title="invoiceDownloadTarget ? `Factura ${invoiceDownloadTarget.code}` : ''"
-      description="¿Realizaste alguna modificación en los datos bancarios, montos o información de la operación?"
-      :dismissible="!invoiceAction"
-      :ui="{ content: 'w-full max-w-lg sm:max-w-lg', header: 'border-t-[5px] border-t-primary-500', title: 'text-lg font-bold text-highlighted', description: 'text-sm text-toned' }"
-      @update:open="(value: boolean) => !value && !invoiceAction && closeInvoiceDownload()"
-    >
-      <template #body>
-        <div class="flex flex-col gap-3 text-sm">
-          <p class="text-toned">
-            Si hiciste cambios, genera una factura nueva con los datos actualizados. Si no hubo modificaciones, descarga la última factura emitida.
-          </p>
-          <UAlert
-            v-if="invoiceActionError"
-            color="error"
-            variant="subtle"
-            icon="i-heroicons-exclamation-triangle"
-            :description="invoiceActionError"
-          />
-        </div>
-      </template>
-      <template #footer>
-        <div class="flex w-full flex-wrap justify-end gap-2">
-          <UButton
-            color="neutral"
-            variant="outline"
-            icon="i-heroicons-arrow-down-tray"
-            :loading="invoiceAction === 'current'"
-            :disabled="!!invoiceAction"
-            @click="downloadCurrentInvoice"
-          >
-            No, descargar actual
-          </UButton>
-          <UButton
-            color="primary"
-            icon="i-heroicons-document-plus"
-            :loading="invoiceAction === 'new'"
-            :disabled="!!invoiceAction"
-            @click="regenerateAndDownloadInvoice"
-          >
-            Sí, generar nueva
-          </UButton>
-        </div>
-      </template>
-    </UModal>
+    <ChinaInvoiceVersionsModal :operation="invoiceOperation" @close="invoiceOperationId = null" @changed="refresh" />
   </div>
 </template>
 
@@ -169,17 +122,19 @@ import { computed, h, onMounted, ref, watch } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import ChinaBankAccountCard from '~/components/china-billing/ChinaBankAccountCard.vue'
 import ChinaBankAccountForm from '~/components/china-billing/ChinaBankAccountForm.vue'
-import ChinaDocumentsModal from '~/components/china-billing/ChinaDocumentsModal.vue'
+import ChinaInvoiceChangesTip from '~/components/china-billing/ChinaInvoiceChangesTip.vue'
+import ChinaInvoiceVersionsModal from '~/components/china-billing/ChinaInvoiceVersionsModal.vue'
 import ChinaOperationDrawer from '~/components/china-billing/ChinaOperationDrawer.vue'
 import ChinaOperationForm from '~/components/china-billing/ChinaOperationForm.vue'
 import ChinaPaymentDrawer from '~/components/china-billing/ChinaPaymentDrawer.vue'
 import ChinaPaymentForm from '~/components/china-billing/ChinaPaymentForm.vue'
 import ChinaTransferModal from '~/components/china-billing/ChinaTransferModal.vue'
 import { CHINA_STATUS, CHINA_STATUS_LABEL, CHINA_STATUS_PILL } from '~/constants/chinaBilling'
+import { invoiceChangesText, invoiceTargetFor, useChinaInvoices } from '~/composables/china-billing/useChinaInvoices'
 import { useChinaOperations } from '~/composables/china-billing/useChinaOperations'
 import { useModal } from '~/composables/commons/useModal'
 import { ChinaBillingService } from '~/services/chinaBillingService'
-import type { ChinaDocumentTarget, ChinaOperation, ChinaPayment } from '~/types/china-billing'
+import type { ChinaOperation, ChinaPayment } from '~/types/china-billing'
 import { formatNombreEmpresa } from '~/utils/formatters'
 import { UButton, UCheckbox, UIcon, UTooltip } from '#components'
 
@@ -202,10 +157,11 @@ const draft = ref<ChinaOperation | null>(null)
 const paymentOpen = ref(false)
 const bankOpen = ref(false)
 const bankCardOpen = ref(false)
-const documentTarget = ref<ChinaDocumentTarget | null>(null)
-const invoiceDownloadTarget = ref<ChinaOperation | null>(null)
-const invoiceAction = ref<'current' | 'new' | null>(null)
-const invoiceActionError = ref('')
+// Facturas por versiones: el modal sigue la fila de la lista (se refresca tras cada acción).
+const invoiceOperationId = ref<number | null>(null)
+const invoiceOperation = computed(() => (invoiceOperationId.value === null ? null : rows.value.find((row) => row.id === invoiceOperationId.value) || null))
+const invoiceBusyId = ref<number | null>(null)
+const { issue: issueInvoice, downloadCurrent: downloadCurrentInvoice } = useChinaInvoices()
 const paymentDetail = ref<ChinaPayment | null>(null)
 const editingPayment = ref<ChinaPayment | null>(null)
 const transferring = ref<ChinaOperation | null>(null)
@@ -349,10 +305,7 @@ const columns: TableColumn<ChinaOperation>[] = [
       row.original.code ? h('span', { class: 'rounded-md bg-elevated px-1.5 py-0.5 text-xs text-toned' }, row.original.code) : null
     ]),
     h('span', { class: 'text-xs text-muted' }, row.original.is_draft ? `${row.original.description} · ${row.original.cbm} CBM` : row.original.description),
-    row.original.is_draft ? null : h(UButton, {
-      size: 'xs', color: 'primary', variant: 'link', icon: 'i-heroicons-arrow-down-tray', class: 'self-start px-0',
-      onClick: () => openInvoiceDownload(row.original)
-    }, () => 'Descargar factura')
+    row.original.is_draft ? null : invoiceButton(row.original)
   ]) },
   { accessorKey: 'total', header: 'Monto total', meta: { class: right }, cell: ({ row }) => row.original.is_draft ? muted('') : totalWithDetail(row.original) },
   { accessorKey: 'received', header: 'Recibido USD', meta: { class: right }, cell: ({ row }) => row.original.is_draft ? muted('') : h('span', row.original.received ? usd(row.original.received) : '—') },
@@ -368,61 +321,85 @@ const columns: TableColumn<ChinaOperation>[] = [
     h('span', { class: 'max-w-44 text-xs text-muted' }, row.original.is_draft ? 'Cerrado por Almacén China' : paymentsText(row.original))
   ]) },
   { id: 'actions', header: '', cell: ({ row }) => h('div', { class: 'flex gap-1' }, [
-    row.original.is_draft ? null : iconButton('i-heroicons-document-text', 'Ver facturas', () => openInvoiceHistory(row.original)),
+    row.original.is_draft ? null : historyButton(row.original),
     iconButton('i-heroicons-pencil-square', 'Editar', () => openForm(row.original.is_draft ? null : row.original, row.original.is_draft ? row.original : null)),
-    iconButton('i-heroicons-trash', 'Eliminar', () => (row.original.is_draft ? dismissDraft(row.original) : removeOperation(row.original)), 'hover:bg-error/10 hover:text-error')
+    hasInvoices(row.original)
+      ? h('button', {
+        type: 'button',
+        'aria-disabled': 'true',
+        title: 'No se puede eliminar: tiene facturas emitidas',
+        'aria-label': `Eliminar ${row.original.code}`,
+        class: 'grid size-8 cursor-not-allowed place-items-center rounded-lg text-toned opacity-40',
+        onClick: () => showWarning('Operaciones', 'No se puede eliminar: la operación tiene facturas emitidas.')
+      }, h(UIcon, { name: 'i-heroicons-trash', class: 'size-4' }))
+      : iconButton('i-heroicons-trash', 'Eliminar', () => (row.original.is_draft ? dismissDraft(row.original) : removeOperation(row.original)), 'hover:bg-error/10 hover:text-error')
   ]) }
 ]
 
-function invoiceTargetFor(operation: ChinaOperation): ChinaDocumentTarget {
-  return { kind: 'invoice', mode: 'china', title: `Factura ${operation.code}`, operationId: operation.id! }
+const hasInvoices = (operation: ChinaOperation) => (operation.invoice?.count ?? 0) > 0
+
+/** Servicio: «Generar factura» si no hay vigente, «Actualizar factura» si los datos cambiaron, «Descargar factura» si está al día. */
+function invoiceButton(operation: ChinaOperation) {
+  const state = operation.invoice
+  const busy = invoiceBusyId.value === operation.id
+  // Mismo enlace que tenía «Descargar factura»; en amarillo (warning) cuando hay que actualizarla.
+  const link = (icon: string, label: string, onClick: () => void, color: 'primary' | 'warning' = 'primary') => h(UButton, {
+    size: 'xs', color, variant: 'link', icon, loading: busy, disabled: busy, class: 'self-start px-0', onClick
+  }, () => label)
+
+  if (!state?.current) return link('i-heroicons-plus', 'Generar factura', () => generateInvoice(operation))
+  if (state.changes.length) {
+    return h(UTooltip, { ui: { content: 'h-auto max-w-sm bg-inverted px-3 py-2.5 text-inverted' } }, {
+      default: () => link('i-heroicons-arrow-path', 'Actualizar factura', () => updateInvoice(operation), 'warning'),
+      content: () => h(ChinaInvoiceChangesTip, { operation, version: state.current?.version ?? 0 })
+    })
+  }
+  return link('i-heroicons-arrow-down-tray', 'Descargar factura', () => withInvoiceBusy(operation, () => downloadCurrentInvoice(operation)))
 }
 
-function openInvoiceHistory(operation: ChinaOperation) {
-  documentTarget.value = invoiceTargetFor(operation)
+function historyButton(operation: ChinaOperation) {
+  const count = operation.invoice?.count ?? 0
+  return h('button', {
+    type: 'button',
+    title: 'Historial de facturas',
+    'aria-label': `Historial de facturas de ${operation.code}`,
+    class: 'relative grid size-8 place-items-center rounded-lg text-toned transition-colors hover:bg-primary/10 hover:text-primary',
+    onClick: () => (invoiceOperationId.value = operation.id)
+  }, [
+    h(UIcon, { name: 'i-heroicons-document-text', class: 'size-4' }),
+    count ? h('span', { class: 'absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-inverted' }, String(count)) : null
+  ])
 }
 
-function openInvoiceDownload(operation: ChinaOperation) {
-  invoiceActionError.value = ''
-  invoiceDownloadTarget.value = operation
-}
-
-function closeInvoiceDownload() {
-  invoiceDownloadTarget.value = null
-  invoiceActionError.value = ''
-}
-
-async function downloadCurrentInvoice() {
-  if (!invoiceDownloadTarget.value) return
-  invoiceAction.value = 'current'
-  invoiceActionError.value = ''
+async function withInvoiceBusy(operation: ChinaOperation, action: () => Promise<unknown>) {
+  invoiceBusyId.value = operation.id
   try {
-    const target = invoiceTargetFor(invoiceDownloadTarget.value)
-    const history = (await ChinaBillingService.documentHistory(target)).data || []
-    const latest = history[0] || (await ChinaBillingService.issueDocument(target)).data
-    await ChinaBillingService.downloadDocument(latest, target.mode)
-    closeInvoiceDownload()
-  } catch (error: any) {
-    invoiceActionError.value = error?.message || 'No se pudo descargar la factura.'
+    await action()
+  } catch (error: unknown) {
+    showError('Facturas', error instanceof Error ? error.message : 'No se pudo completar la acción.')
   } finally {
-    invoiceAction.value = null
+    invoiceBusyId.value = null
   }
 }
 
-async function regenerateAndDownloadInvoice() {
-  if (!invoiceDownloadTarget.value) return
-  invoiceAction.value = 'new'
-  invoiceActionError.value = ''
-  try {
-    const target = invoiceTargetFor(invoiceDownloadTarget.value)
-    const document = (await ChinaBillingService.issueDocument(target)).data
-    await ChinaBillingService.downloadDocument(document, target.mode)
-    closeInvoiceDownload()
-  } catch (error: any) {
-    invoiceActionError.value = error?.message || 'No se pudo generar la nueva factura.'
-  } finally {
-    invoiceAction.value = null
+/** Primera factura sin motivo; si ya hubo versiones (todas anuladas o reemplazadas) se pide el motivo en el historial. */
+function generateInvoice(operation: ChinaOperation) {
+  if (hasInvoices(operation)) {
+    invoiceOperationId.value = operation.id
+    return
   }
+  withInvoiceBusy(operation, async () => {
+    await issueInvoice(invoiceTargetFor(operation))
+    refresh()
+  })
+}
+
+/** Nueva versión con los cambios como motivo (el back no marca cambios en operaciones en caja). */
+function updateInvoice(operation: ChinaOperation) {
+  withInvoiceBusy(operation, async () => {
+    await issueInvoice(invoiceTargetFor(operation), `Actualización: ${invoiceChangesText(operation)}`)
+    refresh()
+  })
 }
 
 function openForm(operation: ChinaOperation | null, draftRow: ChinaOperation | null) {
