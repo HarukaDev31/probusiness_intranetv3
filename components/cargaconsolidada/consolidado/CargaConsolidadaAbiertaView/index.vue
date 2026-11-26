@@ -62,7 +62,7 @@
             :facets="facets"
             :total="totalRecords"
             :overall="facetsTotal"
-            :english="usesEnglishTableHeaders(currentRole)"
+            :english="usesEnglishTableHeaders(currentRole) && !isEncargadoChina"
             :status-labels="ESTADO_LABEL_MAP_ALMACEN"
             :hidden-statuses="['COMPLETADO']"
             :hide-back-button="!backRoute"
