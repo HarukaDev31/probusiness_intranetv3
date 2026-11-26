@@ -1,7 +1,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, type Ref, type ComputedRef } from 'vue'
 import { ConsolidadoService } from '../../services/cargaconsolidada/consolidadoService'
 import type { PaginationInfo } from '../../types/data-table'
-import type { Contenedor, ContenedorFilters, ContenedorPasos } from '../../types/cargaconsolidada/contenedor'
+import type { Contenedor, ContenedorFacets, ContenedorFilters, ContenedorPasos } from '../../types/cargaconsolidada/contenedor'
 
 export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
     const consolidadoData = ref<Contenedor[]>([])
@@ -45,6 +45,9 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
     const validContainers=ref<any[]>([])
     const empresasCreadas = ref<{ label: string; value: string }[]>([])
     const paisesHabilitados = ref<{ label: string; value: number }[]>([])
+    /** Barra de filtros de Almacén China: opciones con conteo y total sin filtros. */
+    const facets = ref<ContenedorFacets | null>(null)
+    const facetsTotal = ref(0)
     const getConsolidadoData = async (roleOverride?: string) => {
         try {
             loading.value = true
@@ -116,6 +119,8 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
                 { label: 'Todos', value: 'todos' },
                 ...(response.filters?.paises ?? []),
             ]
+            facets.value = response.facets ?? null
+            facetsTotal.value = response.facets_total ?? response.pagination?.total ?? 0
         } catch (err: any) {
             error.value = err?.message || 'Error al cargar los datos'
             console.error('Error en getConsolidadoData:', err)
@@ -172,11 +177,13 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
         getConsolidadoData()
     }
 
-    const handleFilterChange = (filterType: string, value: string) => {
+    const handleFilterChange = (filterType: string, value: string | string[]) => {
         const filterKey = filterType as keyof ContenedorFilters
-        
-        
-        if (value === 'todos') {
+
+        if (Array.isArray(value)) {
+            // Selección múltiple (barra de filtros): lista vacía = todos.
+            ;(filters.value as Record<string, unknown>)[filterKey] = value.length ? value : 'todos'
+        } else if (value === 'todos') {
             if (filterKey === 'estado_china' || filterKey === 'anio' || filterKey === 'estado_finanzas' || filterKey === 'organizacion_id' || filterKey === 'empresa' || filterKey === 'id_pais') {
                 filters.value[filterKey] = 'todos'
             } else {
@@ -346,6 +353,8 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
         handlePageChange,
         handleItemsPerPageChange,
         handleFilterChange,
+        facets,
+        facetsTotal,
         clearFilters,
         resetSearch,
         setCompletado,

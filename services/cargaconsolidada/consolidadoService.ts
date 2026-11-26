@@ -4,9 +4,9 @@ export interface ConsolidadoParams {
     page?: number
     limit?: number
     search?: string
-    estado_china?: string
+    estado_china?: string | string[]
     /** Año de f_inicio del consolidado. */
-    anio?: string
+    anio?: string | string[]
     /** Estado finanzas del consolidado. */
     estado_finanzas?: string
     completado?: boolean | false
@@ -17,9 +17,19 @@ export interface ConsolidadoParams {
     /** Org 1: filtrar por organización. */
     organizacion_id?: string
     /** Almacén: filtrar por empresa del consolidado. */
-    empresa?: string
+    empresa?: string | string[]
     /** Filtrar por país del consolidado. */
-    id_pais?: string
+    id_pais?: string | string[]
+}
+
+/** Varios valores van como `clave[]` (PHP los recibe como lista); uno solo, como antes. */
+function putFilter(target: Record<string, unknown>, key: string, value: string | string[] | undefined) {
+    if (Array.isArray(value)) {
+        const values = value.map((item) => String(item).trim()).filter((item) => item && item !== 'todos')
+        if (values.length) target[`${key}[]`] = values
+        return
+    }
+    if (value && value.trim() && value !== 'todos') target[key] = value.trim()
 }
 
 export class ConsolidadoService extends BaseService {
@@ -41,6 +51,10 @@ export class ConsolidadoService extends BaseService {
             Object.entries(params).forEach(([key, value]) => {
                 if (key === 'page' || key === 'limit') return
                 if (value === undefined || value === null) return
+                if (Array.isArray(value)) {
+                    value.map((item) => String(item).trim()).filter((item) => item && item !== 'todos').forEach((item) => query.append(`${key}[]`, item))
+                    return
+                }
                 const text = String(value).trim()
                 if (text === '' || text === 'todos') return
                 query.append(key, text)
@@ -91,13 +105,9 @@ export class ConsolidadoService extends BaseService {
                 cleanParams.search = params.search.trim()
             }
 
-            if (params.estado_china && params.estado_china.trim() && params.estado_china !== 'todos') {
-                cleanParams.estado_china = params.estado_china.trim()
-            }
+            putFilter(cleanParams, 'estado_china', params.estado_china)
 
-            if (params.anio && params.anio.trim() && params.anio !== 'todos') {
-                cleanParams.anio = params.anio.trim()
-            }
+            putFilter(cleanParams, 'anio', params.anio)
 
             if (params.estado_finanzas && params.estado_finanzas.trim() && params.estado_finanzas !== 'todos') {
                 cleanParams.estado_finanzas = params.estado_finanzas.trim()
@@ -119,13 +129,9 @@ export class ConsolidadoService extends BaseService {
                 cleanParams.organizacion_id = params.organizacion_id.trim()
             }
 
-            if (params.empresa && params.empresa.trim() && params.empresa !== 'todos') {
-                cleanParams.empresa = params.empresa.trim()
-            }
+            putFilter(cleanParams, 'empresa', params.empresa)
 
-            if (params.id_pais && params.id_pais.trim() && params.id_pais !== 'todos') {
-                cleanParams.id_pais = params.id_pais.trim()
-            }
+            putFilter(cleanParams, 'id_pais', params.id_pais)
 
             const response = await this.apiCall<ContenedorResponse>(`${this.baseUrl}`, {
                 method: 'GET',

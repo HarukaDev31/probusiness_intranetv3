@@ -271,8 +271,31 @@ export class ChinaBillingService extends BaseService {
     return this.apiCall<{ success: boolean; data: ChinaDocument[] }>(this.documentsUrl(target))
   }
 
-  static async issueDocument(target: ChinaDocumentTarget) {
-    return this.apiCall<One<ChinaDocument>>(this.documentsUrl(target), { method: 'POST' })
+  static async issueDocument(target: ChinaDocumentTarget, reason?: string) {
+    return this.apiCall<One<ChinaDocument>>(this.documentsUrl(target), { method: 'POST', body: reason ? { reason } : undefined })
+  }
+
+  /** Marca una versión anterior de la factura como vigente. */
+  static async markCurrentInvoice(documentId: number, reason?: string) {
+    return this.apiCall<One<ChinaDocument>>(`${this.baseUrl}/documents/${documentId}/current`, { method: 'POST', body: { reason: reason || null } })
+  }
+
+  /** Anula la factura vigente (motivo obligatorio). */
+  static async annulInvoice(documentId: number, reason: string) {
+    return this.apiCall<One<ChinaDocument>>(`${this.baseUrl}/documents/${documentId}/annul`, { method: 'POST', body: { reason } })
+  }
+
+  static async downloadDocument(doc: ChinaDocument, mode: 'china' | 'partner') {
+    const base = mode === 'partner' ? `${this.baseUrl}/partner` : this.baseUrl
+    const blob = await this.apiCall<Blob>(`${base}/documents/${doc.id}/download`, { responseType: 'blob' })
+    const objectUrl = window.URL.createObjectURL(blob)
+    const link = window.document.createElement('a')
+    link.href = objectUrl
+    link.download = doc.file_name || `documento-${doc.id}.pdf`
+    window.document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1000)
   }
 
   static async downloadDocument(doc: ChinaDocument, mode: 'china' | 'partner') {
