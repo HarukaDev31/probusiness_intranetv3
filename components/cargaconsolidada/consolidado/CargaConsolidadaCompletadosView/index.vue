@@ -64,7 +64,7 @@
             :facets="facets"
             :total="totalRecords"
             :overall="facetsTotal"
-            :english="usesEnglishTableHeaders(currentRole)"
+            :english="usesEnglishTableHeaders(currentRole) && String(displayRole || '').trim().toLowerCase() !== ROLES.ENCARGADO_CHINA.toLowerCase()"
             :status-labels="ESTADO_LABEL_MAP_ALMACEN"
             :hidden-statuses="['PENDIENTE', 'RECIBIENDO']"
             :hide-back-button="!backRoute"
