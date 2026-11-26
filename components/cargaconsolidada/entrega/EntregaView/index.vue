@@ -155,6 +155,7 @@ import type { TableColumn } from '@nuxt/ui'
 import SectionHeader from '../../../../components/commons/SectionHeader.vue'
 import { useEntrega } from '~/composables/cargaconsolidada/entrega/useEntrega'
 import { useUserRole } from '../../../../composables/auth/useUserRole'
+import { EntregaService } from '~/services/cargaconsolidada/entrega/entregaService'
 import { UBadge, UButton, UInput, UTabs, USelect } from '#components'
 import PagoGrid from '../../../../components/PagoGrid.vue'
 import DeliveryAccionesModal from '../../../../components/cargaconsolidada/entrega/DeliveryAccionesModal/index.vue'
@@ -1115,12 +1116,48 @@ const deliveryColumns = ref<TableColumn<any>[]>([
     }
   }
 ])
+/** El rol real del usuario, no el de la ruta: el back solo acepta Coordinación. */
+const puedeVerComoCliente = computed(() => authCurrentRole.value === ROLES.COORDINACION)
+
+const verComoCliente = async (row: any) => {
+  // La pestaña se abre en el clic (si no, el navegador la bloquea) y se suelta del opener.
+  const tab = window.open('about:blank', '_blank')
+  if (!tab) {
+    showError('Ventana bloqueada', 'Permite las ventanas emergentes para abrir el portal del cliente.')
+    return
+  }
+  tab.opener = null
+  try {
+    const response = await EntregaService.verComoCliente(Number(row?.id_cotizacion ?? row?.id))
+    if (!response?.success || !response.data?.url) throw new Error(response?.message)
+    tab.location.replace(response.data.url)
+  } catch (error: any) {
+    tab.close()
+    showError('No se pudo abrir', error?.data?.message || error?.message || 'No se pudo abrir el portal del cliente.')
+  }
+}
+
+const verComoClienteColumn: TableColumn<any> = {
+  id: 'ver_como_cliente',
+  header: 'Portal',
+  cell: ({ row }) => h(UButton, {
+    size: 'xs',
+    icon: 'i-heroicons-eye',
+    label: 'Ver como cliente',
+    variant: 'soft',
+    color: 'primary',
+    title: 'Abrir el portal como este cliente (solo lectura)',
+    onClick: () => verComoCliente(row.original)
+  })
+}
+
 const clientesColumnsView = computed(() => {
   const cols = isJefeMarketingReadOnly.value
     ? toReadOnlyEntregaColumns(clientesColumns.value)
     : clientesColumns.value
   if (isMarketingProfile.value) return cols
-  return cols.filter((column: any) => String(column?.accessorKey ?? '') !== 'productos')
+  const visibles = cols.filter((column: any) => String(column?.accessorKey ?? '') !== 'productos')
+  return puedeVerComoCliente.value ? [...visibles, verComoClienteColumn] : visibles
 })
 
 const entregasColumnsView = computed(() => {
