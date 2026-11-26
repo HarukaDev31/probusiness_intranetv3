@@ -59,6 +59,11 @@ export interface DataTableKanbanColumn {
 }
 
 export interface DataTableProps {
+  /**
+   * 'default': diseño de siempre. 'v3': título, buscador y «Exportar» en la cabecera (fuera de la tabla);
+   * debajo, una sola tarjeta blanca con el slot `body-top` (pestañas), la tabla plana y la paginación.
+   */
+  variant?: 'default' | 'v3'
   /** 'panel' (por defecto): botón «Filtros» con panel. 'inline': buscador y filtros en una barra, como en las maquetas de China. */
   filtersLayout?: 'panel' | 'inline'
   /** Texto del contador de la barra inline (por ejemplo «4 de 12»). Por defecto «N resultados». */
