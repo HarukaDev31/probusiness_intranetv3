@@ -1,6 +1,6 @@
 <template>
   <div class="landing-leads-wide-table p-6">
-    <div class="md:px-4">
+    <div>
       <div
         class="inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md bg-gray-100 px-2.5 py-1 font-mono text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300"
         data-testid="leads-codigo-documento"
@@ -17,6 +17,8 @@
       :title="tableTitle"
       subtitle="Leads privados captados en landings"
       icon="i-heroicons-user-group"
+      variant="v3"
+      :fill-viewport="false"
       :show-title="true"
       :data="tableData"
       :columns="tableColumns"
@@ -27,7 +29,7 @@
       :items-per-page="tablePerPage"
       :primary-search-value="tableSearch"
       :show-primary-search="true"
-      primary-search-placeholder="Buscar por nombre, whatsapp o email"
+      :primary-search-placeholder="searchPlaceholder"
       :show-filters="false"
       :show-export="true"
       :show-body-top="true"
@@ -39,7 +41,7 @@
     >
       <template #body-top>
         <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <UTabs v-model="activeTab" :items="tabs" variant="pill" class="w-72" />
+          <UTabs v-model="activeTab" :items="tabs" :content="false" variant="link" :ui="DATA_TABLE_V3_TABS_UI" />
           <UButton
             v-if="activeTab === 'curso'"
             icon="i-heroicons-clock"
@@ -129,6 +131,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { useLandingLeads } from '~/composables/useLandingLeads'
 import type { LandingConsolidadoLead, LandingCursoLead, LandingLeadPagination } from '~/types/landing-leads'
 import { formatDate } from '~/utils/formatters'
+import { DATA_TABLE_V3_TABS_UI } from '~/constants/data-table-v3'
 import { LandingLeadsService } from '~/services/landing/landingLeadsService'
 import { LandingCountdownService } from '~/services/landing/landingCountdownService'
 
@@ -151,8 +154,8 @@ const {
 } = useLandingLeads()
 
 const tabs = [
-  { label: 'Landing consolidado', value: 'consolidado' },
-  { label: 'Landing curso', value: 'curso' }
+  { label: 'Carga Consolidada', value: 'consolidado', icon: 'i-heroicons-cube' },
+  { label: 'Curso de Importación', value: 'curso', icon: 'i-heroicons-academic-cap' }
 ]
 
 const showCountdownModal = ref(false)
@@ -260,7 +263,7 @@ const consolidadoColumns: TableColumn<LandingConsolidadoLead>[] = [
   {
     accessorKey: 'form_source',
     header: 'Origen',
-    cell: ({ row }: { row: any }) => h('span', formatConsolidadoFormSource(row.original.form_source))
+    cell: ({ row }: { row: any }) => h('span', { class: 'font-medium text-blue-900 dark:text-blue-300' }, formatConsolidadoFormSource(row.original.form_source))
   },
   { accessorKey: 'ip_address', header: 'IP' },
   {
@@ -279,7 +282,7 @@ const cursoColumns: TableColumn<LandingCursoLead>[] = [
   {
     accessorKey: 'form_source',
     header: 'Origen',
-    cell: ({ row }: { row: any }) => h('span', formatCursoFormSource(row.original.form_source))
+    cell: ({ row }: { row: any }) => h('span', { class: 'font-medium text-blue-900 dark:text-blue-300' }, formatCursoFormSource(row.original.form_source))
   },
   { accessorKey: 'ip_address', header: 'IP' },
   {
@@ -290,6 +293,12 @@ const cursoColumns: TableColumn<LandingCursoLead>[] = [
 ]
 
 const tableTitle = 'Leads Landing CC y CI'
+
+const searchPlaceholder = computed(() =>
+  activeTab.value === 'consolidado'
+    ? 'Buscar por nombre, WhatsApp o IP'
+    : 'Buscar por nombre, WhatsApp, email o IP'
+)
 
 const tableData = computed(() =>
   activeTab.value === 'consolidado' ? consolidadoLeads.value : cursoLeads.value
