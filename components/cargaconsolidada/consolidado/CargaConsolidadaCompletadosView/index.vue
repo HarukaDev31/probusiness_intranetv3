@@ -43,6 +43,7 @@
         :show-filters="true"
         :prominent-toolbar="isAlmacen"
         :full-width="isAlmacen"
+        :keep-spanish-headers="isEncargadoChina"
         :filter-config="filterConfig"
         :filters-value="filters"
         :show-export="true"
@@ -59,7 +60,7 @@
         <!-- Almacén / Encargado China: barra de filtros de la maqueta (multi-selección con conteo). -->
         <template v-if="isAlmacen" #filters>
           <ConsolidadoFilterBar
-            :title="translateTableText('Carga Consolidada Completada', currentRole)"
+            :title="isEncargadoChina ? 'Carga Consolidada Completada' : translateTableText('Carga Consolidada Completada', currentRole)"
             :search="search"
             :filters="filters"
             :facets="facets"
@@ -147,7 +148,7 @@ import { ID_ORGANIZACION_ADMIN, ROLES, esOrganizacionSocio, roleEsComoJefeImport
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
-import { useChinaStages } from '~/composables/china-caja/useChinaStages'
+import { chinaNumeroColumn, useChinaStages } from '~/composables/china-caja/useChinaStages'
 import ChinaStageCell from '~/components/china-caja/ChinaStageCell.vue'
 import ChinaStagesDrawer from '~/components/china-caja/ChinaStagesDrawer.vue'
 import CreateConsolidadoModal from '~/components/cargaconsolidada/consolidado/CreateConsolidadoModal/index.vue'
@@ -713,6 +714,7 @@ const etapasColumn: TableColumn<any> = {
   },
 }
 onMounted(loadStages)
+const numeroColumn = chinaNumeroColumn(currentPage, itemsPerPage)
 
 const getColumns = () => {
   let result: TableColumn<any>[]
@@ -744,6 +746,7 @@ const getColumns = () => {
     const index = result.findIndex((col) => (col as { accessorKey?: string }).accessorKey === 'estado_china')
     const at = index === -1 ? result.length : index
     result = [...result.slice(0, at), etapasColumn, ...result.slice(at)]
+    result = [numeroColumn, ...result]
   }
   return result
 }

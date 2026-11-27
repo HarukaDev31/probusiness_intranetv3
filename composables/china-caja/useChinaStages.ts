@@ -1,14 +1,26 @@
-import { computed, ref } from 'vue'
+import { computed, ref, type Ref } from 'vue'
 import { useRoute } from '#imports'
+import type { TableColumn } from '@nuxt/ui'
 import { useChinaAction } from '~/composables/china-caja/useChinaAction'
 import { useEncargadoChina } from '~/composables/china-caja/useEncargadoChina'
+import { useModal } from '~/composables/commons/useModal'
 import { ChinaCajaService } from '~/services/chinaCajaService'
 import type { ChinaContainer, ChinaContainerOptions, ChinaContainerValues } from '~/types/china-caja'
+
+/** Columna N del Encargado China: número global de la fila (considera la página). */
+export function chinaNumeroColumn(page: Ref<number>, perPage: Ref<number>): TableColumn<any> {
+  return {
+    id: 'nro',
+    header: 'N',
+    cell: ({ row }) => (page.value - 1) * perPage.value + row.index + 1,
+  }
+}
 
 /** Columna y panel «Etapas» de Carga consolidada (solo Encargado China). */
 export function useChinaStages() {
   const { isEncargadoChina } = useEncargadoChina()
   const { run } = useChinaAction('Etapas')
+  const { showError } = useModal()
   const route = useRoute()
   const rows = ref<ChinaContainer[]>([])
   const options = ref<ChinaContainerOptions>({ lines: [], shippers: [], container_types: [] })
@@ -34,11 +46,16 @@ export function useChinaStages() {
     openStage.value = stage ?? rows.value.find((row) => row.id === id)?.progress.current ?? 1
   }
 
-  function save(id: number, values: ChinaContainerValues) {
-    return run(async () => {
+  /** Guarda sin pantalla de carga: el dato se actualiza en segundo plano y solo avisa si falla. */
+  async function save(id: number, values: ChinaContainerValues): Promise<boolean> {
+    try {
       await ChinaCajaService.updateContainer(id, values)
       await fetchRows()
-    })
+      return true
+    } catch (error: unknown) {
+      showError('Etapas', error instanceof Error ? error.message : 'No se pudo guardar.')
+      return false
+    }
   }
 
   function containerOf(id: number) {

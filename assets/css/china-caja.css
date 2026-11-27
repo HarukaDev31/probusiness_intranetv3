@@ -214,7 +214,7 @@ button.cc-input { padding-right: 34px; }
 .cc-segs > span { height: 6px; border-radius: 3px; background: var(--cc-empty); overflow: hidden; }
 .cc-segs > span > span { display: block; height: 100%; }
 .cc-segs--lg { flex: 1; gap: 4px; }
-.cc-segs--lg > span { display: flex; flex-direction: column; gap: 6px; height: auto; border-radius: 0; background: transparent; font-size: 11px; color: var(--cc-muted); white-space: nowrap; text-overflow: ellipsis; }
+.cc-segs--lg > span { display: flex; flex-direction: column; gap: 6px; height: auto; border-radius: 0; background: transparent; font-size: 11px; line-height: 1.25; color: var(--cc-muted); white-space: normal; }
 .cc-segs--lg i { display: block; height: 8px; border-radius: 4px; background: var(--cc-empty); overflow: hidden; }
 .cc-segs--lg i > span { display: block; height: 100%; }
 .cc-drawer { display: flex; flex-direction: column; height: 100%; background: #eff2f9; }
