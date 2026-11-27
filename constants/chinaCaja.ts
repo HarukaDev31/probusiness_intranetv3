@@ -5,6 +5,9 @@ export const AMOUNT_UI = { increment: 'hidden', decrement: 'hidden', base: 'px-3
 
 export const CHINA_FILE_ACCEPT = '.pdf,.jpg,.jpeg,.png,.webp'
 
+/** BL draft: solo el Excel de la naviera; el backend toma el N. BL de la celda «B/L. NO.». */
+export const CHINA_BL_DRAFT_ACCEPT = '.xlsx,.xls'
+
 export const CHINA_FILTER_ALL = 'todos'
 
 export const CHINA_ALL_ORIGINS = 'Todos'
