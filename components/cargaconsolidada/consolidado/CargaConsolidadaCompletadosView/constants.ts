@@ -10,6 +10,8 @@ export const ALMACEN_STATUS_OPTIONS = [
   { label: 'WAITING', value: 'WAITING' },
   { label: 'RECEIVING', value: 'RECEIVING' },
   { label: 'FINISH', value: 'FINISH' },
+  // Completados con las 3 etapas listas (el back lo marca con china_cerrado_at).
+  { label: 'CERRADO', value: 'CERRADO' },
 ] as const
 
 export const CHINA_STATUS_OPTIONS = [
@@ -28,6 +30,7 @@ export const ESTADO_LABEL_MAP_ALMACEN: Record<string, string> = {
   PENDIENTE: 'WAITING',
   RECIBIENDO: 'RECEIVING',
   COMPLETADO: 'FINISH',
+  CERRADO: 'CERRADO',
   WAITING: 'WAITING',
   RECEIVING: 'RECEIVING',
   FINISH: 'FINISH',
@@ -40,4 +43,5 @@ export const ESTADO_LABEL_MAP_DEFAULT: Record<string, string> = {
   PENDIENTE: 'PENDIENTE',
   RECIBIENDO: 'RECIBIENDO',
   COMPLETADO: 'COMPLETADO',
+  CERRADO: 'CERRADO',
 }

@@ -1,8 +1,9 @@
 export const STATUS_BG_CLASSES = {
     PENDIENTE: 'bg-yellow-500 text-white dark:bg-yellow-500 dark:text-white ',
     RECIBIENDO: 'bg-blue-500 text-white dark:bg-blue-500 dark:text-white',
-    COMPLETADO: 'bg-green-500 text-white dark:bg-green-500 dark:text-white',
-    Completado: 'bg-green-500 text-white dark:bg-green-500 dark:text-white',
+  COMPLETADO: 'bg-green-500 text-white dark:bg-green-500 dark:text-white',
+  CERRADO: 'bg-green-700 text-white dark:bg-green-700 dark:text-white',
+  Completado: 'bg-green-500 text-white dark:bg-green-500 dark:text-white',
     Inspeccionado: 'bg-green-500 text-white dark:bg-green-500 dark:text-white',
     Pendiente: 'bg-yellow-500 text-white dark:bg-yellow-500 dark:text-white',
     Incompleto: 'bg-red-500 text-white dark:bg-red-500 dark:text-white',
