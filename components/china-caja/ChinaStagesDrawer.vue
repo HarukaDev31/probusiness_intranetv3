@@ -67,10 +67,11 @@
                 <div class="cc-box cc-box--col">
                   <div class="flex items-center gap-3">
                     <span class="cc-check !cursor-default" :class="{ on: container.data.bl_draft_name }">{{ container.data.bl_draft_name ? '✓' : '' }}</span>
-                    <span class="cc-stack flex-1"><span class="text-sm font-medium">BL draft</span><span class="cc-sub cc-cut">{{ container.data.bl_draft_name || 'Sube el BL draft (PDF o imagen)' }}</span></span>
-                    <button v-if="container.bl_draft_url" type="button" class="cc-link" @click="viewer = true">Ver</button>
+                    <span class="cc-stack flex-1"><span class="text-sm font-medium">BL draft</span><span class="cc-sub cc-cut">{{ container.data.bl_draft_name || 'Sube el BL draft (solo Excel)' }}</span></span>
+                    <a v-if="container.bl_draft_url && draftIsSheet" :href="container.bl_draft_url" target="_blank" rel="noopener" class="cc-link">Descargar</a>
+                    <button v-else-if="container.bl_draft_url" type="button" class="cc-link" @click="viewer = true">Ver</button>
                     <button v-if="container.data.bl_draft_name" type="button" class="cc-link cc-link--danger" @click="save({ remove_bl_draft: true })">Quitar</button>
-                    <label class="cc-btn cc-btn--soft !rounded-lg !px-3 !py-[7px] !text-[13px]">{{ container.data.bl_draft_name ? 'Reemplazar' : 'Subir' }}<input type="file" class="hidden" :accept="CHINA_FILE_ACCEPT" @change="uploadDraft"></label>
+                    <label class="cc-btn cc-btn--soft !rounded-lg !px-3 !py-[7px] !text-[13px]">{{ container.data.bl_draft_name ? 'Reemplazar' : 'Subir' }}<input type="file" class="hidden" :accept="CHINA_BL_DRAFT_ACCEPT" @change="uploadDraft"></label>
                   </div>
                   <label class="cc-field pl-[34px]"><span class="flex justify-between"><span>N. BL</span><span class="text-xs" :class="tagTone(container.data.bl_number)">{{ tag(container.data.bl_number) }}</span></span><UInput v-model="form.bl_number" variant="none" placeholder="ej. MEDUQ1234567" :ui="{ base: 'cc-input' }" @change="saveText('bl_number')" /></label>
                 </div>
@@ -95,7 +96,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import VoucherViewerModal from '~/components/pago-proveedor/VoucherViewerModal.vue'
-import { AMOUNT_UI, CHINA_FILE_ACCEPT, CHINA_STAGE_CBM, CHINA_STAGE_SEGMENT } from '~/constants/chinaCaja'
+import { AMOUNT_UI, CHINA_BL_DRAFT_ACCEPT, CHINA_STAGE_CBM, CHINA_STAGE_SEGMENT } from '~/constants/chinaCaja'
 import type { ChinaContainer, ChinaContainerData, ChinaContainerOptions, ChinaContainerValues, ChinaStage } from '~/types/china-caja'
 
 interface Field { key: string; label: string; type?: string; placeholder?: string; items?: Array<string | { label: string; value: string }>; maxlength?: number; createPlaceholder?: string }
@@ -126,6 +127,8 @@ const reservation = computed<Field[]>(() => [
   { key: 'free_days', label: 'Sobrestadía', type: 'text', placeholder: 'ej. 21 días libres' }
 ])
 const listPath = computed(() => `/cargaconsolidada/${props.container?.closed ? 'completados' : 'abiertos'}`)
+/** El BL draft nuevo es un Excel (no se puede previsualizar: se descarga); los PDF/imágenes anteriores siguen con «Ver». */
+const draftIsSheet = computed(() => /\.xlsx?$/i.test(props.container?.data.bl_draft_name ?? ''))
 const operationText = computed(() => {
   if (props.container?.operation) return `Generado automáticamente · ${props.container.operation.code}`
   return props.container?.operation_to_approve ? 'Pendiente de aprobar en Operaciones' : 'Se marca al aprobar la operación en Operaciones'
