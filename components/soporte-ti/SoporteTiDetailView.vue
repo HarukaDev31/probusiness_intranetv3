@@ -114,8 +114,27 @@
             </p>
           </div>
         </UCard>
+
+        <UButton
+          v-if="puedeExportar"
+          block
+          size="sm"
+          color="neutral"
+          variant="outline"
+          icon="i-heroicons-document-arrow-down"
+          @click="modalExportarAbierto = true"
+        >
+          Exportar ticket (texto)
+        </UButton>
       </div>
     </div>
+
+    <SoporteTiExportModal
+      v-if="puedeExportar && ticket.backendId"
+      v-model:open="modalExportarAbierto"
+      :solicitud-id="ticket.backendId"
+      :codigo-ticket="ticket.codigo"
+    />
 
     <SoporteTiModalMaquetaPm
       v-model:open="modalMaquetaAbierto"
@@ -145,6 +164,7 @@ import SoporteTiMaquetaPreview from '~/components/soporte-ti/SoporteTiMaquetaPre
 import SoporteTiDetailChatSection from '~/components/soporte-ti/SoporteTiDetailChatSection.vue'
 import SoporteTiModalMaquetaPm from '~/components/soporte-ti/SoporteTiModalMaquetaPm.vue'
 import SoporteTiAsignacionCard from '~/components/soporte-ti/SoporteTiAsignacionCard.vue'
+import SoporteTiExportModal from '~/components/soporte-ti/SoporteTiExportModal.vue'
 
 type BadgeColor = 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral'
 
@@ -166,6 +186,10 @@ const enviandoMaqueta = ref(false)
 const procesandoMaqueta = ref(false)
 
 const esVistaSolicitante = computed(() => rolActivo.value === 'Solicitante')
+
+/** Exportar en texto para depurar: solo el rol Soporte (rolActivo 'Analista'). */
+const puedeExportar = computed(() => rolActivo.value === 'Analista')
+const modalExportarAbierto = ref(false)
 
 const mostrarConfirmacionCreador = computed(
   () => Boolean(props.ticket.gestion.esCreador && props.ticket.gestion.puedeEstado)

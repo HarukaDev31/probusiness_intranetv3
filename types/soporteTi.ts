@@ -13,6 +13,18 @@ export interface SoporteTiEstado {
 }
 
 /** Fila historial `soporte_ti_solicitud_estados` */
+/** Exportación en texto del ticket y su chat completo (solo rol Soporte, para depurar). */
+export interface SoporteTiExportacion {
+  codigo: string
+  titulo: string
+  total_mensajes: number
+  total_adjuntos: number
+  desde: string | null
+  hasta: string | null
+  generado_en: string
+  texto: string
+}
+
 export interface SoporteTiEstadoHistorial {
   id: number
   solicitudId: number
