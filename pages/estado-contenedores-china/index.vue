@@ -9,7 +9,7 @@
     <div class="cc-kpis-auto"><div v-for="card in cards" :key="card.label" class="cc-kpi-side" :style="{ '--kpi': card.accent }"><span class="text-xs tracking-[.08em] text-(--cc-muted)">{{ card.label }}</span><b :class="card.tone">{{ card.value }}</b><span class="cc-sub">{{ card.sub }}</span></div></div>
     <div class="flex flex-wrap items-end gap-3">
       <label class="cc-field cc-field--filter">País<USelect v-model="country" :items="countryItems" variant="none" :ui="{ base: 'cc-input cc-input--filter min-w-[100px]' }" /></label>
-      <label v-if="isOpenTab" class="cc-field cc-field--filter">Estado<USelect v-model="group" :items="groupItems" variant="none" :ui="{ base: 'cc-input cc-input--filter min-w-[188px]' }" /></label>
+      <label v-if="isOpenTab" class="cc-field cc-field--filter">Estado<USelect v-model="group" :items="groupItems" variant="none" :ui="{ base: 'cc-input cc-input--filter min-w-[188px]', content: 'min-w-[240px] w-max' }" /></label>
       <UInput v-model="search" icon="i-lucide-search" variant="none" placeholder="Buscar cliente, BL, naviera…" class="w-[260px]" :ui="{ base: 'cc-input !rounded-lg !py-[11px] !pl-9 !pr-3.5' }" />
       <button v-if="hasFilters" type="button" class="cc-link !px-1 !py-2.5 !text-sm" @click="clearFilters">Limpiar filtros</button>
     </div>

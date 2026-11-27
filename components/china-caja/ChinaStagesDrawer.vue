@@ -142,6 +142,11 @@ watch(() => props.container, (container) => {
   if (!container) return
   TEXT_KEYS.forEach((key) => { form[key] = String(container.data[key] ?? '') })
   freight.value = container.data.freight_usd
+  // Importador: prellenado con la razón social del socio la primera vez; sigue editable.
+  if (!container.data.bl_consignee && container.client) {
+    form.bl_consignee = container.client
+    save({ bl_consignee: container.client })
+  }
 }, { immediate: true })
 watch([() => props.container?.id, () => props.stage], () => {
   current.value = props.stage ?? 1
