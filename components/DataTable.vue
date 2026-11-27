@@ -527,7 +527,7 @@
         @scroll="onTableScroll"
       >
         <UTable ref="utableRef" :data="filteredData" sticky :columns="displayedColumns" :loading="isTableLoading"
-          :class="['', isTableNarrow ? 'utable-narrow' : 'min-w-full']"   :meta="tableMeta"
+          :class="['', isTableNarrow ? ['utable-narrow', { 'utable-full': fullWidth }] : 'min-w-full']"   :meta="tableMeta"
           :ui="isV3 ? flatTableV3Ui : filtersLayout === 'inline' ? flatTableUi : Object.keys(tableMeta).length>0?{
             // Importante: quitar overflow del root interno de UTable.
             // Si el root tiene overflow-* pero el scroll real ocurre en .table-scroll-container, sticky no se activa.
@@ -1757,6 +1757,15 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
 .utable-narrow table {
   width: auto !important;
   min-width: 80% !important;
+}
+
+/* `full-width`: la tabla ocupa todo el ancho del contenedor (igual que la barra de filtros). */
+.utable-narrow.utable-full {
+  align-items: stretch;
+}
+.utable-narrow.utable-full :deep(table) {
+  width: 100% !important;
+  min-width: 100% !important;
 }
 
 /* Scoped styles can't reach inside child components; use deep selector to target inner table rendered by UTable */

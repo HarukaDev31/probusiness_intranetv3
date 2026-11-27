@@ -93,6 +93,8 @@ export interface DataTableProps {
   showPrimarySearchLabel?: boolean
   /** Buscador, filtros y acciones más grandes, dentro de un marco. */
   prominentToolbar?: boolean
+  /** Estira la tabla al ancho del contenedor (misma anchura que la barra de filtros) en vez de centrarla a su ancho natural. */
+  fullWidth?: boolean
   primarySearchLabel?: string
   primarySearchPlaceholder?: string
 
