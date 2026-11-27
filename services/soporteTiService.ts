@@ -13,6 +13,7 @@ import type {
   SoporteTiSolicitud,
   SoporteTiEstado,
   SoporteTiEstadoHistorial,
+  SoporteTiExportacion,
   SoporteTiArea,
   SoporteTiAreaCatalogo,
   SoporteTiAreaGestion
@@ -535,6 +536,19 @@ export class SoporteTiService extends BaseService {
       success: raw.success,
       data: (raw.data ?? []).map(adaptHistorial)
     }
+  }
+
+  /** Texto completo del ticket y su chat (rutas de adjuntos incluidas). Solo rol Soporte. */
+  static async exportar(id: number): Promise<{
+    success: boolean
+    data?: SoporteTiExportacion
+    message?: string
+  }> {
+    return await this.apiCall<{
+      success: boolean
+      data?: SoporteTiExportacion
+      message?: string
+    }>(`${BASE}/${id}/exportar`)
   }
 
   static async catalogoAreas(): Promise<{
