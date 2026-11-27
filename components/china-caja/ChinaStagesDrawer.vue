@@ -87,6 +87,10 @@
             </div>
           </section>
         </div>
+        <div class="flex items-center justify-between gap-3 border-t border-(--cc-line2) px-5 py-3.5">
+          <span class="text-xs text-(--cc-muted)">Los cambios se guardan automáticamente</span>
+          <button type="button" class="cc-btn !px-5 !py-2" @click="emit('close')">Listo</button>
+        </div>
         <VoucherViewerModal :open="viewer" :url="container.bl_draft_url" :name="container.data.bl_draft_name" title="BL draft" @close="viewer = false" />
       </div>
     </template>
