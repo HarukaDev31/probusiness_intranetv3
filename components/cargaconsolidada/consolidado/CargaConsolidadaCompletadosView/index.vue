@@ -763,7 +763,7 @@ const getColorByEstado = (estado: string) => {
   if (!estado) return 'neutral'
   if (estado === 'PENDIENTE') return 'warning'
   if (estado === 'RECIBIENDO') return 'info'
-  if (estado === 'COMPLETADO') return 'success'
+  if (estado === 'COMPLETADO' || estado === 'CERRADO') return 'success'
   return 'neutral'
 }
 
