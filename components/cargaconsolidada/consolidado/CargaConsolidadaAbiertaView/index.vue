@@ -41,6 +41,7 @@
         :show-secondary-search="false"
         :show-filters="true"
         :prominent-toolbar="isAlmacen"
+        :full-width="isAlmacen"
         :filter-config="filterConfig"
         :filters-value="filters"
         empty-state-message="No se encontraron registros de contenedores."

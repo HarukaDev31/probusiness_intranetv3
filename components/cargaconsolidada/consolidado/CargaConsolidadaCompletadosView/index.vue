@@ -42,6 +42,7 @@
         :show-secondary-search="false"
         :show-filters="true"
         :prominent-toolbar="isAlmacen"
+        :full-width="isAlmacen"
         :filter-config="filterConfig"
         :filters-value="filters"
         :show-export="true"
